@@ -1,5 +1,5 @@
 ```
-lunas/
+selene/
 │
 ├── frontend/                            # ReactJS
 │   ├── public/
