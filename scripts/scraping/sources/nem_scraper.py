@@ -7,7 +7,7 @@ BASE_URL = "https://nemshop.vn"
 
 CATEGORIES = {
     "Đầm": "https://nemshop.vn/collections/dam",
-    "Áo sơ mi": "https://nemshop.vn/collections/ao-so-mi",
+    "Áo": "https://nemshop.vn/collections/ao-so-mi",
     "Quần": "https://nemshop.vn/collections/quan-dai",
     "Chân váy": "https://nemshop.vn/collections/chan-vay-dang-a",
     "Set bộ": "https://nemshop.vn/collections/do-bo",

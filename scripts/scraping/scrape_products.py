@@ -1,4 +1,4 @@
-# scripts\scraping\crawl_products.py
+# scripts\scraping\scrape_products.py
 import json
 import time
 import pandas as pd
@@ -34,7 +34,7 @@ for category_name, collection_url in CATEGORIES.items():
                     )
                     product = scrape_product(link, item["category"])
                     products.append(product)
-                    time.sleep(0.2)
+                    time.sleep(1)
                 
                 except Exception as e:
                     print(f"Product Error: {e}")
@@ -52,4 +52,4 @@ df.to_csv("output/products_raw.csv", index=False, encoding="utf-8-sig")
 
 print("\nDone!")
 
-# Chạy: python crawl_products.py
+# Chạy: python scrape_products.py
