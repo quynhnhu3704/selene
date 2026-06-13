@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', Arial, sans-serif; }
+
+#rubies-root {
+    font-family: 'Varela Round', Arial, sans-serif;
+    color: #222;
+    background: #fff; /* bắt buộc để không bị trong suốt */
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* ── TOP INFO BAR ── */
+.rb-topbar {
+    padding: 5.5px 32px 5.4px 32px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rb-search { display: flex; align-items: center; }
+.rb-search input { background: #f3f3f3; border: none; font-size: 1em; font-family: 'Varela Round', Arial, sans-serif; }
+.rb-search button { background: #f3f3f3; border: none; font-size: 1em; padding: 0 1.25em; cursor: pointer; }
+.rb-search .form-control:focus {
+  background: #f3f3f3;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.input-group {
+    width: 360px;
+}
+
+.rb-topicons { display: flex; align-items: center; gap: 27.5px; }
+.rb-icon-wrap { display: flex; flex-direction: column; align-items: center; cursor: pointer; gap: 2px; }
+.rb-icon-wrap { font-size: 10px; color: #444; text-transform: uppercase; }
+.rb-ilabel { font-size: 10px; font-weight: 700; color: #222; text-transform: uppercase; }
+.rb-icon-rel { 
+    width: 38px;
+    height: 38px;
+    border: 1px solid lightgray;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.rb-bdot { position: absolute; top: -7px; right: -7px; background: #222; color: #fff; border-radius: 50%; font-size: 12px; padding: 5px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+/* ── NAV ── */
+.rb-nav {
+    display: flex;
+    align-items: stretch;
+    padding: 0 32px;
+    height: 40px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.rb-topicons {
+  display: flex;
+  gap: 15px;
+}
+
+@media (max-width: 991px) {
+  .rb-topicons {
+    justify-content: center;
+    margin-top: 10px;
+  }
+}
+
+.rb-navlinks { display: flex; align-items: stretch; }
+.rb-navlink {
+    display: flex; align-items: center;
+    padding: 0 24px; font-size: 12.5px; font-weight: 700; color: #222;
+    text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+}
+.rb-navlink:hover { color: #871B1B; }
+.rb-navlink.rb-active { color: #871B1B; }
+.rb-navlink {
+  position: relative;
+}
+
+/* line mặc định */
+.rb-navlink::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background: #871B1B;
+  transition: all 0.25s ease;
+  transform: translateX(-50%);
+}
+
+/* hover → từ giữa nở ra 2 bên */
+.rb-navlink:hover::after {
+  width: 100%;
+}
+
+/* active giữ luôn */
+.rb-navlink.rb-active::after {
+  width: 100%;
+}
+
+.rb-navlink.rb-promo { color: #871B1B; display: flex; align-items: center; gap: 5px; }
+.rb-navlnk { text-decoration: none; color: #222 }
+
+.rb-navlink .icon-down,
+.rb-navlink .icon-up {
+  transition: all 0.2s ease;
+}
+.rb-navlink .icon-up { display: none; opacity: 0; transform: translateY(-2px); }
+.rb-navlink:hover .icon-down { display: none; opacity: 0; transform: translateY(2px); }
+.rb-navlink:hover .icon-up { display: inline-block; opacity: 1; transform: translateY(0); }
+
+/* ── HERO ── */
+.carousel-item img {
+  height: 60vh;       /* theo màn hình */
+  min-height: 350px;
+  max-height: 600px;
+  object-fit: cover;
+}
+
+/* ── FEATURES ── */
+.rb-features { border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; background: #fff; }
+.rb-feat-item { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-right: 1px solid #e5e5e5; height: 100%; }
+.rb-feat-item:last-child { border-right: none; }
+.rb-feat-t1 { font-size: 13px; color: #444; line-height: 1.5; }
+.rb-feat-t2 { font-size: 13px; font-weight: 800; color: #111; text-transform: uppercase; letter-spacing: 0.2px; }
+
+/* ── SECTION TITLE ── */
+.rb-sec-title { text-align: center; margin-bottom: 32px; }
+.rb-sec-title h2 { font-family: 'Varela Round', Arial, sans-serif; font-size: 26px; font-weight: 700; color: #111; margin-bottom: 10px; }
+.rb-divider { display: flex; align-items: center; justify-content: center; }
+.rb-divider .gl { height: 1px; width: 88px; background: #d0d0d0; }
+.rb-divider .gd { height: 3px; width: 44px; background: #222; }
+
+/* ── PRODUCTS ── */
+.rb-products { padding: 48px 40px 0; }
+.rb-new-products { padding: 40px 40px 48px; }
+.rb-slider-wrap { position: relative; }
+.rb-sbtn { position: absolute; top: 42%; transform: translateY(-50%); background: #fff; border: 1px solid #ddd; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; color: #555; box-shadow: 0 2px 8px rgba(0,0,0,0.10); z-index: 5; }
+.rb-sbtn:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+.rb-sbtn.prev { left: -18px; }
+.rb-sbtn.next { right: -18px; }
+.rb-pcard { cursor: pointer; }
+.rb-pimg { position: relative; overflow: hidden; background: #f5f5f5; }
+.rb-pimg img { width: 100%; height: 370px; object-fit: cover; object-position: top center; display: block; transition: transform 0.3s ease; }
+.rb-pcard:hover .rb-pimg img { transform: scale(1.03); }
+.rb-rank { position: absolute; top: 10px; left: 10px; background: #1a1a1a; color: #fff; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+.rb-newbadge { position: absolute; top: 10px; left: 10px; background: #871B1B; color: #fff; padding: 3px 12px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+.rb-pinfo { padding: 11px 0 8px; }
+.rb-pname { font-size: 13px; color: #333; margin-bottom: 7px; line-height: 1.4; }
+.rb-pbottom { display: flex; align-items: center; justify-content: space-between; }
+.rb-price { font-size: 14px; font-weight: 700; color: #111; }
+.rb-sold { background: #f0f0f0; border-radius: 20px; padding: 3px 12px; font-size: 12px; color: #555; display: flex; align-items: center; gap: 3px; }
+.rb-sold::after { content: ""; border-left: 6px solid #aaa; border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-left: 3px; }
+
+/* ── FEEL BANNER ── */
+.rb-feel { background: #c9b99a; padding: 58px 40px 54px; text-align: center; }
+.rb-feel h2 { font-family: 'Varela Round', Arial, sans-serif; font-size: 50px; font-weight: 900; letter-spacing: 2px; color: #111; margin: 0 0 12px; }
+.rb-feel p { font-family: 'Varela Round', Arial, sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 5px; color: #333; margin: 0; }
+
+/* ── FOOTER ── */
+.rb-footer { background: black; color: #bbb; padding: 36px 40px 0; }
+.rb-footer h5 { font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+.rb-footer address { font-style: normal; font-size: 13px; line-height: 1.8; color: #bbb; }
+.rb-footer p { font-size: 13px; color: #bbb; line-height: 1.7; margin-bottom: 4px; }
+.rb-footer ul { list-style: none; padding: 0; margin: 0; }
+.rb-footer ul li { font-size: 13px; color: #bbb; margin-bottom: 8px; display: flex; gap: 7px; cursor: pointer; }
+.rb-footer ul li:hover { color: #fff; }
+.rb-footer ul li::before { content: "•"; flex-shrink: 0; }
+.rb-fsocial { display: flex; gap: 10px; margin-top: 14px; }
+.rb-sbtnf { width: 36px; height: 36px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #bbb; }
+.rb-sbtnf:hover { border-color: #fff; color: #a63333; }
+.rb-fstore-n { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+.rb-fstore-l { color: #bbb; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.rb-fstore-l:hover { color: #fff; }
+.rb-fbottom { border-top: 1px solid #2a2a2a; margin-top: 30px; padding: 16px 0; text-align: center; font-size: 12px; color: #666; }
+
+.rb-scroll-top { position: fixed; bottom: 30px; right: 30px; width: 40px; height: 40px; border-radius: 50%; background: #444; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; z-index: 999; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+
