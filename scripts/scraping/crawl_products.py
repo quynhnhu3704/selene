@@ -5,7 +5,7 @@ import pandas as pd
 
 from sources.nem_scraper import (CATEGORIES, get_product_links, scrape_product)
 
-MAX_PAGE = 3
+MAX_PAGE = 100
 products = []
 visited_links = set()
 
@@ -34,7 +34,7 @@ for category_name, collection_url in CATEGORIES.items():
                     )
                     product = scrape_product(link, item["category"])
                     products.append(product)
-                    time.sleep(1)
+                    time.sleep(0.2)
                 
                 except Exception as e:
                     print(f"Product Error: {e}")

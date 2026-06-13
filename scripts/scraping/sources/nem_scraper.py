@@ -112,25 +112,6 @@ def scrape_product(product_url, category):
     except Exception:
         pass
 
-    # try:
-    #     element = soup.select_one("YOUR_PRICE_SELECTOR")
-
-    #     if element:
-    #         price_text = element.get_text(strip=True)
-
-    #         price = int(
-    #             price_text
-    #             .replace("₫", "")
-    #             .replace(",", "")
-    #             .replace(".", "")
-    #             .strip()
-    #         )
-
-    #         product["price"] = price
-
-    # except Exception:
-    #     pass
-
     # ==================================
 
     try:
@@ -142,49 +123,21 @@ def scrape_product(product_url, category):
 
     # ==================================
 
-    # try:
-    #     size_elements = soup.select("YOUR_SIZE_SELECTOR") # SIZES
-
-    #     product["sizes"] = [
-    #         item.get_text(strip=True)
-    #         for item in size_elements
-    #     ]
-
-    # except Exception:
-    #     pass
-
     try:
-        size_elements = soup.select(
-            "#variant-swatch-0 .swatch-element"
-        )
+        size_elements = soup.select("#variant-swatch-0 .swatch-element") # SIZES
 
-        product["sizes"] = []
-
-        for item in size_elements:
-
-            size = item.get("data-value")
-
-            if size:
-
-                size = (
-                    size.replace("&nbsp;", " ")
-                    .replace("Size ", "")
-                    .strip()
-                )
-
-                product["sizes"].append(size)
+        product["sizes"] = [
+            item.get_text(strip=True)
+            for item in size_elements
+        ]
 
     except Exception:
         pass
 
-
-
-    # ==================================
-    # COLORS
     # ==================================
 
     try:
-        color_elements = soup.select("YOUR_COLOR_SELECTOR")
+        color_elements = soup.select("#variant-swatch-1 .swatch-element") # COLORS
 
         product["colors"] = [
             item.get_text(strip=True)
@@ -195,17 +148,17 @@ def scrape_product(product_url, category):
         pass
 
     # ==================================
-    # IMAGE URL
-    # ==================================
 
     try:
-        image_elements = soup.select("YOUR_IMAGE_SELECTOR")
+        image_elements = soup.select("#ProductThumbs .product-single__thumbnail") # IMAGE URLS
         images = []
 
         for image in image_elements:
-            src = (image.get("src") or image.get("data-src"))
+            src = image.get("href")
 
             if src:
+                if src.startswith("//"):
+                    src = "https:" + src
                 images.append(src)
 
         product["image_urls"] = images
@@ -214,11 +167,9 @@ def scrape_product(product_url, category):
         pass
 
     # ==================================
-    # DESCRIPTION
-    # ==================================
 
     try:
-        desc = soup.select_one("YOUR_DESCRIPTION_SELECTOR")
+        desc = soup.select_one(".pro-short-desc") # DESCRIPTION
 
         if desc:
             product["description"] = (
@@ -235,15 +186,5 @@ if __name__ == "__main__":
     test_url = ("https://nemshop.vn/products/cong-so-dai-tay-4162")
     product = scrape_product(test_url, "Áo khoác")
     print(product)
-
-# if __name__ == "__main__":
-
-#     # links = get_product_links("Quần", "https://nemshop.vn/collections/quan-dai", 1)
-#     links = get_product_links("Áo sơ mi", "https://nemshop.vn/collections/ao-so-mi", 3)
-
-#     print(f"Total: {len(links)}")
-
-#     for item in links[:5]:
-#         print(item)
 
 # Chạy test: python sources/nem_scraper.py
