@@ -40,7 +40,7 @@ Chạy test:
 python sources/nem_scraper.py
 ```
 
-Chạy cào:
+Chạy crawler:
 
 ```bash
 python crawl_products.py
