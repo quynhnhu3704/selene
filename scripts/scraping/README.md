@@ -1,4 +1,4 @@
-# NEM Product Scraper
+# Selene Product Scraper
 
 ## 1. Tạo môi trường Python
 
@@ -33,6 +33,12 @@ pip freeze > requirements.txt
 ```
 
 ## Chạy
+
+Di chuyển vào thư mục:
+
+```bash
+cd scripts/scraping
+```
 
 Chạy test:
 
