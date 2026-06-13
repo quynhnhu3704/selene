@@ -68,7 +68,7 @@ ENV/
 # =========================
 # Scraping Output
 # =========================
-scripts/scraping/output/
+# scripts/scraping/output/
 
 # =========================
 # IDE
