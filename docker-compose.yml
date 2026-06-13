@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  gateway-service:
+    build:
+      context: ./services/gateway-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - ORDER_SERVICE_URL=http://order-service:8002
+      - RATE_LIMIT_MAX=100
+    depends_on:
+      - auth-service
+      - order-service
+    networks:
+      - microservices-net
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - JWT_SECRET=super-secret-key
+    networks:
+      - microservices-net
+
+  order-service:
+    build:
+      context: ./services/order-service
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - JWT_SECRET=super-secret-key
+    networks:
+      - microservices-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - gateway-service
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    driver: bridge
