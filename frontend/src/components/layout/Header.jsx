@@ -1,5 +1,6 @@
 // frontend\src\components\layout\Header.jsx
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 
 export default function Header() {
@@ -7,6 +8,7 @@ export default function Header() {
   const [ct] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isLogin] = useState(false); // TEST MẪU MỐT BỎ ĐỂ THAY BACKEND VÀO NHA
 
   // Tự động đóng search khi resize về desktop
   useEffect(() => {
@@ -34,9 +36,7 @@ export default function Header() {
 
         {/* CỘT 1: LOGO */}
         <div className="rb-col-logo">
-          <a href="#">
-            <img src={logo} alt="logo" width={165} height={75} />
-          </a>
+          <Link to="/"><img src={logo} alt="logo" width={165} height={75} /></Link>
         </div>
 
         {/* CỘT 2: TOPBAR + NAV */}
@@ -53,7 +53,7 @@ export default function Header() {
               </span>
               <span className="mx-5">
                 <i className="bi bi-geo-alt-fill me-1" style={{ fontSize: "1.125em" }} />
-                <a href="#" className="rb-navlnk">HỆ THỐNG CỬA HÀNG</a>
+                <Link to="/" className="rb-navlnk">HỆ THỐNG CỬA HÀNG</Link>
               </span>
             </div>
 
@@ -69,30 +69,35 @@ export default function Header() {
 
           {/* HÀNG 2: NAV LINKS */}
           <div className="rb-nav">
-            <a href="#" className="rb-navlink rb-active">TRANG CHỦ</a>
-            <a href="#" className="rb-navlink">
+            <Link to="/" className="rb-navlink rb-active">TRANG CHỦ</Link>
+
+            <Link to="/" className="rb-navlink">
               THỜI TRANG NỮ
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </a>
-            <a href="#" className="rb-navlink">
+            </Link>
+
+            <Link to="/" className="rb-navlink">
               BỘ SƯU TẬP
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </a>
-            <a href="#" className="rb-navlink">
+            </Link>
+
+            <Link to="/" className="rb-navlink">
               TIN TỨC THỜI TRANG
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </a>
-            <a href="#" className="rb-navlink">
+            </Link>
+
+            <Link to="/" className="rb-navlink">
               TRỢ GIÚP
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </a>
-            <a href="#" className="rb-navlink rb-promo">
+            </Link>
+
+            <Link to="/" className="rb-navlink rb-promo">
               <i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -105,12 +110,85 @@ export default function Header() {
             </div>
             <span className="rb-ilabel mt-1">Yêu Thích</span>
           </div>
-          <div className="rb-icon-wrap">
+
+          {/* <div className="rb-icon-wrap">
             <div className="rb-icon-rel">
               <i className="bi bi-person fs-5" />
             </div>
             <span className="rb-ilabel mt-1">Tài Khoản</span>
-          </div>
+          </div> */}
+
+
+
+
+
+
+          <div className="dropdown">
+
+  <div
+    className="rb-icon-wrap"
+    role="button"
+    data-bs-toggle="dropdown"
+  >
+    <div className="rb-icon-rel">
+      <i className="bi bi-person fs-5" />
+    </div>
+
+    <span className="rb-ilabel mt-1">
+      Tài Khoản
+    </span>
+  </div>
+
+  <ul className="dropdown-menu dropdown-menu-end">
+
+    {!isLogin ? (
+      <>
+        <li>
+          <Link
+            className="dropdown-item"
+            to="/dang-nhap"
+          >
+            Đăng nhập
+          </Link>
+        </li>
+
+        <li>
+          <Link
+            className="dropdown-item"
+            to="/dang-ky"
+          >
+            Đăng ký
+          </Link>
+        </li>
+      </>
+    ) : (
+      <>
+        <li>
+          <Link
+            className="dropdown-item"
+            to="/tai-khoan"
+          >
+            Tài khoản
+          </Link>
+        </li>
+
+        <li>
+          <button
+            className="dropdown-item"
+          >
+            Đăng xuất
+          </button>
+        </li>
+      </>
+    )}
+
+  </ul>
+
+</div>
+
+
+
+
           <div className="rb-icon-wrap">
             <div className="rb-icon-rel">
               <i className="bi bi-handbag fs-5" />
@@ -138,9 +216,7 @@ export default function Header() {
 
         {/* GIỮA: Logo */}
         <div className="rb-mob-logo">
-          <a href="#">
-            <img src={logo} alt="logo" height={48} />
-          </a>
+          <Link to="/"><img src={logo} alt="logo" height={48} /></Link>
         </div>
 
         {/* PHẢI: icons */}
@@ -172,10 +248,7 @@ export default function Header() {
       )}
 
       {/* Overlay */}
-      <div
-        className={`rb-mob-overlay${menuOpen ? " open" : ""}`}
-        onClick={() => setMenuOpen(false)}
-      />
+      <div className={`rb-mob-overlay${menuOpen ? " open" : ""}`} onClick={() => setMenuOpen(false)} />
 
       {/* Drawer menu */}
       <div className={`rb-mob-drawer${menuOpen ? " open" : ""}`}>
@@ -186,12 +259,12 @@ export default function Header() {
           </button>
         </div>
         <ul className="rb-mob-menu-list">
-          <li><a href="#" className="active">TRANG CHỦ</a></li>
-          <li><a href="#">THỜI TRANG NỮ</a></li>
-          <li><a href="#">BỘ SƯU TẬP</a></li>
-          <li><a href="#">TIN TỨC</a></li>
-          <li><a href="#">TRỢ GIÚP</a></li>
-          <li><a href="#" className="promo"><i className="bi bi-gift-fill me-2" />KHUYẾN MÃI</a></li>
+          <li><Link to="/" className="active">TRANG CHỦ</Link></li>
+          <li><Link to="/">THỜI TRANG NỮ</Link></li>
+          <li><Link to="/">BỘ SƯU TẬP</Link></li>
+          <li><Link to="/">TIN TỨC</Link></li>
+          <li><Link to="/">TRỢ GIÚP</Link></li>
+          <li><Link to="/" className="promo"><i className="bi bi-gift-fill me-2" />KHUYẾN MÃI</Link></li>
         </ul>
       </div>
     </>

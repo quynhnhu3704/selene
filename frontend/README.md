@@ -1,5 +1,63 @@
 Dưới đây là cấu trúc frontend React (chuẩn doanh nghiệp, dùng với Node.js microservices + API Gateway). Mục tiêu: dễ scale, dễ tách service, dễ maintain.
-
+```
+frontend/
+│
+├── public/
+│
+├── src/
+│
+│   ├── app/
+│   │   ├── router/
+│   │   └── store/
+│
+│   ├── assets/
+│   │   ├── images/
+│   │   ├── icons/
+│   │   └── fonts/
+│
+│   ├── components/
+│   │   ├── common/
+│   │   └── layout/
+│   │       ├── Header.jsx
+│   │       ├── Footer.jsx
+│   │       └── Breadcrumb.jsx
+│
+│   ├── pages/
+│   │   ├── Home/
+│   │   ├── Login/
+│   │   ├── Register/
+│   │   ├── ProductList/
+│   │   ├── ProductDetail/
+│   │   ├── Cart/
+│   │   ├── Checkout/
+│   │   ├── Profile/
+│   │   └── NotFound/
+│
+│   ├── services/
+│   │   ├── http.js
+│   │   ├── auth.service.js
+│   │   ├── product.service.js
+│   │   ├── cart.service.js
+│   │   ├── order.service.js
+│   │   └── user.service.js
+│
+│   ├── hooks/
+│
+│   ├── utils/
+│
+│   ├── constants/
+│
+│   ├── mocks/
+│
+│   ├── styles/
+│
+│   ├── App.jsx
+│   └── main.jsx
+│
+├── .env
+├── package.json
+└── vite.config.js
+```
 ---
 
 # 1. Cấu trúc chuẩn (React + Microservices backend)

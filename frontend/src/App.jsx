@@ -1,5 +1,5 @@
 // frontend\src\App.jsx
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppRouter from "./app/router";
 
 function App() {
