@@ -3,7 +3,7 @@ export default function Footer() {
   return (
     <footer className="rb-footer">
       <div className="row g-4 pb-2">
-        <div className="col-4">
+        <div className="col-12 col-lg-4">
           <h5>RUBIES STUDIO</h5>
           <address>47 - 49 Trần Quang Diệu, Phường 14, Quận 3, TP. HCM</address>
           <p style={{marginTop:8}}><strong style={{color:"#fff"}}>Điện thoại:</strong> 070 347 0938</p>
@@ -15,7 +15,7 @@ export default function Footer() {
             <div className="rb-sbtnf"><i className="bi bi-tiktok" /></div>
           </div>
         </div>
-        <div className="col-2">
+        <div className="col-12 col-lg-2">
           <h5>CÔNG TY</h5>
           <ul>
             <li>RUBIES RUBIES</li>
@@ -24,7 +24,7 @@ export default function Footer() {
             <li>Chăm Sóc Khách Hàng</li>
           </ul>
         </div>
-        <div className="col-3">
+        <div className="col-12 col-lg-3">
           <h5>CHÍNH SÁCH KHÁCH HÀNG</h5>
           <ul>
             <li>Chính Sách KH Thân Thiết</li>
@@ -35,7 +35,7 @@ export default function Footer() {
             <li>Các Câu Hỏi Thường Gặp</li>
           </ul>
         </div>
-        <div className="col-3">
+        <div className="col-12 col-lg-3">
           <h5>THÔNG TIN CỬA HÀNG</h5>
           <p className="rb-fstore-n">CỬA HÀNG SỐ 1</p>
           <p>26 Lý Tự Trọng, Phường Bến Nghé, Quận 1,<br/>Ho Chi Minh City</p>

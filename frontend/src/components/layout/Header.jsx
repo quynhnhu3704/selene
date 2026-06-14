@@ -46,13 +46,13 @@ export default function Header() {
           <div className="rb-topbar">
             <div className="rb-topbar-left">
               <span className="me-5">
-                <i className="bi bi-telephone-fill me-1" /> HOTLINE:
+                <i className="bi bi-telephone-fill me-1" style={{ fontSize: "1.125em" }} /> HOTLINE:
                 <a href="tel:0984624532" className="rb-navlnk ms-1">
                   <strong style={{ fontSize: "16px" }}>098 462 4532</strong>
                 </a>
               </span>
               <span className="mx-5">
-                <i className="bi bi-geo-alt-fill me-1" />
+                <i className="bi bi-geo-alt-fill me-1" style={{ fontSize: "1.125em" }} />
                 <a href="#" className="rb-navlnk">HỆ THỐNG CỬA HÀNG</a>
               </span>
             </div>

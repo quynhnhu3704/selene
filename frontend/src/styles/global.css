@@ -402,19 +402,19 @@
 .rb-feel p { font-family: 'Varela Round', Arial, sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 5px; color: #333; margin: 0; }
 
 /* ── FOOTER ── */
-.rb-footer { background: black; color: #bbb; padding: 36px 40px 0; }
-.rb-footer h5 { font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
-.rb-footer address { font-style: normal; font-size: 13px; line-height: 1.8; color: #bbb; }
-.rb-footer p { font-size: 13px; color: #bbb; line-height: 1.7; margin-bottom: 4px; }
+.rb-footer { background: black; color: white; padding: 36px 40px 0; }
+.rb-footer h5 { font-size: 13px; font-weight: 800; color: white; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+.rb-footer address { font-style: normal; font-size: 13px; line-height: 1.8; color: white; }
+.rb-footer p { font-size: 13px; color: white; line-height: 1.7; margin-bottom: 4px; }
 .rb-footer ul { list-style: none; padding: 0; margin: 0; }
-.rb-footer ul li { font-size: 13px; color: #bbb; margin-bottom: 8px; display: flex; gap: 7px; cursor: pointer; }
-.rb-footer ul li:hover { color: #fff; }
+.rb-footer ul li { font-size: 13px; color: white; margin-bottom: 8px; display: flex; gap: 7px; cursor: pointer; }
+.rb-footer ul li:hover { color: white; }
 .rb-footer ul li::before { content: "•"; flex-shrink: 0; }
 .rb-fsocial { display: flex; gap: 10px; margin-top: 14px; }
-.rb-sbtnf { width: 36px; height: 36px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #bbb; }
+.rb-sbtnf { width: 36px; height: 36px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; }
 .rb-sbtnf:hover { border-color: #fff; color: #a63333; }
-.rb-fstore-n { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-.rb-fstore-l { color: #bbb; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.rb-fstore-n { font-size: 13px; font-weight: 800; color: white; margin-bottom: 6px; }
+.rb-fstore-l { color: white; font-size: 13px; text-decoration: underline; cursor: pointer; }
 .rb-fstore-l:hover { color: #fff; }
 .rb-fbottom { border-top: 1px solid #2a2a2a; margin-top: 30px; padding: 16px 0; text-align: center; font-size: 12px; color: #666; }
 
