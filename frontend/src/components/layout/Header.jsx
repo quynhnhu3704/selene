@@ -107,7 +107,7 @@ export default function Header() {
       {/* ══════════════════════════════════
           MOBILE HEADER
       ══════════════════════════════════ */}
-      <div className="rb-mobile-header" style={{ position: "relative" }}>
+      <div className="rb-mobile-header">
 
         {/* TRÁI: hamburger + search */}
         <div className="rb-mob-left">

@@ -3,7 +3,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', Arial, sans-serif; }
 
 /* ════════════════════════════════
-    DESKTOP HEADER (>= 992px)
+    DESKTOP HEADER (>= 1520)
 ════════════════════════════════ */
 .rb-desktop-header {
   display: flex;
@@ -174,7 +174,7 @@
 }
 
 /* ════════════════════════════════
-    MOBILE HEADER (< 992px)
+    MOBILE HEADER (< 1521)
 ════════════════════════════════ */
 .rb-mobile-header {
   display: none;
@@ -350,6 +350,22 @@
   .rb-mob-drawer { display: none !important; }
   .rb-mob-overlay { display: none !important; }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ── HERO ── */
 .carousel-item img {
