@@ -30,13 +30,14 @@ export default function Home() {
       />
 
       <div className="rb-feel">
-        <h2>FEEL RUBIES</h2>
+        <h2>FEEL SELENE, FEEL ELEGANT</h2>
+        <p>SELENE SINCE 2026</p>
       </div>
 
       <Footer />
 
       {/* Scroll to top button */}
-      <button className="rb-scroll-top" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}>↑</button>
+      <button className="rb-scroll-top" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}><i class="bi bi-chevron-double-up"></i></button>
     </>
   );
 }
