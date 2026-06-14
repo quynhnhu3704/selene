@@ -57,7 +57,7 @@ export default function Header() {
               </span>
             </div>
 
-            <div className="rb-search">
+            <div className="rb-search mx-5">
               <div className="input-group">
                 <input className="form-control" placeholder="Tìm sản phẩm..." />
                 <button className="input-group-text">
@@ -81,7 +81,7 @@ export default function Header() {
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
             </a>
             <a href="#" className="rb-navlink">
-              TIN TỨC
+              TIN TỨC THỜI TRANG
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
             </a>
@@ -153,7 +153,7 @@ export default function Header() {
             <i className="bi bi-person" />
           </div>
           <div className="rb-mob-icon">
-            <i className="bi bi-bag" />
+            <i className="bi bi-handbag" />
             <span className="rb-mob-bdot">{ct}</span>
           </div>
         </div>
