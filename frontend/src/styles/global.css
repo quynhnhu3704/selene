@@ -2,91 +2,109 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', Arial, sans-serif; }
 
-#rubies-root {
-    font-family: 'Varela Round', Arial, sans-serif;
-    color: #222;
-    background: #fff; /* bắt buộc để không bị trong suốt */
-    position: sticky;
-    top: 0;
-    z-index: 9999;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+/* ════════════════════════════════
+    DESKTOP HEADER (>= 992px)
+════════════════════════════════ */
+.rb-desktop-header {
+  display: flex;
+  align-items: center;
+  padding: 0 75px 0 75px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
 }
 
-/* ── TOP INFO BAR ── */
+/* CỘT 1: LOGO */
+.rb-col-logo {
+  flex: 0 0 165px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CỘT 2: TOPBAR + NAV */
+.rb-col-center {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* HÀNG 1: HOTLINE + SEARCH */
 .rb-topbar {
-    padding: 5.5px 32px 5.4px 32px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  padding: 5.5px 32px 5.4px 32px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 12px;
 }
-
-.rb-search { display: flex; align-items: center; }
-.rb-search input { background: #f3f3f3; border: none; font-size: 1em; font-family: 'Varela Round', Arial, sans-serif; }
-.rb-search button { background: #f3f3f3; border: none; font-size: 1em; padding: 0 1.25em; cursor: pointer; }
+.rb-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  flex: 0 0 auto;
+}
+.rb-search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 1;
+  flex: 1;
+  min-width: 0;
+}
+.rb-search input {
+  background: #f3f3f3;
+  border: none;
+  font-size: 1em;
+  font-family: 'Varela Round', Arial, sans-serif;
+  width: 360px;
+  max-width: 360px;
+}
+.rb-search button {
+  background: #f3f3f3;
+  border: none;
+  font-size: 1em;
+  padding: 0 1.25em;
+  cursor: pointer;
+}
 .rb-search .form-control:focus {
   background: #f3f3f3;
   border: none;
   box-shadow: none;
   outline: none;
 }
+.rb-navlnk { text-decoration: none; color: #222; }
 
-.input-group {
-    width: 360px;
-}
-
-.rb-topicons { display: flex; align-items: center; gap: 27.5px; }
-.rb-icon-wrap { display: flex; flex-direction: column; align-items: center; cursor: pointer; gap: 2px; }
-.rb-icon-wrap { font-size: 10px; color: #444; text-transform: uppercase; }
-.rb-ilabel { font-size: 10px; font-weight: 700; color: #222; text-transform: uppercase; }
-.rb-icon-rel { 
-    width: 38px;
-    height: 38px;
-    border: 1px solid lightgray;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.rb-bdot { position: absolute; top: -7px; right: -7px; background: #222; color: #fff; border-radius: 50%; font-size: 12px; padding: 5px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-
-/* ── NAV ── */
+/* HÀNG 2: NAV LINKS */
 .rb-nav {
-    display: flex;
-    align-items: stretch;
-    padding: 0 32px;
-    height: 40px;
-    overflow-x: auto;
-    white-space: nowrap;
-}
-
-.rb-topicons {
   display: flex;
-  gap: 15px;
+  align-items: stretch;
+  padding: 0 32px;
+  height: 40px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
 }
-
-@media (max-width: 991px) {
-  .rb-topicons {
-    justify-content: center;
-    margin-top: 10px;
-  }
-}
-
-.rb-navlinks { display: flex; align-items: stretch; }
+.rb-nav::-webkit-scrollbar { display: none; }
 .rb-navlink {
-    display: flex; align-items: center;
-    padding: 0 24px; font-size: 12.5px; font-weight: 700; color: #222;
-    text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
-}
-.rb-navlink:hover { color: #871B1B; }
-.rb-navlink.rb-active { color: #871B1B; }
-.rb-navlink {
+  display: flex;
+  align-items: center;
+  padding: 0 30.75px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #222;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
   position: relative;
 }
-
-/* line mặc định */
 .rb-navlink::after {
   content: "";
   position: absolute;
@@ -98,27 +116,240 @@
   transition: all 0.25s ease;
   transform: translateX(-50%);
 }
-
-/* hover → từ giữa nở ra 2 bên */
-.rb-navlink:hover::after {
-  width: 100%;
-}
-
-/* active giữ luôn */
-.rb-navlink.rb-active::after {
-  width: 100%;
-}
-
-.rb-navlink.rb-promo { color: #871B1B; display: flex; align-items: center; gap: 5px; }
-.rb-navlnk { text-decoration: none; color: #222 }
-
+.rb-navlink:hover { color: #871B1B; }
+.rb-navlink:hover::after { width: 100%; }
+.rb-navlink.rb-active { color: #871B1B; }
+.rb-navlink.rb-active::after { width: 100%; }
+.rb-navlink.rb-promo { color: #871B1B; gap: 5px; }
 .rb-navlink .icon-down,
-.rb-navlink .icon-up {
-  transition: all 0.2s ease;
+.rb-navlink .icon-up { transition: all 0.2s ease; }
+.rb-navlink .icon-up { display: none; opacity: 0; }
+.rb-navlink:hover .icon-down { display: none; opacity: 0; }
+.rb-navlink:hover .icon-up { display: inline-block; opacity: 1; }
+
+/* CỘT 3: ICONS */
+.rb-topicons {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
-.rb-navlink .icon-up { display: none; opacity: 0; transform: translateY(-2px); }
-.rb-navlink:hover .icon-down { display: none; opacity: 0; transform: translateY(2px); }
-.rb-navlink:hover .icon-up { display: inline-block; opacity: 1; transform: translateY(0); }
+.rb-icon-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  gap: 2px;
+}
+.rb-ilabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #222;
+  text-transform: uppercase;
+}
+.rb-icon-rel {
+  width: 38px;
+  height: 38px;
+  border: 1px solid lightgray;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.rb-bdot {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  background: #222;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* ════════════════════════════════
+    MOBILE HEADER (< 992px)
+════════════════════════════════ */
+.rb-mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  height: 60px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+
+/* Nhóm trái: hamburger + search */
+.rb-mob-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rb-mob-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 20px;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+
+/* Logo giữa */
+.rb-mob-logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Nhóm phải: icons */
+.rb-mob-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rb-mob-icon {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d0d0d0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  flex-shrink: 0;
+}
+.rb-mob-bdot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #222;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* ── MOBILE SEARCH BAR (dropdown) ── */
+.rb-mob-search-bar {
+  position: sticky;
+  top: 60px;
+  z-index: 9998;
+  background: #fff;
+  padding: 10px 18px;
+  border-bottom: 1px solid #eee;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+.rb-mob-search-bar input {
+  background: #f3f3f3;
+  border: none;
+  font-family: 'Varela Round', Arial, sans-serif;
+  font-size: 14px;
+}
+.rb-mob-search-bar button {
+  background: #f3f3f3;
+  border: none;
+}
+.rb-mob-search-bar .form-control:focus {
+  background: #f3f3f3;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── MOBILE MENU DRAWER ── */
+.rb-mob-drawer {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 78vw;
+  max-width: 300px;
+  height: 100vh;
+  background: #fff;
+  z-index: 10000;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  transition: left 0.28s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+.rb-mob-drawer.open { left: 0; }
+.rb-mob-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #eee;
+}
+.rb-mob-drawer-head img { height: 44px; }
+.rb-mob-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #555;
+  line-height: 1;
+}
+.rb-mob-menu-list {
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+  flex: 1;
+}
+.rb-mob-menu-list li a {
+  display: block;
+  padding: 13px 24px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #222;
+  letter-spacing: 0.6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.rb-mob-menu-list li a:hover,
+.rb-mob-menu-list li a.active { color: #871B1B; }
+.rb-mob-menu-list li a.promo { color: #871B1B; }
+
+/* Overlay mờ khi drawer mở */
+.rb-mob-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 9999;
+}
+.rb-mob-overlay.open { display: block; }
+
+/* ── BREAKPOINTS ── */
+@media (max-width: 1520px) {
+  .rb-desktop-header { display: none !important; }
+  .rb-mobile-header { display: flex !important; }
+}
+@media (min-width: 1521px) {
+  .rb-mobile-header { display: none !important; }
+  .rb-mob-drawer { display: none !important; }
+  .rb-mob-overlay { display: none !important; }
+}
 
 /* ── HERO ── */
 .carousel-item img {

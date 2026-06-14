@@ -5,102 +5,177 @@ import logo from "../../assets/logo.png";
 export default function Header() {
   const [wl] = useState(0);
   const [ct] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <>
-      <div id="rubies-root" style={{ padding: "0 70px 0 25px" }}>
+      {/* ══════════════════════════════════
+          DESKTOP HEADER
+      ══════════════════════════════════ */}
+      <div className="rb-desktop-header">
 
-        <div className="row align-items-center">
+        {/* CỘT 1: LOGO */}
+        <div className="rb-col-logo">
+          <a href="#">
+            <img src={logo} alt="logo" width={165} height={75} />
+          </a>
+        </div>
 
-          {/* ═══ TOP BAR ═══ */}
-          {/* CỘT 1: LOGO (nhỏ) */}
-          <div className="col-12 col-lg-2 d-flex flex-column justify-content-center align-items-center">
-            <a href="#">
-              <img src={logo} alt="logo" width={165} height={75}/>
+        {/* CỘT 2: TOPBAR + NAV */}
+        <div className="rb-col-center">
+
+          {/* HÀNG 1: HOTLINE + SEARCH */}
+          <div className="rb-topbar">
+            <div className="rb-topbar-left">
+              <span className="me-5">
+                <i className="bi bi-telephone-fill me-1" /> HOTLINE:
+                <a href="tel:0984624532" className="rb-navlnk ms-1">
+                  <strong style={{ fontSize: "16px" }}>098 462 4532</strong>
+                </a>
+              </span>
+              <span className="mx-5">
+                <i className="bi bi-geo-alt-fill me-1" />
+                <a href="#" className="rb-navlnk">HỆ THỐNG CỬA HÀNG</a>
+              </span>
+            </div>
+
+            <div className="rb-search">
+              <div className="input-group">
+                <input className="form-control" placeholder="Tìm sản phẩm..." />
+                <button className="input-group-text">
+                  <i className="bi bi-search" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* HÀNG 2: NAV LINKS */}
+          <div className="rb-nav">
+            <a href="#" className="rb-navlink rb-active">TRANG CHỦ</a>
+            <a href="#" className="rb-navlink">
+              THỜI TRANG NỮ
+              <i className="bi bi-chevron-down ms-1 icon-down"></i>
+              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+            </a>
+            <a href="#" className="rb-navlink">
+              BỘ SƯU TẬP
+              <i className="bi bi-chevron-down ms-1 icon-down"></i>
+              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+            </a>
+            <a href="#" className="rb-navlink">
+              TIN TỨC
+              <i className="bi bi-chevron-down ms-1 icon-down"></i>
+              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+            </a>
+            <a href="#" className="rb-navlink">
+              TRỢ GIÚP
+              <i className="bi bi-chevron-down ms-1 icon-down"></i>
+              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+            </a>
+            <a href="#" className="rb-navlink rb-promo">
+              <i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI
             </a>
           </div>
+        </div>
 
-          {/* CỘT 2: LỚN NHẤT */}
-          <div className="col-12 col-lg-8 d-flex flex-column justify-content-center">
-
-            {/* HÀNG 1: HOTLINE + SEARCH */}
-            <div className="rb-topbar row align-items-center w-100 flex-wrap">
-              <div className="col-12 col-md-6 text-center text-md-start">
-                <span className="me-5">
-                  <i className="bi bi-telephone-fill me-1" /> HOTLINE:
-                  <a href="tel:0984624532" className="rb-navlnk ms-1"><strong style={{ fontSize: "16px" }}>098 462 4532</strong></a>
-                </span>
-
-                <span className="ms-1">
-                  <i className="bi bi-geo-alt-fill me-1" /> <a href="#" className="rb-navlnk">HỆ THỐNG CỬA HÀNG</a>
-                </span>
-              </div>
-
-              <div className="rb-search col-12 col-md-6 d-flex justify-content-md-end justify-content-center">
-                <div className="input-group">
-                  <input className="form-control" placeholder="Tìm sản phẩm..." />
-                  <button className="input-group-text">
-                    <i className="bi bi-search" />
-                  </button>
-                </div>
-              </div>
+        {/* CỘT 3: ICONS */}
+        <div className="rb-topicons">
+          <div className="rb-icon-wrap">
+            <div className="rb-icon-rel">
+              <i className="bi bi-heart fs-5" />
+              <span className="rb-bdot">{wl}</span>
             </div>
-
-            {/* HÀNG 2: MENU */}
-            <div className="rb-nav row w-100 flex-nowrap">
-              <div className="col-12 d-flex">
-                <a href="#" className="rb-navlink rb-active">TRANG CHỦ</a>
-                
-                {/* DROPDOWN */}
-                {/* <div className="dropdown"> */}
-                  {/* <a href="#" className="rb-navlink dropdown-toggle" data-bs-toggle="dropdown"> */}
-                  <a href="#" className="rb-navlink">
-                    THỜI TRANG NỮ 
-                    <i className="bi bi-chevron-down ms-1 icon-down"></i>
-                    <i className="bi bi-chevron-up ms-1 icon-up"></i>
-                  </a>
-                  
-                  {/* <ul className="dropdown-menu dropdown-menu-end shadow">
-                    <li><a className="dropdown-item" href="#">Áo</a></li>
-                    <li><a className="dropdown-item" href="#">Quần</a></li>
-                    <li><a className="dropdown-item" href="#">Váy</a></li>
-                  </ul> */}
-                {/* </div> */}
-
-                <a href="#" className="rb-navlink">BỘ SƯU TẬP 
-                  <i className="bi bi-chevron-down ms-1 icon-down"></i>
-                  <i className="bi bi-chevron-up ms-1 icon-up"></i>
-                </a>
-                <a href="#" className="rb-navlink">TIN TỨC 
-                  <i className="bi bi-chevron-down ms-1 icon-down"></i>
-                  <i className="bi bi-chevron-up ms-1 icon-up"></i>
-                </a>
-                <a href="#" className="rb-navlink">TRỢ GIÚP 
-                  <i className="bi bi-chevron-down ms-1 icon-down"></i>
-                  <i className="bi bi-chevron-up ms-1 icon-up"></i>
-                </a>
-                <a href="#" className="rb-navlink rb-promo"><i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI</a>
-              </div>
-            </div>
+            <span className="rb-ilabel mt-1">Yêu Thích</span>
           </div>
-
-          {/* CỘT 3: ICON */}
-          <div className="rb-topicons col-12 col-lg-2 text-end">
-            <div className="rb-icon-wrap">
-              <div className="rb-icon-rel"><i className="bi bi-heart fs-5" /><span className="rb-bdot">{wl}</span></div>
-              <span className="rb-ilabel mt-1">Yêu Thích</span>
+          <div className="rb-icon-wrap">
+            <div className="rb-icon-rel">
+              <i className="bi bi-person fs-5" />
             </div>
-
-            <div className="rb-icon-wrap">
-              <div className="rb-icon-rel"><i className="bi bi-person fs-5" /></div>
-              <span className="rb-ilabel mt-1">Tài Khoản</span>
+            <span className="rb-ilabel mt-1">Tài Khoản</span>
+          </div>
+          <div className="rb-icon-wrap">
+            <div className="rb-icon-rel">
+              <i className="bi bi-cart3 fs-5" />
+              <span className="rb-bdot">{ct}</span>
             </div>
-            <div className="rb-icon-wrap">
-              <div className="rb-icon-rel"><i className="bi bi-cart3 fs-5" /><span className="rb-bdot">{ct}</span></div>
-              <span className="rb-ilabel mt-1">Giỏ Hàng</span>
-            </div>
+            <span className="rb-ilabel mt-1">Giỏ Hàng</span>
           </div>
         </div>
+      </div>
+
+      {/* ══════════════════════════════════
+          MOBILE HEADER
+      ══════════════════════════════════ */}
+      <div className="rb-mobile-header" style={{ position: "relative" }}>
+
+        {/* TRÁI: hamburger + search */}
+        <div className="rb-mob-left">
+          <button className="rb-mob-btn" onClick={() => setMenuOpen(true)} aria-label="Menu">
+            <i className="bi bi-list" style={{ fontSize: 26 }} />
+          </button>
+          <button className="rb-mob-btn" onClick={() => setSearchOpen(s => !s)} aria-label="Search">
+            <i className="bi bi-search" style={{ fontSize: 18 }} />
+          </button>
+        </div>
+
+        {/* GIỮA: Logo */}
+        <div className="rb-mob-logo">
+          <a href="#">
+            <img src={logo} alt="logo" height={48} />
+          </a>
+        </div>
+
+        {/* PHẢI: icons */}
+        <div className="rb-mob-right">
+          <div className="rb-mob-icon">
+            <i className="bi bi-heart" />
+            <span className="rb-mob-bdot">{wl}</span>
+          </div>
+          <div className="rb-mob-icon">
+            <i className="bi bi-person" />
+          </div>
+          <div className="rb-mob-icon">
+            <i className="bi bi-bag" />
+            <span className="rb-mob-bdot">{ct}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile search bar dropdown */}
+      {searchOpen && (
+        <div className="rb-mob-search-bar">
+          <div className="input-group">
+            <input className="form-control" placeholder="Tìm sản phẩm..." autoFocus />
+            <button className="input-group-text">
+              <i className="bi bi-search" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay */}
+      <div
+        className={`rb-mob-overlay${menuOpen ? " open" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      />
+
+      {/* Drawer menu */}
+      <div className={`rb-mob-drawer${menuOpen ? " open" : ""}`}>
+        <div className="rb-mob-drawer-head">
+          <img src={logo} alt="logo" />
+          <button className="rb-mob-close" onClick={() => setMenuOpen(false)}>
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+        <ul className="rb-mob-menu-list">
+          <li><a href="#" className="active">TRANG CHỦ</a></li>
+          <li><a href="#">THỜI TRANG NỮ</a></li>
+          <li><a href="#">BỘ SƯU TẬP</a></li>
+          <li><a href="#">TIN TỨC</a></li>
+          <li><a href="#">TRỢ GIÚP</a></li>
+          <li><a href="#" className="promo"><i className="bi bi-gift-fill me-2" />KHUYẾN MÃI</a></li>
+        </ul>
       </div>
     </>
   );
