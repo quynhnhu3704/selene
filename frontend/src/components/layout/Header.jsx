@@ -1,12 +1,29 @@
 // frontend\src\components\layout\Header.jsx
-import { useState } from "react";
-import logo from "../../assets/logo.png";
+import { useState, useEffect } from "react";
+import logo from "../../assets/images/logo.png";
 
 export default function Header() {
   const [wl] = useState(0);
   const [ct] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Tự động đóng search khi resize về desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1520) {
+        setSearchOpen(false);
+        setMenuOpen(false); // cũng đóng menu luôn cho sạch
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    
+    // Kiểm tra ngay khi component mount
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <>
@@ -96,7 +113,7 @@ export default function Header() {
           </div>
           <div className="rb-icon-wrap">
             <div className="rb-icon-rel">
-              <i className="bi bi-cart3 fs-5" />
+              <i className="bi bi-handbag fs-5" />
               <span className="rb-bdot">{ct}</span>
             </div>
             <span className="rb-ilabel mt-1">Giỏ Hàng</span>

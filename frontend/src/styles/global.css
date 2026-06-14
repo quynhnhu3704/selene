@@ -65,6 +65,7 @@
   font-family: 'Varela Round', Arial, sans-serif;
   width: 360px;
   max-width: 360px;
+  padding-left: 1.25em;
 }
 .rb-search button {
   background: #f3f3f3;
@@ -264,10 +265,12 @@
   border: none;
   font-family: 'Varela Round', Arial, sans-serif;
   font-size: 14px;
+  padding-left: 1.25em;
 }
 .rb-mob-search-bar button {
   background: #f3f3f3;
   border: none;
+  padding: 0 1.25em;
 }
 .rb-mob-search-bar .form-control:focus {
   background: #f3f3f3;
@@ -350,22 +353,6 @@
   .rb-mob-drawer { display: none !important; }
   .rb-mob-overlay { display: none !important; }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* ── HERO ── */
 .carousel-item img {
