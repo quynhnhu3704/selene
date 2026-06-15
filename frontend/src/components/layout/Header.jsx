@@ -1,6 +1,6 @@
 // frontend\src\components\layout\Header.jsx
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 
 export default function Header() {
@@ -9,6 +9,8 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isLogin] = useState(false); // TEST MẪU MỐT BỎ ĐỂ THAY BACKEND VÀO NHA
+
+  const navClass = ({ isActive }) => isActive ? "rb-navlink rb-active" : "rb-navlink";
 
   // Tự động đóng search khi resize về desktop
   useEffect(() => {
@@ -47,13 +49,13 @@ export default function Header() {
             <div className="rb-topbar-left">
               <span className="me-4">
                 <i className="bi bi-telephone-fill me-1" style={{ fontSize: "1.125em" }} /> HOTLINE:
-                <a href="tel:0984624532" className="rb-navlnk ms-1">
+                <a href="tel:0984624532" className="rb-toplink ms-1">
                   <strong style={{ fontSize: "16px" }}>098 462 4532</strong>
                 </a>
               </span>
               <span className="mx-5">
                 <i className="bi bi-geo-alt-fill me-1" style={{ fontSize: "1.125em" }} />
-                <Link to="/" className="rb-navlnk">HỆ THỐNG CỬA HÀNG</Link>
+                <Link to="/" className="rb-toplink">HỆ THỐNG CỬA HÀNG</Link>
               </span>
             </div>
 
@@ -69,12 +71,12 @@ export default function Header() {
 
           {/* HÀNG 2: NAV LINKS */}
           <div className="rb-nav">
-            <Link to="/" className="rb-navlink rb-active">TRANG CHỦ</Link>
-            <Link to="/san-pham" className="rb-navlink">SẢN PHẨM<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
-            <Link to="/" className="rb-navlink">BỘ SƯU TẬP<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
-            <Link to="/" className="rb-navlink">TIN TỨC<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
-            <Link to="/ve-chung-toi" className="rb-navlink">VỀ SELENE<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
-            <Link to="/" className="rb-navlink rb-promo"><i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI</Link>
+            <NavLink to="/" end className={navClass}>TRANG CHỦ</NavLink>
+            <NavLink to="/san-pham" className={navClass}>SẢN PHẨM<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></NavLink>
+            <NavLink to="/bo-suu-tap" className={navClass}>BỘ SƯU TẬP<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></NavLink>
+            <NavLink to="/tin-tuc" className={navClass}>TIN TỨC<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></NavLink>
+            <NavLink to="/ve-chung-toi" className={navClass}>VỀ SELENE<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></NavLink>
+            <NavLink to="/khuyen-mai" className={({ isActive }) => isActive ? "rb-navlink rb-promo rb-active" : "rb-navlink rb-promo" }><i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI</NavLink>
           </div>
         </div>
 

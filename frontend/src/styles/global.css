@@ -6,8 +6,8 @@
   padding-right: 0.8rem !important;
   padding-left: 0.4rem !important;
 }
-.breadcrumb-item { font-size: 14px; }
-.breadcrumb-item a { color: black !important; text-decoration: none; }
+.breadcrumb-item { font-size: 16px; font-weight: 500; }
+.breadcrumb-item a { color: #6C757D !important; text-decoration: none; }
 .breadcrumb-item a:hover { color: #871B1B !important; }
 .breadcrumb-item.active { color: #871B1B; }
 
@@ -35,10 +35,10 @@
   max-width: 360px;
   padding-left: 1.25em;
 }
-.rb-search input::placeholder, .rb-mob-search-bar input::placeholder { color: gray; opacity: 1; }
+.rb-search input::placeholder, .rb-mob-search-bar input::placeholder { color: #6C757D; opacity: 1; }
 .rb-search button { background: #f3f3f3; border: none; font-size: 1em; padding: 0 1.25em; cursor: pointer; }
 .rb-search .form-control:focus { background: #f3f3f3; border: none; box-shadow: none; outline: none; }
-.rb-navlnk { text-decoration: none; color: black; }
+.rb-toplink { text-decoration: none; color: #212529; }
 
 /* HÀNG 2: NAV LINKS */
 .rb-nav {
@@ -57,7 +57,7 @@
   padding: 0 25px;
   font-size: 13px;
   font-weight: 700;
-  color: #333;
+  color: #212529;
   text-decoration: none;
   /* text-transform: uppercase; */
   letter-spacing: 0.5px;
@@ -113,7 +113,7 @@
 .dropdown-item:active,
 .dropdown-item:focus {
     color: white !important;
-    background-color: black !important;
+    background-color: #212529 !important;
 }
 
 /* ════════════════════════════════
@@ -191,7 +191,7 @@
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;
-  color: black;
+  color: #212529;
   letter-spacing: 0.6px;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -288,8 +288,8 @@
 .rb-footer ul { padding: 0; margin: 0; }
 .rb-footer ul li { font-size: 14px; color: white; margin-bottom: 8px; display: flex; gap: 7px; cursor: pointer; }
 .rb-footer ul li:hover { color: white; }
-.rb-flink { text-decoration: none; color: white; }
-.rb-flink:hover { color: #871B1B; }
+.rb-footer-link { text-decoration: none; color: white; }
+.rb-footer-link:hover { color: #871B1B; }
 .rb-fsocial { display: flex; gap: 10px; margin-top: 14px; }
 .rb-sbtnf a { color: inherit; text-decoration: none; }
 .rb-sbtnf { width: 36px; height: 36px; border: 1px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; }
@@ -300,3 +300,53 @@
 .rb-fbottom { padding: 16px 0; text-align: center; font-size: 14px; color: white; }
 
 .rb-scroll-top { position: fixed; bottom: 30px; right: 30px; width: 40px; height: 40px; border-radius: 50%; background: #871B1B; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; z-index: 999; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+
+/* ── FORM ── */
+/* ── PAGE WRAPPER ── */
+.login-page { min-height: calc(100vh - 275px); display: flex; align-items: center; justify-content: center; padding: 0 16px 64px; }
+
+/* ── CARD ── */
+.login-card { width: 100%; max-width: 420px; }
+
+/* ── TITLE ── */
+.login-title { font-size: 22px; font-weight: 700; color: #212529; text-align: center; margin-bottom: 28px; letter-spacing: 0.3px; text-transform: uppercase; }
+
+/* ── LABEL ROW ── */
+.login-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+.login-label { font-size: 16px; font-weight: 600; color: #212529; }
+.login-link-sm { font-size: 13.5px; font-weight: 500; color: #871B1B; text-decoration: none; }
+.login-link-sm:hover { text-decoration: underline; }
+
+/* ── INPUT ── */
+.login-input-wrap { position: relative; margin-bottom: 18px; }
+.login-page .form-control::placeholder { color: #6C757D; }
+.login-page .form-control:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
+
+/* password eye */
+.login-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6C757D; font-size: 17px; padding: 0; display: flex; align-items: center; }
+.login-input.has-eye { padding-right: 44px; }
+
+/* ── BTN ĐĂNG NHẬP ── */
+.login-btn { font-size: 15px; transition: background 0.2s, transform 0.1s; margin-bottom: 16px; }
+.login-btn[type="reset"]:hover { color: #212529; border-color: #212529; background-color: whitesmoke; }
+
+/* ── LINK ĐĂNG KÝ ── */
+.login-register-row { text-align: center; font-size: 13.5px; color: #6C757D; margin-bottom: 20px; }
+.login-register-row a { color: #871B1B; font-weight: 600; text-decoration: none; }
+.login-register-row a:hover { text-decoration: underline; }
+
+/* ── DIVIDER ── */
+.login-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; color: #aaa; font-size: 13px; }
+.login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: #e0e0e0; }
+
+/* ── BTN GOOGLE ── */
+.login-btn-google { width: 100%; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.login-btn-google:hover { color: #212529 !important; border-color: #212529 !important; background-color: whitesmoke !important; }
+.login-btn-google svg { flex-shrink: 0; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 575px) {
+  .login-breadcrumb-wrap { padding: 12px 18px; }
+  .login-page { padding: 32px 16px 48px; }
+  .login-title { font-size: 19px; }
+}
