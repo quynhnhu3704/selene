@@ -8,8 +8,8 @@ export default function Footer() {
         <div className="col-12 col-lg-4">
           <h5>SELENE STUDIO</h5>
           <address className="mb-1">54 Trần Quang Diệu, Phường Nhiêu Lộc, TP. HCM</address>
-          <p><strong>Điện thoại:</strong> <a href="tel:0984624532" className="rb-flink fw-semibold">098 462 4532</a></p>
-          <p><strong>Email:</strong> <a href="mailto:selenein2026@gmail.com" className="rb-flink fw-semibold">selenein2026@gmail.com</a></p>
+          <p><strong>Điện thoại:</strong> <a href="tel:0984624532" className="rb-flink fw-bold">098 462 4532</a></p>
+          <p><strong>Email:</strong> <a href="mailto:selenein2026@gmail.com" className="rb-flink fw-bold">selenein2026@gmail.com</a></p>
           <div className="rb-fsocial">
             <div className="rb-sbtnf"><a href="https://www.facebook.com"><i className="bi bi-facebook" /></a></div>
             <div className="rb-sbtnf"><a href="https://www.instagram.com"><i className="bi bi-instagram" /></a></div>
@@ -46,7 +46,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="mx-5 px-2"><hr style={{ margin: 0 }} /></div>
-      <div className="rb-fbottom mx-5" style={{ padding: "10px 0" }}>© Bản quyền thuộc về <span className="fw-medium">Selene Studio</span> | Cung cấp bởi <span className="fw-medium">Selene</span></div>
+      <div className="rb-fbottom mx-5" style={{ padding: "10px 0" }}>© Bản quyền thuộc về <strong>Selene Studio</strong> | Cung cấp bởi <strong>Selene</strong></div>
     </footer>
   )
 }

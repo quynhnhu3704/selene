@@ -48,7 +48,7 @@ export default function Header() {
               <span className="me-4">
                 <i className="bi bi-telephone-fill me-1" style={{ fontSize: "1.125em" }} /> HOTLINE:
                 <a href="tel:0984624532" className="rb-navlnk ms-1">
-                  <span style={{ fontSize: "16px", fontWeight: "700" }}>098 462 4532</span>
+                  <strong style={{ fontSize: "16px" }}>098 462 4532</strong>
                 </a>
               </span>
               <span className="mx-5">
@@ -70,34 +70,11 @@ export default function Header() {
           {/* HÀNG 2: NAV LINKS */}
           <div className="rb-nav">
             <Link to="/" className="rb-navlink rb-active">TRANG CHỦ</Link>
-
-            <Link to="/san-pham" className="rb-navlink">
-              SẢN PHẨM
-              <i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </Link>
-
-            <Link to="/" className="rb-navlink">
-              BỘ SƯU TẬP
-              <i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </Link>
-
-            <Link to="/" className="rb-navlink">
-              TIN TỨC
-              <i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </Link>
-
-            <Link to="/ve-chung-toi" className="rb-navlink">
-              VỀ SELENE
-              <i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
-            </Link>
-
-            <Link to="/" className="rb-navlink rb-promo">
-              <i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI
-            </Link>
+            <Link to="/san-pham" className="rb-navlink">SẢN PHẨM<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
+            <Link to="/" className="rb-navlink">BỘ SƯU TẬP<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
+            <Link to="/" className="rb-navlink">TIN TỨC<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
+            <Link to="/ve-chung-toi" className="rb-navlink">VỀ SELENE<i className="bi bi-chevron-down ms-1 icon-down"></i><i className="bi bi-chevron-up ms-1 icon-up"></i></Link>
+            <Link to="/" className="rb-navlink rb-promo"><i className="bi bi-gift-fill me-1" /> KHUYẾN MÃI</Link>
           </div>
         </div>
 
@@ -108,13 +85,13 @@ export default function Header() {
               <i className="bi bi-heart fs-5" />
               <span className="rb-bdot">{wl}</span>
             </div>
-            <span className="rb-ilabel mt-1">Yêu Thích</span>
+            <strong className="rb-ilabel mt-1">Yêu Thích</strong>
           </div>
 
           <div className="dropdown-center">
             <div className="rb-icon-wrap" role="button" data-bs-toggle="dropdown">
               <div className="rb-icon-rel"><i className="bi bi-person fs-5" /></div>
-              <span className="rb-ilabel mt-1">Tài Khoản</span>
+              <strong className="rb-ilabel mt-1">Tài Khoản</strong>
             </div>
 
             <ul className="dropdown-menu dropdown-menu-end">
@@ -137,7 +114,7 @@ export default function Header() {
               <i className="bi bi-handbag fs-5" />
               <span className="rb-bdot">{ct}</span>
             </div>
-            <span className="rb-ilabel mt-1">Giỏ Hàng</span>
+            <strong className="rb-ilabel mt-1">Giỏ Hàng</strong>
           </div>
         </div>
       </div>
@@ -168,9 +145,27 @@ export default function Header() {
             <i className="bi bi-heart" />
             <span className="rb-mob-bdot">{wl}</span>
           </div>
-          <div className="rb-mob-icon">
-            <i className="bi bi-person" />
+
+          <div className="dropdown">
+            <div className="rb-mob-icon" role="button" data-bs-toggle="dropdown">
+              <i className="bi bi-person" />
+            </div>
+
+            <ul className="dropdown-menu dropdown-menu-end">
+              {!isLogin ? (
+                <>
+                  <li><Link className="dropdown-item" to="/tai-khoan/dang-nhap"><i className="bi bi-box-arrow-in-right me-1"></i> Đăng nhập</Link></li>
+                  <li><Link className="dropdown-item" to="/tai-khoan/dang-ky"><i className="bi bi-person-plus me-1"></i> Đăng ký</Link></li>
+                </>
+              ) : (
+                <>
+                  <li><Link className="dropdown-item" to="/tai-khoan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
+                  <li><button className="dropdown-item"><i className="bi bi-box-arrow-right me-1"></i> Đăng xuất</button></li>
+                </>
+              )}
+            </ul>
           </div>
+
           <div className="rb-mob-icon">
             <i className="bi bi-handbag" />
             <span className="rb-mob-bdot">{ct}</span>
