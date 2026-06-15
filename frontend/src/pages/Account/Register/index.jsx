@@ -1,13 +1,11 @@
 // frontend\src\pages\Register\index.jsx
-import Breadcrumb from "../../components/layout/Breadcrumb";
+import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { Helmet } from "react-helmet-async";
 
 export default function Register() {
   return (
     <>
-        <Helmet>
-            <title>Đăng Ký | Selene</title>
-        </Helmet>
+        <Helmet><title>Đăng Ký | Selene</title></Helmet>
 
         <Breadcrumb
             items={[

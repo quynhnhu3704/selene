@@ -40,15 +40,15 @@ export default function Header() {
         </div>
 
         {/* CỘT 2: TOPBAR + NAV */}
-        <div className="rb-col-center">
+        <div className="rb-col-center me-5">
 
           {/* HÀNG 1: HOTLINE + SEARCH */}
           <div className="rb-topbar">
             <div className="rb-topbar-left">
-              <span className="me-5">
+              <span className="me-4">
                 <i className="bi bi-telephone-fill me-1" style={{ fontSize: "1.125em" }} /> HOTLINE:
                 <a href="tel:0984624532" className="rb-navlnk ms-1">
-                  <strong style={{ fontSize: "16px" }}>098 462 4532</strong>
+                  <span style={{ fontSize: "16px", fontWeight: "700" }}>098 462 4532</span>
                 </a>
               </span>
               <span className="mx-5">
@@ -71,8 +71,8 @@ export default function Header() {
           <div className="rb-nav">
             <Link to="/" className="rb-navlink rb-active">TRANG CHỦ</Link>
 
-            <Link to="/" className="rb-navlink">
-              THỜI TRANG NỮ
+            <Link to="/san-pham" className="rb-navlink">
+              SẢN PHẨM
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
             </Link>
@@ -84,13 +84,13 @@ export default function Header() {
             </Link>
 
             <Link to="/" className="rb-navlink">
-              TIN TỨC THỜI TRANG
+              TIN TỨC
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
             </Link>
 
-            <Link to="/" className="rb-navlink">
-              TRỢ GIÚP
+            <Link to="/ve-chung-toi" className="rb-navlink">
+              VỀ SELENE
               <i className="bi bi-chevron-down ms-1 icon-down"></i>
               <i className="bi bi-chevron-up ms-1 icon-up"></i>
             </Link>
@@ -111,83 +111,26 @@ export default function Header() {
             <span className="rb-ilabel mt-1">Yêu Thích</span>
           </div>
 
-          {/* <div className="rb-icon-wrap">
-            <div className="rb-icon-rel">
-              <i className="bi bi-person fs-5" />
+          <div className="dropdown-center">
+            <div className="rb-icon-wrap" role="button" data-bs-toggle="dropdown">
+              <div className="rb-icon-rel"><i className="bi bi-person fs-5" /></div>
+              <span className="rb-ilabel mt-1">Tài Khoản</span>
             </div>
-            <span className="rb-ilabel mt-1">Tài Khoản</span>
-          </div> */}
 
-
-
-
-
-
-          <div className="dropdown">
-
-  <div
-    className="rb-icon-wrap"
-    role="button"
-    data-bs-toggle="dropdown"
-  >
-    <div className="rb-icon-rel">
-      <i className="bi bi-person fs-5" />
-    </div>
-
-    <span className="rb-ilabel mt-1">
-      Tài Khoản
-    </span>
-  </div>
-
-  <ul className="dropdown-menu dropdown-menu-end">
-
-    {!isLogin ? (
-      <>
-        <li>
-          <Link
-            className="dropdown-item"
-            to="/dang-nhap"
-          >
-            Đăng nhập
-          </Link>
-        </li>
-
-        <li>
-          <Link
-            className="dropdown-item"
-            to="/dang-ky"
-          >
-            Đăng ký
-          </Link>
-        </li>
-      </>
-    ) : (
-      <>
-        <li>
-          <Link
-            className="dropdown-item"
-            to="/tai-khoan"
-          >
-            Tài khoản
-          </Link>
-        </li>
-
-        <li>
-          <button
-            className="dropdown-item"
-          >
-            Đăng xuất
-          </button>
-        </li>
-      </>
-    )}
-
-  </ul>
-
-</div>
-
-
-
+            <ul className="dropdown-menu dropdown-menu-end">
+              {!isLogin ? (
+                <>
+                  <li><Link className="dropdown-item" to="/tai-khoan/dang-nhap"><i className="bi bi-box-arrow-in-right me-1"></i> Đăng nhập</Link></li>
+                  <li><Link className="dropdown-item" to="/tai-khoan/dang-ky"><i className="bi bi-person-plus me-1"></i> Đăng ký</Link></li>
+                </>
+              ) : (
+                <>
+                  <li><Link className="dropdown-item" to="/tai-khoan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
+                  <li><button className="dropdown-item"><i className="bi bi-box-arrow-right me-1"></i> Đăng xuất</button></li>
+                </>
+              )}
+            </ul>
+          </div>
 
           <div className="rb-icon-wrap">
             <div className="rb-icon-rel">
@@ -260,10 +203,10 @@ export default function Header() {
         </div>
         <ul className="rb-mob-menu-list">
           <li><Link to="/" className="active">TRANG CHỦ</Link></li>
-          <li><Link to="/">THỜI TRANG NỮ</Link></li>
+          <li><Link to="/san-pham">THỜI TRANG NỮ</Link></li>
           <li><Link to="/">BỘ SƯU TẬP</Link></li>
           <li><Link to="/">TIN TỨC</Link></li>
-          <li><Link to="/">TRỢ GIÚP</Link></li>
+          <li><Link to="/ve-chung-toi">VỀ SELENE</Link></li>
           <li><Link to="/" className="promo"><i className="bi bi-gift-fill me-2" />KHUYẾN MÃI</Link></li>
         </ul>
       </div>
