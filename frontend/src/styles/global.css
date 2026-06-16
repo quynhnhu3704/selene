@@ -309,46 +309,46 @@
 .login-card { width: 100%; max-width: 420px; }
 
 /* ── TITLE ── */
-.login-title { font-size: 22px; font-weight: 700; color: #212529; text-align: center; margin-bottom: 28px; letter-spacing: 0.3px; text-transform: uppercase; }
+.form-title { font-size: 22px; font-weight: 700; color: #212529; text-align: center; margin-bottom: 28px; letter-spacing: 0.3px; text-transform: uppercase; }
 
 /* ── LABEL ROW ── */
-.login-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
-.login-label { font-size: 16px; font-weight: 500; color: #212529; }
-.login-link-sm { font-size: 13.5px; font-weight: 500; color: #871B1B; text-decoration: none; }
-.login-link-sm:hover { text-decoration: underline; }
+.form-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+.form-label { font-size: 16px; font-weight: 500; color: #212529; }
+.form-link-sm { font-size: 13.5px; font-weight: 600; color: #871B1B; text-decoration: none; }
+.form-link-sm:hover { text-decoration: underline; }
 
 /* ── INPUT ── */
-.login-input-wrap { position: relative; margin-bottom: 18px; }
-.login-page .form-control::placeholder { color: #6C757D; }
-.login-page .form-control:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
+.form-input-wrap { position: relative; margin-bottom: 18px; }
+.form-page .form-control::placeholder { color: #6C757D; }
+.form-control:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
 
 /* password eye */
-.login-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6C757D; font-size: 17px; padding: 0; display: flex; align-items: center; }
-.login-input.has-eye { padding-right: 44px; }
+.form-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6C757D; font-size: 17px; padding: 0; display: flex; align-items: center; }
+.form-input.has-eye { padding-right: 44px; }
 
 /* ── BTN ĐĂNG NHẬP ── */
-.login-btn { font-size: 15px; transition: background 0.2s, transform 0.1s; margin-bottom: 16px; }
-.login-btn[type="reset"]:hover { color: #212529; border-color: #212529; background-color: whitesmoke; }
+.form-btn { font-size: 15px; transition: background 0.2s, transform 0.1s; margin-bottom: 16px; }
+.form-btn[type="reset"]:hover { color: #212529; border-color: #212529; background-color: whitesmoke; }
 
 /* ── LINK ĐĂNG KÝ ── */
-.login-register-row { text-align: center; font-size: 13.5px; color: #6C757D; margin-bottom: 20px; }
-.login-register-row a { color: #871B1B; font-weight: 600; text-decoration: none; }
-.login-register-row a:hover { text-decoration: underline; }
+.form-register-row { text-align: center; font-size: 13.5px; color: #6C757D; margin-bottom: 20px; }
+.form-register-row a { color: #871B1B; font-weight: 600; text-decoration: none; }
+.form-register-row a:hover { text-decoration: underline; }
 
 /* ── DIVIDER ── */
-.login-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; color: #aaa; font-size: 13px; }
-.login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: #e0e0e0; }
+.form-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; color: #aaa; font-size: 13px; }
+.form-divider::before, .form-divider::after { content: ""; flex: 1; height: 1px; background: #e0e0e0; }
 
 /* ── BTN GOOGLE ── */
-.login-btn-google { width: 100%; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; }
-.login-btn-google:hover { color: #212529 !important; border-color: #212529 !important; background-color: whitesmoke !important; }
-.login-btn-google svg { flex-shrink: 0; }
+.form-btn-google { width: 100%; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.form-btn-google:hover { color: #212529 !important; border-color: #212529 !important; background-color: whitesmoke !important; }
+.form-btn-google svg { flex-shrink: 0; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 575px) {
-  .login-breadcrumb-wrap { padding: 12px 18px; }
-  .login-page { padding: 32px 16px 48px; }
-  .login-title { font-size: 19px; }
+  .form-breadcrumb-wrap { padding: 12px 18px; }
+  .form-page { padding: 32px 16px 48px; }
+  .form-title { font-size: 19px; }
 }
 
 /* DẤU TICK ĐỒNG Ý ĐIỀU KHOẢN */
@@ -357,4 +357,4 @@
 .form-check-label a:hover{ text-decoration: underline; }
 .form-check-input:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
 .form-check-input:checked { background-color: #871B1B; border-color: #871B1B; }
-.login-terms { margin-bottom: 18px; }
+.form-terms { margin-bottom: 18px; }

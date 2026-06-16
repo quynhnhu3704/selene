@@ -7,6 +7,7 @@ import Home from "../../pages/Home";
 import Login from "../../pages/Account/Login";
 import Register from "../../pages/Account/Register";
 import ProductList from "../../pages/ProductList";
+import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
 
 export default function AppRouter() {
@@ -20,6 +21,7 @@ export default function AppRouter() {
         <Route path="/tai-khoan/dang-ky" element={<Register />} />
         
         <Route path="/san-pham" element={<ProductList />} />
+        <Route path="/chi-tiet-san-pham" element={<ProductDetail />} />
         <Route path="/ve-chung-toi" element={<About />} />
       </Route>
 

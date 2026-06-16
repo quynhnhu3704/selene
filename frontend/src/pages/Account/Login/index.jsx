@@ -39,29 +39,29 @@ export default function Login() {
       {/* ── LOGIN PAGE ── */}
       <div className="login-page">
         <div className="login-card">
-          <h1 className="login-title">Đăng nhập</h1>
+          <h1 className="form-title">Đăng nhập</h1>
 
           <form onSubmit={handleSubmit} noValidate>
 
             {/* EMAIL */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Email</span>
+              <div className="form-label-row">
+                <span className="form-label">Email</span>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
               </div>
             </div>
 
             {/* MẬT KHẨU */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Mật khẩu</span>
-                <Link to="/dat-lai-mat-khau" className="login-link-sm">Quên mật khẩu?</Link>
+              <div className="form-label-row">
+                <span className="form-label">Mật khẩu</span>
+                <Link to="/dat-lai-mat-khau" className="form-link-sm">Quên mật khẩu?</Link>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
-                <button type="button" className="login-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
+                <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
               </div>
@@ -70,25 +70,25 @@ export default function Login() {
             {/* NÚT ĐĂNG NHẬP */}
             <div className="row">
               <div className="col-6">
-                <button type="button" onClick={handleReset} className="login-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
+                <button type="reset" onClick={handleReset} className="form-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
               </div>
               <div className="col-6">
-                <button type="submit" className="login-btn btn btn-dark fw-semibold w-100">Đăng nhập</button>
+                <button type="submit" className="form-btn btn btn-dark fw-semibold w-100">Đăng nhập</button>
               </div>
             </div>
 
           </form>
 
           {/* CHƯA CÓ TÀI KHOẢN */}
-          <div className="login-register-row">
+          <div className="form-register-row">
             Bạn chưa có tài khoản?&nbsp;<Link to="/tai-khoan/dang-ky">Đăng ký</Link>
           </div>
 
           {/* DIVIDER */}
-          <div className="login-divider">hoặc</div>
+          <div className="form-divider">hoặc</div>
 
           {/* NÚT GOOGLE */}
-          <button type="button" className="btn btn-outline-dark login-btn-google" onClick={handleGoogleLogin}>
+          <button type="button" className="btn btn-outline-dark form-btn-google" onClick={handleGoogleLogin}>
             {/* Google "G" logo SVG chính thức */}
             <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>

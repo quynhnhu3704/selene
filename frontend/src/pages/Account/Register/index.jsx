@@ -46,48 +46,48 @@ export default function Register() {
       {/* ── LOGIN PAGE ── */}
       <div className="login-page">
         <div className="login-card">
-          <h1 className="login-title">Đăng ký</h1>
+          <h1 className="form-title">Đăng ký</h1>
 
           <form onSubmit={handleSubmit} noValidate>
 
             {/* HỌ TÊN */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Họ và tên</span>
+              <div className="form-label-row">
+                <span className="form-label">Họ và tên</span>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type="text" className="form-control" placeholder="Nhập họ và tên" value={name} onChange={e => setName(e.target.value)} autoComplete="name" required />
               </div>
             </div>
 
             {/* EMAIL */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Email</span>
+              <div className="form-label-row">
+                <span className="form-label">Email</span>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
               </div>
             </div>
 
             {/* SỐ ĐIỆN THOẠI */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Số điện thoại</span>
+              <div className="form-label-row">
+                <span className="form-label">Số điện thoại</span>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type="tel" className="form-control" placeholder="Nhập số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" required />
               </div>
             </div>
 
             {/* MẬT KHẨU */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Mật khẩu</span>
+              <div className="form-label-row">
+                <span className="form-label">Mật khẩu</span>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Tạo mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required />
-                <button type="button" className="login-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
+                <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
               </div>
@@ -95,19 +95,19 @@ export default function Register() {
 
             {/* XÁC NHẬN MẬT KHẨU */}
             <div>
-              <div className="login-label-row">
-                <span className="login-label">Xác nhận mật khẩu</span>
+              <div className="form-label-row">
+                <span className="form-label">Xác nhận mật khẩu</span>
               </div>
-              <div className="login-input-wrap">
+              <div className="form-input-wrap">
                 <input type={showConfirmPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập lại mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" required />
-                <button type="button" className="login-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
+                <button type="button" className="form-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
               </div>
             </div>
 
             {/* CHECKBOX ĐỒNG Ý ĐIỀU KHOẢN */}
-            <div className="form-check login-terms">
+            <div className="form-check form-terms">
                 <input className="form-check-input" type="checkbox" required />
                 <label className="form-check-label">
                     Tôi đồng ý với{" "}
@@ -118,24 +118,24 @@ export default function Register() {
             {/* NÚT ĐĂNG NHẬP */}
             <div className="row">
               <div className="col-6">
-                <button type="button" onClick={handleReset} className="login-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
+                <button type="reset" onClick={handleReset} className="form-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
               </div>
               <div className="col-6">
-                <button type="submit" className="login-btn btn btn-dark fw-semibold w-100">Đăng ký</button>
+                <button type="submit" className="form-btn btn btn-dark fw-semibold w-100">Đăng ký</button>
               </div>
             </div>
           </form>
 
           {/* ĐÃ CÓ TÀI KHOẢN */}
-          <div className="login-register-row">
+          <div className="form-register-row">
             Bạn đã có tài khoản?&nbsp;<Link to="/tai-khoan/dang-nhap">Đăng nhập</Link>
           </div>
 
           {/* DIVIDER */}
-          <div className="login-divider">hoặc</div>
+          <div className="form-divider">hoặc</div>
 
           {/* NÚT GOOGLE */}
-          <button type="button" className="btn btn-outline-dark login-btn-google" onClick={handleGoogleLogin}>
+          <button type="button" className="btn btn-outline-dark form-btn-google" onClick={handleGoogleLogin}>
             {/* Google "G" logo SVG chính thức */}
             <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
