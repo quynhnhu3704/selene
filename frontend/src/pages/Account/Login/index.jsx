@@ -9,6 +9,11 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const handleReset = () => {
+    setEmail("");
+    setPassword("");
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // TODO: gọi API đăng nhập
@@ -44,7 +49,7 @@ export default function Login() {
                 <span className="login-label">Email</span>
               </div>
               <div className="login-input-wrap">
-                <input type="email" className="form-control" placeholder="Nhập email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
+                <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
               </div>
             </div>
 
@@ -52,7 +57,7 @@ export default function Login() {
             <div>
               <div className="login-label-row">
                 <span className="login-label">Mật khẩu</span>
-                <Link to="/dat-lai-mat-khau" className="login-link-sm"> Đặt lại mật khẩu</Link>
+                <Link to="/dat-lai-mat-khau" className="login-link-sm">Quên mật khẩu?</Link>
               </div>
               <div className="login-input-wrap">
                 <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
@@ -65,7 +70,7 @@ export default function Login() {
             {/* NÚT ĐĂNG NHẬP */}
             <div className="row">
               <div className="col-6">
-                <button type="reset" className="login-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
+                <button type="button" onClick={handleReset} className="login-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
               </div>
               <div className="col-6">
                 <button type="submit" className="login-btn btn btn-dark fw-semibold w-100">Đăng nhập</button>
@@ -92,7 +97,7 @@ export default function Login() {
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
               <path fill="none" d="M0 0h48v48H0z"/>
             </svg>
-            Đăng nhập bằng Google
+            Tiếp tục với Google
           </button>
         </div>
       </div>
