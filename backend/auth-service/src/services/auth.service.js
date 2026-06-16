@@ -2,6 +2,7 @@ import { supabase } from '../configs/supabase.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { config } from '../configs/index.js';
+import nodemailer from 'nodemailer';
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -126,4 +127,94 @@ export const loginUser = async (email, password) => {
       role: account.role_name
     }
   };
+};
+
+// Quên mật khẩu
+// Cấu hình kết nối trực tiếp đến server SMTP của Google
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT) || 465,
+  secure: true, // Sử dụng SSL/TLS bắt buộc cho cổng 465
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// Hàm tự động sinh chuỗi ký tự ngẫu nhiên gồm 8 ký tự viết hoa để làm mật khẩu mới
+const generateRandomPassword = () => {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+};
+
+export const forgotPasswordService = async (email) => {
+  // Bước A: Kiểm tra email đầu vào xem có tài khoản nào sở hữu chưa
+  const { data: account, error } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('email', email)
+    .single();
+
+  if (!account || error) {
+    throw new Error('Địa chỉ email này không tồn tại trong hệ thống!');
+  }
+
+  // Bước B: Tạo ra mật khẩu chữ thô ngẫu nhiên (Ví dụ: R5T9M2XQ)
+  const newRawPassword = generateRandomPassword();
+
+  // Bước C: Mã hóa mật khẩu thô này thành chuỗi Bcrypt bảo mật để lưu vào DB
+  const hashedNewPassword = await bcrypt.hash(newRawPassword, 10);
+  const now = new Date().toISOString();
+
+  // Bước D: Tiến hành cập nhật đè mật khẩu cũ trong bảng accounts bằng mật khẩu mới đã mã hóa
+  const { error: updateError } = await supabase
+    .from('accounts')
+    .update({ 
+      password: hashedNewPassword,
+      updated_at: now
+    })
+    .eq('email', email);
+
+  if (updateError) {
+    throw new Error(`Lỗi cập nhật mật khẩu vào Database: ${updateError.message}`);
+  }
+
+  // Bước E: Thiết kế mẫu email gửi đi (Định dạng HTML giúp hiển thị giao diện đẹp mắt)
+  const mailOptions = {
+    from: `"Selena Shop Hỗ Trợ" <${process.env.EMAIL_USER}>`, // Tên hiển thị người gửi
+    to: email, // Địa chỉ email nhận (chính là email của người dùng)
+    subject: '[Selena Shop] Yêu cầu khôi phục mật khẩu thành công',
+    html: `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; border: 1px solid #e0e0e0; max-width: 550px; margin: 0 auto; border-radius: 8px;">
+        <div style="text-align: center; border-bottom: 2px solid #ff4d4f; padding-bottom: 15px;">
+          <h2 style="color: #ff4d4f; margin: 0;">SELENA SHOP SECURITY</h2>
+        </div>
+        <div style="padding: 20px 0;">
+          <p style="font-size: 16px; color: #333;">Xin chào bạn,</p>
+          <p style="font-size: 14px; color: #555; line-height: 1.5;">Hệ thống đã xử lý yêu cầu quên mật khẩu của bạn. Mật khẩu cũ của tài khoản này đã bị hủy bỏ và được thay thế bằng một mật khẩu tạm thời do hệ thống tự sinh dưới đây:</p>
+          
+          <div style="background-color: #fff2f0; border: 1px dashed #ffccc7; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; color: #ff4d4f; letter-spacing: 3px; margin: 25px 0;">
+            ${newRawPassword}
+          </div>
+          
+          <p style="font-size: 13px; color: #fa8c16; font-weight: 500;">⚠️ Lưu ý bảo mật:</p>
+          <ul style="font-size: 13px; color: #666; padding-left: 20px; line-height: 1.6;">
+            <li>Bạn phải sử dụng chính xác chuỗi ký tự viết hoa ở trên để đăng nhập lại.</li>
+            <li>Sau khi vào được hệ thống, vui lòng đổi ngay mật khẩu cá nhân mới tại mục Cài đặt tài khoản để đảm bảo an toàn tuyệt đối.</li>
+          </ul>
+        </div>
+        <div style="border-top: 1px solid #e8e8e8; padding-top: 15px; text-align: center; font-size: 12px; color: #999;">
+          <p>Đây là email gửi tự động từ hệ thống Selena Shop, vui lòng không phản hồi thư này.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  // Bước F: Gọi lệnh thực hiện bắn email ra môi trường Internet
+  try {
+    await transporter.sendMail(mailOptions);
+    return { message: 'Hệ thống đã cấp mật khẩu mới và gửi email khôi phục thành công!' };
+  } catch (mailError) {
+    console.error('❌ Thực tế lỗi gửi Mail của Google:', mailError);
+    throw new Error('Cập nhật DB thành công nhưng server Mail bị từ chối gửi thư!');
+  }
 };

@@ -82,3 +82,33 @@ export const handleLogin = async (req, res) => {
     });
   }
 };
+
+// Quên mật khẩu
+export const handleForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Kiểm tra thô xem người dùng có truyền trống dữ liệu lên không
+    if (!email) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Lỗi! Bạn chưa nhập địa chỉ email cần khôi phục!'
+      });
+    }
+
+    // Chuyển email sang tầng Service xử lý logic
+    const result = await authService.forgotPasswordService(email);
+
+    // Trả về phản hồi thành công cho Client (Frontend hoặc Postman)
+    return res.status(200).json({
+      status: 200,
+      message: result.message
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 400,
+      message: error.message || 'Xảy ra lỗi trong quá trình xử lý khôi phục mật khẩu!'
+    });
+  }
+};
