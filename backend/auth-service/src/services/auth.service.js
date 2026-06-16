@@ -180,13 +180,13 @@ export const forgotPasswordService = async (email) => {
 
   // Bước E: Thiết kế mẫu email gửi đi (Định dạng HTML giúp hiển thị giao diện đẹp mắt)
   const mailOptions = {
-    from: `"Selena Shop Hỗ Trợ" <${process.env.EMAIL_USER}>`, // Tên hiển thị người gửi
+    from: `"Selene Shop Hỗ Trợ" <${process.env.EMAIL_USER}>`, // Tên hiển thị người gửi
     to: email, // Địa chỉ email nhận (chính là email của người dùng)
-    subject: '[Selena Shop] Yêu cầu khôi phục mật khẩu thành công',
+    subject: '[Selene Shop] Yêu cầu khôi phục mật khẩu thành công',
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; border: 1px solid #e0e0e0; max-width: 550px; margin: 0 auto; border-radius: 8px;">
         <div style="text-align: center; border-bottom: 2px solid #ff4d4f; padding-bottom: 15px;">
-          <h2 style="color: #ff4d4f; margin: 0;">SELENA SHOP SECURITY</h2>
+          <h2 style="color: #ff4d4f; margin: 0;">SELENE SHOP SECURITY</h2>
         </div>
         <div style="padding: 20px 0;">
           <p style="font-size: 16px; color: #333;">Xin chào bạn,</p>
@@ -203,7 +203,7 @@ export const forgotPasswordService = async (email) => {
           </ul>
         </div>
         <div style="border-top: 1px solid #e8e8e8; padding-top: 15px; text-align: center; font-size: 12px; color: #999;">
-          <p>Đây là email gửi tự động từ hệ thống Selena Shop, vui lòng không phản hồi thư này.</p>
+          <p>Đây là email gửi tự động từ hệ thống Selene Shop, vui lòng không phản hồi thư này.</p>
         </div>
       </div>
     `,
