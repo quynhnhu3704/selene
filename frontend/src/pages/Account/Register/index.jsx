@@ -27,8 +27,18 @@ export default function Register() {
     console.log({ email, password });
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: gọi Google OAuth
+   const handleGoogleLogin = () => {
+    // 1. Định nghĩa các tham số cần thiết cho Google OAuth
+    const params = new URLSearchParams({
+      client_id: "368790655962-ac64i65olr3sb7k8mv5pbb18ak0ai2g4.apps.googleusercontent.com",
+      redirect_uri: "http://localhost:8000/api/auth/google/callback",
+      response_type: "code",
+      scope: "openid email profile",
+    });
+
+    // 2. Chuyển hướng trình duyệt sang trang login của Google kèm theo các tham số đã build
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
     console.log("Google login");
   };
 

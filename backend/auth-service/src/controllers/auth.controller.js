@@ -112,3 +112,32 @@ export const handleForgotPassword = async (req, res) => {
     });
   }
 };
+
+export const handleLoginWithGoogle = async (req, res) => {
+  try {
+    // Google trả mã về qua Query parameters trên URL: ?code=4/0Af...
+    const { code } = req.query;
+
+    if (!code) {
+      return res.status(400).json({ status: 400, message: 'Không tìm thấy mã authorization code từ Google gửi về!' });
+    }
+
+    // Gửi mã xuống service để đổi lấy thông tin và xử lý DB
+    const result = await authService.loginWithGoogle(code);
+
+    // ── BIẾN ĐỔI USER OBJECT THÀNH CHUỖI ĐỂ TRUYỀN QUA URL ──
+    const userString = encodeURIComponent(JSON.stringify(result.user));
+
+    // LƯU Ý KHI LÀM THỰC TẾ: 
+    // Vì Google chuyển hướng toàn bộ trang web sang API này, bạn nên trả về đoạn mã script
+    // để bắn Token về Frontend hoặc chuyển hướng trình duyệt kèm Token qua query parameters.
+    // Dưới đây là cách chuyển hướng đưa token về Frontend (Vite cổng 5173):
+    return res.redirect(
+      `http://localhost:5173/auth/success?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}&user=${userString}`
+    );
+    
+  } catch (error) {
+    console.error('Lỗi Controller Google Callback:', error.message);
+    return res.redirect(`http://localhost:5173/tai-khoan/dang-nhap?error=${encodeURIComponent(error.message)}`);
+  }
+};

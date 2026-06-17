@@ -3,10 +3,20 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { config } from '../configs/index.js';
 import nodemailer from 'nodemailer';
+import { OAuth2Client } from 'google-auth-library';
+
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
+
+const now = new Date().toISOString();
+
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URL
+);
 
 // Đăng ký tài khoản
 export const registerUser = async ({ email, phone, password, full_name }) => {
@@ -147,7 +157,7 @@ const generateRandomPassword = () => {
 };
 
 export const forgotPasswordService = async (email) => {
-  // Bước A: Kiểm tra email đầu vào xem có tài khoản nào sở hữu chưa
+  // Kiểm tra email đầu vào xem có tài khoản nào sở hữu chưa
   const { data: account, error } = await supabase
     .from('accounts')
     .select('*')
@@ -158,14 +168,13 @@ export const forgotPasswordService = async (email) => {
     throw new Error('Địa chỉ email này không tồn tại trong hệ thống!');
   }
 
-  // Bước B: Tạo ra mật khẩu chữ thô ngẫu nhiên (Ví dụ: R5T9M2XQ)
+  // Tạo ra mật khẩu chữ thô ngẫu nhiên (Ví dụ: R5T9M2XQ)
   const newRawPassword = generateRandomPassword();
 
-  // Bước C: Mã hóa mật khẩu thô này thành chuỗi Bcrypt bảo mật để lưu vào DB
+  // Mã hóa mật khẩu thô này thành chuỗi Bcrypt bảo mật để lưu vào DB
   const hashedNewPassword = await bcrypt.hash(newRawPassword, 10);
-  const now = new Date().toISOString();
 
-  // Bước D: Tiến hành cập nhật đè mật khẩu cũ trong bảng accounts bằng mật khẩu mới đã mã hóa
+  // Tiến hành cập nhật đè mật khẩu cũ trong bảng accounts bằng mật khẩu mới đã mã hóa
   const { error: updateError } = await supabase
     .from('accounts')
     .update({ 
@@ -178,7 +187,7 @@ export const forgotPasswordService = async (email) => {
     throw new Error(`Lỗi cập nhật mật khẩu vào Database: ${updateError.message}`);
   }
 
-  // Bước E: Thiết kế mẫu email gửi đi (Định dạng HTML giúp hiển thị giao diện đẹp mắt)
+  // Thiết kế mẫu email gửi đi (Định dạng HTML giúp hiển thị giao diện đẹp mắt)
   const mailOptions = {
     from: `"Selene Shop Hỗ Trợ" <${process.env.EMAIL_USER}>`, // Tên hiển thị người gửi
     to: email, // Địa chỉ email nhận (chính là email của người dùng)
@@ -209,12 +218,118 @@ export const forgotPasswordService = async (email) => {
     `,
   };
 
-  // Bước F: Gọi lệnh thực hiện bắn email ra môi trường Internet
+  // Gọi lệnh thực hiện bắn email ra môi trường Internet
   try {
     await transporter.sendMail(mailOptions);
     return { message: 'Hệ thống đã cấp mật khẩu mới và gửi email khôi phục thành công!' };
   } catch (mailError) {
-    console.error('❌ Thực tế lỗi gửi Mail của Google:', mailError);
+    console.error('Thực tế lỗi gửi Mail của Google:', mailError);
     throw new Error('Cập nhật DB thành công nhưng server Mail bị từ chối gửi thư!');
   }
+};
+
+
+export const loginWithGoogle = async (code) => {
+  let payload;
+  try {
+    console.log("=== [BE] Đã nhận được mã code từ Gateway gửi xuống, đang tiến hành đổi token ===");
+    
+    // 1. Dùng authorization code nhận từ Frontend để đổi lấy bộ tokens từ Server Google
+    const { tokens } = await googleClient.getToken({
+      code: code,
+      client_id: process.env.GOOGLE_CLIENT_ID,         // <--- Thêm dòng này
+      client_secret: process.env.GOOGLE_CLIENT_SECRET, // <--- Thêm dòng này
+      redirectUri: process.env.GOOGLE_REDIRECT_URL// <--- Ép thư viện gửi đúng URI cổng 8000 lên Google
+    });
+    
+    // 2. Xác thực chuỗi id_token nhận được để lấy thông tin tài khoản giải mã
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    console.error('Lỗi kết nối hoặc đổi mã xác thực với Google:', err.message);
+    throw new Error('Đổi mã authorization code thất bại hoặc mã đã hết hạn!');
+  }
+
+  // Lấy dữ liệu Email, Tên, Ảnh đại diện từ Google cung cấp
+  const { email, name, picture } = payload;
+  console.log(`=== [BE] Giải mã thành công Google Email: ${email} | Name: ${name} ===`);
+
+  // 3. Truy vấn xem tài khoản Email này đã từng tồn tại trong bảng accounts chưa
+  let { data: account } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('email', email)
+    .single();
+
+  // 4. Nếu tài khoản chưa tồn tại -> Tự động đăng ký một tài khoản khách hàng mới tinh
+  if (!account) {
+    const accountId = 'acc-' + generateId();
+    const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
+    
+    // Tạo biến thời gian thực tại thời điểm đăng nhập này
+    const currentNow = new Date().toISOString();
+
+    // Tìm Role customer động từ DB để tránh fix cứng ID sai lệch
+    const { data: roleData } = await supabase
+      .from('roles')
+      .select('role_id')
+      .eq('name', 'customer')
+      .single();
+
+    const finalRoleId = roleData ? roleData.role_id : '3'; // Fallback về '3' nếu DB lỗi
+
+    // Insert thông tin vào bảng accounts
+    const { data: newAcc, error: accError } = await supabase
+      .from('accounts')
+      .insert([{
+        account_id: accountId,
+        email,
+        password: dummyPassword,
+        role_id: finalRoleId, 
+        role_name: 'customer',
+        status: 'active',
+        created_at: currentNow,
+        updated_at: currentNow
+      }])
+      .select()
+      .single();
+
+    if (accError) throw new Error(`Lỗi tạo tài khoản từ Google: ${accError.message}`);
+    account = newAcc;
+
+    // Insert thông tin chi tiết kèm ảnh đại diện vào bảng user_profiles
+    const { error: profError } = await supabase
+      .from('user_profiles')
+      .insert([{
+        profile_id: 'prof_' + generateId(),
+        account_id: accountId,
+        full_name: name,
+        avatar_url: picture,
+        status: 'active',
+        created_at: currentNow,
+        updated_at: currentNow
+      }]);
+      
+    if (profError) throw new Error(`Lỗi tạo hồ sơ người dùng từ Google: ${profError.message}`);
+  }
+
+  // 5. Nếu tài khoản bị quản trị viên khóa thì từ chối cấp quyền đăng nhập
+  if (account.status === 'inactive') {
+    throw new Error('Tài khoản liên kết Google này hiện đang bị tạm khóa!');
+  }
+
+  // 6. Ký cấp bộ mã token nội bộ của riêng hệ thống shop quần áo để người dùng truy cập API
+  const jwtPayload = { accountId: account.account_id, role: account.role_name, permissions: [] };
+  const accessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '1h' });
+  const refreshToken = jwt.sign(jwtPayload, config.jwtRefreshSecret, { expiresIn: '7d' });
+
+  return {
+    message: 'Đăng nhập bằng tài khoản Google thành công!',
+    accessToken,
+    refreshToken,
+    user: { accountId: account.account_id, email: account.email, role: account.role_name }
+  };
 };

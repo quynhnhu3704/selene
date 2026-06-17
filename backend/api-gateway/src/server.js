@@ -27,6 +27,9 @@ if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
 app.use('/api/auth', createProxyMiddleware({
   target: AUTH_SERVICE_URL,
   changeOrigin: true,
+  pathRewrite: {
+    '^/api/auth': '', 
+  },
   onError: (err, req, res) => {
     console.error('Proxy Error (Auth):', err);
     res.status(502).json({ success: false, message: 'Auth Service Unavailable' });
