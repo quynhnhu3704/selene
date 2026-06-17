@@ -232,14 +232,12 @@ export const forgotPasswordService = async (email) => {
 export const loginWithGoogle = async (code) => {
   let payload;
   try {
-    console.log("=== [BE] Đã nhận được mã code từ Gateway gửi xuống, đang tiến hành đổi token ===");
-    
     // 1. Dùng authorization code nhận từ Frontend để đổi lấy bộ tokens từ Server Google
     const { tokens } = await googleClient.getToken({
       code: code,
-      client_id: process.env.GOOGLE_CLIENT_ID,         // <--- Thêm dòng này
-      client_secret: process.env.GOOGLE_CLIENT_SECRET, // <--- Thêm dòng này
-      redirectUri: process.env.GOOGLE_REDIRECT_URL// <--- Ép thư viện gửi đúng URI cổng 8000 lên Google
+      client_id: process.env.GOOGLE_CLIENT_ID,         
+      client_secret: process.env.GOOGLE_CLIENT_SECRET, 
+      redirectUri: process.env.GOOGLE_REDIRECT_URL
     });
     
     // 2. Xác thực chuỗi id_token nhận được để lấy thông tin tài khoản giải mã
@@ -255,7 +253,6 @@ export const loginWithGoogle = async (code) => {
 
   // Lấy dữ liệu Email, Tên, Ảnh đại diện từ Google cung cấp
   const { email, name, picture } = payload;
-  console.log(`=== [BE] Giải mã thành công Google Email: ${email} | Name: ${name} ===`);
 
   // 3. Truy vấn xem tài khoản Email này đã từng tồn tại trong bảng accounts chưa
   let { data: account } = await supabase
@@ -268,9 +265,6 @@ export const loginWithGoogle = async (code) => {
   if (!account) {
     const accountId = 'acc-' + generateId();
     const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
-    
-    // Tạo biến thời gian thực tại thời điểm đăng nhập này
-    const currentNow = new Date().toISOString();
 
     // Tìm Role customer động từ DB để tránh fix cứng ID sai lệch
     const { data: roleData } = await supabase
@@ -291,8 +285,8 @@ export const loginWithGoogle = async (code) => {
         role_id: finalRoleId, 
         role_name: 'customer',
         status: 'active',
-        created_at: currentNow,
-        updated_at: currentNow
+        created_at: now,
+        updated_at: now
       }])
       .select()
       .single();
@@ -309,8 +303,8 @@ export const loginWithGoogle = async (code) => {
         full_name: name,
         avatar_url: picture,
         status: 'active',
-        created_at: currentNow,
-        updated_at: currentNow
+        created_at: now,
+        updated_at: now
       }]);
       
     if (profError) throw new Error(`Lỗi tạo hồ sơ người dùng từ Google: ${profError.message}`);

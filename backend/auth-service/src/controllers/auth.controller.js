@@ -135,6 +135,18 @@ export const handleLoginWithGoogle = async (req, res) => {
     return res.redirect(
       `http://localhost:5173/auth/success?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}&user=${userString}`
     );
+
+    // const redirectUrl = `http://localhost:5173/tai-khoan/dang-nhap?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}&user=${userString}`;
+
+    // // 3. IN CONSOLE NGAY TẠI ĐÂY (TRƯỚC LỆNH RETURN) ĐỂ KIỂM TRA
+    // console.log("==================================================");
+    // console.log("[BE LOG] CHUẨN BỊ TRẢ REDIRECT VỀ FRONTEND:");
+    // console.log("URL chuyển hướng hoàn chỉnh:", redirectUrl);
+    // console.log("==================================================");
+
+    // // 4. Thực hiện lệnh return điều hướng thực tế
+    // return res.redirect(redirectUrl);
+    
     
   } catch (error) {
     console.error('Lỗi Controller Google Callback:', error.message);
