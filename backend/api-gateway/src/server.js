@@ -41,6 +41,9 @@ app.use('/api/auth', createProxyMiddleware({
 app.use('/api/products', createProxyMiddleware({
   target: PRODUCT_SERVICE_URL,
   changeOrigin: true,
+  // pathRewrite: {
+  //   '^/api/products': '', 
+  // },
   onError: (err, req, res) => {
     console.error('Proxy Error (Product):', err);
     res.status(502).json({ success: false, message: 'Product Service Unavailable' });

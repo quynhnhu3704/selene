@@ -1,9 +1,9 @@
 import express from 'express';
-// import { orderController } from '../controllers/product.controller.js';
+import * as productController from '../controllers/product.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// router.get('/', requireAuth, orderController.getOrders);
+router.get('/product-list', productController.handleGetAllProducts);
 
 export default router;
