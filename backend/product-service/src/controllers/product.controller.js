@@ -24,3 +24,24 @@ export const handleGetAllProducts = async (req, res) => {
     });
   }
 };
+
+
+// lấy chi tiết sản phảm
+export const handleGetProductDetail = async (req, res) => {
+  try {
+    const { id } = req.params; // Lấy product_id từ url: /api/products/product-detail/:id
+
+    const productDetail = await productService.getProductDetail(id);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy chi tiết sản phẩm thành công!',
+      data: productDetail
+    });
+  } catch (error) {
+    return res.status(404).json({
+      status: 404,
+      message: error.message || 'Không tìm thấy thông tin sản phẩm!'
+    });
+  }
+};

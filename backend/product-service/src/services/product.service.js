@@ -79,3 +79,56 @@ export const getAllProduct = async (options = {}) => {
     throw new Error('Không thể kết nối đến Supabase để lấy danh sách sản phẩm!');
   }
 };
+
+// xem chi tiết sản phẩm
+export const getProductDetail = async (productId) => {
+  try {
+    // 1. Lấy thông tin chi tiết sản phẩm & tên thương hiệu
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select(`
+        product_id,
+        product_name,
+        image_urls,
+        price,
+        original_price,
+        discount_price,
+        description,
+        brands:brand_id ( name )
+      `)
+      .eq('product_id', productId)
+      .single(); // Chỉ lấy 1 bản ghi duy nhất
+
+    if (productError || !product) throw new Error('Sản phẩm không tồn tại!');
+
+    // 2. Lấy tất cả các biến thể kích thước / màu sắc của sản phẩm này
+    const { data: variants, error: variantError } = await supabase
+      .from('product_variants')
+      .select('variant_id, size, color, stock_quantity, status')
+      .eq('product_id', productId);
+
+    if (variantError) throw variantError;
+
+    // Xử lý parse mảng ảnh an toàn
+    let images = product.image_urls;
+    if (typeof product.image_urls === 'string') {
+      try { images = JSON.parse(product.image_urls); } catch (e) { images = [product.image_urls]; }
+    }
+
+    // Trả về cục data tổng hợp hoàn chỉnh
+    return {
+      product_id: product.product_id,
+      product_name: product.product_name,
+      images: images, 
+      original_price: product.original_price,
+      discount_price: product.discount_price,
+      description: product.description,
+      brand_name: product.brands?.name || null,
+      variants: variants      
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại getProductDetailService:', error.message);
+    throw error;
+  }
+};
