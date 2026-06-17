@@ -4,12 +4,13 @@
   "description": "Microservices Demo",
   "main": "index.js",
   "scripts": {
-    "install:all": "npm install --prefix frontend && npm install --prefix backend/api-gateway && npm install --prefix backend/auth-service && npm install --prefix backend/order-service",
+    "install:all": "npm install --prefix frontend && npm install --prefix backend/api-gateway && npm install --prefix backend/auth-service && npm install --prefix backend/order-service && npm install --prefix backend/product-service",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:gateway": "npm run dev --prefix backend/api-gateway",
     "dev:auth": "npm run dev --prefix backend/auth-service",
     "dev:order": "npm run dev --prefix backend/order-service",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:order\""
+    "dev:product": "npm run dev --prefix backend/product-service",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

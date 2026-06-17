@@ -17,6 +17,7 @@ app.use(morgan('dev')); // Logging
 // Check required env vars
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
+const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL;
 
 if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
   console.error('Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL).');
@@ -33,6 +34,16 @@ app.use('/api/auth', createProxyMiddleware({
   onError: (err, req, res) => {
     console.error('Proxy Error (Auth):', err);
     res.status(502).json({ success: false, message: 'Auth Service Unavailable' });
+  }
+}));
+
+
+app.use('/api/products', createProxyMiddleware({
+  target: PRODUCT_SERVICE_URL,
+  changeOrigin: true,
+  onError: (err, req, res) => {
+    console.error('Proxy Error (Product):', err);
+    res.status(502).json({ success: false, message: 'Product Service Unavailable' });
   }
 }));
 
@@ -82,5 +93,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Gateway Service running on port ${PORT}`);
   console.log(`Routing /api/auth to ${AUTH_SERVICE_URL}`);
+  console.log(`Routing /api/products to ${PRODUCT_SERVICE_URL}`);
   console.log(`Routing /api/orders to ${ORDER_SERVICE_URL}`);
 });
