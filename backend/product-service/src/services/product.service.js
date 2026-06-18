@@ -53,6 +53,7 @@ export const getAllProduct = async (options = {}) => {
   }
 };
 
+
 // xem chi tiết sản phẩm
 export const getProductDetail = async (productId) => {
   try {
@@ -157,11 +158,72 @@ export const searchProductsByName = async (options = {}) => {
   }
 };
 
-/**
- * Hàm dùng chung: Trích xuất 1 tấm ảnh đầu tiên từ dữ liệu image_urls trong DB
- * @param {string|Array} imageUrlsData - Dữ liệu ảnh từ Supabase
- * @returns {string} - URL của tấm ảnh đầu tiên hoặc chuỗi rỗng
- */
+
+// tìm kiếm sp theo danh mục
+export const searchProductsByCategoryName = async (options = {}) => {
+  try {
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 12;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    const categoryName = options.categoryName ? options.categoryName.trim() : '';
+
+    let query = supabase
+      .from('products')
+      .select(`
+        product_id,
+        product_name,
+        image_urls,
+        original_price,
+        discount_price,
+        categories${categoryName ? '!inner' : ''} (
+          name,
+          status
+        )
+      `, { count: 'exact' })
+      .eq('status', 'active');
+    
+    if (categoryName) {
+      query = query
+        .eq('categories.status', 'active') 
+        .ilike('categories.name', `%${categoryName}%`); 
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const formattedProducts = data.map(product => ({
+      product_id: product.product_id,
+      product_name: product.product_name,
+      image_url: getFirstImage(product.image_urls),
+      discount_price: product.discount_price,
+      original_price: product.original_price,
+      category_name: product.categories?.name || null 
+    }));
+
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      products: formattedProducts,
+      pagination: {
+        currentPage: page,
+        limit,
+        totalItems: count,
+        totalPages
+      }
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại searchProductsByCategoryName Service:', error.message);
+    throw new Error('Không thể tìm kiếm sản phẩm theo danh mục!');
+  }
+};
+
+
+//  Hàm dùng chung: Trích xuất 1 tấm ảnh đầu tiên từ dữ liệu image_urls trong DB
 const getFirstImage = (imageUrlsData) => {
   if (!imageUrlsData) return "";
   

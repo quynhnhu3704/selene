@@ -46,6 +46,7 @@ export const handleGetProductDetail = async (req, res) => {
   }
 };
 
+// tìm sp theo tên
 export const handleSearchProductsByName = async (req, res) => {
   try {
     const { keyword, page, limit } = req.query; 
@@ -65,6 +66,33 @@ export const handleSearchProductsByName = async (req, res) => {
 
   } catch (error) {
     console.error('Lỗi tại handleSearchProducts Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
+
+
+// tìm sp theo danh mục
+export const handleSearchProductsByCategory = async (req, res) => {
+  try {
+    const { category, page, limit } = req.query; 
+
+    const result = await productService.searchProductsByCategoryName({
+      categoryName: category, 
+      limit
+    });
+
+    return res.status(200).json({
+      status: 200,
+      message: category ? 'Lấy danh sách sản phẩm theo danh mục thành công!' : 'Lấy tất cả danh sách sản phẩm thành công!',
+      data: result.products,
+      pagination: result.pagination
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleSearchProductsByCategory Controller:', error.message);
     return res.status(500).json({
       status: 500,
       message: error.message || 'Internal Server Error!'
