@@ -45,3 +45,29 @@ export const handleGetProductDetail = async (req, res) => {
     });
   }
 };
+
+export const handleSearchProductsByName = async (req, res) => {
+  try {
+    const { keyword, page, limit } = req.query; 
+
+    const result = await productService.searchProductsByName({
+      keyword: keyword,
+      page,
+      limit
+    });
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Tìm kiếm danh sách sản phẩm thành công!',
+      data: result.products,
+      pagination: result.pagination
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleSearchProducts Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};

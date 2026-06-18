@@ -6,7 +6,7 @@ export const getAllProduct = async (options = {}) => {
 
     // 1. Cấu hình phân trang (Pagination)
     const page = parseInt(options.page) || 1;
-    const limit = parseInt(options.limit) || 9;
+    const limit = parseInt(options.limit) || 12;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -18,7 +18,6 @@ export const getAllProduct = async (options = {}) => {
         product_id,
         product_name,
         image_urls,
-        price,
         original_price,
         discount_price
       `, { count: 'exact' }) // Đếm tổng số bản ghi thực tế trong DB
@@ -28,39 +27,13 @@ export const getAllProduct = async (options = {}) => {
 
     if (error) throw error;
 
-    // ── XỬ LÝ CHUYỂN MẢNG ẢNH THÀNH 1 HÌNH DUY NHẤT TẠI ĐÂY ──
-    const formattedProducts = data.map(product => {
-      let firstImage = ""; // Mặc định nếu không có ảnh
-
-      if (product.image_urls) {
-        let parsedImages = product.image_urls;
-        
-        // Nếu Supabase trả về dạng chuỗi Text (chưa parse), ta tiến hành parse sang Mảng
-        if (typeof product.image_urls === 'string') {
-          try { 
-            parsedImages = JSON.parse(product.image_urls); 
-          } catch (e) { 
-            parsedImages = [product.image_urls]; 
-          }
-        }
-
-        // Nếu sau khi parse đã là mảng và có phần tử, lấy phần tử đầu tiên [0]
-        if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-          firstImage = parsedImages[0];
-        } else if (typeof parsedImages === 'string') {
-          // Trường hợp trong DB lưu thẳng 1 chuỗi URL duy nhất thay vì mảng
-          firstImage = parsedImages;
-        }
-      }
-
-      return {
-        product_id: product.product_id,
-        product_name: product.product_name,
-        image_urls: firstImage,
-        discount_price: product.discount_price,
-        original_price: product.original_price,
-      };
-    });
+    const formattedProducts = data.map(product => ({
+      product_id: product.product_id,
+      product_name: product.product_name,
+      image_url: getFirstImage(product.image_urls), 
+      discount_price: product.discount_price,
+      original_price: product.original_price,
+    }));
 
     const totalPages = Math.ceil(count / limit);
 
@@ -90,7 +63,6 @@ export const getProductDetail = async (productId) => {
         product_id,
         product_name,
         image_urls,
-        price,
         original_price,
         discount_price,
         description,
@@ -131,4 +103,88 @@ export const getProductDetail = async (productId) => {
     console.error('Lỗi tại getProductDetailService:', error.message);
     throw error;
   }
+};
+
+
+// Tìm kiếm sản phẩm theo tên
+export const searchProductsByName = async (options = {}) => {
+  try {
+    const { keyword = '', page = 1, limit = 12 } = options;
+    
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // Truy vấn Supabase sử dụng toán tử .ilike() để tìm kiếm tương đối và không phân biệt hoa thường
+    const { data, error, count } = await supabase
+      .from('products')
+      .select(`
+        product_id,
+        product_name,
+        image_urls,
+        original_price,
+        discount_price
+      `, { count: 'exact' })
+      .eq('status', 'active') 
+      .ilike('product_name', `%${keyword}%`) 
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const formattedProducts = data.map(product => ({
+      product_id: product.product_id,
+      product_name: product.product_name,
+      image_url: getFirstImage(product.image_urls), 
+      discount_price: product.discount_price,       
+      original_price: product.original_price,
+    }));
+
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      products: formattedProducts,
+      pagination: {
+        currentPage: parseInt(page),
+        limit: parseInt(limit),
+        totalItems: count,
+        totalPages
+      }
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại searchProductsService:', error.message);
+    throw new Error('Không thể tìm kiếm sản phẩm từ Supabase!');
+  }
+};
+
+/**
+ * Hàm dùng chung: Trích xuất 1 tấm ảnh đầu tiên từ dữ liệu image_urls trong DB
+ * @param {string|Array} imageUrlsData - Dữ liệu ảnh từ Supabase
+ * @returns {string} - URL của tấm ảnh đầu tiên hoặc chuỗi rỗng
+ */
+const getFirstImage = (imageUrlsData) => {
+  if (!imageUrlsData) return "";
+  
+  let parsedImages = imageUrlsData;
+
+  // Nếu dữ liệu trả về dạng chuỗi Text (chưa parse), tiến hành parse sang Mảng
+  if (typeof imageUrlsData === 'string') {
+    try { 
+      parsedImages = JSON.parse(imageUrlsData); 
+    } catch (e) { 
+      parsedImages = [imageUrlsData]; 
+    }
+  }
+
+  // Nếu là mảng và có phần tử, lấy phần tử đầu tiên [0]
+  if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+    return parsedImages[0];
+  } 
+  
+  // Trường hợp dữ liệu sau khi xử lý vẫn là chuỗi URL đơn thuần
+  if (typeof parsedImages === 'string') {
+    return parsedImages;
+  }
+
+  return "";
 };
