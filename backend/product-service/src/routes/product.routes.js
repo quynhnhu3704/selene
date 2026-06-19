@@ -7,6 +7,6 @@ const router = express.Router();
 router.get('/product-list', productController.handleGetAllProducts);
 router.get('/product-detail/:id', productController.handleGetProductDetail);
 router.get('/product-search', productController.handleSearchProductsByName);
-router.get('/product-category', productController.handleSearchProductsByCategory);
+router.get('/category-search', productController.handleSearchProductsByCategory);
 
 export default router;
