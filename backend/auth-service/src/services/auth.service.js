@@ -124,7 +124,7 @@ export const loginUser = async (email, password) => {
     permissions
   };
 
-  const accessToken = jwt.sign(payload, config.jwtAccessSecret, { expiresIn: '1h' });
+  const accessToken = jwt.sign(payload, config.jwtAccessSecret, { expiresIn: '3h' });
   const refreshToken = jwt.sign(payload, config.jwtRefreshSecret, { expiresIn: '7d' });
 
   return {
