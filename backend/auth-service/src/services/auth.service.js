@@ -327,3 +327,48 @@ export const loginWithGoogle = async (code) => {
     user: { accountId: account.account_id, email: account.email, role: account.role_name }
   };
 };
+
+
+// cấp lại accessToken
+export const refreshAccessToken = async (refreshToken) => {
+  try {
+    // 1. Xác thực xem refreshToken gửi lên có hợp lệ và còn hạn không
+    const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
+
+    // 2. Lấy thông tin tài khoản từ database để đảm bảo tài khoản vẫn đang active
+    const { data: account, error } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('account_id', decoded.accountId)
+      .single();
+
+    if (error || !account || account.status === 'inactive') {
+      throw new Error('Tài khoản không tồn tại hoặc đã bị khóa!');
+    }
+
+    // 3. Lấy lại danh sách quyền của tài khoản (đề phòng quyền vừa được admin thay đổi)
+    const { data: permissionLinks } = await supabase
+      .from('role_permissions')
+      .select('permissions(name)')
+      .eq('role_id', account.role_id);
+
+    const permissions = permissionLinks ? permissionLinks.map(p => p.permissions.name) : [];
+
+    // 4. Tạo Payload mới (đồng bộ cấu trúc camelCase accountId với hàm Login của bạn)
+    const jwtPayload = {
+      accountId: account.account_id,
+      role: account.role_name,
+      permissions
+    };
+
+    // 5. Ký cấp một accessToken mới (Hạn dùng 3 giờ giống lúc login)
+    const newAccessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '3h' });
+
+    return {
+      accessToken: newAccessToken
+    };
+  } catch (err) {
+    console.error('Lỗi Refresh Token:', err.message);
+    throw new Error('Mã Refresh Token đã hết hạn hoặc không hợp lệ, vui lòng đăng nhập lại!');
+  }
+};

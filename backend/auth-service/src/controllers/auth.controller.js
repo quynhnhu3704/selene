@@ -153,3 +153,33 @@ export const handleLoginWithGoogle = async (req, res) => {
     return res.redirect(`http://localhost:5173/tai-khoan/dang-nhap?error=${encodeURIComponent(error.message)}`);
   }
 };
+
+
+// lấy lại accessToken
+export const handleRefreshToken = async (req, res) => {
+  try {
+    // Frontend có thể gửi refreshToken qua body hoặc qua headers
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Không tìm thấy mã Refresh Token trong yêu cầu!'
+      });
+    }
+
+    // Gọi xuống service để xử lý
+    const result = await authService.refreshAccessToken(refreshToken);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Cấp lại mã Access Token thành công!',
+      accessToken: result.accessToken
+    });
+  } catch (error) {
+    return res.status(401).json({
+      status: 401,
+      message: error.message
+    });
+  }
+};

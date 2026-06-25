@@ -1,5 +1,5 @@
 import express from 'express';
-import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle } from '../controllers/auth.controller.js';
+import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken } from '../controllers/auth.controller.js';
 import { handleUpdateCustomerProfile } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
@@ -18,6 +18,7 @@ router.post('/register', handleRegister);
 router.post('/login', handleLogin);
 router.post('/forgot-password', handleForgotPassword);
 router.get('/google/callback', handleLoginWithGoogle);
+router.post('/refresh-token', handleRefreshToken);
 
 
 // user 
