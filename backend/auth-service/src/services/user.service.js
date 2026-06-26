@@ -7,28 +7,31 @@ const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
-
 // xử lý ảnh
 const uploadAvatar = async (prefix, identifier, avatarFile) => {
-  if (!avatarFile) return null;
+  // Kiểm tra nghiêm ngặt cấu trúc file từ Multer
+  if (!avatarFile || !avatarFile.originalname || !avatarFile.buffer) {
+    console.error("File gửi lên không hợp lệ hoặc thiếu buffer/originalname");
+    return null;
+  }
 
   // 1. Lấy phần mở rộng của file
   const fileExt = avatarFile.originalname.split('.').pop();
   
-  // 2. Tạo tên file unique dựa trên prefix + identifier + timestamp
-  const fileName = `avatar_${prefix}_${identifier}_${Date.now()}.${fileExt}`;
+  // 2. Tạo tên file chuẩn hóa không dùng dấu gạch dưới theo yêu cầu cũ
+  const fileName = `Avatar${prefix}${identifier}${Date.now()}.${fileExt}`;
 
   // 3. Tiến hành upload lên bucket 'avatars'
   const { error: uploadError } = await supabase.storage
     .from('avatars')
     .upload(fileName, avatarFile.buffer, {
-      contentType: avatarFile.mimetype,
+      contentType: avatarFile.mimetype || 'image/jpeg',
       upsert: true
     });
 
   if (uploadError) {
-    console.error(`Lỗi Storage (${prefix}):`, uploadError.message);
-    throw new Error('Lỗi trong quá trình tải ảnh đại diện lên hệ thống lưu trữ!');
+    console.error(`Lỗi Supabase Storage (${prefix}):`, uploadError.message);
+    throw new Error(`Lỗi Storage: ${uploadError.message}`);
   }
 
   // 4. Lấy public URL
@@ -38,7 +41,6 @@ const uploadAvatar = async (prefix, identifier, avatarFile) => {
 
   return publicUrlData.publicUrl;
 };
-
 
 // ================== CUSTOMER =====================
 
@@ -60,7 +62,7 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
 
   // 2. Xử lý tải ảnh lên Supabase Storage nếu có file mới được chọn
   if (avatarFile) {
-    avatarUrl = await uploadAvatar('customer', accountId, avatarFile);
+    avatarUrl = await uploadAvatar('_customer', accountId, avatarFile);
   }
 
   // 3. XỬ LÝ LOGIC ĐỘNG: Tạo object update loại bỏ toàn bộ trường rỗng/null/undefined
@@ -138,7 +140,7 @@ export const createStaff = async (staffData, avatarFile) => {
 
   // Tải ảnh đại diện lên Supabase Storage nếu Admin có chọn file ảnh
   if (avatarFile) {
-    avatarUrl = await uploadAvatar('staff', Date.now(), avatarFile);
+    avatarUrl = await uploadAvatar('_staff', Date.now(), avatarFile);
   }
 
   // 2. Tìm Role 'staff' động từ DB để lấy đúng role_id

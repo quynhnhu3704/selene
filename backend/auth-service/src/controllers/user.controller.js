@@ -58,6 +58,7 @@ export const handleCreateStaff = async (req, res) => {
       email, phone, full_name, identity_card, 
       avatar_url, gender, dob, address 
     } = req.body;
+    const avatarFile = req.file;
 
     // Các thông tin bắt buộc tối thiểu để khởi tạo tài khoản nhân viên
     if (!email || !phone || !full_name ) {
@@ -68,10 +69,10 @@ export const handleCreateStaff = async (req, res) => {
     }
 
     // Gọi service xử lý logic lưu DB
-    const result = await userService.createStaff({
-      email, phone, full_name, identity_card, 
-      avatar_url, gender, dob, address
-    });
+    const result = await userService.createStaff(
+      { email, phone, full_name, identity_card, gender, dob, address },
+      avatarFile
+    );
 
     return res.status(201).json({
       status: 201,
