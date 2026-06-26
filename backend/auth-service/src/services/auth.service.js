@@ -68,7 +68,7 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
   const { error: profileError } = await supabase
     .from('user_profiles')
     .insert([{
-      profile_id: 'user_' + generateId(),
+      profile_id: 'user-' + generateId(),
       account_id: accountId,
       full_name,
       phone_number: phone,
@@ -298,7 +298,7 @@ export const loginWithGoogle = async (code) => {
     const { error: profError } = await supabase
       .from('user_profiles')
       .insert([{
-        profile_id: 'prof_' + generateId(),
+        profile_id: 'user-' + generateId(),
         account_id: accountId,
         full_name: name,
         avatar_url: picture,
