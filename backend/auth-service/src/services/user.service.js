@@ -115,15 +115,26 @@ export const createStaff = async (staffData, avatarFile) => {
   
   const now = new Date().toISOString();
 
-  // 1. Kiểm tra xem Email, Phone hoặc CCCD đã tồn tại trong hệ thống chưa
-  const { data: existingAcc } = await supabase
+  // 1. Kiểm tra Email đã tồn tại chưa
+  const { data: emailCheck, error: emailError } = await supabase
     .from('accounts')
     .select('account_id')
-    .or(`email.eq.${email},phone.eq.${phone}`)
-    .single();
+    .eq('email', email.trim());
 
-  if (existingAcc) {
-    throw new Error('Email hoặc số điện thoại này đã được sử dụng!');
+  // Nếu có dữ liệu trả về (mảng không rỗng) -> Email đã tồn tại
+  if (emailCheck && emailCheck.length > 0) {
+    throw new Error('Email này đã được sử dụng!');
+  }
+
+  // 2. Kiểm tra Số điện thoại đã tồn tại chưa
+  const { data: phoneCheck, error: phoneError } = await supabase
+    .from('accounts')
+    .select('account_id')
+    .eq('phone', phone.trim());
+
+  // Nếu có dữ liệu trả về (mảng không rỗng) -> Số điện thoại đã tồn tại
+  if (phoneCheck && phoneCheck.length > 0) {
+    throw new Error('Số điện thoại này đã được sử dụng!');
   }
 
   if (identity_card) {
@@ -206,5 +217,68 @@ export const createStaff = async (staffData, avatarFile) => {
     profileId,
     email,
     role_name: roleData.name
+  };
+};
+
+// lấy danh sách hồ sơ người dùng 
+export const getProfileList = async (page, limit) => {
+  // 1. Đếm tổng số bản ghi hiện có trong DB trước bằng cơ chế head: true (tối ưu hóa tốc độ đếm)
+  const { count, error: countError } = await supabase
+    .from('user_profiles')
+    .select('profile_id', { count: 'exact', head: true });
+
+  if (countError) {
+    console.error('Lỗi DB khi đếm số lượng profile:', countError.message);
+    throw new Error(`Lỗi hệ thống cơ sở dữ liệu: ${countError.message}`);
+  }
+
+  const totalItems = count || 0;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  // Nếu vị trí bắt đầu vượt quá tổng số bản ghi, trả về mảng rỗng ngay, không gọi .range() tránh sập lỗi 500
+  if (from >= totalItems || totalItems === 0) {
+    return {
+      profiles: [],
+      totalItems: totalItems
+    };
+  }
+
+  // 2. TIẾN HÀNH LẤY DỮ LIỆU 
+  const { data: profiles, error } = await supabase
+    .from('user_profiles')
+    .select(`
+      profile_id,
+      account_id,
+      full_name,
+      phone_number,
+      identity_card,
+      accounts (
+        email,
+        status
+      )
+    `)
+    .order('profile_id', { ascending: true })
+    .range(from, to); 
+
+  if (error) {
+    console.error('Lỗi DB khi lấy danh sách profile:', error.message);
+    throw new Error(`Lỗi hệ thống cơ sở dữ liệu: ${error.message}`);
+  }
+
+  // Chuẩn hóa cấu trúc dữ liệu trả về giống cấp cũ
+  const formattedProfiles = (profiles || []).map(item => ({
+    profile_id: item.profile_id,
+    account_id: item.account_id,
+    name: item.full_name,
+    phone: item.phone_number,
+    identity_card: item.identity_card,
+    email: item.accounts ? item.accounts.email : null,
+    status: item.accounts ? item.accounts.status : null
+  }));
+
+  return {
+    profiles: formattedProfiles,
+    totalItems: totalItems
   };
 };

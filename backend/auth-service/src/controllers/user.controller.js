@@ -100,3 +100,38 @@ export const handleCreateStaff = async (req, res) => {
     });
   }
 };
+
+
+// lấy danh sách hồ sơ người dùng 
+export const handleGetProfileList = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    if (page < 1 || limit < 1) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Tham số phân trang page hoặc limit không hợp lệ!'
+      });
+    }
+
+    const result = await userService.getProfileList(page, limit);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy danh sách hồ sơ thành công!',
+      data: result.profiles,
+      pagination: {
+        currentPage: page,
+        limit: limit,
+        totalItems: result.totalItems 
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi Controller Lấy Danh Sách Profile:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
