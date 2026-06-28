@@ -68,3 +68,47 @@ export const createNewPermission = async (body) => {
 
   return createdPermission;
 };
+
+// cập nhật quyền
+export const updatePermission = async (permissionId, body) => {
+  const { name, description, status } = body;
+
+  // 1. Kiểm tra quyền cần sửa có tồn tại trong hệ thống không
+  const currentPermission = await PermissionModel.getPermissionById(permissionId);
+  if (!currentPermission) {
+    throw { status: 404, message: 'Không tìm thấy quyền hạn cần cập nhật!' };
+  }
+
+  // 2. Tạo object dữ liệu mặc định kế thừa hoàn toàn từ bản ghi cũ
+  const updateData = {
+    name: currentPermission.name,
+    description: description !== undefined ? description : currentPermission.description,
+    status: status !== undefined ? status : currentPermission.status
+  };
+
+  // 3. Xử lý logic thay đổi tên (name)
+  if (name) {
+    const formatName = name.trim().toLowerCase();
+
+    // CHỈ KIỂM TRA TRÙNG LẶP nếu tên gửi lên KHÁC với tên hiện tại của chính nó
+    if (formatName !== currentPermission.name) {
+      const existingPermission = await PermissionModel.getPermissionByName(formatName);
+      
+      // Nếu tìm thấy một bản ghi trùng tên VÀ bản ghi đó thuộc về một ID KHÁC
+      if (existingPermission && existingPermission.permission_id !== permissionId) {
+        throw { 
+          status: 409, 
+          message: `Tên quyền '${formatName}' đã được sử dụng bởi một bản ghi khác!` 
+        };
+      }
+    }
+    
+    // Nếu trùng với tên cũ của chính nó, gán lại và bỏ qua bước check trùng
+    updateData.name = formatName;
+  }
+
+  // 4. Tiến hành gọi Model cập nhật database
+  const updatedPermission = await PermissionModel.updatePermission(permissionId, updateData);
+  
+  return updatedPermission;
+};

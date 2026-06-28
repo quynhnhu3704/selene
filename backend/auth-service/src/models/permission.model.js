@@ -44,10 +44,9 @@ export const PermissionModel = {
             .from('permissions')
             .select('*')
             .eq('name', name)
-            .single(); // Trả về 1 bản ghi hoặc null
 
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116 là lỗi không tìm thấy bản ghi (hợp lệ trong trường hợp này)
-        return data;
+        if (error) throw error;
+        return data.length > 0 ? data[0] : null;
     },
 
     // Chèn permission mới vào database
@@ -64,6 +63,34 @@ export const PermissionModel = {
                 }
             ])
             .select();
+
+        if (error) throw error;
+        return data[0];
+    },
+
+    // Tìm permission theo ID
+    getPermissionById: async (permissionId) => {
+        const { data, error } = await supabase
+            .from('permissions')
+            .select('*')
+            .eq('permission_id', permissionId)
+
+        if (error) throw error;
+        return data.length > 0 ? data[0] : null;
+    },
+
+    // Cập nhật dữ liệu permission vào database
+    updatePermission: async (permissionId, updateData) => {
+        const { data, error } = await supabase
+            .from('permissions')
+            .update({
+                name: updateData.name,
+                description: updateData.description,
+                status: updateData.status
+                // Không cập nhật created_at
+            })
+            .eq('permission_id', permissionId)
+            .select(); // Trả về bản ghi sau khi cập nhật thành công
 
         if (error) throw error;
         return data[0];

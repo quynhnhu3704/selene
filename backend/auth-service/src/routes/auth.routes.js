@@ -3,7 +3,7 @@ import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogl
 import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
-import { handleCreatePermission, handleGetAllPermissions, handleGetPermissionsByAccountId } from '../controllers/permission.controller.js';
+import { handleCreatePermission, handleGetAllPermissions, handleGetPermissionsByAccountId, handleUpdatePermission } from '../controllers/permission.controller.js';
 
 const router = express.Router();
 
@@ -38,6 +38,7 @@ router.put('/manage/profiles/update/:accountId', verifyToken, upload.single('ava
 // quyền
 router.get('/manage/permissions', handleGetAllPermissions);
 router.post('/manage/permission/add', handleCreatePermission);
+router.put('/manage/permission/update/:permissionId', handleUpdatePermission);
 
 // account
 router.put('/manage/account/update/:accountId', verifyToken, handleUpdateAccount);

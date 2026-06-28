@@ -86,3 +86,36 @@ export const handleCreatePermission = async (req, res) => {
     });
   }
 };
+
+// cập nhật quyền
+export const handleUpdatePermission = async (req, res) => {
+  try {
+    const { permissionId } = req.params;
+
+    // Gọi đúng tên hàm trong Service
+    const result = await permissionService.updatePermission(permissionId, req.body);
+
+    // Thành công (OK -> 200)
+    return res.status(200).json({
+      status: 200,
+      message: 'Cập nhật thông tin quyền hạn thành công!',
+      data: result
+    });
+
+  } catch (error) {
+    // Trả về lỗi nghiệp vụ (404 Not Found, 409 Conflict)
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message
+      });
+    }
+
+    // Lỗi hệ thống không lường trước
+    console.error("Error at handleUpdatePermission: ", error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
