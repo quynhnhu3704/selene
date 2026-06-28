@@ -142,14 +142,19 @@ export const UserProfileModel = {
   },
 
   // Tiến hành cập nhật vào bảng user_profiles
-  updateProfileByAccountId: async (accountId, updateData) => {
-    const { error } = await supabase.from('user_profiles').update(updateData).eq('account_id', accountId);
+ updateProfileByAccountId: async (accountId, updateData) => {
+    const dataWithTime = {
+      ...updateData,
+      updated_at: new Date() // Tự động chèn thời gian cập nhật hiện tại
+    };
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .update(dataWithTime)
+      .eq('account_id', accountId);
+
     if (error) throw error;
   },
 
-  // Thực thi thay đổi vào bảng accounts
-  updateAccountById: async (accountId, accountData) => {
-    const { error } = await supabase.from('accounts').update(accountData).eq('account_id', accountId);
-    if (error) throw error;
-  }
+ 
 };

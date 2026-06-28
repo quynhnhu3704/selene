@@ -1,6 +1,7 @@
 import { config } from '../configs/index.js';
 import bcrypt from 'bcrypt';
 import { UserProfileModel } from '../models/userProfile.model.js';
+import { AccountModel } from '../models/account.model.js';
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -285,7 +286,7 @@ export const updateAccount = async (accountId, { email, password, phone, status 
   const updatePromises = [];
 
   if (Object.keys(accountUpdateData).length > 0) {
-    updatePromises.push(UserProfileModel.updateAccountById(accountId, accountUpdateData));
+    updatePromises.push(AccountModel.updateAccountById(accountId, accountUpdateData));
   }
   if (Object.keys(profileUpdateData).length > 0) {
     updatePromises.push(UserProfileModel.updateProfileByAccountId(accountId, profileUpdateData));
@@ -301,5 +302,33 @@ export const updateAccount = async (accountId, { email, password, phone, status 
   return {
     message: 'Admin cập nhật thông tin tài khoản và hồ sơ thành công!',
     account: updatedAccount
+  };
+};
+
+// lấy danh scahs account
+export const getAccountList = async (page = 1, limit = 10) => {
+  // Đảm bảo page và limit là số nguyên dương
+  const pageNum = Math.max(1, parseInt(page));
+  const limitNum = Math.max(1, parseInt(limit));
+
+  const from = (pageNum - 1) * limitNum;
+  const to = from + limitNum - 1;
+
+  const [totalItems, accounts] = await Promise.all([
+    AccountModel.countAccounts(),
+    AccountModel.getAccountsInRange(from, to)
+  ]);
+
+  // Tính toán tổng số trang
+  const totalPages = Math.ceil(totalItems / limitNum);
+
+  return {
+    accounts,
+    pagination: {
+      currentPage: pageNum,
+      limit: limitNum,
+      totalItems,
+      totalPages
+    }
   };
 };

@@ -82,5 +82,46 @@ export const AccountModel = {
     return true;
   },
 
-  
+  // Đếm tổng số tài khoản hiện có trong bảng accounts
+  countAccounts: async () => {
+    const { count, error } = await supabase
+      .from('accounts')
+      .select('account_id', { count: 'exact', head: true });
+    if (error) throw error;
+    return count || 0;
+  },
+
+  // Lấy danh sách accounts theo khoảng phân trang
+  getAccountsInRange: async (from, to) => {
+    const { data, error } = await supabase
+      .from('accounts')
+      .select(`
+      account_id,
+      email,
+      phone,
+      role_name,
+      status,
+      created_at
+    `)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+   // Thực thi thay đổi vào bảng accounts
+  updateAccountById: async (accountId, accountData) => {
+    const dataWithTime = {
+      ...accountData,
+      updated_at: new Date() // Tự động chèn thời gian cập nhật hiện tại
+    };
+
+    const { error } = await supabase
+      .from('accounts')
+      .update(dataWithTime)
+      .eq('account_id', accountId);
+
+    if (error) throw error;
+  }
 };
