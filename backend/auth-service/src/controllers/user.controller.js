@@ -101,7 +101,6 @@ export const handleCreateStaff = async (req, res) => {
   }
 };
 
-
 // lấy danh sách hồ sơ người dùng 
 export const handleGetProfileList = async (req, res) => {
   try {
@@ -136,7 +135,6 @@ export const handleGetProfileList = async (req, res) => {
   }
 };
 
-
 // lấy thông tin chi tiết hồ sơ
 export const handleGetProfileDetail = async (req, res) => {
   try {
@@ -165,6 +163,54 @@ export const handleGetProfileDetail = async (req, res) => {
     }
 
     console.error('Lỗi Controller Lấy Chi Tiết Profile:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
+// cập nhật thông tin đồng bộ 2 bảng
+export const handleUpdateProfileStaff = async (req, res) => {
+  try {
+    const { accountId } = req.params;
+    const { full_name, phone, email, identity_card, gender, dob, address, status } = req.body;
+    const avatarFile = req.file;
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Vui lòng cung cấp mã tài khoản (accountId) cần cập nhật!'
+      });
+    }
+
+    // Gọi service xử lý logic nghiệp vụ
+    const result = await userService.updateProfileStaff(
+      accountId,
+      { full_name, phone, email, identity_card, gender, dob, address, status },
+      avatarFile
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    if (
+      error.message.includes('Không tìm thấy') || 
+      error.message.includes('đã được sử dụng') || 
+      error.message.includes('đã tồn tại') ||
+      error.message.includes('Storage')
+    ) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Cập nhật Profile Tổng hợp:', error.stack);
     return res.status(500).json({
       status: 500,
       message: 'Internal Server Error!'

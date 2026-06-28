@@ -220,7 +220,6 @@ export const createStaff = async (staffData, avatarFile) => {
   };
 };
 
-
 // lấy danh sách hồ sơ người dùng 
 export const getProfileList = async (page, limit) => {
   // 1. Đếm tổng số bản ghi hiện có trong DB trước bằng cơ chế head: true (tối ưu hóa tốc độ đếm)
@@ -286,7 +285,6 @@ export const getProfileList = async (page, limit) => {
   };
 };
 
-
 // lấy thông tin chi tiết hồ sơ
 export const getProfileDetail = async (profileId) => {
   const { data: profile, error } = await supabase
@@ -332,4 +330,128 @@ export const getProfileDetail = async (profileId) => {
   };
 
   return formattedDetail;
+};
+
+// cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles 
+export const updateProfileStaff = async (accountId, updateFields, avatarFile) => {
+  const { full_name, phone, email, identity_card, gender, dob, address, status } = updateFields;
+  let avatarUrl = null;
+  const now = new Date();
+
+
+  const normalizedStatus = status ? String(status).trim().toLowerCase() : undefined;
+  const normalizedGender = gender ? String(gender).trim().toLowerCase() : undefined;
+
+  // 1. LẤY THÔNG TIN HIỆN TẠI TRONG DB ĐỂ ĐỐI CHIẾU
+  const { data: existingAccount, error: accError } = await supabase
+    .from('accounts')
+    .select('email, phone, status')
+    .eq('account_id', accountId)
+    .single();
+
+  const { data: existingProfile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('profile_id, full_name, phone_number, identity_card, avatar_url, gender, dob, address, status')
+    .eq('account_id', accountId)
+    .single();
+
+  if (accError || profileError || !existingAccount || !existingProfile) {
+    throw new Error('Không tìm thấy tài khoản hoặc hồ sơ người dùng hợp lệ!');
+  }
+
+  const isValidAndChanged = (newVal, oldVal) => {
+    return newVal !== undefined && newVal !== null && String(newVal).trim() !== '' && String(newVal).trim() !== String(oldVal);
+  };
+
+  // 2. KIỂM TRA TRÙNG LẶP DỮ LIỆU (Email, Phone, CCCD)
+  if (isValidAndChanged(email, existingAccount.email)) {
+    const { data: checkEmail } = await supabase.from('accounts').select('account_id').eq('email', email.trim()).single();
+    if (checkEmail) throw new Error('Email mới này đã được sử dụng bởi một tài khoản khác!');
+  }
+
+  if (isValidAndChanged(phone, existingAccount.phone)) {
+    const { data: checkPhone } = await supabase.from('accounts').select('account_id').eq('phone', phone.trim()).single();
+    if (checkPhone) throw new Error('Số điện thoại mới này đã được sử dụng bởi một tài khoản khác!');
+  }
+
+  if (isValidAndChanged(identity_card, existingProfile.identity_card)) {
+    const { data: checkIdCard } = await supabase.from('user_profiles').select('profile_id').eq('identity_card', identity_card.trim()).single();
+    if (checkIdCard) throw new Error('Số CMND/CCCD mới này đã tồn tại trên hệ thống!');
+  }
+
+  // 3. XỬ LÝ LƯU ẢNH TRÊN SUPABASE STORAGE & XÓA ẢNH CŨ
+  if (avatarFile) {
+    const identifier = (phone && phone.trim()) || existingAccount.phone;
+    avatarUrl = await uploadAvatar('user', identifier, avatarFile);
+
+    if (existingProfile.avatar_url && avatarUrl) {
+      try {
+        const urlParts = existingProfile.avatar_url.split('/avatars/');
+        const oldFileName = urlParts.length > 1 ? urlParts[1] : null;
+
+        if (oldFileName) {
+          const { error: storageError } = await supabase
+            .storage
+            .from('avatars')
+            .remove([oldFileName]);
+
+          if (storageError) {
+            console.error('Lỗi Supabase Storage khi xóa file cũ:', storageError.message);
+          }
+        }
+      } catch (err) {
+        console.error('Không thể xử lý xóa ảnh cũ:', err.message);
+      }
+    }
+  }
+
+  // 4. TIẾN HÀNH XÂY DỰNG OBJECT CẬP NHẬT ĐỘNG
+  const accountUpdate = {};
+  const profileUpdate = {};
+
+  // 4.1. Xử lý các trường thuộc bảng `accounts`
+  if (isValidAndChanged(email, existingAccount.email)) accountUpdate.email = email.trim();
+  if (isValidAndChanged(phone, existingAccount.phone)) accountUpdate.phone = phone.trim();
+  if (isValidAndChanged(normalizedStatus, existingAccount.status)) accountUpdate.status = normalizedStatus;
+
+  // 4.2. Xử lý các trường thuộc bảng `user_profiles`
+  if (isValidAndChanged(full_name, existingProfile.full_name)) profileUpdate.full_name = full_name.trim();
+  if (isValidAndChanged(phone, existingProfile.phone_number)) profileUpdate.phone_number = phone.trim();
+  if (isValidAndChanged(identity_card, existingProfile.identity_card)) profileUpdate.identity_card = identity_card.trim();
+  if (isValidAndChanged(dob, existingProfile.dob)) profileUpdate.dob = dob;
+  if (isValidAndChanged(address, existingProfile.address)) profileUpdate.address = address.trim();
+  if (isValidAndChanged(normalizedGender, existingProfile.gender)) profileUpdate.gender = normalizedGender;
+  if (isValidAndChanged(normalizedStatus, existingProfile.status)) profileUpdate.status = normalizedStatus;
+  if (avatarUrl) profileUpdate.avatar_url = avatarUrl;
+
+  // 5. THỰC THI THAY ĐỔI VÀO DATABASE
+  if (Object.keys(accountUpdate).length > 0) {
+    accountUpdate.updated_at = now;
+    const { error: errAcc } = await supabase.from('accounts').update(accountUpdate).eq('account_id', accountId);
+    if (errAcc) throw new Error(`Lỗi hệ thống khi cập nhật bảng tài khoản: ${errAcc.message}`);
+  }
+
+  if (Object.keys(profileUpdate).length > 0) {
+    profileUpdate.updated_at = now;
+    const { error: errProf } = await supabase.from('user_profiles').update(profileUpdate).eq('account_id', accountId);
+    if (errProf) throw new Error(`Lỗi hệ thống khi cập nhật bảng hồ sơ: ${errProf.message}`);
+  }
+
+  // 6. TRẢ VỀ DỮ LIỆU MỚI NHẤT
+  return {
+    message: 'Cập nhật và đồng bộ thông tin người dùng thành công!',
+    profile: {
+      account_id: accountId,
+      profile_id: existingProfile.profile_id,
+      email: accountUpdate.email || existingAccount.email,
+      phone: accountUpdate.phone || existingAccount.phone,
+      status: accountUpdate.status || existingAccount.status,
+      full_name: profileUpdate.full_name || existingProfile.full_name,
+      identity_card: profileUpdate.identity_card || existingProfile.identity_card,
+      gender: profileUpdate.gender || existingProfile.gender, 
+      dob: profileUpdate.dob || existingProfile.dob,
+      address: profileUpdate.address || existingProfile.address,
+      avatar_url: avatarUrl || existingProfile.avatar_url
+    }
+  };
 };
