@@ -1,7 +1,6 @@
 import { config } from '../configs/index.js';
-import { supabase } from '../configs/supabase.js';
 import bcrypt from 'bcrypt';
-
+import { UserProfileModel } from '../models/userProfile.model.js';
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -21,25 +20,18 @@ const uploadAvatar = async (prefix, identifier, avatarFile) => {
   // 2. Tạo tên file chuẩn hóa không dùng dấu gạch dưới theo yêu cầu cũ
   const fileName = `Avatar${prefix}${identifier}${Date.now()}.${fileExt}`;
 
-  // 3. Tiến hành upload lên bucket 'avatars'
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(fileName, avatarFile.buffer, {
-      contentType: avatarFile.mimetype || 'image/jpeg',
-      upsert: true
-    });
-
-  if (uploadError) {
+  // 3. Tiến hành upload lên bucket 'avatars' thông qua Model
+  try {
+    const publicUrl = await UserProfileModel.uploadAvatarFile(
+      fileName, 
+      avatarFile.buffer, 
+      avatarFile.mimetype || 'image/jpeg'
+    );
+    return publicUrl;
+  } catch (uploadError) {
     console.error(`Lỗi Supabase Storage (${prefix}):`, uploadError.message);
     throw new Error(`Lỗi Storage: ${uploadError.message}`);
   }
-
-  // 4. Lấy public URL
-  const { data: publicUrlData } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(fileName);
-
-  return publicUrlData.publicUrl;
 };
 
 // ================== CUSTOMER =====================
@@ -50,13 +42,9 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
   let avatarUrl = null;
 
   // 1. LẤY GIÁ TRỊ BAN ĐẦU: 
-  const { data: existingProfile, error: fetchError } = await supabase
-    .from('user_profiles')
-    .select('profile_id, full_name, phone_number, avatar_url, gender, dob') 
-    .eq('account_id', accountId)
-    .single();
+  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
 
-  if (fetchError || !existingProfile) {
+  if (!existingProfile) {
     throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
   }
 
@@ -77,12 +65,9 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
   updateData.updated_at = new Date();
 
   // 4. Tiến hành cập nhật vào bảng user_profiles
-  const { error: updateError } = await supabase
-    .from('user_profiles')
-    .update(updateData)
-    .eq('account_id', accountId);
-
-  if (updateError) {
+  try {
+    await UserProfileModel.updateProfileByAccountId(accountId, updateData);
+  } catch (updateError) {
     console.error('Lỗi DB:', updateError.message);
     throw new Error('Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!');
   }
@@ -103,7 +88,6 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
 };
 
 
-
 // ================== ADMIN =====================
 
 // thêm nhân viên
@@ -116,10 +100,7 @@ export const createStaff = async (staffData, avatarFile) => {
   const now = new Date().toISOString();
 
   // 1. Kiểm tra Email đã tồn tại chưa
-  const { data: emailCheck, error: emailError } = await supabase
-    .from('accounts')
-    .select('account_id')
-    .eq('email', email.trim());
+  const emailCheck = await UserProfileModel.checkEmailExists(email);
 
   // Nếu có dữ liệu trả về (mảng không rỗng) -> Email đã tồn tại
   if (emailCheck && emailCheck.length > 0) {
@@ -127,10 +108,7 @@ export const createStaff = async (staffData, avatarFile) => {
   }
 
   // 2. Kiểm tra Số điện thoại đã tồn tại chưa
-  const { data: phoneCheck, error: phoneError } = await supabase
-    .from('accounts')
-    .select('account_id')
-    .eq('phone', phone.trim());
+  const phoneCheck = await UserProfileModel.checkPhoneExists(phone);
 
   // Nếu có dữ liệu trả về (mảng không rỗng) -> Số điện thoại đã tồn tại
   if (phoneCheck && phoneCheck.length > 0) {
@@ -138,11 +116,7 @@ export const createStaff = async (staffData, avatarFile) => {
   }
 
   if (identity_card) {
-    const { data: existingProfile } = await supabase
-      .from('user_profiles')
-      .select('profile_id')
-      .eq('identity_card', identity_card.trim())
-      .single();
+    const existingProfile = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
 
     if (existingProfile) {
       throw new Error('Số CMND/CCCD này đã tồn tại trên hệ thống!');
@@ -155,13 +129,10 @@ export const createStaff = async (staffData, avatarFile) => {
   }
 
   // 2. Tìm Role 'staff' động từ DB để lấy đúng role_id
-  const { data: roleData, error: roleError } = await supabase
-    .from('roles')
-    .select('role_id, name')
-    .eq('name', 'staff')
-    .single();
-
-  if (roleError || !roleData) {
+  let roleData;
+  try {
+    roleData = await UserProfileModel.findRoleByName('staff');
+  } catch (roleError) {
     throw new Error('Hệ thống chưa cấu hình vai trò "staff" (nhân viên)!');
   }
 
@@ -170,9 +141,8 @@ export const createStaff = async (staffData, avatarFile) => {
   const accountId = 'acc-' + generateId();
 
   // 4. BƯỚC 1: Tạo tài khoản trong bảng accounts trước
-  const { error: accError } = await supabase
-    .from('accounts')
-    .insert([{
+  try {
+    await UserProfileModel.insertAccount({
       account_id: accountId,
       email: email.trim(),
       phone: phone.trim(),
@@ -182,18 +152,16 @@ export const createStaff = async (staffData, avatarFile) => {
       status: 'active',
       created_at: now,
       updated_at: now
-    }]);
-
-  if (accError) {
+    });
+  } catch (accError) {
     console.error('Lỗi insert accounts:', accError.message);
     throw new Error(`Lỗi khi tạo tài khoản nhân viên: ${accError.message}`);
   }
 
   // 5. BƯỚC 2: Tạo hồ sơ thông tin chi tiết trong bảng user_profiles
   const profileId = 'user-' + generateId();
-  const { error: profileError } = await supabase
-    .from('user_profiles')
-    .insert([{
+  try {
+    await UserProfileModel.insertProfile({
       profile_id: profileId,
       account_id: accountId, 
       full_name: full_name ? full_name.trim() : null,
@@ -205,9 +173,8 @@ export const createStaff = async (staffData, avatarFile) => {
       status: 'active',
       created_at: now,
       updated_at: now
-    }]);
-
-  if (profileError) {
+    });
+  } catch (profileError) {
     console.error('Lỗi insert user_profiles:', profileError.message);
     throw new Error(`Tạo tài khoản thành công nhưng lỗi tạo hồ sơ: ${profileError.message}`);
   }
@@ -223,16 +190,14 @@ export const createStaff = async (staffData, avatarFile) => {
 // lấy danh sách hồ sơ người dùng 
 export const getProfileList = async (page, limit) => {
   // 1. Đếm tổng số bản ghi hiện có trong DB trước bằng cơ chế head: true (tối ưu hóa tốc độ đếm)
-  const { count, error: countError } = await supabase
-    .from('user_profiles')
-    .select('profile_id', { count: 'exact', head: true });
-
-  if (countError) {
+  let totalItems = 0;
+  try {
+    totalItems = await UserProfileModel.countProfiles();
+  } catch (countError) {
     console.error('Lỗi DB khi đếm số lượng profile:', countError.message);
     throw new Error(`Lỗi hệ thống cơ sở dữ liệu: ${countError.message}`);
   }
 
-  const totalItems = count || 0;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
@@ -245,24 +210,10 @@ export const getProfileList = async (page, limit) => {
   }
 
   // 2. TIẾN HÀNH LẤY DỮ LIỆU 
-  const { data: profiles, error } = await supabase
-    .from('user_profiles')
-    .select(`
-      profile_id,
-      account_id,
-      full_name,
-      phone_number,
-      identity_card,
-      accounts (
-        email,
-        role_name,
-        status
-      )
-    `)
-    .order('profile_id', { ascending: true })
-    .range(from, to); 
-
-  if (error) {
+  let profiles = [];
+  try {
+    profiles = await UserProfileModel.getProfilesInRange(from, to);
+  } catch (error) {
     console.error('Lỗi DB khi lấy danh sách profile:', error.message);
     throw new Error(`Lỗi hệ thống cơ sở dữ liệu: ${error.message}`);
   }
@@ -287,30 +238,10 @@ export const getProfileList = async (page, limit) => {
 
 // lấy thông tin chi tiết hồ sơ
 export const getProfileDetail = async (profileId) => {
-  const { data: profile, error } = await supabase
-    .from('user_profiles')
-    .select(`
-      profile_id,
-      full_name,
-      phone_number,
-      identity_card,
-      avatar_url,
-      gender,
-      dob,
-      address,
-      status,
-      accounts (
-        email,
-        role_name,
-        status
-      )
-    `)
-    .eq('profile_id', profileId)
-    .single(); 
+  const profile = await UserProfileModel.getProfileDetailById(profileId);
 
-  // Nếu không tìm thấy hoặc có lỗi PGRST116 (No rows found)
-  if (error || !profile) {
-    console.error('Lỗi DB hoặc không tìm thấy profile:', error?.message);
+  // Nếu không tìm thấy hoặc có lỗi
+  if (!profile) {
     throw new Error('Không tìm thấy thông tin hồ sơ người dùng hợp lệ!');
   }
 
@@ -338,24 +269,14 @@ export const updateProfileAll = async (accountId, updateFields, avatarFile) => {
   let avatarUrl = null;
   const now = new Date();
 
-
   const normalizedStatus = status ? String(status).trim().toLowerCase() : undefined;
   const normalizedGender = gender ? String(gender).trim().toLowerCase() : undefined;
 
   // 1. LẤY THÔNG TIN HIỆN TẠI TRONG DB ĐỂ ĐỐI CHIẾU
-  const { data: existingAccount, error: accError } = await supabase
-    .from('accounts')
-    .select('email, phone, status')
-    .eq('account_id', accountId)
-    .single();
+  const existingAccount = await UserProfileModel.getAccountById(accountId);
+  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
 
-  const { data: existingProfile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('profile_id, full_name, phone_number, identity_card, avatar_url, gender, dob, address, status')
-    .eq('account_id', accountId)
-    .single();
-
-  if (accError || profileError || !existingAccount || !existingProfile) {
+  if (!existingAccount || !existingProfile) {
     throw new Error('Không tìm thấy tài khoản hoặc hồ sơ người dùng hợp lệ!');
   }
 
@@ -365,17 +286,17 @@ export const updateProfileAll = async (accountId, updateFields, avatarFile) => {
 
   // 2. KIỂM TRA TRÙNG LẶP DỮ LIỆU (Email, Phone, CCCD)
   if (isValidAndChanged(email, existingAccount.email)) {
-    const { data: checkEmail } = await supabase.from('accounts').select('account_id').eq('email', email.trim()).single();
+    const checkEmail = await UserProfileModel.checkDuplicate('accounts', 'email', email.trim());
     if (checkEmail) throw new Error('Email mới này đã được sử dụng bởi một tài khoản khác!');
   }
 
   if (isValidAndChanged(phone, existingAccount.phone)) {
-    const { data: checkPhone } = await supabase.from('accounts').select('account_id').eq('phone', phone.trim()).single();
+    const checkPhone = await UserProfileModel.checkDuplicate('accounts', 'phone', phone.trim());
     if (checkPhone) throw new Error('Số điện thoại mới này đã được sử dụng bởi một tài khoản khác!');
   }
 
   if (isValidAndChanged(identity_card, existingProfile.identity_card)) {
-    const { data: checkIdCard } = await supabase.from('user_profiles').select('profile_id').eq('identity_card', identity_card.trim()).single();
+    const checkIdCard = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
     if (checkIdCard) throw new Error('Số CMND/CCCD mới này đã tồn tại trên hệ thống!');
   }
 
@@ -390,10 +311,7 @@ export const updateProfileAll = async (accountId, updateFields, avatarFile) => {
         const oldFileName = urlParts.length > 1 ? urlParts[1] : null;
 
         if (oldFileName) {
-          const { error: storageError } = await supabase
-            .storage
-            .from('avatars')
-            .remove([oldFileName]);
+          const { error: storageError } = await UserProfileModel.deleteAvatarFile(oldFileName);
 
           if (storageError) {
             console.error('Lỗi Supabase Storage khi xóa file cũ:', storageError.message);
@@ -427,14 +345,20 @@ export const updateProfileAll = async (accountId, updateFields, avatarFile) => {
   // 5. THỰC THI THAY ĐỔI VÀO DATABASE
   if (Object.keys(accountUpdate).length > 0) {
     accountUpdate.updated_at = now;
-    const { error: errAcc } = await supabase.from('accounts').update(accountUpdate).eq('account_id', accountId);
-    if (errAcc) throw new Error(`Lỗi hệ thống khi cập nhật bảng tài khoản: ${errAcc.message}`);
+    try {
+      await UserProfileModel.updateAccountById(accountId, accountUpdate);
+    } catch (errAcc) {
+      throw new Error(`Lỗi hệ thống khi cập nhật bảng tài khoản: ${errAcc.message}`);
+    }
   }
 
   if (Object.keys(profileUpdate).length > 0) {
     profileUpdate.updated_at = now;
-    const { error: errProf } = await supabase.from('user_profiles').update(profileUpdate).eq('account_id', accountId);
-    if (errProf) throw new Error(`Lỗi hệ thống khi cập nhật bảng hồ sơ: ${errProf.message}`);
+    try {
+      await UserProfileModel.updateProfileByAccountId(accountId, profileUpdate);
+    } catch (errProf) {
+      throw new Error(`Lỗi hệ thống khi cập nhật bảng hồ sơ: ${errProf.message}`);
+    }
   }
 
   // 6. TRẢ VỀ DỮ LIỆU MỚI NHẤT
