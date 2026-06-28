@@ -220,6 +220,7 @@ export const createStaff = async (staffData, avatarFile) => {
   };
 };
 
+
 // lấy danh sách hồ sơ người dùng 
 export const getProfileList = async (page, limit) => {
   // 1. Đếm tổng số bản ghi hiện có trong DB trước bằng cơ chế head: true (tối ưu hóa tốc độ đếm)
@@ -255,6 +256,7 @@ export const getProfileList = async (page, limit) => {
       identity_card,
       accounts (
         email,
+        role_name,
         status
       )
     `)
@@ -274,11 +276,60 @@ export const getProfileList = async (page, limit) => {
     phone: item.phone_number,
     identity_card: item.identity_card,
     email: item.accounts ? item.accounts.email : null,
-    status: item.accounts ? item.accounts.status : null
+    status: item.accounts ? item.accounts.status : null,
+    role_name: item.accounts ? item.accounts.role_name : null
   }));
 
   return {
     profiles: formattedProfiles,
     totalItems: totalItems
   };
+};
+
+
+// lấy thông tin chi tiết hồ sơ
+export const getProfileDetail = async (profileId) => {
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select(`
+      profile_id,
+      full_name,
+      phone_number,
+      identity_card,
+      avatar_url,
+      gender,
+      dob,
+      address,
+      status,
+      accounts (
+        email,
+        role_name,
+        status
+      )
+    `)
+    .eq('profile_id', profileId)
+    .single(); 
+
+  // Nếu không tìm thấy hoặc có lỗi PGRST116 (No rows found)
+  if (error || !profile) {
+    console.error('Lỗi DB hoặc không tìm thấy profile:', error?.message);
+    throw new Error('Không tìm thấy thông tin hồ sơ người dùng hợp lệ!');
+  }
+
+  const formattedDetail = {
+    profile_id: profile.profile_id,
+    full_name: profile.full_name,
+    identity_card: profile.identity_card,
+    avatar_url: profile.avatar_url,
+    gender: profile.gender,
+    dob: profile.dob,
+    address: profile.address,
+    status: profile.status,
+    
+    email: profile.accounts ? profile.accounts.email : null,
+    phone: profile.phone_number, 
+    role_name: profile.accounts ? profile.accounts.role_name : null,
+  };
+
+  return formattedDetail;
 };

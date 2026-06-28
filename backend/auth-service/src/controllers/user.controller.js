@@ -135,3 +135,39 @@ export const handleGetProfileList = async (req, res) => {
     });
   }
 };
+
+
+// lấy thông tin chi tiết hồ sơ
+export const handleGetProfileDetail = async (req, res) => {
+  try {
+    const { profileId } = req.params;
+
+    if (!profileId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Vui lòng cung cấp mã hồ sơ (profileId) cần xem!'
+      });
+    }
+
+    const result = await userService.getProfileDetail(profileId);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy thông tin chi tiết hồ sơ thành công!',
+      data: result
+    });
+  } catch (error) {
+    if (error.message.includes('Không tìm thấy')) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Lấy Chi Tiết Profile:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
