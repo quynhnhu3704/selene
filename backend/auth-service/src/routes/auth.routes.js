@@ -3,6 +3,7 @@ import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogl
 import { handleCreateStaff, handleGetProfileDetail, handleGetProfileList, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
+import { handleGetPermissionsByAccountId } from '../controllers/permission.controller.js';
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.post('/refresh-token', handleRefreshToken);
 
 // user - customer
 router.put('/profile/update', verifyToken, upload.single('avatar_url'), handleUpdateCustomerProfile);
+router.get('/permissions/:accountId', verifyToken, handleGetPermissionsByAccountId);
 
 
 // user - admin
