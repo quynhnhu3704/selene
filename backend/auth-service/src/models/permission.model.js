@@ -2,6 +2,17 @@ import { supabase } from '../configs/supabase.js';
 
 export const PermissionModel = {
 
+    // Lấy danh sách tất cả các quyền hiện có trong hệ thống
+    getAllPermissions: async () => {
+        const { data, error } = await supabase
+            .from('permissions')
+            .select('name');
+
+        if (error) throw error;
+
+        return data ? data.map(p => p.name) : [];
+    },
+
     // lấy quyền theo accountID
     getPermissionsByAccountId: async (accountId) => {
         const { data, error } = await supabase

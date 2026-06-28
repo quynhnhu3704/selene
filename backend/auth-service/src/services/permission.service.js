@@ -1,6 +1,19 @@
 import { PermissionModel } from '../models/permission.model.js';
 import { AccountModel } from '../models/account.model.js';
 
+
+// lấy tất cả các quyền hiện có
+export const getAllSystemPermissions = async () => {
+  const permissions = await PermissionModel.getAllPermissions();
+  
+  return {
+    total: permissions.length,
+    permissions: permissions
+  };
+};
+
+
+// lấy quuyeenf theo accountId
 export const getPermissionsByAccountId = async (accountId) => {
   // 1. Kiểm tra tài khoản có tồn tại hay không
   const account = await AccountModel.findById(accountId);

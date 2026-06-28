@@ -3,7 +3,7 @@ import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogl
 import { handleCreateStaff, handleGetProfileDetail, handleGetProfileList, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
-import { handleGetPermissionsByAccountId } from '../controllers/permission.controller.js';
+import { handleGetAllPermissions, handleGetPermissionsByAccountId } from '../controllers/permission.controller.js';
 
 const router = express.Router();
 
@@ -32,5 +32,6 @@ router.post('/manage/staff/add', verifyToken, upload.single('avatar_url'), handl
 router.get('/manage/profiles', verifyToken, handleGetProfileList);
 router.get('/manage/profiles/:profileId', verifyToken, handleGetProfileDetail);
 router.put('/manage/profiles/update/:accountId', verifyToken, upload.single('avatar_url'), handleUpdateProfileAll);
+router.get('/manage/permissions', handleGetAllPermissions);
 
 export default router;
