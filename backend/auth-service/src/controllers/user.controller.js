@@ -252,7 +252,7 @@ export const handleUpdateAccount = async (req, res) => {
   }
 };
 
-// lấy danh scahs account
+// lấy danh sách account
 export const handleGetAccounts = async (req, res) => {
   try {
     // Lấy page và limit từ query parameters, mặc định nếu không truyền là page=1, limit=10
@@ -269,6 +269,44 @@ export const handleGetAccounts = async (req, res) => {
 
   } catch (error) {
     console.error('Lỗi Controller Lấy Danh Sách Account:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
+// thay đổi mật khẩu
+export const handleChangePassword = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId;
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Dữ liệu xác thực tài khoản không hợp lệ!'
+      });
+    }
+
+    const { newPassword } = req.body;
+
+    // Gọi tầng service xử lý nghiệp vụ
+    const result = await userService.changePassword(accountId, newPassword);
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message
+    });
+
+  } catch (error) {
+    if (error.message.includes('Vui lòng cung cấp')) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Đổi Mật Khẩu:', error.stack);
     return res.status(500).json({
       status: 500,
       message: 'Internal Server Error!'

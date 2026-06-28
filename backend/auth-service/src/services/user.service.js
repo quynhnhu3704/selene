@@ -305,7 +305,7 @@ export const updateAccount = async (accountId, { email, password, phone, status 
   };
 };
 
-// lấy danh scahs account
+// lấy danh sách account
 export const getAccountList = async (page = 1, limit = 10) => {
   // Đảm bảo page và limit là số nguyên dương
   const pageNum = Math.max(1, parseInt(page));
@@ -331,4 +331,20 @@ export const getAccountList = async (page = 1, limit = 10) => {
       totalPages
     }
   };
+};
+
+// thay đổ mật khẩu
+export const changePassword = async (accountId, newPassword) => {
+  if (!newPassword) {
+    throw new Error('Vui lòng cung cấp mật khẩu mới!');
+  }
+
+  // 1. Mã hóa mật khẩu mới bằng bcrypt
+  const saltRounds = 10;
+  const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+  // 2. Chỉ gọi DUY NHẤT lớp Model để cập nhật xuống DB (Không viết lệnh supabase tại đây nữa)
+  await AccountModel.updateAccountById(accountId, { password: hashedNewPassword });
+
+  return { message: 'Đổi mật khẩu mới thành công!' };
 };

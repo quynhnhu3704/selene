@@ -1,6 +1,6 @@
 import express from 'express';
 import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken } from '../controllers/auth.controller.js';
-import { handleCreateStaff, handleGetAccounts, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
+import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
 import { handleGetAllPermissions, handleGetPermissionsByAccountId } from '../controllers/permission.controller.js';
@@ -25,6 +25,7 @@ router.post('/refresh-token', handleRefreshToken);
 // user - customer
 router.put('/profile/update', verifyToken, upload.single('avatar_url'), handleUpdateCustomerProfile);
 router.get('/permissions/:accountId', verifyToken, handleGetPermissionsByAccountId);
+router.patch('/account/change-password', verifyToken, handleChangePassword);
 
 
 // user - admin
@@ -40,5 +41,6 @@ router.get('/manage/permissions', handleGetAllPermissions);
 // account
 router.put('/manage/account/update/:accountId', verifyToken, handleUpdateAccount);
 router.get('/manage/accounts', verifyToken, handleGetAccounts);
+
 
 export default router;
