@@ -1,16 +1,13 @@
-import { supabase } from '../configs/supabase.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { config } from '../configs/index.js';
 import nodemailer from 'nodemailer';
 import { OAuth2Client } from 'google-auth-library';
-
+import { config } from '../configs/index.js';
+import { AccountModel } from '../models/account.model.js';
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
-
-const now = new Date().toISOString();
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -18,82 +15,73 @@ const googleClient = new OAuth2Client(
   process.env.GOOGLE_REDIRECT_URL
 );
 
+// Cấu hình kết nối trực tiếp đến server SMTP của Google
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT) || 465,
+  secure: true, // Sử dụng SSL/TLS bắt buộc cho cổng 465
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// Hàm tự động sinh chuỗi ký tự ngẫu nhiên gồm 8 ký tự viết hoa để làm mật khẩu mới
+const generateRandomPassword = () => {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+};
+
 // Đăng ký tài khoản
 export const registerUser = async ({ email, phone, password, full_name }) => {
-
   const now = new Date().toISOString();
 
   // Kiểm tra email hoặc số điện thoại có tồn tại chưa
-  const { data: existingAccount } = await supabase
-    .from('accounts')
-    .select('account_id')
-    .or(`email.eq.${email},phone.eq.${phone}`)
-    .single();
-
+  const existingAccount = await AccountModel.findByEmailOrPhone(email, phone);
   if (existingAccount) {
     throw new Error('Email hoặc số điện thoại đã được đăng ký!');
   }
 
   // Tìm Role customer
-  const { data: roleData } = await supabase
-    .from('roles')
-    .select('role_id')
-    .eq('name', 'customer')
-    .single();
-
-
+  const roleData = await AccountModel.findRoleByName('customer');
   if (!roleData) throw new Error('Hệ thống chưa cấu hình vai trò customer!');
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const accountId = 'acc-' + generateId();
 
   // Lưu vào bảng accounts
-  const { error: accError } = await supabase
-    .from('accounts')
-    .insert([{
-      account_id: accountId,
-      email,
-      phone,
-      password: hashedPassword,
-      role_id: roleData.role_id,
-      role_name: 'customer',
-      status: 'active',
-      created_at: now,
-      updated_at: now
-    }]);
-
-  if (accError) throw new Error(accError.message);
+  await AccountModel.createAccount({
+    account_id: accountId,
+    email,
+    phone,
+    password: hashedPassword,
+    role_id: roleData.role_id,
+    role_name: 'customer',
+    status: 'active',
+    created_at: now,
+    updated_at: now
+  });
 
   // Lưu vào bảng user_profiles
-  const { error: profileError } = await supabase
-    .from('user_profiles')
-    .insert([{
-      profile_id: 'user-' + generateId(),
-      account_id: accountId,
-      full_name,
-      phone_number: phone,
-      status: 'active',
-      created_at: now,
-      updated_at: now
-    }]);
-
-  if (profileError) throw new Error(profileError.message);
+  await AccountModel.createProfile({
+    profile_id: 'user-' + generateId(),
+    account_id: accountId,
+    full_name,
+    phone_number: phone,
+    status: 'active',
+    created_at: now,
+    updated_at: now
+  });
 
   return { message: 'Đăng ký tài khoản thành công!' };
 };
 
 // Đăng nhập
 export const loginUser = async (email, password) => {
-
   // Tìm tài khoản
-  const { data: account, error } = await supabase
-    .from('accounts')
-    .select('*')
-    .eq('email', email)
-    .single();
+  const account = await AccountModel.findByEmail(email);
 
   // Sai tài khoản
-  if (error || !account) {
+  if (!account) {
     throw new Error('Email hoặc mật khẩu không chính xác!');
   }
 
@@ -108,14 +96,8 @@ export const loginUser = async (email, password) => {
     throw new Error('Email hoặc mật khẩu không chính xác!');
   }
 
-  // lấy quyền
-  const { data: permissionLinks } = await supabase
-    .from('role_permissions')
-    .select('permissions(name)')
-    .eq('role_id', account.role_id);
-
-  // chuyển quyền thành mảng
-  const permissions = permissionLinks ? permissionLinks.map(p => p.permissions.name) : [];
+  // lấy quyền và chuyển quyền thành mảng
+  const permissions = await AccountModel.getPermissionsByRoleId(account.role_id);
 
   // dữ liệu được nhúng vào jwt
   const payload = {
@@ -140,31 +122,10 @@ export const loginUser = async (email, password) => {
 };
 
 // Quên mật khẩu
-// Cấu hình kết nối trực tiếp đến server SMTP của Google
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT) || 465,
-  secure: true, // Sử dụng SSL/TLS bắt buộc cho cổng 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// Hàm tự động sinh chuỗi ký tự ngẫu nhiên gồm 8 ký tự viết hoa để làm mật khẩu mới
-const generateRandomPassword = () => {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
-};
-
 export const forgotPasswordService = async (email) => {
   // Kiểm tra email đầu vào xem có tài khoản nào sở hữu chưa
-  const { data: account, error } = await supabase
-    .from('accounts')
-    .select('*')
-    .eq('email', email)
-    .single();
-
-  if (!account || error) {
+  const account = await AccountModel.findByEmail(email);
+  if (!account) {
     throw new Error('Địa chỉ email này không tồn tại trong hệ thống!');
   }
 
@@ -175,15 +136,12 @@ export const forgotPasswordService = async (email) => {
   const hashedNewPassword = await bcrypt.hash(newRawPassword, 10);
 
   // Tiến hành cập nhật đè mật khẩu cũ trong bảng accounts bằng mật khẩu mới đã mã hóa
-  const { error: updateError } = await supabase
-    .from('accounts')
-    .update({ 
+  try {
+    await AccountModel.updateAccount(email, { 
       password: hashedNewPassword,
-      updated_at: now
-    })
-    .eq('email', email);
-
-  if (updateError) {
+      updated_at: new Date().toISOString()
+    });
+  } catch (updateError) {
     throw new Error(`Lỗi cập nhật mật khẩu vào Database: ${updateError.message}`);
   }
 
@@ -228,7 +186,7 @@ export const forgotPasswordService = async (email) => {
   }
 };
 
-
+// đăng nhập với gg
 export const loginWithGoogle = async (code) => {
   let payload;
   try {
@@ -253,13 +211,10 @@ export const loginWithGoogle = async (code) => {
 
   // Lấy dữ liệu Email, Tên, Ảnh đại diện từ Google cung cấp
   const { email, name, picture } = payload;
+  const now = new Date().toISOString();
 
   // 3. Truy vấn xem tài khoản Email này đã từng tồn tại trong bảng accounts chưa
-  let { data: account } = await supabase
-    .from('accounts')
-    .select('*')
-    .eq('email', email)
-    .single();
+  let account = await AccountModel.findByEmail(email);
 
   // 4. Nếu tài khoản chưa tồn tại -> Tự động đăng ký một tài khoản khách hàng mới tinh
   if (!account) {
@@ -267,18 +222,12 @@ export const loginWithGoogle = async (code) => {
     const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
 
     // Tìm Role customer động từ DB để tránh fix cứng ID sai lệch
-    const { data: roleData } = await supabase
-      .from('roles')
-      .select('role_id')
-      .eq('name', 'customer')
-      .single();
-
+    const roleData = await AccountModel.findRoleByName('customer');
     const finalRoleId = roleData ? roleData.role_id : '3'; // Fallback về '3' nếu DB lỗi
 
     // Insert thông tin vào bảng accounts
-    const { data: newAcc, error: accError } = await supabase
-      .from('accounts')
-      .insert([{
+    try {
+      account = await AccountModel.createAccount({
         account_id: accountId,
         email,
         password: dummyPassword,
@@ -287,17 +236,14 @@ export const loginWithGoogle = async (code) => {
         status: 'active',
         created_at: now,
         updated_at: now
-      }])
-      .select()
-      .single();
-
-    if (accError) throw new Error(`Lỗi tạo tài khoản từ Google: ${accError.message}`);
-    account = newAcc;
+      });
+    } catch (accError) {
+      throw new Error(`Lỗi tạo tài khoản từ Google: ${accError.message}`);
+    }
 
     // Insert thông tin chi tiết kèm ảnh đại diện vào bảng user_profiles
-    const { error: profError } = await supabase
-      .from('user_profiles')
-      .insert([{
+    try {
+      await AccountModel.createProfile({
         profile_id: 'user-' + generateId(),
         account_id: accountId,
         full_name: name,
@@ -305,9 +251,10 @@ export const loginWithGoogle = async (code) => {
         status: 'active',
         created_at: now,
         updated_at: now
-      }]);
-      
-    if (profError) throw new Error(`Lỗi tạo hồ sơ người dùng từ Google: ${profError.message}`);
+      });
+    } catch (profError) {
+      throw new Error(`Lỗi tạo hồ sơ người dùng từ Google: ${profError.message}`);
+    }
   }
 
   // 5. Nếu tài khoản bị quản trị viên khóa thì từ chối cấp quyền đăng nhập
@@ -328,7 +275,6 @@ export const loginWithGoogle = async (code) => {
   };
 };
 
-
 // cấp lại accessToken
 export const refreshAccessToken = async (refreshToken) => {
   try {
@@ -336,23 +282,14 @@ export const refreshAccessToken = async (refreshToken) => {
     const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
 
     // 2. Lấy thông tin tài khoản từ database để đảm bảo tài khoản vẫn đang active
-    const { data: account, error } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('account_id', decoded.accountId)
-      .single();
+    const account = await AccountModel.findById(decoded.accountId);
 
-    if (error || !account || account.status === 'inactive') {
+    if (!account || account.status === 'inactive') {
       throw new Error('Tài khoản không tồn tại hoặc đã bị khóa!');
     }
 
     // 3. Lấy lại danh sách quyền của tài khoản (đề phòng quyền vừa được admin thay đổi)
-    const { data: permissionLinks } = await supabase
-      .from('role_permissions')
-      .select('permissions(name)')
-      .eq('role_id', account.role_id);
-
-    const permissions = permissionLinks ? permissionLinks.map(p => p.permissions.name) : [];
+    const permissions = await AccountModel.getPermissionsByRoleId(account.role_id);
 
     // 4. Tạo Payload mới (đồng bộ cấu trúc camelCase accountId với hàm Login của bạn)
     const jwtPayload = {
