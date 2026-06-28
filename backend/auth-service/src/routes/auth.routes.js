@@ -1,6 +1,6 @@
 import express from 'express';
 import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken } from '../controllers/auth.controller.js';
-import { handleCreateStaff, handleGetProfileDetail, handleGetProfileList, handleUpdateCustomerProfile, handleUpdateProfileStaff } from '../controllers/user.controller.js';
+import { handleCreateStaff, handleGetProfileDetail, handleGetProfileList, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
 
@@ -29,6 +29,6 @@ router.put('/profile/update', verifyToken, upload.single('avatar_url'), handleUp
 router.post('/manage/staff/add', verifyToken, upload.single('avatar_url'), handleCreateStaff);
 router.get('/manage/profiles', verifyToken, handleGetProfileList);
 router.get('/manage/profiles/:profileId', verifyToken, handleGetProfileDetail);
-router.put('/manage/staff/profiles/update/:accountId', verifyToken, upload.single('avatar_url'), handleUpdateProfileStaff);
+router.put('/manage/profiles/update/:accountId', verifyToken, upload.single('avatar_url'), handleUpdateProfileAll);
 
 export default router;

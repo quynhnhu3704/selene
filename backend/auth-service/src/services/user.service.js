@@ -333,7 +333,7 @@ export const getProfileDetail = async (profileId) => {
 };
 
 // cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles 
-export const updateProfileStaff = async (accountId, updateFields, avatarFile) => {
+export const updateProfileAll = async (accountId, updateFields, avatarFile) => {
   const { full_name, phone, email, identity_card, gender, dob, address, status } = updateFields;
   let avatarUrl = null;
   const now = new Date();

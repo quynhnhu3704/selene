@@ -171,7 +171,7 @@ export const handleGetProfileDetail = async (req, res) => {
 };
 
 // cập nhật thông tin đồng bộ 2 bảng
-export const handleUpdateProfileStaff = async (req, res) => {
+export const handleUpdateProfileAll = async (req, res) => {
   try {
     const { accountId } = req.params;
     const { full_name, phone, email, identity_card, gender, dob, address, status } = req.body;
@@ -185,7 +185,7 @@ export const handleUpdateProfileStaff = async (req, res) => {
     }
 
     // Gọi service xử lý logic nghiệp vụ
-    const result = await userService.updateProfileStaff(
+    const result = await userService.updateProfileAll(
       accountId,
       { full_name, phone, email, identity_card, gender, dob, address, status },
       avatarFile
