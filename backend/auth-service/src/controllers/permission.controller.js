@@ -56,3 +56,33 @@ export const handleGetPermissionsByAccountId = async (req, res) => {
     });
   }
 };
+
+// thêm quyền mới
+export const handleCreatePermission = async (req, res) => {
+  try {
+    const result = await permissionService.createNewPermission(req.body);
+
+    // Thành công (Created -> 211 hoặc 201. Ở đây dùng chuẩn 201 Created)
+    return res.status(201).json({
+      status: 201,
+      message: 'Thêm mới quyền hạn thành công!',
+      data: result
+    });
+
+  } catch (error) {
+    // Nếu là lỗi nghiệp vụ được throw chủ động từ Service (400, 409)
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message
+      });
+    }
+
+    // Lỗi hệ thống không lường trước (Ví dụ lỗi kết nối DB, cú pháp database)
+    console.error("Error at handleCreatePermission: ", error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};

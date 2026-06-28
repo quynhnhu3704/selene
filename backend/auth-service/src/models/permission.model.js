@@ -36,5 +36,36 @@ export const PermissionModel = {
         return data.roles.role_permissions
             .map(rp => rp.permissions?.name)
             .filter(Boolean);
+    },
+
+    // Kiểm tra quyền đã tồn tại bằng name
+    getPermissionByName: async (name) => {
+        const { data, error } = await supabase
+            .from('permissions')
+            .select('*')
+            .eq('name', name)
+            .single(); // Trả về 1 bản ghi hoặc null
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 là lỗi không tìm thấy bản ghi (hợp lệ trong trường hợp này)
+        return data;
+    },
+
+    // Chèn permission mới vào database
+    createPermission: async (permissionData) => {
+        const { data, error } = await supabase
+            .from('permissions')
+            .insert([
+                {
+                    permission_id: permissionData.permission_id,
+                    name: permissionData.name,
+                    description: permissionData.description,
+                    status: permissionData.status || 'active',
+                    created_at: permissionData.created_at
+                }
+            ])
+            .select();
+
+        if (error) throw error;
+        return data[0];
     }
 }
