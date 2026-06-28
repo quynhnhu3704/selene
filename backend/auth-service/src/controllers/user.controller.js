@@ -217,3 +217,37 @@ export const handleUpdateProfileAll = async (req, res) => {
     });
   }
 };
+
+// cập nhật account
+export const handleUpdateAccount = async (req, res) => {
+  try {
+    const { accountId } = req.params; 
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Vui lòng cung cấp ID tài khoản cần cập nhật!'
+      });
+    }
+
+    // Nhận thêm email từ body
+    const { email, password, phone, status } = req.body;
+
+    // Truyền email vào Service xử lý
+    const result = await userService.updateAccount(accountId, { email, password, phone, status });
+
+    return res.status(200).json({
+      status: 200,
+      message: "Admin cập nhật tài khoản thành công!",
+      account: result.account,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    console.error('Lỗi Admin Cập nhật Tài khoản:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};

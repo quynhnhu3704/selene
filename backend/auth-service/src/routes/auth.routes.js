@@ -1,6 +1,6 @@
 import express from 'express';
 import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken } from '../controllers/auth.controller.js';
-import { handleCreateStaff, handleGetProfileDetail, handleGetProfileList, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
+import { handleCreateStaff, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
 import { handleGetAllPermissions, handleGetPermissionsByAccountId } from '../controllers/permission.controller.js';
@@ -28,10 +28,16 @@ router.get('/permissions/:accountId', verifyToken, handleGetPermissionsByAccount
 
 
 // user - admin
+// nhân viên
 router.post('/manage/staff/add', verifyToken, upload.single('avatar_url'), handleCreateStaff);
 router.get('/manage/profiles', verifyToken, handleGetProfileList);
 router.get('/manage/profiles/:profileId', verifyToken, handleGetProfileDetail);
 router.put('/manage/profiles/update/:accountId', verifyToken, upload.single('avatar_url'), handleUpdateProfileAll);
+
+// quyền
 router.get('/manage/permissions', handleGetAllPermissions);
+
+// account
+router.put('/manage/account/update/:accountId', verifyToken, handleUpdateAccount);
 
 export default router;

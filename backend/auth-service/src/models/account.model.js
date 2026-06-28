@@ -80,5 +80,7 @@ export const AccountModel = {
       .eq('email', email);
     if (error) throw error;
     return true;
-  }
+  },
+
+  
 };
