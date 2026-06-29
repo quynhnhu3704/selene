@@ -19,5 +19,6 @@ router.get('/manage/categories', verifyToken, categoryController.handleGetAllCat
 
 // brand
 router.get('/manage/brands', verifyToken, brandController.handleGetAllBrands);
+router.post('/manage/brand/add', verifyToken, brandController.handleCreateBrand);
 
 export default router;

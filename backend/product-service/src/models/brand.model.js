@@ -18,5 +18,37 @@ export const BrandModel = {
 
     if (error) throw error;
     return { data, count };
+  },
+
+  // Kiểm tra tên thương hiệu đã tồn tại chưa
+  checkNameExists: async (name) => {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('brand_id')
+      .ilike('name', name)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Tạo mới thương hiệu
+  create: async (brandData) => {
+    const { data, error } = await supabase
+      .from('brands')
+      .insert([
+        {
+          brand_id: brandData.brand_id,
+          name: brandData.name,
+          description: brandData.description || null,
+          status: brandData.status || 'active',
+          created_at: brandData.created_at,
+          updated_at: brandData.updated_at
+        }
+      ])
+      .select();
+
+    if (error) throw error;
+    return data[0];
   }
 };
