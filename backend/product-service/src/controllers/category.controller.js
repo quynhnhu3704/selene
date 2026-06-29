@@ -54,3 +54,28 @@ export const handleUpdateCategory = async (req, res) => {
     });
   }
 };
+
+// lấy danh sách
+export const handleGetAllCategories = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+
+    // Gọi xuống service để lấy dữ liệu phân trang
+    const result = await categoryService.getAllCategories({ page, limit });
+
+    // Trả về cấu trúc JSON chuẩn hệ thống của bạn
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy danh sách danh mục thành công!',
+      data: result.categories,
+      pagination: result.pagination
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleGetAllCategories Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};

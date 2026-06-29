@@ -83,3 +83,34 @@ export const updateCategory = async (category_id, updateInput) => {
     throw error;
   }
 }
+
+// lấy danh sách
+export const getAllCategories = async (options = {}) => {
+  try {
+    // 1. Cấu hình phân trang (Pagination) giống hệt logic Product của bạn
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10; // Mặc định 10 danh mục/trang
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // 2. Gọi Model lấy dữ liệu từ Supabase
+    const { data, count } = await CategoryModel.getCategories(from, to);
+
+    // 3. Tính toán tổng số trang
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      categories: data,
+      pagination: {
+        currentPage: page,
+        limit,
+        totalItems: count,
+        totalPages
+      }
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại getAllCategories Service:', error.message);
+    throw new Error('Không thể kết nối đến Supabase để lấy danh sách danh mục!');
+  }
+};

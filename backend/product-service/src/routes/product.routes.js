@@ -14,5 +14,6 @@ router.get('/category-search', productController.handleSearchProductsByCategory)
 // category
 router.post('/manage/category/add', verifyToken, categoryController.handleCreateCategory);
 router.put('/manage/category/update/:categoryId', verifyToken, categoryController.handleUpdateCategory);
+router.get('/manage/categories', verifyToken, categoryController.handleGetAllCategories);
 
 export default router;

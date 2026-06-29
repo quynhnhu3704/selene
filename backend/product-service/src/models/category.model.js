@@ -61,6 +61,25 @@ export const CategoryModel = {
 
         if (error) throw error;
         return data[0];
-    }
+    },
+
+    // Lấy danh sách danh mục có phân trang
+  getCategories: async (from, to) => {
+    const { data, error, count } = await supabase
+      .from('categories')
+      .select(`
+        category_id,
+        name,
+        description,
+        status,
+        created_at,
+        updated_at
+      `, { count: 'exact' }) // Đếm tổng số bản ghi thực tế trong DB
+      .order('created_at', { ascending: false }) // Danh mục mới nhất xếp lên đầu
+      .range(from, to); // Cắt dữ liệu theo trang [from, to]
+
+    if (error) throw error;
+    return { data, count };
+  }
 
 }
