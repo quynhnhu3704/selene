@@ -1,20 +1,35 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../configs/index.js';
 
-export const requireAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+export const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Unauthorized: Missing token' });
+  // TRƯỜNG HỢP 1: Không tìm thấy Token trong Header (Chưa đăng nhập)
+  if (!token) {
+    return res.status(401).json({
+      status: 401,
+      message: 'Truy cập bị từ chối! Bạn chưa đăng nhập hoặc thiếu Access Token.'
+    });
   }
 
-  const token = authHeader.split(' ')[1];
-
   try {
-    const decoded = jwt.verify(token, config.jwtSecret);
-    req.user = decoded;
+    const decoded = jwt.verify(token, config.jwtAccessSecret);
+    req.user = decoded; 
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
+    // TRƯỜNG HỢP 2: Token gửi lên bị lỗi (Hết hạn hoặc không hợp lệ)
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        status: 401,
+        message: 'Phiên đăng nhập của bạn đã hết hạn! Vui lòng đăng nhập lại để làm mới token.'
+      });
+    }
+
+    // Các lỗi khác của JWT như Token bị chỉnh sửa, sai chữ ký (Signature)...
+    return res.status(403).json({
+      status: 403,
+      message: 'Access Token không hợp lệ hoặc đã bị thay đổi trái phép!'
+    });
   }
 };

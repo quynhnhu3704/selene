@@ -25,7 +25,6 @@ export const handleGetAllProducts = async (req, res) => {
   }
 };
 
-
 // lấy chi tiết sản phảm
 export const handleGetProductDetail = async (req, res) => {
   try {
@@ -72,7 +71,6 @@ export const handleSearchProductsByName = async (req, res) => {
     });
   }
 };
-
 
 // tìm sp theo danh mục
 export const handleSearchProductsByCategory = async (req, res) => {
