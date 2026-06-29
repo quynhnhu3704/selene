@@ -73,3 +73,47 @@ export const createBrand = async (brandInput) => {
     throw error;
   }
 }
+
+// cập nhật brand
+export const updateBrand = async (brand_id, updateInput) => {
+  try {
+    const { name, description, status } = updateInput;
+
+    // 1. Kiểm tra nếu có cập nhật tên thì không được để trống
+    if (name !== undefined && name.trim() === '') {
+      throw new Error('Tên thương hiệu không được để trống!');
+    }
+
+    // 2. Nếu sửa tên, kiểm tra xem tên mới có bị trùng với thương hiệu khác không
+    if (name) {
+      const isNameDup = await BrandModel.checkNameExistsForUpdate(name.trim(), brand_id);
+      if (isNameDup) {
+        throw new Error(`Tên thương hiệu '${name}' đã được sử dụng bởi một thương hiệu khác!`);
+      }
+    }
+
+    // 3. Lấy thời gian hiện tại từ Node.js
+    const updated_at = new Date().toISOString();
+
+    // 4. Chuẩn bị dữ liệu update động
+    const updateData = {
+      ...(name && { name: name.trim() }),
+      ...(description !== undefined && { description }),
+      ...(status && { status }),
+      updated_at
+    };
+
+    // 5. Gọi model thực thi
+    const updatedBrand = await BrandModel.update(brand_id, updateData);
+
+    if (!updatedBrand) {
+      throw new Error('Không tìm thấy thương hiệu yêu cầu hoặc cập nhật thất bại!');
+    }
+
+    return updatedBrand;
+
+  } catch (error) {
+    console.error('Lỗi tại updateBrand Service:', error.message);
+    throw error;
+  }
+}

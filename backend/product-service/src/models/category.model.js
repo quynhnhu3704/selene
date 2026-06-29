@@ -38,7 +38,7 @@ export const CategoryModel = {
         const { data, error } = await supabase
             .from('categories')
             .select('category_id')
-            .eq('name', name)
+            .ilike('name', name)
             .neq('category_id', currentCategoryId) // Không tính chính nó
             .maybeSingle();
 

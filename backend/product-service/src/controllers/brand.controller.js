@@ -51,3 +51,32 @@ export const handleCreateBrand = async (req, res) => {
     });
   }
 };
+
+// cập nhật brand
+export const handleUpdateBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params; // Lấy brandId từ URL route
+    const { name, description, status } = req.body;
+
+    // Gọi service xử lý
+    const result = await brandService.updateBrand(brandId, { name, description, status });
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Cập nhật thương hiệu thành công!',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleUpdateBrand Controller:', error.message);
+
+    const isClientError = error.message.includes('trống') || 
+                          error.message.includes('đã được sử dụng') || 
+                          error.message.includes('Không tìm thấy');
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};

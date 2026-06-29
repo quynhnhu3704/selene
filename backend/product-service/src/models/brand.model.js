@@ -50,5 +50,35 @@ export const BrandModel = {
 
     if (error) throw error;
     return data[0];
+  },
+
+  // Kiểm tra tên muốn sửa có trùng với thương hiệu KHÁC không 
+  checkNameExistsForUpdate: async (name, currentBrandId) => {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('brand_id')
+      .ilike('name', name) 
+      .neq('brand_id', currentBrandId) // Loại trừ chính thương hiệu đang sửa
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật thương hiệu theo ID
+  update: async (brand_id, updateData) => {
+    const { data, error } = await supabase
+      .from('brands')
+      .update({
+        name: updateData.name,
+        description: updateData.description,
+        status: updateData.status,
+        updated_at: updateData.updated_at 
+      })
+      .eq('brand_id', brand_id)
+      .select();
+
+    if (error) throw error;
+    return data[0];
   }
 };
