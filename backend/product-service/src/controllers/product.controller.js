@@ -97,3 +97,29 @@ export const handleSearchProductsByCategory = async (req, res) => {
     });
   }
 };
+
+// thêm sp
+export const handleCreateProduct = async (req, res) => {
+  try {
+    // req.body chứa các thông tin chữ, req.files chứa mảng các file ảnh từ Multer
+    const result = await productService.createProductWithVariants(req.body, req.files);
+
+    return res.status(201).json({
+      status: 201,
+      message: 'Thêm mới sản phẩm thành công!',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleCreateProduct Controller:', error.message);
+
+    const isClientError = error.message.includes('bắt buộc') || 
+                          error.message.includes('đã tồn tại') || 
+                          error.message.includes('ít nhất một biến thể');
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};

@@ -80,5 +80,17 @@ export const BrandModel = {
 
     if (error) throw error;
     return data[0];
+  },
+
+  // Hàm tìm tên brand theo ID
+  getBrandNameById: async (brand_id) => {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('name')
+      .eq('brand_id', brand_id)
+      .maybeSingle(); // Lấy 1 bản ghi hoặc trả về null nếu không thấy
+
+    if (error) throw error;
+    return data ? data.name : null; // Trả về chuỗi tên brand (ví dụ: "NEM") hoặc null
   }
 };

@@ -100,5 +100,55 @@ export const ProductModel = {
 
     if (error) throw error;
     return { data, count };
+  },
+
+  // Upload nhiều file lên Supabase Storage
+  uploadMultipleFilesToStorage: async (files) => {
+    if (!files || files.length === 0) return [];
+
+    const uploadPromises = files.map(async (file) => {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('products')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true
+        });
+
+      if (error) throw new Error(`Lỗi upload ảnh lên Storage: ${error.message}`);
+
+      const { data: publicUrlData } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      return publicUrlData.publicUrl;
+    });
+
+    return await Promise.all(uploadPromises); // Thực thi upload song song
+  },
+
+  // Chèn thông tin vào bảng products
+  createProduct: async (productData) => {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([productData])
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Chèn hàng loạt biến thể vào bảng product_variants
+  createVariants: async (variantsArray) => {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .insert(variantsArray)
+      .select();
+
+    if (error) throw error;
+    return data;
   }
 };
