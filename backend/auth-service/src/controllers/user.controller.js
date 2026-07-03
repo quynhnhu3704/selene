@@ -1,3 +1,4 @@
+// backend\auth-service\src\controllers\user.controller.js
 import * as userService from '../services/user.service.js';
 
 // ================== CUSTOMER =====================

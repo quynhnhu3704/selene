@@ -1,3 +1,4 @@
+// backend\auth-service\src\configs\index.js
 import dotenv from 'dotenv';
 dotenv.config();
 

@@ -1,3 +1,4 @@
+// backend\auth-service\src\services\permission.service.js
 import { PermissionModel } from '../models/permission.model.js';
 import { AccountModel } from '../models/account.model.js';
 
