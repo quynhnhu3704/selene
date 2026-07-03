@@ -1,3 +1,4 @@
+// backend\product-service\src\services\product.service.js
 import { ProductModel } from '../models/product.model.js';
 import { BrandModel } from '../models/brand.model.js';
 
