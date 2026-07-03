@@ -1,3 +1,4 @@
+// backend\product-service\src\controllers\category.controller.js
 import * as productService from '../services/product.service.js';
 
 // lấy tất cả sản phẩm

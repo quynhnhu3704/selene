@@ -1,3 +1,4 @@
+// backend\auth-service\src\models\refreshToken.model.js
 import { supabase } from '../configs/supabase.js';
 
 export const RefreshTokenModel = {

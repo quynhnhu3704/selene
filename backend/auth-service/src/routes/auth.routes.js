@@ -1,3 +1,4 @@
+// backend\auth-service\src\routes\auth.routes.js
 import express from 'express';
 import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken, handleLogout } from '../controllers/auth.controller.js';
 import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';

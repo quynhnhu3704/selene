@@ -1,3 +1,4 @@
+// backend\product-service\src\configs\supabase.js
 import { createClient } from '@supabase/supabase-js';
 import { config } from './index.js';
 
