@@ -196,3 +196,35 @@ export const handleRefreshToken = async (req, res) => {
     });
   }
 };
+
+// đăng xuất
+export const handleLogout = async (req, res) => {
+  try {
+    // 1. Lấy Refresh Token từ Cookie gửi lên
+    const refreshToken = req.cookies.refreshToken;
+
+    // 2. Gọi Service để xóa token dưới Database (nếu có token)
+    if (refreshToken) {
+      await authService.logoutUser(refreshToken);
+    }
+
+    // 3. Xóa sạch Cookie ở phía Trình duyệt Client
+    res.clearCookie('refreshToken', {
+      ...COOKIE_OPTIONS,
+      maxAge: 0 // Đặt thời gian sống về 0 để xóa ngay lập tức
+    });
+
+    // 4. Trả kết quả về cho Frontend
+    return res.status(200).json({
+      status: 200,
+      message: 'Đăng xuất thành công!'
+    });
+
+  } catch (error) {
+    console.error('Lỗi Controller Logout:', error.message);
+    return res.status(500).json({ 
+      status: 500, 
+      message: 'Đã có lỗi xảy ra trong quá trình đăng xuất!' 
+    });
+  }
+};

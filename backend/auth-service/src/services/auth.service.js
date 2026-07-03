@@ -363,3 +363,25 @@ export const refreshAccessToken = async (refreshToken) => {
     throw new Error('Mã xác thực phiên làm việc không hợp lệ hoặc đã bị thay đổi!');
   }
 };
+
+// đăng xuất
+export const logoutUser = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new Error('Không tìm thấy Refresh Token hợp lệ!');
+  }
+
+  try {
+    // 1. Giải mã token để lấy accountId (phải dùng đúng secret lúc ký token)
+    const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
+    const accountId = decoded.accountId;
+
+    // 2. Xóa Refresh Token của tài khoản này trong Database
+    await RefreshTokenModel.deleteByAccountId(accountId); 
+    
+    return { message: 'Đăng xuất tài khoản thành công!' };
+  } catch (err) {
+    console.error('Lỗi khi xử lý xóa Refresh Token:', err.message);
+    // Kể cả token hết hạn hoặc lỗi, ta vẫn nên cho qua để controller xóa cookie ở client
+    return { message: 'Đăng xuất hoàn tất!' };
+  }
+};

@@ -1,5 +1,5 @@
 import express from 'express';
-import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken } from '../controllers/auth.controller.js';
+import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken, handleLogout } from '../controllers/auth.controller.js';
 import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
@@ -17,6 +17,7 @@ const upload = multer({
 // authen
 router.post('/register', handleRegister);
 router.post('/login', handleLogin);
+router.post('/logout', handleLogout);
 router.post('/forgot-password', handleForgotPassword);
 router.get('/google/callback', handleLoginWithGoogle);
 router.post('/refresh-token', handleRefreshToken);
