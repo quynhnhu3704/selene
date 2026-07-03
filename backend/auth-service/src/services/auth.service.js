@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../configs/index.js';
 import { AccountModel } from '../models/account.model.js';
+import { RefreshTokenModel } from '../models/refreshToken.model.js';
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -79,6 +80,7 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
 export const loginUser = async (email, password) => {
   // Tìm tài khoản
   const account = await AccountModel.findByEmail(email);
+  const now = new Date().toISOString();
 
   // Sai tài khoản
   if (!account) {
@@ -106,8 +108,22 @@ export const loginUser = async (email, password) => {
     permissions
   };
 
-  const accessToken = jwt.sign(payload, config.jwtAccessSecret, { expiresIn: '1d' });
-  const refreshToken = jwt.sign(payload, config.jwtRefreshSecret, { expiresIn: '7d' });
+  const accessToken = jwt.sign(payload, config.jwtAccessSecret, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ accountId: account.account_id }, config.jwtRefreshSecret, { expiresIn: '7d' });
+
+  // Lưu vào db
+  const refreshTokenId = 'rt-' + generateId();
+  const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
+
+  // Gọi Model lưu vào DB (Dùng UPSERT hoặc xóa cũ tạo mới vì account_id là UNIQUE)
+  await RefreshTokenModel.saveRefreshToken({
+    refresh_token_id: refreshTokenId,
+    account_id: account.account_id,
+    refresh_token_hash: refreshTokenHash,
+    expires_at: expiresAt,
+    created_at: now
+  });
 
   return {
     message: 'Đăng nhập thành công!',
@@ -264,8 +280,20 @@ export const loginWithGoogle = async (code) => {
 
   // 6. Ký cấp bộ mã token nội bộ của riêng hệ thống shop quần áo để người dùng truy cập API
   const jwtPayload = { accountId: account.account_id, role: account.role_name, permissions: [] };
-  const accessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '1h' });
-  const refreshToken = jwt.sign(jwtPayload, config.jwtRefreshSecret, { expiresIn: '7d' });
+  const accessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ accountId: account.account_id }, config.jwtRefreshSecret, { expiresIn: '7d' });
+
+  // Lưu vào db
+  const refreshTokenId = 'rt-' + generateId();
+  const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  await RefreshTokenModel.saveRefreshToken({
+    refresh_token_id: refreshTokenId,
+    account_id: account.account_id,
+    refresh_token_hash: refreshTokenHash,
+    expires_at: expiresAt
+  });
 
   return {
     message: 'Đăng nhập bằng tài khoản Google thành công!',
@@ -278,34 +306,60 @@ export const loginWithGoogle = async (code) => {
 // cấp lại accessToken
 export const refreshAccessToken = async (refreshToken) => {
   try {
-    // 1. Xác thực xem refreshToken gửi lên có hợp lệ và còn hạn không
+    // 1. Xác thực tính hợp lệ của Token thô (Nếu hết hạn hoặc sai cấu trúc, jwt.verify sẽ tự ném lỗi)'
     const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
 
-    // 2. Lấy thông tin tài khoản từ database để đảm bảo tài khoản vẫn đang active
-    const account = await AccountModel.findById(decoded.accountId);
-
-    if (!account || account.status === 'inactive') {
-      throw new Error('Tài khoản không tồn tại hoặc đã bị khóa!');
+    // 2. Lấy thông tin lưu trữ trong DB của account này
+    const dbTokenRecord = await RefreshTokenModel.findByAccountId(decoded.accountId);
+    if (!dbTokenRecord) {
+      throw new Error('Mã Phiên đăng nhập không tồn tại trên hệ thống!');
     }
 
-    // 3. Lấy lại danh sách quyền của tài khoản (đề phòng quyền vừa được admin thay đổi)
+    // 3. Kiểm tra hết hạn lưu trong DB
+    if (new Date(dbTokenRecord.expires_at) < new Date()) {
+      await RefreshTokenModel.deleteRefreshToken(decoded.accountId);
+      throw new Error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!');
+    }
+
+    // 4. Khớp chuỗi token thô (tham số 1) với mã hash trong DB (tham số 2)
+    const isTokenMatch = await bcrypt.compare(refreshToken, dbTokenRecord.refresh_token_hash);
+    if (!isTokenMatch) {
+      throw new Error('Mã cấu hình phiên đăng nhập không hợp lệ!');
+    }
+
+    // 5. Kiểm tra trạng thái tài khoản hiện tại
+    const account = await AccountModel.findById(decoded.accountId);
+    if (!account) {
+      throw new Error('Tài khoản không tồn tại trên hệ thống!');
+    }
+    if (account.status === 'inactive') {
+      throw new Error('Tài khoản của bạn hiện đang bị tạm khóa!');
+    }
+
+    // 6. Lấy lại danh sách quyền mới nhất và ký cấp Access Token mới
     const permissions = await AccountModel.getPermissionsByRoleId(account.role_id);
-
-    // 4. Tạo Payload mới (đồng bộ cấu trúc camelCase accountId với hàm Login của bạn)
-    const jwtPayload = {
-      accountId: account.account_id,
-      role: account.role_name,
-      permissions
+    const jwtPayload = { 
+      accountId: account.account_id, 
+      role: account.role_name, 
+      permissions 
     };
 
-    // 5. Ký cấp một accessToken mới (Hạn dùng 3 giờ giống lúc login)
-    const newAccessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '3h' });
+    const newAccessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '15m' });
 
-    return {
-      accessToken: newAccessToken
-    };
+    return { accessToken: newAccessToken };
   } catch (err) {
-    console.error('Lỗi Refresh Token:', err.message);
-    throw new Error('Mã Refresh Token đã hết hạn hoặc không hợp lệ, vui lòng đăng nhập lại!');
+    console.error('Lỗi chi tiết tại tầng Service:', err.message);
+    
+    // Nếu là lỗi do chính chúng ta chủ động throw ở trên, giữ nguyên thông báo lỗi để FE hiển thị rõ ràng
+    if (err.message && !err.name) {
+      throw err;
+    }
+    
+    // Nếu là lỗi hệ thống do jwt.verify tự bắt (Token hết hạn/Hợp lệ giả mạo)
+    if (err.name === 'TokenExpiredError') {
+      throw new Error('Phiên đăng nhập đã hết hạn từ lâu, vui lòng đăng nhập lại!');
+    }
+    
+    throw new Error('Mã xác thực phiên làm việc không hợp lệ hoặc đã bị thay đổi!');
   }
 };

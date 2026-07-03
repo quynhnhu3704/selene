@@ -1,5 +1,13 @@
 import * as authService from '../services/auth.service.js';
 
+// Cấu hình Cookie 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', 
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày tính bằng ms
+};
+
 // Xử lý đăng ký
 export const handleRegister = async (req, res) => {
   try {
@@ -53,13 +61,15 @@ export const handleLogin = async (req, res) => {
     }
 
     const result = await authService.loginUser(email, password);
+
+    //  Đính kèm Refresh Token vào Cookie 
+    res.cookie('refreshToken', result.refreshToken, COOKIE_OPTIONS);
     
     // Đăng nhập thành công (OK -> 200)
     return res.status(200).json({
       status: 200,
       message: result.message,
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
       user: result.user
     });
 
@@ -125,6 +135,9 @@ export const handleLoginWithGoogle = async (req, res) => {
     // Gửi mã xuống service để đổi lấy thông tin và xử lý DB
     const result = await authService.loginWithGoogle(code);
 
+    // -Đính kèm vào cookie trước khi redirect 
+    res.cookie('refreshToken', result.refreshToken, COOKIE_OPTIONS);
+
     // ── BIẾN ĐỔI USER OBJECT THÀNH CHUỖI ĐỂ TRUYỀN QUA URL ──
     const userString = encodeURIComponent(JSON.stringify(result.user));
 
@@ -133,7 +146,7 @@ export const handleLoginWithGoogle = async (req, res) => {
     // để bắn Token về Frontend hoặc chuyển hướng trình duyệt kèm Token qua query parameters.
     // Dưới đây là cách chuyển hướng đưa token về Frontend (Vite cổng 5173):
     return res.redirect(
-      `http://localhost:5173/auth/success?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}&user=${userString}`
+      `http://localhost:5173/auth/success?accessToken=${result.accessToken}&user=${userString}`
     );
 
     // const redirectUrl = `http://localhost:5173/tai-khoan/dang-nhap?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}&user=${userString}`;
@@ -158,8 +171,8 @@ export const handleLoginWithGoogle = async (req, res) => {
 // lấy lại accessToken
 export const handleRefreshToken = async (req, res) => {
   try {
-    // Frontend có thể gửi refreshToken qua body hoặc qua headers
-    const { refreshToken } = req.body;
+    //Lấy token từ cookies thay vì req.body 
+    const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
       return res.status(400).json({

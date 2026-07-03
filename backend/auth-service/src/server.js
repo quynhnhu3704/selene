@@ -4,6 +4,7 @@ import cors from 'cors';
 import { config } from './configs/index.js';
 import authRoutes from './routes/auth.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
@@ -11,6 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(cookieParser());
 
 // Routes
 app.use('/', authRoutes);
