@@ -1,3 +1,4 @@
+// backend\product-service\src\services\category.service.js
 import { CategoryModel } from "../models/category.model.js";
 
 const generateId = () => {

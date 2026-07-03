@@ -1,3 +1,4 @@
+// backend\auth-service\src\models\userProfile.model.js
 import { supabase } from '../configs/supabase.js';
 
 export const UserProfileModel = {

@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -11,8 +12,13 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Middleware
-app.use(cors());
 app.use(morgan('dev')); // Logging
+app.use(cookieParser()); // Kích hoạt middleware đọc Cookie
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 // Check required env vars
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
@@ -30,6 +36,12 @@ app.use('/api/auth', createProxyMiddleware({
   changeOrigin: true,
   pathRewrite: {
     '^/api/auth': '', 
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    // Nếu client gửi cookie lên Gateway, đảm bảo header Cookie được giữ nguyên sang Auth Service
+    if (req.headers.cookie) {
+      proxyReq.setHeader('Cookie', req.headers.cookie);
+    }
   },
   onError: (err, req, res) => {
     console.error('Proxy Error (Auth):', err);

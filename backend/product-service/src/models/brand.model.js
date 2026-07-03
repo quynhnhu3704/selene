@@ -1,3 +1,4 @@
+// backend\product-service\src\models\brand.model.js
 import { supabase } from '../configs/supabase.js';
 
 export const BrandModel = {

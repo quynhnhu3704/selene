@@ -1,3 +1,4 @@
+// backend\product-service\src\models\product.model.js
 import { BrandModel } from '../models/brand.model.js'; // Đảm bảo đúng đường dẫn và đuôi .js
 
 const generateId = () => {
