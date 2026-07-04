@@ -377,7 +377,7 @@ export const logoutUser = async (refreshToken) => {
     const accountId = decoded.accountId;
 
     // 2. Xóa Refresh Token của tài khoản này trong Database
-    await RefreshTokenModel.deleteByAccountId(accountId); 
+    await RefreshTokenModel.deleteRefreshToken(accountId); 
     
     return { message: 'Đăng xuất tài khoản thành công!' };
   } catch (err) {
