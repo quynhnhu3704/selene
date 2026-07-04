@@ -1,3 +1,4 @@
+// backend\auth-service\src\services\permission.service.js
 import { config } from '../configs/index.js';
 import bcrypt from 'bcrypt';
 import { UserProfileModel } from '../models/userProfile.model.js';

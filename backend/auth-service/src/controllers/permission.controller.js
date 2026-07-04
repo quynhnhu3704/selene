@@ -1,3 +1,4 @@
+// backend\auth-service\src\controllers\permission.controller.js
 import * as permissionService from '../services/permission.service.js';
 
 

@@ -1,3 +1,4 @@
+// backend\product-service\src\controllers\category.controller.js
 import * as categoryService from '../services/category.service.js';
 
 // thêm category

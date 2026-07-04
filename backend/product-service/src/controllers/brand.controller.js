@@ -1,3 +1,4 @@
+// backend\product-service\src\controllers\brand.controller.js
 import * as brandService from '../services/brand.service.js';
 
 // lấy danh sách brand
