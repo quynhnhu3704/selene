@@ -2,27 +2,59 @@
 import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { Helmet } from "react-helmet-async";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { saveLogin } from "../../../utils/auth";
+import { toast } from "react-toastify";
+import { login } from "../../../services/auth.service";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleReset = () => {
     setEmail("");
     setPassword("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: gọi API đăng nhập
-    console.log({ email, password });
+
+    try {
+      const res = await login({
+        email,
+        password,
+      });
+
+      saveLogin(res.data);
+
+      window.dispatchEvent(
+        new Event("login-success")
+      );
+
+      toast.success(res.data.message);
+      navigate("/");
+      handleReset();
+
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Đăng nhập thất bại!"
+      );
+    }
   };
 
   const handleGoogleLogin = () => {
-    // TODO: gọi Google OAuth
-    console.log("Google login");
+    const params = new URLSearchParams({
+      client_id:
+        "368790655962-ac64i65olr3sb7k8mv5pbb18ak0ai2g4.apps.googleusercontent.com",
+      redirect_uri: "http://localhost:8000/api/auth/google/callback",
+      response_type: "code",
+      scope: "openid email profile",
+    });
+
+    window.location.href =
+      `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   };
 
   return (

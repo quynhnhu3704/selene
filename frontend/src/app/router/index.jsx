@@ -9,6 +9,7 @@ import Register from "../../pages/Account/Register";
 import ProductList from "../../pages/ProductList";
 import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
+import GoogleSuccess from "../../pages/Account/GoogleSuccess";
 
 export default function AppRouter() {
   return (
@@ -19,6 +20,7 @@ export default function AppRouter() {
         <Route path="/" element={<Home />} /> 
         <Route path="/tai-khoan/dang-nhap" element={<Login />} />
         <Route path="/tai-khoan/dang-ky" element={<Register />} />
+        <Route path="/auth/success" element={<GoogleSuccess />} />
         
         <Route path="/san-pham" element={<ProductList />} />
         <Route path="/chi-tiet-san-pham" element={<ProductDetail />} />

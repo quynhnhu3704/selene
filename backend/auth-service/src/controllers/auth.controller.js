@@ -1,4 +1,4 @@
-// T:\KLTN\selene\backend\auth-service\src\controllers\auth.controller.js
+// backend\auth-service\src\controllers\auth.controller.js
 import * as authService from '../services/auth.service.js';
 
 // Cấu hình Cookie 
