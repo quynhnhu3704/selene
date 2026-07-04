@@ -32,7 +32,7 @@ export const RefreshTokenModel = {
   },
 
   // Xóa token khi logout
-  deleteByAccountId: async (accountId) => {
+  deleteRefreshToken: async (accountId) => {
     const { error } = await supabase
       .from('refresh_tokens')
       .delete()

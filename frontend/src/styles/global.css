@@ -2,6 +2,32 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Nunito', sans-serif; }
 
+/* Toast Message */
+.Toastify__toast-container{
+    top: 100px !important;
+    right: 20px !important;
+    z-index: 999999;
+}
+
+.Toastify__toast,
+.Toastify__toast-body,
+.Toastify__close-button {
+    font-family: 'Nunito', sans-serif !important;
+}
+
+.spinner-loading {
+  min-height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-loading .spinner-border {
+  width: 2rem;
+  height: 2rem;
+  color: #871B1B;
+}
+
 .breadcrumb-item + .breadcrumb-item::before {
   padding-right: 0.8rem !important;
   padding-left: 0.4rem !important;

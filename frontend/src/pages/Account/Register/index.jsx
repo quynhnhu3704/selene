@@ -2,7 +2,10 @@
 import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { Helmet } from "react-helmet-async";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { saveLogin } from "../../../utils/auth";
+import { toast } from "react-toastify";
+import { register } from "../../../services/auth.service";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,6 +15,7 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleReset = () => {
     setName("");
@@ -21,13 +25,34 @@ export default function Register() {
     setConfirmPassword("");
     };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: gọi API đăng nhập
-    console.log({ email, password });
+
+    if (password !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+
+    try {
+      const res = await register({
+        email,
+        phone,
+        password,
+        full_name: name,
+      });
+
+      toast.success(res.data.message);
+      navigate("/");
+      handleReset();
+
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Đăng ký thất bại!"
+      );
+    }
   };
 
-   const handleGoogleLogin = () => {
+  const handleGoogleLogin = () => {
     // 1. Định nghĩa các tham số cần thiết cho Google OAuth
     const params = new URLSearchParams({
       client_id: "368790655962-ac64i65olr3sb7k8mv5pbb18ak0ai2g4.apps.googleusercontent.com",
