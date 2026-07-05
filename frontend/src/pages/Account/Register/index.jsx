@@ -15,6 +15,10 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agree, setAgree] = useState(false);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^0\d{9}$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,50}$/;
   const navigate = useNavigate();
 
   const handleReset = () => {
@@ -23,22 +27,36 @@ export default function Register() {
     setPhone("");
     setPassword("");
     setConfirmPassword("");
-    };
+    setAgree(false);
+  };
+
+  // Hàm chuẩn hóa họ tên
+  const normalizeFullName = (fullName) => {
+    return fullName
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .split(" ")
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase() + word.slice(1)
+      )
+      .join(" ");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error("Mật khẩu xác nhận không khớp!");
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
+      const formattedName = normalizeFullName(name);
+
       const res = await register({
-        email,
-        phone,
+        email: email.trim(),
+        phone: phone.trim(),
         password,
-        full_name: name,
+        full_name: formattedName,
       });
 
       toast.success(res.data.message);
@@ -67,6 +85,85 @@ export default function Register() {
     console.log("Google login");
   };
 
+  const validateForm = () => {
+    const trimmedName = name.trim();
+
+    // Họ tên
+    if (!trimmedName) {
+      toast.error("Vui lòng nhập họ tên");
+      return false;
+    }
+
+    if (trimmedName.length < 2) {
+      toast.error("Họ tên phải từ 2 ký tự trở lên");
+      return false;
+    }
+
+    if (trimmedName.length > 100) {
+      toast.error("Họ tên không được vượt quá 100 ký tự");
+      return false;
+    }
+
+    if (!/[a-zA-ZÀ-ỹ]/.test(trimmedName)) {
+      toast.error("Họ tên không hợp lệ");
+      return false;
+    }
+
+    // Email
+    if (!email.trim()) {
+      toast.error("Vui lòng nhập email");
+      return false;
+    }
+
+    if (!emailRegex.test(email)) {
+      toast.error("Email không đúng định dạng");
+      return false;
+    }
+
+    // SĐT
+    if (!phone.trim()) {
+      toast.error("Vui lòng nhập số điện thoại");
+      return false;
+    }
+
+    if (!phoneRegex.test(phone)) {
+      toast.error("Số điện thoại không hợp lệ");
+      return false;
+    }
+
+    // Mật khẩu
+    if (!password) {
+      toast.error("Vui lòng nhập mật khẩu");
+      return false;
+    }
+
+    if (!passwordRegex.test(password)) {
+      toast.error(
+        "Mật khẩu phải từ 8-50 ký tự, gồm chữ hoa, chữ thường và số"
+      );
+      return false;
+    }
+
+    // Xác nhận mật khẩu
+    if (!confirmPassword.trim()) {
+      toast.error("Vui lòng nhập xác nhận mật khẩu");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
+      return false;
+    }
+
+    // Điều khoản
+    if (!agree) {
+      toast.error("Bạn phải đồng ý điều khoản sử dụng");
+      return false;
+    }
+
+    return true;
+  };
+
   return (
     <>
       <Helmet><title>Đăng Ký | Selene</title></Helmet>
@@ -91,7 +188,7 @@ export default function Register() {
                 <span className="form-label">Họ và tên</span>
               </div>
               <div className="form-input-wrap">
-                <input type="text" className="form-control" placeholder="Nhập họ và tên" value={name} onChange={e => setName(e.target.value)} autoComplete="name" required />
+                <input type="text" className="form-control" placeholder="Nhập họ và tên" value={name} onChange={e => setName(e.target.value)} onBlur={() => { if (name.trim()) { setName(normalizeFullName(name)); }}} autoComplete="name" maxLength={100} required />
               </div>
             </div>
 
@@ -101,7 +198,7 @@ export default function Register() {
                 <span className="form-label">Email</span>
               </div>
               <div className="form-input-wrap">
-                <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
+                <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" maxLength={100} required />
               </div>
             </div>
 
@@ -111,7 +208,7 @@ export default function Register() {
                 <span className="form-label">Số điện thoại</span>
               </div>
               <div className="form-input-wrap">
-                <input type="tel" className="form-control" placeholder="Nhập số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" required />
+                <input type="tel" className="form-control" placeholder="Nhập số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" maxLength={10} required />
               </div>
             </div>
 
@@ -121,7 +218,7 @@ export default function Register() {
                 <span className="form-label">Mật khẩu</span>
               </div>
               <div className="form-input-wrap">
-                <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Tạo mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required />
+                <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Tạo mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
                 <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
@@ -134,7 +231,7 @@ export default function Register() {
                 <span className="form-label">Xác nhận mật khẩu</span>
               </div>
               <div className="form-input-wrap">
-                <input type={showConfirmPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập lại mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" required />
+                <input type={showConfirmPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập lại mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
                 <button type="button" className="form-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
@@ -143,7 +240,7 @@ export default function Register() {
 
             {/* CHECKBOX ĐỒNG Ý ĐIỀU KHOẢN */}
             <div className="form-check form-terms">
-                <input className="form-check-input" type="checkbox" required />
+                <input className="form-check-input" type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
                 <label className="form-check-label">
                     Tôi đồng ý với{" "}
                     <Link to="/dieu-khoan-su-dung">Điều khoản sử dụng</Link>{" "}và{" "}<Link to="/chinh-sach-bao-mat">Chính sách bảo mật</Link>.
