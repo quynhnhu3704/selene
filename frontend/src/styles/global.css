@@ -2,6 +2,25 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Nunito', sans-serif; }
 
+/* SWEET ALERT DIỆN MẠO MỚI */
+.se-swal-popup { width: 400px; border-radius: 20px; padding: 32px 24px; }
+.se-swal-title { font-size: 23px !important; font-weight: 700; color: #444; padding: 0 !important; margin-bottom: 8px !important; }
+.se-swal-text { font-size: 15px !important; color: #666; line-height: 1.5; margin: 0 !important; font-style: italic; }
+.se-swal-actions { margin-top: 32px !important; display: flex !important; justify-content: stretch; gap: 12px;  width: 100%; }
+
+/* Base Styles cho cả 2 Nút */
+.se-btn-confirm, .se-btn-cancel { flex: 1; height: 48px; font-weight: 600; border-radius: 12px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; outline: none; }
+
+/* Nút Đăng xuất (Sử dụng màu đỏ mới dịu và sang hơn) */
+.se-btn-confirm { background: #871B1B; color: white; border: none; }
+.se-btn-confirm:hover { background: #6f1515; transform: translateY(-1px); }
+.se-btn-confirm:active { transform: translateY(0); }
+
+/* Nút Ở lại */
+.se-btn-cancel { background: #f3f4f6; color: #374151;  border: none; }
+.se-btn-cancel:hover { background: #e5e7eb;  transform: translateY(-1px); }
+.se-btn-cancel:active { transform: translateY(0); }
+
 /* Toast Message */
 .Toastify__toast-container{
     top: 100px !important;
