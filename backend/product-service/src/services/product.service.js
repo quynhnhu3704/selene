@@ -191,7 +191,7 @@ export const createProductWithVariants = async (inputData, files) => {
   try {
     const {
       category_id, brand_id,
-      product_name, price, original_price, discount_price, description, status, variants, brand_name
+      product_name, price, original_price, discount_price, description, status, variants
     } = inputData;
 
     // Ép kiểu mảng cho variants vì khi gửi qua FormData nó có thể bị chuyển thành chuỗi JSON
@@ -211,7 +211,7 @@ export const createProductWithVariants = async (inputData, files) => {
 
     const currentTime = new Date().toISOString();
     const productId = generateId();
-    const cleanBrandName = (brand_name || 'BRAND').trim().toUpperCase();
+    const cleanBrandName = dbBrandName.trim().toUpperCase();
 
     // 4. Chuẩn bị dữ liệu cho bảng Product
     const productData = {
@@ -260,6 +260,118 @@ export const createProductWithVariants = async (inputData, files) => {
 
   } catch (error) {
     console.error('Lỗi tại createProductWithVariants Service:', error.message);
+    throw error;
+  }
+};
+
+// cập nhật sản phẩm
+export const updateProductWithVariants = async (productId, inputData, files) => {
+  try {
+    const {
+      category_id, brand_id, product_name, price, 
+      original_price, discount_price, description, status, 
+      variants, old_image_urls
+    } = inputData;
+
+    // 1. Kiểm tra xem sản phẩm có thực sự tồn tại trong DB không
+    const existingProduct = await ProductModel.getProductById(productId);
+    if (!existingProduct) {
+      throw new Error(`Sản phẩm với ID '${productId}' không tồn tại!`);
+    }
+
+    // 2. Ép kiểu mảng cho biến thể
+    const parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
+    if (!parsedVariants || !Array.isArray(parsedVariants) || parsedVariants.length === 0) {
+      throw new Error('Sản phẩm phải có ít nhất một biến thể (Size/Color)!');
+    }
+
+    // Xử lý gom ảnh cũ và ảnh mới từ Multer
+    let finalImageUrls = [];
+    if (old_image_urls) {
+      finalImageUrls = typeof old_image_urls === 'string' ? JSON.parse(old_image_urls) : old_image_urls;
+    }
+
+    // LOGIC XỬ LÝ XÓA ẢNH RÁC TRÊN STORAGE 
+    if (existingProduct.image_urls) {
+      // Parse danh sách ảnh hiện tại đang có trong DB
+      const currentUrlsInDb = typeof existingProduct.image_urls === 'string' 
+        ? JSON.parse(existingProduct.image_urls) 
+        : existingProduct.image_urls;
+
+      // Tìm các ảnh có trong DB nhưng KHÔNG có trong danh sách giữ lại của Frontend
+      const urlsToDelete = currentUrlsInDb.filter(url => !finalImageUrls.includes(url));
+
+      // Tiến hành xóa các file bị loại bỏ này khỏi Storage
+      if (urlsToDelete.length > 0) {
+        await ProductModel.deleteFilesFromStorage(urlsToDelete);
+      }
+    }
+
+    // Tiếp tục xử lý upload file mới từ `files` và cập nhật DB như cũ...
+    if (files && files.length > 0) {
+      const newUploadedUrls = await ProductModel.uploadMultipleFilesToStorage(files);
+      finalImageUrls = [...finalImageUrls, ...newUploadedUrls];
+    }
+
+    if (finalImageUrls.length === 0) {
+      throw new Error('Sản phẩm phải có ít nhất một hình ảnh!');
+    }
+
+    // 3. Kiểm tra thương hiệu hợp lệ
+    const dbBrandName = await BrandModel.getBrandNameById(brand_id);
+    if (!dbBrandName) {
+      throw new Error(`Mã thương hiệu (brand_id) '${brand_id}' không tồn tại!`);
+    }
+
+    const currentTime = new Date().toISOString();
+    const cleanBrandName = dbBrandName.trim().toUpperCase();
+
+    // 4. Chuẩn bị mảng dữ liệu biến thể để nạp vào DB
+    const variantsData = parsedVariants.map(v => {
+      const cleanSize = v.size.trim();
+      const cleanColor = v.color.trim();
+      
+      // Nếu có variant_id (hàng cũ) -> giữ nguyên. 
+      // Nếu không có variant_id (Admin vừa bấm thêm dòng mới) -> Tự tạo mã ID mới
+      const variant_id = v.variant_id || `${cleanBrandName}-${productId}-${cleanSize}-${cleanColor.toUpperCase()}`.replace(/\s+/g, '');
+
+      return {
+        variant_id,
+        product_id: productId,
+        size: v.size,
+        color: v.color,
+        stock_quantity: Number(v.stock_quantity) || 0,
+        status: v.status || 'active',
+        updated_at: currentTime
+      };
+    });
+
+    // 5. Tiến hành cập nhật bảng thông tin sản phẩm chính
+    const productUpdateData = {
+      category_id,
+      brand_id,
+      product_name: product_name.trim(),
+      image_urls: JSON.stringify(finalImageUrls),
+      price,
+      original_price,
+      discount_price,
+      description,
+      status: status || 'active',
+      updated_at: currentTime
+    };
+    const updatedProduct = await ProductModel.updateProduct(productId, productUpdateData);
+
+    // 6. Thực thi cập nhật/thêm mới các biến thể song song (Upsert)
+    const savedVariants = await ProductModel.upsertVariants(variantsData);
+
+    return {
+      ...updatedProduct,
+      image_urls: finalImageUrls,
+      variants: savedVariants
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại updateProductWithVariants Service:', error.message);
     throw error;
   }
 };

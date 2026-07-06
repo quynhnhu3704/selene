@@ -124,3 +124,32 @@ export const handleCreateProduct = async (req, res) => {
     });
   }
 };
+
+// cập nhât sp
+// backend\product-service\src\controllers\product.controller.js
+
+export const handleUpdateProduct = async (req, res) => {
+  try {
+    const { productId } = req.params; 
+    
+    const result = await productService.updateProductWithVariants(productId, req.body, req.files);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Cập nhật sản phẩm thành công!',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleUpdateProduct Controller:', error.message);
+
+    const isClientError = error.message.includes('bắt buộc') || 
+                          error.message.includes('không tồn tại') || 
+                          error.message.includes('ít nhất một');
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
