@@ -2,7 +2,7 @@
 import { supabase } from '../configs/supabase.js';
 
 export const ProductModel = {
-  // Lấy tất cả sản phẩm (Có phân trang)
+  // Lấy tất cả sản phẩm cho customer (Có phân trang)
   getProductsWithPagination: async (from, to) => {
     const { data, error, count } = await supabase
       .from('products')
@@ -131,6 +131,26 @@ export const ProductModel = {
     return await Promise.all(uploadPromises); // Thực thi upload song song
   },
 
+  // Hàm xóa danh sách file trên Supabase Storage dựa vào URL công khai
+  deleteFilesFromStorage: async (urls) => {
+    if (!urls || urls.length === 0) return;
+
+    const filePaths = urls.map(url => {
+      const parts = url.split('/storage/v1/object/public/products/');
+      return parts[1]; // Lấy phần sau tên bucket
+    }).filter(Boolean);
+
+    if (filePaths.length === 0) return;
+
+    const { error } = await supabase.storage
+      .from('products')
+      .remove(filePaths);
+
+    if (error) {
+      console.error('Lỗi khi xóa file cũ trên Storage:', error.message);
+    }
+  },
+
   // Chèn thông tin vào bảng products
   createProduct: async (productData) => {
     const { data, error } = await supabase
@@ -150,6 +170,88 @@ export const ProductModel = {
       .select();
 
     if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật thông tin bảng products chính
+  updateProduct: async (productId, productData) => {
+    const { data, error } = await supabase
+      .from('products')
+      .update(productData)
+      .eq('product_id', productId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Không tìm thấy sản phẩm để cập nhật!');
+    return data[0];
+  },
+
+  // Chỉ cần duy nhất hàm này để vừa Update vừa Insert biến thể
+  upsertVariants: async (variantsArray) => {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .upsert(variantsArray, { 
+        onConflict: ['variant_id', 'product_id'] 
+      })
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // lấy tất cả sản phẩm cho admin
+  getAllProductsWithPagination: async (from, to) => {
+    const { data, error, count } = await supabase
+      .from('products')
+      .select(`
+        product_id,
+        product_name,
+        price,
+        original_price,
+        discount_price,
+        brands:brand_id ( name ),
+        status
+      `, { count: 'exact' }) // Đếm tổng số bản ghi thực tế trong DB
+      .order('created_at', { ascending: false }) // Sản phẩm mới nhất xếp lên đầu
+      .range(from, to); // Cắt dữ liệu theo trang
+
+    if (error) throw error;
+    return { data, count };
+  },
+
+  // Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
+  getProductDetailWithVariants: async (productId) => {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        product_id,
+        category_id,
+        brand_id,
+        product_name,
+        image_urls,
+        product_url,
+        price,
+        original_price,
+        discount_price,
+        description,
+        status,
+        product_variants (
+          variant_id,
+          size,
+          color,
+          stock_quantity,
+          status
+        )
+      `)
+      .eq('product_id', productId)
+      .single(); // Trả về 1 Object duy nhất thay vì mảng dữ liệu
+
+    if (error) {
+      // Nếu không tìm thấy bản ghi nào (PostgreSQL trả mã PGRST116)
+      if (error.code === 'PGRST116') return null; 
+      throw error;
+    }
+    
     return data;
   }
 };
