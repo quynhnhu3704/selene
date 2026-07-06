@@ -31,5 +31,8 @@ router.put('/manage/brand/update/:brandId', verifyToken, brandController.handleU
 
 // product
 router.post('/manage/product/add', verifyToken, upload.array('images', 10), productController.handleCreateProduct);
+router.put('/manage/product/update/:productId', verifyToken, upload.array('images', 10), productController.handleUpdateProduct);
+router.get('/manage/products', verifyToken, productController.handleGetAllProductsForAdmin)
+router.get('/manage/product-detail/:productId', verifyToken, productController.handleGetProductDetailForAdmin);
 
 export default router;

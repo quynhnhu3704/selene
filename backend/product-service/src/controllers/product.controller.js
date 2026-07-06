@@ -1,7 +1,7 @@
 // backend\product-service\src\controllers\category.controller.js
 import * as productService from '../services/product.service.js';
 
-// lấy tất cả sản phẩm
+// lấy tất cả sản phẩm cho customer
 export const handleGetAllProducts = async (req, res) => {
   try {
     const { page, limit } = req.query;
@@ -120,6 +120,84 @@ export const handleCreateProduct = async (req, res) => {
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
+
+// cập nhât sp
+export const handleUpdateProduct = async (req, res) => {
+  try {
+    const { productId } = req.params; 
+    
+    const result = await productService.updateProductWithVariants(productId, req.body, req.files);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Cập nhật sản phẩm thành công!',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Lỗi tại handleUpdateProduct Controller:', error.message);
+
+    const isClientError = error.message.includes('bắt buộc') || 
+                          error.message.includes('không tồn tại') || 
+                          error.message.includes('ít nhất một');
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
+
+// lấy tất cả sản phẩm cho admin
+export const handleGetAllProductsForAdmin = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+
+    const result = await productService.getAllProductsAdmin(page, limit);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy danh sách sản phẩm quản trị thành công!',
+      data: result
+    });
+  } catch (error) {
+    console.error('Lỗi tại handleGetAllProductsForAdmin Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
+
+// / Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
+export const handleGetProductDetailForAdmin = async (req, res) => {
+  try {
+     const { productId } = req.params; 
+
+    const productDetail = await productService.getProductDetailForAdmin(productId);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy chi tiết thông tin sản phẩm thành công!',
+      data: productDetail
+    });
+  } catch (error) {
+    console.error('Lỗi tại handleGetProductDetail Controller:', error.message);
+    
+    // Nếu lỗi do không tìm thấy sản phẩm, trả về mã 404
+    if (error.message.includes('Không tìm thấy')) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message
+      });
+    }
+
+    return res.status(500).json({
+      status: 500,
       message: error.message || 'Internal Server Error!'
     });
   }
