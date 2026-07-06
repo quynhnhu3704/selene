@@ -1,7 +1,7 @@
 // backend\auth-service\src\routes\auth.routes.js
 import express from 'express';
 import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken, handleLogout } from '../controllers/auth.controller.js';
-import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
+import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetCustomerProfile, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
 import { handleCreatePermission, handleGetAllPermissions, handleGetPermissionsByAccountId, handleUpdatePermission } from '../controllers/permission.controller.js';
@@ -28,6 +28,7 @@ router.post('/refresh-token', handleRefreshToken);
 router.put('/profile/update', verifyToken, upload.single('avatar_url'), handleUpdateCustomerProfile);
 router.get('/permissions/:accountId', verifyToken, handleGetPermissionsByAccountId);
 router.patch('/account/change-password', verifyToken, handleChangePassword);
+router.get('/profile', verifyToken, handleGetCustomerProfile);
 
 
 // user - admin
