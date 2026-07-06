@@ -34,7 +34,7 @@ const getFirstImage = (imageUrlsData) => {
   return "";
 };
 
-// Lấy tất cả sản phẩm
+// Lấy tất cả sản phẩm cho customer
 export const getAllProduct = async (options = {}) => {
   try {
     // 1. Cấu hình phân trang (Pagination)
@@ -372,6 +372,50 @@ export const updateProductWithVariants = async (productId, inputData, files) => 
 
   } catch (error) {
     console.error('Lỗi tại updateProductWithVariants Service:', error.message);
+    throw error;
+  }
+};
+
+// lấy tất cả sản phẩm cho admin
+export const getAllProductsAdminService = async (page = 1, limit = 10) => {
+  try {
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+
+    // Tính toán dải range cắt dữ liệu cho Supabase (bắt đầu từ 0)
+    const from = (pageNum - 1) * limitNum;
+    const to = from + limitNum - 1;
+
+    // Gọi dữ liệu từ Model
+    const { data, count } = await ProductModel.getAllProductsWithPagination(from, to);
+
+    // Tính tổng số trang
+    const totalPages = Math.ceil(count / limitNum);
+
+    // Chuẩn hóa lại dữ liệu trước khi gửi về client
+    const formattedProducts = data.map(product => {
+      return {
+        product_id: product.product_id,
+        product_name: product.product_name,
+        price: product.price,
+        original_price: product.original_price,
+        discount_price: product.discount_price,
+        status: product.status,
+        brand_name: product.brands ? product.brands.name : null
+      };
+    });
+
+    return {
+      products: formattedProducts,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total_items: count,
+        total_pages: totalPages
+      }
+    };
+  } catch (error) {
+    console.error('Lỗi tại getAllProductsAdminService:', error.message);
     throw error;
   }
 };

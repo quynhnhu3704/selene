@@ -2,7 +2,7 @@
 import { supabase } from '../configs/supabase.js';
 
 export const ProductModel = {
-  // Lấy tất cả sản phẩm (Có phân trang)
+  // Lấy tất cả sản phẩm cho customer (Có phân trang)
   getProductsWithPagination: async (from, to) => {
     const { data, error, count } = await supabase
       .from('products')
@@ -197,5 +197,25 @@ export const ProductModel = {
 
     if (error) throw error;
     return data;
-  }
+  },
+
+  // lấy tất cả sản phẩm cho admin
+  getAllProductsWithPagination: async (from, to) => {
+    const { data, error, count } = await supabase
+      .from('products')
+      .select(`
+        product_id,
+        product_name,
+        price,
+        original_price,
+        discount_price,
+        brands:brand_id ( name ),
+        status
+      `, { count: 'exact' }) // Đếm tổng số bản ghi thực tế trong DB
+      .order('created_at', { ascending: false }) // Sản phẩm mới nhất xếp lên đầu
+      .range(from, to); // Cắt dữ liệu theo trang
+
+    if (error) throw error;
+    return { data, count };
+  },
 };

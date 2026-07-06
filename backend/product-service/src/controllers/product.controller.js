@@ -1,7 +1,7 @@
 // backend\product-service\src\controllers\category.controller.js
 import * as productService from '../services/product.service.js';
 
-// lấy tất cả sản phẩm
+// lấy tất cả sản phẩm cho customer
 export const handleGetAllProducts = async (req, res) => {
   try {
     const { page, limit } = req.query;
@@ -126,8 +126,6 @@ export const handleCreateProduct = async (req, res) => {
 };
 
 // cập nhât sp
-// backend\product-service\src\controllers\product.controller.js
-
 export const handleUpdateProduct = async (req, res) => {
   try {
     const { productId } = req.params; 
@@ -149,6 +147,27 @@ export const handleUpdateProduct = async (req, res) => {
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
+
+// lấy tất cả sản phẩm cho admin
+export const handleGetAllProductsForAdmin = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+
+    const result = await productService.getAllProductsAdminService(page, limit);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy danh sách sản phẩm quản trị thành công!',
+      data: result
+    });
+  } catch (error) {
+    console.error('Lỗi tại handleGetAllProductsForAdmin Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
       message: error.message || 'Internal Server Error!'
     });
   }
