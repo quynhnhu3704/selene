@@ -50,6 +50,44 @@ export const handleUpdateCustomerProfile = async (req, res) => {
   }
 };
 
+// lấy thông tin khách hàng
+export const handleGetCustomerProfile = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId; // Lấy từ token đã verify giống hàm update
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Dữ liệu xác thực tài khoản bên trong mã Token không hợp lệ!'
+      });
+    }
+
+    // Gọi đến service vừa tạo ở Bước 1
+    const result = await userService.getCustomerProfile(accountId);
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    // Xử lý lỗi nghiệp vụ nếu không tìm thấy profile
+    if (error.message.includes('Không tìm thấy')) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Lấy Profile Khách hàng:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
 // ================== ADMIN =====================
 
 // thêm nhân viên

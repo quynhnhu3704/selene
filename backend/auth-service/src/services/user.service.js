@@ -89,6 +89,31 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
   };
 };
 
+// lấy thông tin khách hàng
+export const getCustomerProfile = async (accountId) => {
+  // 1. Gọi model lấy profile bằng accountId ban đầu
+  const profile = await UserProfileModel.getProfileByAccountId(accountId);
+  const account = await UserProfileModel.getAccountById(accountId)
+
+  if (!profile) {
+    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+  }
+
+  // 2. Trả về thông tin profile tìm được
+  return {
+    message: 'Lấy thông tin hồ sơ thành công!',
+    profile: {
+      profile_id: account.profile_id,
+      full_name: profile.full_name,
+      email: account.email,
+      phone_number: profile.phone_number,
+      avatar_url: profile.avatar_url,
+      gender: profile.gender,
+      dob: profile.dob,
+    }
+  };
+};
+
 
 // ================== ADMIN =====================
 
