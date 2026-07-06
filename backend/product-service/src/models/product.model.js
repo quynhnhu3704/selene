@@ -218,4 +218,40 @@ export const ProductModel = {
     if (error) throw error;
     return { data, count };
   },
+
+  // Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
+  getProductDetailWithVariants: async (productId) => {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        product_id,
+        category_id,
+        brand_id,
+        product_name,
+        image_urls,
+        product_url,
+        price,
+        original_price,
+        discount_price,
+        description,
+        status,
+        product_variants (
+          variant_id,
+          size,
+          color,
+          stock_quantity,
+          status
+        )
+      `)
+      .eq('product_id', productId)
+      .single(); // Trả về 1 Object duy nhất thay vì mảng dữ liệu
+
+    if (error) {
+      // Nếu không tìm thấy bản ghi nào (PostgreSQL trả mã PGRST116)
+      if (error.code === 'PGRST116') return null; 
+      throw error;
+    }
+    
+    return data;
+  }
 };

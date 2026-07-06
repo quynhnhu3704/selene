@@ -377,7 +377,7 @@ export const updateProductWithVariants = async (productId, inputData, files) => 
 };
 
 // lấy tất cả sản phẩm cho admin
-export const getAllProductsAdminService = async (page = 1, limit = 10) => {
+export const getAllProductsAdmin = async (page = 1, limit = 10) => {
   try {
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
@@ -416,6 +416,56 @@ export const getAllProductsAdminService = async (page = 1, limit = 10) => {
     };
   } catch (error) {
     console.error('Lỗi tại getAllProductsAdminService:', error.message);
+    throw error;
+  }
+};
+
+// / Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
+export const getProductDetailForAdmin = async (productId) => {
+  try {
+    if (!productId) {
+      throw new Error('Mã ID sản phẩm không được để trống!');
+    }
+
+    // 1. Gọi Model lấy dữ liệu tổng hợp từ DB
+    const rawProduct = await ProductModel.getProductDetailWithVariants(productId);
+    
+    if (!rawProduct) {
+      throw new Error(`Không tìm thấy sản phẩm nào có ID là '${productId}'`);
+    }
+
+    // 2. Chuẩn hóa mảng ảnh image_urls từ chuỗi JSON
+    let processedImages = rawProduct.image_urls;
+    if (typeof rawProduct.image_urls === 'string') {
+      try {
+        processedImages = JSON.parse(rawProduct.image_urls);
+      } catch {
+        processedImages = [];
+      }
+    }
+
+    // 3. Khớp định dạng dữ liệu trả về gọn gàng nhất
+    return {
+      product_id: rawProduct.product_id,
+      category_id: rawProduct.category_id,
+      brand_id: rawProduct.brand_id,
+      product_name: rawProduct.product_name,
+      product_url: rawProduct.product_url,
+      image_urls: processedImages,
+      price: Number(rawProduct.price),
+      original_price: Number(rawProduct.original_price),
+      discount_price: Number(rawProduct.discount_price),
+      description: rawProduct.description,
+      status: rawProduct.status,
+      created_at: rawProduct.created_at,
+      updated_at: rawProduct.updated_at,
+      
+      // Đổi tên trường từ product_variants thành variants ngắn gọn
+      variants: rawProduct.product_variants || []
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại getProductDetailService:', error.message);
     throw error;
   }
 };
