@@ -11,6 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const navigate = useNavigate();
 
   const handleReset = () => {
@@ -18,12 +19,35 @@ export default function Login() {
     setPassword("");
   };
 
+  const validateForm = () => {
+    // Email
+    if (!email.trim()) {
+      toast.error("Vui lòng nhập email");
+      return false;
+    }
+
+    if (!emailRegex.test(email)) {
+      toast.error("Email không đúng định dạng");
+      return false;
+    }
+
+    // Mật khẩu
+    if (!password) {
+      toast.error("Vui lòng nhập mật khẩu");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateForm()) return;
+
     try {
       const res = await login({
-        email,
+        email: email.trim(),
         password,
       });
 
@@ -81,7 +105,7 @@ export default function Login() {
                 <span className="form-label">Email</span>
               </div>
               <div className="form-input-wrap">
-                <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
+                <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" maxLength={100} required />
               </div>
             </div>
 
@@ -92,7 +116,7 @@ export default function Login() {
                 <Link to="/dat-lai-mat-khau" className="form-link-sm">Quên mật khẩu?</Link>
               </div>
               <div className="form-input-wrap">
-                <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+                <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" maxLength={50} required />
                 <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>

@@ -10,6 +10,7 @@ import ProductList from "../../pages/ProductList";
 import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
+import Profile from "../../pages/Account/Profile";
 
 export default function AppRouter() {
   return (
@@ -20,6 +21,7 @@ export default function AppRouter() {
         <Route path="/" element={<Home />} /> 
         <Route path="/tai-khoan/dang-nhap" element={<Login />} />
         <Route path="/tai-khoan/dang-ky" element={<Register />} />
+        <Route path="/tai-khoan/thong-tin-ca-nhan" element={<Profile />} />
         <Route path="/auth/success" element={<GoogleSuccess />} />
         
         <Route path="/san-pham" element={<ProductList />} />

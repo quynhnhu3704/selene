@@ -4,6 +4,7 @@ import { Link, NavLink } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { isLoggedIn, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
+import Swal from "sweetalert2";
 
 export default function Header() {
   const [wl] = useState(0);
@@ -46,15 +47,42 @@ export default function Header() {
 
   // Thêm đoạn này
   const handleLogout = async () => {
-    try {
-        await logout(); // gọi backend
-    } catch (err) {
-        console.log(err);
-    }
-    clearLogin(); // xóa localStorage
+    const result = await Swal.fire({
+    title: "Đăng xuất",
+      text: "Bạn có chắc chắn muốn đăng xuất?",
+      showCancelButton: true,
+      confirmButtonText: "Đăng xuất",
+      cancelButtonText: "Ở lại",
+      reverseButtons: true,
+      focusCancel: true,
+      buttonsStyling: false,
+      showIcon: false, // Đảm bảo không render icon mặc định
 
+      customClass: {
+        popup: "se-swal-popup",
+        title: "se-swal-title",
+        htmlContainer: "se-swal-text",
+        confirmButton: "se-btn-confirm",
+        cancelButton: "se-btn-cancel",
+        actions: "se-swal-actions"
+      }
+    });
+
+    // Người dùng bấm "Ở lại"
+    if (!result.isConfirmed) return;
+
+    try {
+      await logout(); // gọi Backend xóa Refresh Token
+    } catch (err) {
+      console.log(err);
+    }
+
+    // Xóa AccessToken và User trong localStorage
+    clearLogin();
+
+    // Cập nhật Header
     window.dispatchEvent(
-        new Event("login-success")
+      new Event("login-success")
     );
 
     window.location.href = "/";
@@ -135,7 +163,7 @@ export default function Header() {
                 </>
               ) : (
                 <>
-                  <li><Link className="dropdown-item" to="/tai-khoan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
+                  <li><Link className="dropdown-item" to="/tai-khoan/thong-tin-ca-nhan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
                   <li><button className="dropdown-item" onClick={handleLogout}><i className="bi bi-box-arrow-right me-1"></i> Đăng xuất</button></li>
                 </>
               )}
