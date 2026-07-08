@@ -1,9 +1,11 @@
 import express from 'express';
-import { orderController } from '../controllers/order.controller.js';
-import { requireAuth } from '../middlewares/auth.middleware.js';
+import * as cartController from '../controllers/cart.controller.js';
+import { verifyToken } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/', requireAuth, orderController.getOrders);
+// customer
+// cart
+router.post('/cart/add', verifyToken, cartController.handleAddItemToCart);
 
 export default router;
