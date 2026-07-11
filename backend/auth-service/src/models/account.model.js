@@ -45,12 +45,49 @@ export const AccountModel = {
   },
 
   // Lấy danh sách quyền hạn dựa theo role_id
+  // getPermissionsByRoleId: async (roleId) => {
+  //   const { data } = await supabase
+  //     .from('role_permissions')
+  //     .select('permissions(name)')
+  //     .eq('role_id', roleId);
+  //   return data ? data.map(p => p.permissions?.name).filter(Boolean) : [];
+  // },
   getPermissionsByRoleId: async (roleId) => {
-    const { data } = await supabase
+    console.log(">>> Đang lấy quyền cho roleId:", roleId);
+
+    // Bước 1: Lấy các permission_id từ bảng role_permissions
+    const { data: rolePerms, error: rpError } = await supabase
       .from('role_permissions')
-      .select('permissions(name)')
+      .select('permission_id')
       .eq('role_id', roleId);
-    return data ? data.map(p => p.permissions?.name).filter(Boolean) : [];
+
+    if (rpError) {
+      console.error("Lỗi lấy role_permissions:", rpError);
+      return [];
+    }
+
+    if (!rolePerms || rolePerms.length === 0) {
+      console.log(">>> Không có record nào trong role_permissions khớp với roleId:", roleId);
+      return [];
+    }
+
+    const permissionIds = rolePerms.map(rp => rp.permission_id);
+    console.log(">>> Các permission_id tìm được:", permissionIds);
+
+    // Bước 2: Lấy tên quyền từ bảng permissions
+    const { data: perms, error: pError } = await supabase
+      .from('permissions')
+      .select('name')
+      .in('permission_id', permissionIds);
+
+    if (pError) {
+      console.error("Lỗi lấy bảng permissions:", pError);
+      return [];
+    }
+
+    const finalPerms = perms ? perms.map(p => p.name) : [];
+    console.log(">>> Trả về danh sách quyền:", finalPerms);
+    return finalPerms;
   },
 
   // Thêm mới tài khoản
