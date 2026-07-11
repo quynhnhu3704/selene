@@ -53,8 +53,6 @@ export const AccountModel = {
   //   return data ? data.map(p => p.permissions?.name).filter(Boolean) : [];
   // },
   getPermissionsByRoleId: async (roleId) => {
-    console.log(">>> Đang lấy quyền cho roleId:", roleId);
-
     // Bước 1: Lấy các permission_id từ bảng role_permissions
     const { data: rolePerms, error: rpError } = await supabase
       .from('role_permissions')
@@ -67,12 +65,10 @@ export const AccountModel = {
     }
 
     if (!rolePerms || rolePerms.length === 0) {
-      console.log(">>> Không có record nào trong role_permissions khớp với roleId:", roleId);
       return [];
     }
 
     const permissionIds = rolePerms.map(rp => rp.permission_id);
-    console.log(">>> Các permission_id tìm được:", permissionIds);
 
     // Bước 2: Lấy tên quyền từ bảng permissions
     const { data: perms, error: pError } = await supabase
@@ -86,7 +82,6 @@ export const AccountModel = {
     }
 
     const finalPerms = perms ? perms.map(p => p.name) : [];
-    console.log(">>> Trả về danh sách quyền:", finalPerms);
     return finalPerms;
   },
 
