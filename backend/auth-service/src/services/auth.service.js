@@ -154,7 +154,7 @@ export const forgotPasswordService = async (email) => {
 
   // Tiến hành cập nhật đè mật khẩu cũ trong bảng accounts bằng mật khẩu mới đã mã hóa
   try {
-    await AccountModel.updateAccount(email, { 
+    await AccountModel.updateAccount(email, {
       password: hashedNewPassword,
       updated_at: new Date().toISOString()
     });
@@ -210,11 +210,11 @@ export const loginWithGoogle = async (code) => {
     // 1. Dùng authorization code nhận từ Frontend để đổi lấy bộ tokens từ Server Google
     const { tokens } = await googleClient.getToken({
       code: code,
-      client_id: process.env.GOOGLE_CLIENT_ID,         
-      client_secret: process.env.GOOGLE_CLIENT_SECRET, 
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
       redirectUri: process.env.GOOGLE_REDIRECT_URL
     });
-    
+
     // 2. Xác thực chuỗi id_token nhận được để lấy thông tin tài khoản giải mã
     const ticket = await googleClient.verifyIdToken({
       idToken: tokens.id_token,
@@ -248,7 +248,7 @@ export const loginWithGoogle = async (code) => {
         account_id: accountId,
         email,
         password: dummyPassword,
-        role_id: finalRoleId, 
+        role_id: finalRoleId,
         role_name: 'customer',
         status: 'active',
         created_at: now,
@@ -339,10 +339,10 @@ export const refreshAccessToken = async (refreshToken) => {
 
     // 6. Lấy lại danh sách quyền mới nhất và ký cấp Access Token mới
     const permissions = await AccountModel.getPermissionsByRoleId(account.role_id);
-    const jwtPayload = { 
-      accountId: account.account_id, 
-      role: account.role_name, 
-      permissions 
+    const jwtPayload = {
+      accountId: account.account_id,
+      role: account.role_name,
+      permissions
     };
 
     const newAccessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, { expiresIn: '15m' });
@@ -350,17 +350,17 @@ export const refreshAccessToken = async (refreshToken) => {
     return { accessToken: newAccessToken };
   } catch (err) {
     console.error('Lỗi chi tiết tại tầng Service:', err.message);
-    
+
     // Nếu là lỗi do chính chúng ta chủ động throw ở trên, giữ nguyên thông báo lỗi để FE hiển thị rõ ràng
     if (err.message && !err.name) {
       throw err;
     }
-    
+
     // Nếu là lỗi hệ thống do jwt.verify tự bắt (Token hết hạn/Hợp lệ giả mạo)
     if (err.name === 'TokenExpiredError') {
       throw new Error('Phiên đăng nhập đã hết hạn từ lâu, vui lòng đăng nhập lại!');
     }
-    
+
     throw new Error('Mã xác thực phiên làm việc không hợp lệ hoặc đã bị thay đổi!');
   }
 };
@@ -377,8 +377,8 @@ export const logoutUser = async (refreshToken) => {
     const accountId = decoded.accountId;
 
     // 2. Xóa Refresh Token của tài khoản này trong Database
-    await RefreshTokenModel.deleteRefreshToken(accountId); 
-    
+    await RefreshTokenModel.deleteRefreshToken(accountId);
+
     return { message: 'Đăng xuất tài khoản thành công!' };
   } catch (err) {
     console.error('Lỗi khi xử lý xóa Refresh Token:', err.message);
