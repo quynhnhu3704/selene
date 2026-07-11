@@ -45,13 +45,6 @@ export const AccountModel = {
   },
 
   // Lấy danh sách quyền hạn dựa theo role_id
-  // getPermissionsByRoleId: async (roleId) => {
-  //   const { data } = await supabase
-  //     .from('role_permissions')
-  //     .select('permissions(name)')
-  //     .eq('role_id', roleId);
-  //   return data ? data.map(p => p.permissions?.name).filter(Boolean) : [];
-  // },
   getPermissionsByRoleId: async (roleId) => {
     // Bước 1: Lấy các permission_id từ bảng role_permissions
     const { data: rolePerms, error: rpError } = await supabase
