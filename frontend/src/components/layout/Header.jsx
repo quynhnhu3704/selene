@@ -163,7 +163,7 @@ export default function Header() {
                 </>
               ) : (
                 <>
-                  <li><Link className="dropdown-item" to="/tai-khoan/thong-tin-ca-nhan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
+                  <li><Link className="dropdown-item" to="/tai-khoan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
                   <li><button className="dropdown-item" onClick={handleLogout}><i className="bi bi-box-arrow-right me-1"></i> Đăng xuất</button></li>
                 </>
               )}

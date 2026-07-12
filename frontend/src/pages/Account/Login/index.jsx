@@ -102,7 +102,7 @@ export default function Login() {
             {/* EMAIL */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Email</span>
+                <span className="form-label">Email <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" maxLength={100} required />
@@ -112,7 +112,7 @@ export default function Login() {
             {/* MẬT KHẨU */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Mật khẩu</span>
+                <span className="form-label">Mật khẩu <span className="text-danger">*</span></span>
                 <Link to="/dat-lai-mat-khau" className="form-link-sm">Quên mật khẩu?</Link>
               </div>
               <div className="form-input-wrap">
