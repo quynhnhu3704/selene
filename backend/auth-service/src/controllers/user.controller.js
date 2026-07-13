@@ -257,6 +257,54 @@ export const handleUpdateProfileAll = async (req, res) => {
   }
 };
 
+// cập nhật thông tin đồng bộ 2 bảng (cho chính staff)
+export const handleUpdateStaffProfile = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId;
+    const { full_name, phone, email, identity_card, gender, dob, address, status } = req.body;
+    const avatarFile = req.file;
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Dữ liệu xác thực tài khoản bên trong mã Token không hợp lệ!'
+      });
+    }
+
+    // Gọi service xử lý logic nghiệp vụ
+    const result = await userService.updateProfileAll(
+      accountId,
+      { full_name, phone, email, identity_card, gender, dob, address, status },
+      avatarFile
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    if (
+      error.message.includes('Không tìm thấy') || 
+      error.message.includes('đã được sử dụng') || 
+      error.message.includes('đã tồn tại') ||
+      error.message.includes('Storage')
+    ) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Cập nhật Profile Staff:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
 // cập nhật account
 export const handleUpdateAccount = async (req, res) => {
   try {
