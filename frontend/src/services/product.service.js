@@ -1,19 +1,22 @@
-// frontend\src\services\product.service.js
-export const getFeaturedProducts = () => {
-  return Promise.resolve({
-    data: [
-      {
-        _id: 1,
-        product_name: "iPhone 15",
-        price: 2000,
-        image_url: "https://via.placeholder.com/150",
-      },
-      {
-        _id: 2,
-        product_name: "Samsung S24",
-        price: 1800,
-        image_url: "https://via.placeholder.com/150",
-      },
-    ],
+// frontend/src/services/product.service.js
+import http from "./http";
+
+export const getProducts = async (page = 1, limit = 12) => {
+  const res = await http.get("/products/product-list", {
+    params: {
+      page,
+      limit,
+    },
+    withCredentials: false,
   });
+
+  return res.data;
+};
+
+export const getProductById = async (id) => {
+  const res = await http.get(`/products/product-detail/${id}`, {
+    withCredentials: false,
+  });
+
+  return res.data;
 };

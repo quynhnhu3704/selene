@@ -407,6 +407,12 @@
 /* TEXT-DANGER */
 .text-danger { color: #871B1B !important; }
 
+/* TRANG TÀI KHOẢN */
+.panel-title {
+  font-size: 15px; font-weight: 800; text-transform: uppercase;
+  padding-bottom: 14px; border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 24px;
+}
 
 
 

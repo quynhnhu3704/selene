@@ -90,12 +90,7 @@ export default function Profile() {
 
         /* RIGHT PANEL */
         .acc-panel { padding-left: 40px; }
-        .acc-panel-title {
-          font-size: 15px; font-weight: 800; text-transform: uppercase;
-          letter-spacing: 0.7px; color: #212529;
-          padding-bottom: 14px; border-bottom: 1px solid #f0f0f0;
-          margin-bottom: 24px;
-        }
+
 
         /* Empty state */
         .acc-empty { text-align: center; padding: 48px 0; color: #aaa; }

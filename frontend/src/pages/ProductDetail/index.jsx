@@ -1,60 +1,28 @@
 // frontend\src\pages\ProductDetail.jsx
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
+import { getProductById } from "../../services/product.service";
 
 /* ── DỮ LIỆU MẪU ── */
-const PRODUCT = {
-  id: 1,
-  sku: "WCPO25A518-SW001-S",
-  name: "Áo Polo Nữ Ngắn Tay Cổ Phối Bo - Thoáng Khí - Năng Động",
-  price: 199000,
-  originalPrice: 299000,
-  colors: [
-    { label: "Trắng 001", hex: "#f5f5f0", border: "#ccc" },
-    { label: "Xanh Navy", hex: "#1a2f5a", border: "#1a2f5a" },
-    { label: "Đen",       hex: "#111",    border: "#111" },
-    { label: "Xanh Rêu",  hex: "#b5b87a", border: "#b5b87a" },
-    { label: "Hồng",      hex: "#f4b8c1", border: "#f4b8c1" },
-    { label: "Xanh Đậm",  hex: "#1b4332", border: "#1b4332" },
-  ],
-  sizes: ["S", "M", "L", "XL", "2XL"],
-  images: [
-    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&h=900&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=700&h=900&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=700&h=900&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=700&h=900&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=700&h=900&fit=crop&crop=top",
-  ],
-  detail: {
-    title: "Áo Polo Nữ Phối Ngắn Tay Cổ Phối Bo Gọn Dáng, Mềm Mát Mùa Hè",
-    sku: "WCPO25A518",
-    lines: [
-      "Dòng sản phẩm: Áo polo ngắn tay nữ cổ phối bo",
-      "Chất liệu: Mắt chim - Cotton, Polyester, Spandex, cấu trúc vải pique",
-      "Tính năng: Mềm mại, thoáng mát, co giãn, giữ form, hạn chế nhăn",
-      "Phom dáng: Áo polo ngắn tay gọn dáng, phù hợp mọi vóc dáng.",
-      "Kiểu dáng: Cổ phối bo nổi bật, tay ngắn năng động.",
-      "Màu sắc: Đa dạng, phù hợp mix đồ nhiều phong cách.",
-    ],
-  },
-  faqs: [
-    {
-      q: "Đặt hàng Online thành công trong bao lâu tôi sẽ nhận được hàng?",
-      a: "Khách hàng khi đã được xác nhận đơn hàng đặt mua trên Website, Facebook, Zalo... và các kênh thông tin chính thức khác sẽ nhận được sản phẩm trong vòng từ 3-5 ngày làm việc (tuỳ thuộc khu vực nhận hàng).",
-      bold: "trong vòng từ 3-5 ngày làm việc",
-    },
-    { q: "Đặt hàng Online tôi có được miễn phí vận chuyển không?", a: "" },
-    { q: "Sản phẩm không vừa có thể đổi trả không?", a: "" },
-  ],
-  commits: [
-    { icon: "bi-arrow-repeat",  text1: "Đổi, trả miễn phí",   text2: "tại nhà nếu không hài lòng", link: "Xem chính sách ↗", zalo: false },
-    { icon: "bi-truck",         text1: "Giao trong 3-5 ngày",  text2: "và freeship đơn từ 498k",    link: "",               zalo: false },
-    { icon: "bi-shield-check",  text1: "Cam kết bảo mật",      text2: "thông tin khách hàng",        link: "",               zalo: false },
-    { icon: "bi-chat-dots",     text1: "Cần tư vấn thêm?",     text2: "",                            link: "Chat ngay!",     zalo: true  },
-  ],
-};
+// const PRODUCT = {
+//   faqs: [
+//     {
+//       q: "Đặt hàng Online thành công trong bao lâu tôi sẽ nhận được hàng?",
+//       a: "Khách hàng khi đã được xác nhận đơn hàng đặt mua trên Website, Facebook, Zalo... và các kênh thông tin chính thức khác sẽ nhận được sản phẩm trong vòng từ 3-5 ngày làm việc (tuỳ thuộc khu vực nhận hàng).",
+//       bold: "trong vòng từ 3-5 ngày làm việc",
+//     },
+//     { q: "Đặt hàng Online tôi có được miễn phí vận chuyển không?", a: "" },
+//     { q: "Sản phẩm không vừa có thể đổi trả không?", a: "" },
+//   ],
+//   commits: [
+//     { icon: "bi-arrow-repeat",  text1: "Đổi, trả miễn phí",   text2: "tại nhà nếu không hài lòng", link: "Xem chính sách ↗", zalo: false },
+//     { icon: "bi-truck",         text1: "Giao trong 3-5 ngày",  text2: "và freeship đơn từ 498k",    link: "",               zalo: false },
+//     { icon: "bi-shield-check",  text1: "Cam kết bảo mật",      text2: "thông tin khách hàng",        link: "",               zalo: false },
+//     { icon: "bi-chat-dots",     text1: "Cần tư vấn thêm?",     text2: "",                            link: "Chat ngay!",     zalo: true  },
+//   ],
+// };
 
 function fmt(n) { return n.toLocaleString("vi-VN") + "đ"; }
 
@@ -66,11 +34,80 @@ export default function ProductDetail() {
   const [showMore,    setShowMore]  = useState(false);
   const [openFaq,     setOpenFaq]   = useState(0);
   const [copied,      setCopied]    = useState(false);
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await getProductById(id);
+
+        console.log(res.data);
+
+        setProduct(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const copySku = () => {
-    navigator.clipboard?.writeText(PRODUCT.sku);
+    navigator.clipboard?.writeText(product?.product_id || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40 }}>
+        Đang tải...
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div style={{ padding: 40 }}>
+        Không tìm thấy sản phẩm
+      </div>
+    );
+  }
+
+  const PRODUCT = {
+    ...product,
+
+    name: product.product_name,
+    price: product.discount_price,
+    originalPrice: product.original_price,
+    sku: product.product_id,
+
+    images: product.images || [],
+
+    colors: [
+      ...new Map(
+        (product.variants || []).map(v => [
+          v.color,
+          {
+            label: v.color,
+            hex: "#ddd",
+            border: "#999",
+          },
+        ])
+      ).values(),
+    ],
+
+    sizes: [...new Set((product.variants || []).map(v => v.size))],
+
+    detail: {
+      sku: product.product_id,
+      title: product.product_name,
+      lines: (product.description || "").split("\n"),
+    },
   };
 
   return (
@@ -80,7 +117,7 @@ export default function ProductDetail() {
       <Breadcrumb
         items={[
           { label: "Trang chủ", path: "/" },
-          { label: "Thời trang nữ", path: "/thoi-trang-nu" },
+          { label: "Thời trang nữ", path: "/san-pham" },
           { label: PRODUCT.name },
         ]}
       />
@@ -386,7 +423,7 @@ export default function ProductDetail() {
                 <span>Câu hỏi thường gặp</span>
                 <i className="bi bi-dash-circle" />
               </div>
-              {PRODUCT.faqs.map((faq, i) => (
+              {(PRODUCT.faqs || []).map((faq, i) => (
                 <div className="pd-faq-item" key={i}>
                   <div className="pd-faq-q" onClick={() => setOpenFaq(openFaq === i ? -1 : i)}>
                     <span>{faq.q}</span>
@@ -496,7 +533,7 @@ export default function ProductDetail() {
               <span style={{ color: "#28a745", fontSize: 18 }}>✅</span>
             </div>
             <div className="pd-commit-grid">
-              {PRODUCT.commits.map((c, i) => (
+              {(PRODUCT.commits || []).map((c, i) => (
                 <div className="pd-commit-card" key={i}>
                   <i className={`bi ${c.icon}`} />
                   <div className="pd-commit-text">

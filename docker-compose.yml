@@ -30,7 +30,7 @@ services:
     networks:
       - microservices-net
 
-    product-service:
+  product-service:
     build:
       context: ./services/product-service
     ports:

@@ -1,36 +1,19 @@
 // frontend\src\pages\ProductList.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { getProducts } from "../../services/product.service";
 
-/* ── DỮ LIỆU MẪU ── */
-const PRODUCTS = Array.from({ length: 74 * 9 }, (_, i) => ({
-  id: i + 1,
-  name: [
-    "Áo Kiểu Nữ Nami Top RR26AK53",
-    "Quần Jeans Nữ Eric RR26QJ10",
-    "Quần Jeans Nữ Alan Short RR26QJ09",
-    "Đầm Linen Nữ Calla RR26DL04",
-    "Áo Halter Nữ Vero RR26AH12",
-    "Áo Thun Nữ Basic RR26AT01",
-    "Váy Midi Lace RR26VM08",
-    "Set Đồ Nữ Coco RR26SD05",
-    "Jumpsuit Nữ Rena RR26JS07",
-  ][i % 9],
-  price: [440000, 620000, 590000, 750000, 380000, 290000, 680000, 820000, 540000][i % 9],
-  originalPrice: [550000, 780000, 720000, 900000, 480000, 360000, 850000, 1000000, 680000][i % 9],
-  img: [
-    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1541338998-54e43a3254ef?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=440&h=600&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=440&h=600&fit=crop&crop=top",
-  ][i % 9],
-  slug: `san-pham-${i + 1}`,
-}));
+function fmt(n) {
+  return n.toLocaleString("vi-VN") + "vnđ";
+}
+
+const SORT_OPTIONS = [
+  { value: "default", label: "Mặc định" },
+  { value: "az", label: "A → Z" },
+  { value: "za", label: "Z → A" },
+  { value: "price_asc", label: "Giá tăng dần" },
+  { value: "price_desc", label: "Giá giảm dần" },
+];
 
 const CATEGORIES = [
   { label: "Áo Nữ", children: ["Áo Thun", "Áo Sơ Mi", "Áo Kiểu"] },
@@ -43,23 +26,6 @@ const CATEGORIES = [
   { label: "Jumpsuit" },
   { label: "Đồ Bộ Nữ" },
 ];
-
-const SORT_OPTIONS = [
-  { value: "default", label: "Mặc định" },
-  { value: "az",      label: "A → Z" },
-  { value: "za",      label: "Z → A" },
-  { value: "price_asc",  label: "Giá tăng dần" },
-  { value: "price_desc", label: "Giá giảm dần" },
-  { value: "newest", label: "Hàng mới nhất" },
-  { value: "oldest", label: "Hàng cũ nhất" },
-];
-
-const PER_PAGE = 9;
-const TOTAL_PAGES = Math.ceil(PRODUCTS.length / PER_PAGE);
-
-function fmt(n) {
-  return n.toLocaleString("vi-VN") + "vnđ";
-}
 
 /* ── PAGINATION ── */
 function Pagination({ page, total, onChange }) {
@@ -107,11 +73,24 @@ function Pagination({ page, total, onChange }) {
 
 /* ── MAIN COMPONENT ── */
 export default function ProductList() {
-  const [openCats, setOpenCats]   = useState({});
+  const [openCats, setOpenCats] = useState({});
   const [showAllCats, setShowAll] = useState(false);
-  const [sortOpen, setSortOpen]   = useState(false);
-  const [sortVal, setSortVal]     = useState("default");
-  const [page, setPage]           = useState(1);
+  const visibleCategories = showAllCats
+  ? CATEGORIES
+  : CATEGORIES.slice(0, 5);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sortVal, setSortVal] = useState("default");
+  const [page, setPage] = useState(1);
+
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    limit: 12,
+  });
 
   /* filter / sort */
   const [checkedBrand, setCheckedBrand] = useState([]);
@@ -121,22 +100,51 @@ export default function ProductList() {
   const toggleCat = (label) =>
     setOpenCats(prev => ({ ...prev, [label]: !prev[label] }));
 
-  const toggleCheck = (setter, getter, val) =>
-    setter(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
+    const toggleCheck = (setter, val) =>
+    setter(prev =>
+      prev.includes(val)
+        ? prev.filter(v => v !== val)
+        : [...prev, val]
+    );
 
   const sortLabel = SORT_OPTIONS.find(o => o.value === sortVal)?.label ?? "Mặc định";
 
   /* sort products (demo) */
-  let displayed = [...PRODUCTS];
-  if (sortVal === "az") displayed.sort((a, b) => a.name.localeCompare(b.name));
-  if (sortVal === "za") displayed.sort((a, b) => b.name.localeCompare(a.name));
-  if (sortVal === "price_asc")  displayed.sort((a, b) => a.price - b.price);
-  if (sortVal === "price_desc") displayed.sort((a, b) => b.price - a.price);
+  let displayed = [...products];
 
-  const pageProducts = displayed.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  if (sortVal === "az")
+    displayed.sort((a, b) => a.product_name.localeCompare(b.product_name));
+
+  if (sortVal === "za")
+    displayed.sort((a, b) => b.product_name.localeCompare(a.product_name));
+
+  if (sortVal === "price_asc")
+    displayed.sort((a, b) => a.discount_price - b.discount_price);
+
+  if (sortVal === "price_desc")
+    displayed.sort((a, b) => b.discount_price - a.discount_price);
 
   const handleSort = (val) => { setSortVal(val); setSortOpen(false); setPage(1); };
   const handlePage = (p) => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+
+        const res = await getProducts(page);
+
+        setProducts(res.data);
+        setPagination(res.pagination);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [page]);
 
   return (
     <>
@@ -519,7 +527,7 @@ export default function ProductList() {
 
             <div className="pl-sidebar-scroll">
               <ul className="pl-cat-list">
-                {CATEGORIES.map(cat => (
+                {visibleCategories.map(cat => (
                   <li key={cat.label} className="pl-cat-item">
                     <div className="pl-cat-row">
                       <Link to="#" className="pl-cat-row" style={{ flex: 1, padding: 0 }}>
@@ -558,7 +566,7 @@ export default function ProductList() {
             <div className="pl-sidebar-title">Nơi Bán</div>
             <ul className="pl-check-list">
               {["Hồ Chí Minh", "Hà Nội"].map(loc => (
-                <li key={loc} onClick={() => toggleCheck(setCheckedLocation, checkedLocation, loc)}>
+                <li key={loc} onClick={() => toggleCheck(setCheckedLocation, loc)}>
                   <input type="checkbox" readOnly checked={checkedLocation.includes(loc)} />
                   {loc}
                 </li>
@@ -571,7 +579,7 @@ export default function ProductList() {
             <div className="pl-sidebar-title">Thương Hiệu</div>
             <ul className="pl-check-list">
               {["Rubies Studio", "Rubies Rubies"].map(b => (
-                <li key={b} onClick={() => toggleCheck(setCheckedBrand, checkedBrand, b)}>
+                <li key={b} onClick={() => toggleCheck(setCheckedBrand, b)}>
                   <input type="checkbox" readOnly checked={checkedBrand.includes(b)} />
                   {b}
                 </li>
@@ -591,7 +599,7 @@ export default function ProductList() {
                   "Từ 600.000đ - 800.000đ",
                   "Từ 800.000đ - 1 triệu",
                 ].map(r => (
-                  <li key={r} onClick={() => toggleCheck(setCheckedPrice, checkedPrice, r)}>
+                  <li key={r} onClick={() => toggleCheck(setCheckedPrice, r)}>
                     <input type="checkbox" readOnly checked={checkedPrice.includes(r)} />
                     {r}
                   </li>
@@ -644,28 +652,55 @@ export default function ProductList() {
           </div>
 
           {/* GRID */}
-          <div className="pl-grid">
-            {pageProducts.map(p => (
-              <div className="pl-pcard" key={p.id}>
-                <div className="pl-pimg-wrap">
-                  <Link to={`/san-pham/${p.slug}`}>
-                    <img src={p.img} alt={p.name} loading="lazy" />
-                  </Link>
-                </div>
-                <div className="pl-pinfo">
-                  <Link to={`/san-pham/${p.slug}`} className="pl-pname">{p.name}</Link>
-                  <div className="pl-price-row">
-                    <span className="pl-price-current">{fmt(p.price)}</span>
-                    <span className="pl-price-original">{fmt(p.originalPrice)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+
+{loading ? (
+  <div style={{ padding: 40, textAlign: "center" }}>
+    Đang tải sản phẩm...
+  </div>
+) : (
+  <>
+    <div className="pl-grid">
+      {displayed.map((p) => (
+        <div className="pl-pcard" key={p.product_id}>
+          <div className="pl-pimg-wrap">
+            <Link to={`/san-pham/${p.product_id}`}>
+              <img
+                src={p.image_url}
+                alt={p.product_name}
+                loading="lazy"
+              />
+            </Link>
           </div>
 
-          {/* PAGINATION */}
-          <Pagination page={page} total={TOTAL_PAGES} onChange={handlePage} />
+          <div className="pl-pinfo">
+            <Link
+              to={`/san-pham/${p.product_id}`}
+              className="pl-pname"
+            >
+              {p.product_name}
+            </Link>
 
+            <div className="pl-price-row">
+              <span className="pl-price-current">
+                {fmt(p.discount_price)}
+              </span>
+
+              <span className="pl-price-original">
+                {fmt(p.original_price)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <Pagination
+      page={pagination.currentPage}
+      total={pagination.totalPages}
+      onChange={handlePage}
+    />
+  </>
+)}
         </main>
       </div>
 

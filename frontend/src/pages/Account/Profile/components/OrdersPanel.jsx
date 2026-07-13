@@ -7,7 +7,7 @@ export default function OrdersPanel() {
 
   return (
     <>
-      <h5 className="acc-panel-title">ĐƠN HÀNG CỦA BẠN</h5>
+      <h5 className="panel-title">ĐƠN HÀNG CỦA BẠN</h5>
       {orders.length === 0 ? (
         <div className="acc-empty">
           <i className="bi bi-bag-x acc-empty-icon" />

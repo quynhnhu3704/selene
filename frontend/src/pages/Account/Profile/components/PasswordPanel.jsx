@@ -100,62 +100,58 @@ export default function PasswordPanel() {
 
   return (
     <>
-      <div className="login-page">
-        <div className="login-card"> 
-          <h5 className="form-title">Đổi mật khẩu</h5>
-          <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 420 }}>
+      <h5 className="panel-title">ĐỔI MẬT KHẨU</h5>          
+        <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 420 }}>
 
-            {/* MẬT KHẨU HIỆN TẠI */}
-            <div>
-              <div className="form-label-row">
-                <span className="form-label">Mật khẩu hiện tại <span className="text-danger">*</span></span>
-              </div>
-              <div className="form-input-wrap">
-                <input type={showOldPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu hiện tại" value={oldPassword} onChange={e => setOldPassword(e.target.value)} autoComplete="current-password" maxLength={50} required />
-                <button type="button" className="form-eye" onClick={() => setShowOldPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
-                  <i className={`bi ${showOldPassword ? "bi-eye-slash" : "bi-eye"}`} />
-                </button>
-              </div>
+          {/* MẬT KHẨU HIỆN TẠI */}
+          <div>
+            <div className="form-label-row">
+              <span className="form-label">Mật khẩu hiện tại <span className="text-danger">*</span></span>
             </div>
+            <div className="form-input-wrap">
+              <input type={showOldPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu hiện tại" value={oldPassword} onChange={e => setOldPassword(e.target.value)} autoComplete="current-password" maxLength={50} required />
+              <button type="button" className="form-eye" onClick={() => setShowOldPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
+                <i className={`bi ${showOldPassword ? "bi-eye-slash" : "bi-eye"}`} />
+              </button>
+            </div>
+          </div>
 
-            {/* MẬT KHẨU MỚI */}
-            <div>
-              <div className="form-label-row">
-                <span className="form-label">Mật khẩu mới <span className="text-danger">*</span></span>
-              </div>
-              <div className="form-input-wrap">
-                <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu mới" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
-                <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
-                  <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
-                </button>
-              </div>
+          {/* MẬT KHẨU MỚI */}
+          <div>
+            <div className="form-label-row">
+              <span className="form-label">Mật khẩu mới <span className="text-danger">*</span></span>
             </div>
+            <div className="form-input-wrap">
+              <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu mới" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
+              <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
+                <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
+              </button>
+            </div>
+          </div>
 
-            {/* XÁC NHẬN MẬT KHẨU MỚI */}
-            <div>
-              <div className="form-label-row">
-                <span className="form-label">Xác nhận mật khẩu mới <span className="text-danger">*</span></span>
-              </div>
-              <div className="form-input-wrap">
-                <input type={showConfirmPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
-                <button type="button" className="form-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
-                  <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
-                </button>
-              </div>
+          {/* XÁC NHẬN MẬT KHẨU MỚI */}
+          <div>
+            <div className="form-label-row">
+              <span className="form-label">Xác nhận mật khẩu mới <span className="text-danger">*</span></span>
             </div>
+            <div className="form-input-wrap">
+              <input type={showConfirmPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
+              <button type="button" className="form-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
+                <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
+              </button>
+            </div>
+          </div>
 
-            {/* CỤM NÚT HÀNH ĐỘNG */}
-            <div className="row mt-4">
-              <div className="col-6">
-                <button type="reset" onClick={handleReset} className="form-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
-              </div>
-              <div className="col-6">
-                <button type="submit" className="form-btn btn btn-dark fw-semibold w-100">Cập nhật</button>
-              </div>
+          {/* CỤM NÚT HÀNH ĐỘNG */}
+          <div className="row mt-4">
+            <div className="col-6">
+              <button type="reset" onClick={handleReset} className="form-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
             </div>
-          </form>
-        </div>
-      </div>
+            <div className="col-6">
+              <button type="submit" className="form-btn btn btn-dark fw-semibold w-100">Cập nhật</button>
+            </div>
+          </div>
+        </form>
     </>
   );
 }

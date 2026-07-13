@@ -36,7 +36,7 @@ export default function AppRouter() {
         <Route path="/auth/success" element={<GoogleSuccess />} />
         
         <Route path="/san-pham" element={<ProductList />} />
-        <Route path="/chi-tiet-san-pham" element={<ProductDetail />} />
+        <Route path="/san-pham/:id" element={<ProductDetail />} />
         <Route path="/ve-chung-toi" element={<About />} />
       </Route>
 
