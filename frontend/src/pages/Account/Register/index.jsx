@@ -185,7 +185,7 @@ export default function Register() {
             {/* HỌ TÊN */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Họ và tên</span>
+                <span className="form-label">Họ và tên <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="text" className="form-control" placeholder="Nhập họ và tên" value={name} onChange={e => setName(e.target.value)} onBlur={() => { if (name.trim()) { setName(normalizeFullName(name)); }}} autoComplete="name" maxLength={100} required />
@@ -195,7 +195,7 @@ export default function Register() {
             {/* EMAIL */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Email</span>
+                <span className="form-label">Email <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" maxLength={100} required />
@@ -205,7 +205,7 @@ export default function Register() {
             {/* SỐ ĐIỆN THOẠI */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Số điện thoại</span>
+                <span className="form-label">Số điện thoại <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="tel" className="form-control" placeholder="Nhập số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" maxLength={10} required />
@@ -215,7 +215,7 @@ export default function Register() {
             {/* MẬT KHẨU */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Mật khẩu</span>
+                <span className="form-label">Mật khẩu <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Tạo mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />
@@ -228,7 +228,7 @@ export default function Register() {
             {/* XÁC NHẬN MẬT KHẨU */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Xác nhận mật khẩu</span>
+                <span className="form-label">Xác nhận mật khẩu <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type={showConfirmPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập lại mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" maxLength={50} required />

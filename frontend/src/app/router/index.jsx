@@ -12,6 +12,10 @@ import About from "../../pages/About";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
 import Profile from "../../pages/Account/Profile";
 
+import Info from "../../pages/Account/Profile/pages/Info";
+import Orders from "../../pages/Account/Profile/pages/Orders";
+import ChangePassword from "../../pages/Account/Profile/pages/ChangePassword";
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -21,7 +25,14 @@ export default function AppRouter() {
         <Route path="/" element={<Home />} /> 
         <Route path="/tai-khoan/dang-nhap" element={<Login />} />
         <Route path="/tai-khoan/dang-ky" element={<Register />} />
-        <Route path="/tai-khoan/thong-tin-ca-nhan" element={<Profile />} />
+        
+        {/* ===== TÀI KHOẢN ===== */}
+        <Route path="/tai-khoan" element={<Profile />}>
+          <Route index element={<Info />} />
+          <Route path="don-hang" element={<Orders />} />
+          <Route path="doi-mat-khau" element={<ChangePassword />} />
+        </Route>
+
         <Route path="/auth/success" element={<GoogleSuccess />} />
         
         <Route path="/san-pham" element={<ProductList />} />
