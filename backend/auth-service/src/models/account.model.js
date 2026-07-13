@@ -46,11 +46,36 @@ export const AccountModel = {
 
   // Lấy danh sách quyền hạn dựa theo role_id
   getPermissionsByRoleId: async (roleId) => {
-    const { data } = await supabase
+    // Bước 1: Lấy các permission_id từ bảng role_permissions
+    const { data: rolePerms, error: rpError } = await supabase
       .from('role_permissions')
-      .select('permissions(name)')
+      .select('permission_id')
       .eq('role_id', roleId);
-    return data ? data.map(p => p.permissions?.name).filter(Boolean) : [];
+
+    if (rpError) {
+      console.error("Lỗi lấy role_permissions:", rpError);
+      return [];
+    }
+
+    if (!rolePerms || rolePerms.length === 0) {
+      return [];
+    }
+
+    const permissionIds = rolePerms.map(rp => rp.permission_id);
+
+    // Bước 2: Lấy tên quyền từ bảng permissions
+    const { data: perms, error: pError } = await supabase
+      .from('permissions')
+      .select('name')
+      .in('permission_id', permissionIds);
+
+    if (pError) {
+      console.error("Lỗi lấy bảng permissions:", pError);
+      return [];
+    }
+
+    const finalPerms = perms ? perms.map(p => p.name) : [];
+    return finalPerms;
   },
 
   // Thêm mới tài khoản
@@ -111,7 +136,7 @@ export const AccountModel = {
     return data || [];
   },
 
-   // Thực thi thay đổi vào bảng accounts
+  // Thực thi thay đổi vào bảng accounts
   updateAccountById: async (accountId, accountData) => {
     const dataWithTime = {
       ...accountData,

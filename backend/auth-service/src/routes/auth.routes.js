@@ -2,7 +2,7 @@
 import express from 'express';
 import { handleRegister, handleLogin, handleForgotPassword, handleLoginWithGoogle, handleRefreshToken, handleLogout } from '../controllers/auth.controller.js';
 import { handleChangePassword, handleCreateStaff, handleGetAccounts, handleGetCustomerProfile, handleGetProfileDetail, handleGetProfileList, handleUpdateAccount, handleUpdateCustomerProfile, handleUpdateProfileAll } from '../controllers/user.controller.js';
-import { verifyToken } from '../middlewares/auth.middleware.js';
+import { verifyToken, verifyRole, verifyPermission } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
 import { handleCreatePermission, handleGetAllPermissions, handleGetPermissionsByAccountId, handleUpdatePermission } from '../controllers/permission.controller.js';
 
@@ -33,19 +33,19 @@ router.get('/profile', verifyToken, handleGetCustomerProfile);
 
 // user - admin
 // nhân viên
-router.post('/manage/staff/add', verifyToken, upload.single('avatar_url'), handleCreateStaff);
-router.get('/manage/profiles', verifyToken, handleGetProfileList);
-router.get('/manage/profiles/:profileId', verifyToken, handleGetProfileDetail);
-router.put('/manage/profiles/update/:accountId', verifyToken, upload.single('avatar_url'), handleUpdateProfileAll);
+router.post('/manage/staff/add', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('user:create'), upload.single('avatar_url'), handleCreateStaff);
+router.get('/manage/profiles', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('profile:view'), handleGetProfileList);
+router.get('/manage/profiles/:profileId', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('profile:view'), handleGetProfileDetail);
+router.put('/manage/profiles/update/:accountId', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('profile:update'), upload.single('avatar_url'), handleUpdateProfileAll);
 
 // quyền
-router.get('/manage/permissions', handleGetAllPermissions);
-router.post('/manage/permission/add', handleCreatePermission);
-router.put('/manage/permission/update/:permissionId', handleUpdatePermission);
+router.get('/manage/permissions', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('permission:view'), handleGetAllPermissions);
+router.post('/manage/permission/add', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('permission:create'), handleCreatePermission);
+router.put('/manage/permission/update/:permissionId', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('permission:update'), handleUpdatePermission);
 
 // account
-router.put('/manage/account/update/:accountId', verifyToken, handleUpdateAccount);
-router.get('/manage/accounts', verifyToken, handleGetAccounts);
+router.put('/manage/account/update/:accountId', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('user:update'), handleUpdateAccount);
+router.get('/manage/accounts', verifyToken, verifyRole(['admin', 'staff']), verifyPermission('user:view'), handleGetAccounts);
 
 
 export default router;
