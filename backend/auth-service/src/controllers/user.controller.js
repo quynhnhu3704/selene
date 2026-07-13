@@ -338,9 +338,19 @@ export const handleChangePassword = async (req, res) => {
     });
 
   } catch (error) {
-    if (error.message.includes('Vui lòng cung cấp')) {
+    if (
+      error.message.includes('Vui lòng cung cấp') ||
+      error.message.includes('Mật khẩu mới không được trùng')
+    ) {
       return res.status(400).json({
         status: 400,
+        message: error.message
+      });
+    }
+
+    if (error.message.includes('Tài khoản không tồn tại')) {
+      return res.status(404).json({
+        status: 404,
         message: error.message
       });
     }

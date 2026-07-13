@@ -442,11 +442,23 @@ export const changePassword = async (accountId, newPassword) => {
     throw new Error('Vui lòng cung cấp mật khẩu mới!');
   }
 
-  // 1. Mã hóa mật khẩu mới bằng bcrypt
+  // 1. Lấy thông tin tài khoản hiện tại để kiểm tra mật khẩu cũ
+  const account = await AccountModel.findById(accountId);
+  if (!account) {
+    throw new Error('Tài khoản không tồn tại!');
+  }
+
+  // 2. So sánh mật khẩu mới với mật khẩu cũ trong DB
+  const isMatch = await bcrypt.compare(newPassword, account.password);
+  if (isMatch) {
+    throw new Error('Mật khẩu mới không được trùng với mật khẩu cũ!');
+  }
+
+  // 3. Mã hóa mật khẩu mới bằng bcrypt
   const saltRounds = 10;
   const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
-  // 2. Chỉ gọi DUY NHẤT lớp Model để cập nhật xuống DB (Không viết lệnh supabase tại đây nữa)
+  // 4. Cập nhật mật khẩu mới xuống DB
   await AccountModel.updateAccountById(accountId, { password: hashedNewPassword });
 
   return { message: 'Đổi mật khẩu mới thành công!' };
