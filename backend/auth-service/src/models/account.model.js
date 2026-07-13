@@ -124,7 +124,6 @@ export const AccountModel = {
       .select(`
       account_id,
       email,
-      phone,
       role_name,
       status,
       created_at

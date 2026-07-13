@@ -54,7 +54,7 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
   await AccountModel.createAccount({
     account_id: accountId,
     email,
-    phone,
+    // phone,
     password: hashedPassword,
     role_id: roleData.role_id,
     role_name: 'customer',

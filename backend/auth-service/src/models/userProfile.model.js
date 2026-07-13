@@ -27,7 +27,7 @@ export const UserProfileModel = {
   getAccountById: async (accountId) => {
     const { data } = await supabase
       .from('accounts')
-      .select('email, phone, status')
+      .select('email, status')
       .eq('account_id', accountId)
       .single();
     return data;
@@ -58,7 +58,7 @@ export const UserProfileModel = {
 
   // Kiểm tra Số điện thoại đã tồn tại chưa
   checkPhoneExists: async (phone) => {
-    const { data } = await supabase.from('accounts').select('account_id').eq('phone', phone);
+    const { data } = await supabase.from('user_profiles').select('account_id').eq('phone_number', phone);
     return data;
   },
 
@@ -146,7 +146,7 @@ export const UserProfileModel = {
  updateProfileByAccountId: async (accountId, updateData) => {
     const dataWithTime = {
       ...updateData,
-      updated_at: new Date() // Tự động chèn thời gian cập nhật hiện tại
+      updated_at: new Date()
     };
 
     const { error } = await supabase

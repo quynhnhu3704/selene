@@ -18,15 +18,15 @@ const uploadAvatar = async (prefix, identifier, avatarFile) => {
 
   // 1. Lấy phần mở rộng của file
   const fileExt = avatarFile.originalname.split('.').pop();
-  
+
   // 2. Tạo tên file chuẩn hóa không dùng dấu gạch dưới theo yêu cầu cũ
   const fileName = `Avatar${prefix}${identifier}${Date.now()}.${fileExt}`;
 
   // 3. Tiến hành upload lên bucket 'avatars' thông qua Model
   try {
     const publicUrl = await UserProfileModel.uploadAvatarFile(
-      fileName, 
-      avatarFile.buffer, 
+      fileName,
+      avatarFile.buffer,
       avatarFile.mimetype || 'image/jpeg'
     );
     return publicUrl;
@@ -63,7 +63,7 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
   if (isValidValue(phone_number)) updateData.phone_number = phone_number.trim();
   if (isValidValue(gender)) updateData.gender = gender;
   if (isValidValue(dob)) updateData.dob = dob;
-  if (avatarUrl) updateData.avatar_url = avatarUrl; 
+  if (avatarUrl) updateData.avatar_url = avatarUrl;
   updateData.updated_at = new Date();
 
   // 4. Tiến hành cập nhật vào bảng user_profiles
@@ -80,7 +80,7 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
     phone_number: updateData.phone_number || existingProfile.phone_number,
     gender: updateData.gender || existingProfile.gender,
     dob: updateData.dob || existingProfile.dob,
-    avatar_url: avatarUrl || existingProfile.avatar_url 
+    avatar_url: avatarUrl || existingProfile.avatar_url
   };
 
   return {
@@ -93,9 +93,9 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
 export const getCustomerProfile = async (accountId) => {
   // 1. Gọi model lấy profile bằng accountId ban đầu
   const profile = await UserProfileModel.getProfileByAccountId(accountId);
-  const account = await UserProfileModel.getAccountById(accountId)
+  const account = await AccountModel.findById(accountId);
 
-  if (!profile) {
+  if (!profile || !account) {
     throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
   }
 
@@ -103,7 +103,7 @@ export const getCustomerProfile = async (accountId) => {
   return {
     message: 'Lấy thông tin hồ sơ thành công!',
     profile: {
-      profile_id: account.profile_id,
+      profile_id: profile.profile_id,
       full_name: profile.full_name,
       email: account.email,
       phone_number: profile.phone_number,
@@ -119,11 +119,11 @@ export const getCustomerProfile = async (accountId) => {
 
 // thêm nhân viên
 export const createStaff = async (staffData, avatarFile) => {
-  const { 
-    email, phone, full_name, identity_card, gender, dob, address 
+  const {
+    email, phone, full_name, identity_card, gender, dob, address
   } = staffData;
   let avatarUrl = null;
-  
+
   const now = new Date().toISOString();
 
   // 1. Kiểm tra Email đã tồn tại chưa
@@ -172,7 +172,7 @@ export const createStaff = async (staffData, avatarFile) => {
     await UserProfileModel.insertAccount({
       account_id: accountId,
       email: email.trim(),
-      phone: phone.trim(),
+      // phone: phone.trim(),
       password: hashedPassword,
       role_id: roleData.role_id,
       role_name: roleData.name,
@@ -190,13 +190,14 @@ export const createStaff = async (staffData, avatarFile) => {
   try {
     await UserProfileModel.insertProfile({
       profile_id: profileId,
-      account_id: accountId, 
+      account_id: accountId,
       full_name: full_name ? full_name.trim() : null,
       phone_number: phone.trim(),
       identity_card: identity_card ? identity_card.trim() : null,
-      avatar_url: avatarUrl, 
+      avatar_url: avatarUrl,
       dob: dob || null,
       address: address ? address.trim() : null,
+      gender: gender,
       status: 'active',
       created_at: now,
       updated_at: now
@@ -281,28 +282,104 @@ export const getProfileDetail = async (profileId) => {
     dob: profile.dob,
     address: profile.address,
     status: profile.status,
-    
+
     email: profile.accounts ? profile.accounts.email : null,
-    phone: profile.phone_number, 
+    phone: profile.phone_number,
     role_name: profile.accounts ? profile.accounts.role_name : null,
   };
 
   return formattedDetail;
 };
 
+// cập nhật thông tin đồng bộ 2 bảng (admin update)
+export const updateProfileAll = async (accountId, profileData, avatarFile) => {
+  const { full_name, phone, email, identity_card, gender, dob, address, status } = profileData;
+  let avatarUrl = null;
+
+  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
+  if (!existingProfile) {
+    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+  }
+
+  const existingAccount = await AccountModel.findById(accountId);
+  if (!existingAccount) {
+    throw new Error('Không tìm thấy tài khoản người dùng hợp lệ!');
+  }
+
+  if (email && email.trim() !== existingAccount.email) {
+    const emailCheck = await UserProfileModel.checkEmailExists(email.trim());
+    if (emailCheck && emailCheck.length > 0) {
+      throw new Error('Email này đã được sử dụng!');
+    }
+  }
+
+  if (phone && phone.trim() !== existingProfile.phone_number) {
+    const phoneCheck = await UserProfileModel.checkDuplicate('user_profiles', 'phone_number', phone.trim());
+    if (phoneCheck) {
+      throw new Error('Số điện thoại này đã được sử dụng!');
+    }
+  }
+
+  if (identity_card && identity_card.trim() !== existingProfile.identity_card) {
+    const idCheck = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
+    if (idCheck) {
+      throw new Error('Số CMND/CCCD này đã tồn tại trên hệ thống!');
+    }
+  }
+
+  if (avatarFile) {
+    avatarUrl = await uploadAvatar('_admin', accountId, avatarFile);
+  }
+
+  const accountUpdateData = {};
+  const profileUpdateData = {};
+
+  if (email) accountUpdateData.email = email.trim();
+  if (status) accountUpdateData.status = status;
+
+  if (full_name) profileUpdateData.full_name = full_name.trim();
+  if (phone) profileUpdateData.phone_number = phone.trim();
+  if (identity_card) profileUpdateData.identity_card = identity_card.trim();
+  if (gender) profileUpdateData.gender = gender;
+  if (dob) profileUpdateData.dob = dob;
+  if (address) profileUpdateData.address = address.trim();
+  if (status) profileUpdateData.status = status;
+  if (avatarUrl) profileUpdateData.avatar_url = avatarUrl;
+
+  const updatePromises = [];
+
+  if (Object.keys(accountUpdateData).length > 0) {
+    updatePromises.push(AccountModel.updateAccountById(accountId, accountUpdateData));
+  }
+  if (Object.keys(profileUpdateData).length > 0) {
+    updatePromises.push(UserProfileModel.updateProfileByAccountId(accountId, profileUpdateData));
+  }
+
+  if (updatePromises.length > 0) {
+    await Promise.all(updatePromises);
+  }
+
+  const updatedProfile = await getProfileDetail(existingProfile.profile_id);
+
+  return {
+    message: 'Cập nhật hồ sơ thành công!',
+    profile: updatedProfile
+  };
+};
+
 // cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles 
-export const updateAccount = async (accountId, { email, password, phone, status }) => {
+export const updateAccount = async (accountId, { email, phone, status }) => {
   const accountUpdateData = {};
   const profileUpdateData = {};
 
   // 1. Gom dữ liệu cập nhật cho bảng accounts
-  if (email) accountUpdateData.email = email; // <-- ĐÃ BỔ SUNG EMAIL VÀO ĐÂY
-  if (phone) accountUpdateData.phone = phone;
+  if (email) accountUpdateData.email = email;
+  // if (phone) accountUpdateData.phone = phone;
   if (status) accountUpdateData.status = status;
-  if (password) {
-    const saltRounds = 10;
-    accountUpdateData.password = await bcrypt.hash(password, saltRounds);
-  }
+  // if (password) {
+  //   const saltRounds = 10;
+  //   accountUpdateData.password = await bcrypt.hash(password, saltRounds);
+  // }
 
   // 2. Gom dữ liệu cập nhật đồng bộ cho bảng user_profiles
   if (phone) profileUpdateData.phone_number = phone;
@@ -326,7 +403,7 @@ export const updateAccount = async (accountId, { email, password, phone, status 
   const updatedAccount = await UserProfileModel.getAccountById(accountId);
 
   return {
-    message: 'Admin cập nhật thông tin tài khoản và hồ sơ thành công!',
+    message: 'Cập nhật thông tin tài khoản và hồ sơ thành công!',
     account: updatedAccount
   };
 };
