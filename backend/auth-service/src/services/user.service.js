@@ -93,9 +93,9 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
 export const getCustomerProfile = async (accountId) => {
   // 1. Gọi model lấy profile bằng accountId ban đầu
   const profile = await UserProfileModel.getProfileByAccountId(accountId);
-  const account = await UserProfileModel.getAccountById(accountId)
+  const account = await AccountModel.findById(accountId);
 
-  if (!profile) {
+  if (!profile || !account) {
     throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
   }
 
@@ -103,7 +103,7 @@ export const getCustomerProfile = async (accountId) => {
   return {
     message: 'Lấy thông tin hồ sơ thành công!',
     profile: {
-      profile_id: account.profile_id,
+      profile_id: profile.profile_id,
       full_name: profile.full_name,
       email: account.email,
       phone_number: profile.phone_number,

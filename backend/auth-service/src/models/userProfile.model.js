@@ -58,7 +58,7 @@ export const UserProfileModel = {
 
   // Kiểm tra Số điện thoại đã tồn tại chưa
   checkPhoneExists: async (phone) => {
-    const { data } = await supabase.from('accounts').select('account_id').eq('phone', phone);
+    const { data } = await supabase.from('user_profiles').select('account_id').eq('phone_number', phone);
     return data;
   },
 
