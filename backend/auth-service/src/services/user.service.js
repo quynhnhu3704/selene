@@ -197,6 +197,7 @@ export const createStaff = async (staffData, avatarFile) => {
       avatar_url: avatarUrl, 
       dob: dob || null,
       address: address ? address.trim() : null,
+      gender: gender,
       status: 'active',
       created_at: now,
       updated_at: now
@@ -291,18 +292,13 @@ export const getProfileDetail = async (profileId) => {
 };
 
 // cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles 
-export const updateAccount = async (accountId, { email, password, phone, status }) => {
+export const updateAccount = async (accountId, { email, phone, status }) => {
   const accountUpdateData = {};
   const profileUpdateData = {};
 
   // 1. Gom dữ liệu cập nhật cho bảng accounts
   if (email) accountUpdateData.email = email; // <-- ĐÃ BỔ SUNG EMAIL VÀO ĐÂY
-  if (phone) accountUpdateData.phone = phone;
   if (status) accountUpdateData.status = status;
-  if (password) {
-    const saltRounds = 10;
-    accountUpdateData.password = await bcrypt.hash(password, saltRounds);
-  }
 
   // 2. Gom dữ liệu cập nhật đồng bộ cho bảng user_profiles
   if (phone) profileUpdateData.phone_number = phone;
@@ -326,7 +322,7 @@ export const updateAccount = async (accountId, { email, password, phone, status 
   const updatedAccount = await UserProfileModel.getAccountById(accountId);
 
   return {
-    message: 'Admin cập nhật thông tin tài khoản và hồ sơ thành công!',
+    message: 'Cập nhật thông tin tài khoản và hồ sơ thành công!',
     account: updatedAccount
   };
 };

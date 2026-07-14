@@ -6,6 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { config } from '../configs/index.js';
 import { AccountModel } from '../models/account.model.js';
 import { RefreshTokenModel } from '../models/refreshToken.model.js';
+import { UserProfileModel } from '../models/userProfile.model.js';
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -37,10 +38,10 @@ const generateRandomPassword = () => {
 export const registerUser = async ({ email, phone, password, full_name }) => {
   const now = new Date().toISOString();
 
-  // Kiểm tra email hoặc số điện thoại có tồn tại chưa
-  const existingAccount = await AccountModel.findByEmailOrPhone(email, phone);
+  // Kiểm tra email có tồn tại chưa
+  const existingAccount = await AccountModel.findByEmail(email);
   if (existingAccount) {
-    throw new Error('Email hoặc số điện thoại đã được đăng ký!');
+    throw new Error('Email đã được đăng ký!');
   }
 
   // Tìm Role customer
@@ -54,7 +55,6 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
   await AccountModel.createAccount({
     account_id: accountId,
     email,
-    phone,
     password: hashedPassword,
     role_id: roleData.role_id,
     role_name: 'customer',
@@ -64,15 +64,21 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
   });
 
   // Lưu vào bảng user_profiles
-  await AccountModel.createProfile({
-    profile_id: 'user-' + generateId(),
-    account_id: accountId,
-    full_name,
-    phone_number: phone,
-    status: 'active',
-    created_at: now,
-    updated_at: now
-  });
+  try {
+    await AccountModel.createProfile({
+      profile_id: 'user-' + generateId(),
+      account_id: accountId,
+      full_name,
+      phone_number: phone,
+      status: 'active',
+      created_at: now,
+      updated_at: now
+    });
+  } catch (error) {
+    // Nếu tạo profile lỗi, rollback (xóa account vừa tạo) để tránh rác DB
+    await AccountModel.deleteAccountById(accountId);
+    throw new Error(`Lỗi tạo hồ sơ người dùng: ${error.message}`);
+  }
 
   return { message: 'Đăng ký tài khoản thành công!' };
 };
@@ -133,7 +139,8 @@ export const loginUser = async (email, password) => {
     user: {
       accountId: account.account_id,
       email: account.email,
-      role: account.role_name
+      role: account.role_name,
+      permissions: permissions
     }
   };
 };

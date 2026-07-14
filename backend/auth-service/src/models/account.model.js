@@ -2,16 +2,6 @@
 import { supabase } from '../configs/supabase.js';
 
 export const AccountModel = {
-  // Tìm tài khoản theo email hoặc số điện thoại
-  findByEmailOrPhone: async (email, phone) => {
-    const { data } = await supabase
-      .from('accounts')
-      .select('account_id')
-      .or(`email.eq.${email},phone.eq.${phone}`)
-      .single();
-    return data;
-  },
-
   // Tìm tài khoản theo Email
   findByEmail: async (email) => {
     const { data, error } = await supabase
@@ -36,11 +26,12 @@ export const AccountModel = {
 
   // Tìm vai trò (Role) theo tên
   findRoleByName: async (roleName) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('roles')
       .select('role_id')
       .eq('name', roleName)
       .single();
+    if (error && error.code !== 'PGRST116') throw error;
     return data;
   },
 
@@ -99,7 +90,6 @@ export const AccountModel = {
       .select(`
       account_id,
       email,
-      phone,
       role_name,
       status,
       created_at
@@ -124,5 +114,15 @@ export const AccountModel = {
       .eq('account_id', accountId);
 
     if (error) throw error;
+  },
+
+  // Xóa tài khoản (dùng để rollback nếu bị lỗi giữa chừng)
+  deleteAccountById: async (accountId) => {
+    const { error } = await supabase
+      .from('accounts')
+      .delete()
+      .eq('account_id', accountId);
+    if (error) throw error;
+    return true;
   }
 };
