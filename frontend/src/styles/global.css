@@ -34,18 +34,8 @@
     font-family: 'Nunito', sans-serif !important;
 }
 
-.spinner-loading {
-  min-height: 70vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.spinner-loading .spinner-border {
-  width: 2rem;
-  height: 2rem;
-  color: #871B1B;
-}
+.spinner-loading { min-height: 70vh; display: flex; justify-content: center; align-items: center; }
+.spinner-loading .spinner-border { width: 2rem; height: 2rem; color: #871B1B; }
 
 .breadcrumb-item + .breadcrumb-item::before {
   padding-right: 0.8rem !important;

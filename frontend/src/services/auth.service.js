@@ -17,3 +17,8 @@ export const logout = () => {
 export const refreshToken = () => {
   return http.post("/auth/refresh-token");
 };
+
+// quên mật khẩu
+export const forgotPassword = (data) => {
+  return http.post("/auth/forgot-password", data);
+};
