@@ -113,6 +113,98 @@ export const getCustomerProfile = async (accountId) => {
     }
   };
 };
+// ================== STAFF =====================
+
+// cập nhật hồ sơ thông tin nhân viên (cá nhân)
+export const updateStaffProfile = async (accountId, profileData, avatarFile) => {
+  const { full_name, email, phone_number, identity_card, gender, dob, address } = profileData;
+  let avatarUrl = null;
+
+  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
+  const existingAccount = await UserProfileModel.getAccountById(accountId);
+
+  if (!existingProfile || !existingAccount) {
+    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+  }
+
+  if (identity_card && identity_card.trim() !== existingProfile.identity_card) {
+    const duplicateId = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
+    if (duplicateId && duplicateId.account_id !== accountId) {
+      throw new Error('Số CMND/CCCD này đã được sử dụng!');
+    }
+  }
+
+  if (phone_number && phone_number.trim() !== existingProfile.phone_number) {
+    const phoneCheck = await UserProfileModel.checkPhoneExists(phone_number.trim());
+    if (phoneCheck && phoneCheck.length > 0) {
+      const isDuplicate = phoneCheck.some(p => p.account_id !== accountId);
+      if (isDuplicate) {
+        throw new Error('Số điện thoại này đã được sử dụng!');
+      }
+    }
+  }
+
+  if (email && email.trim() !== existingAccount.email) {
+    const emailCheck = await UserProfileModel.checkEmailExists(email.trim());
+    if (emailCheck && emailCheck.length > 0) {
+      const isDuplicate = emailCheck.some(a => a.account_id !== accountId);
+      if (isDuplicate) {
+        throw new Error('Email này đã được sử dụng!');
+      }
+    }
+  }
+
+  if (avatarFile) {
+    avatarUrl = await uploadAvatar('_staff', accountId, avatarFile);
+  }
+
+  const updateData = {};
+  const accountUpdateData = {};
+  const isValidValue = (val) => val !== undefined && val !== null && String(val).trim() !== '';
+
+  if (isValidValue(full_name)) updateData.full_name = full_name.trim();
+  if (isValidValue(phone_number)) {
+    updateData.phone_number = phone_number.trim();
+  }
+  if (isValidValue(identity_card)) updateData.identity_card = identity_card.trim();
+  if (isValidValue(gender)) updateData.gender = gender;
+  if (isValidValue(dob)) updateData.dob = dob;
+  if (isValidValue(address)) updateData.address = address.trim();
+  if (avatarUrl) updateData.avatar_url = avatarUrl; 
+  updateData.updated_at = new Date();
+
+  if (isValidValue(email)) accountUpdateData.email = email.trim();
+
+  if (Object.keys(updateData).length > 1 || Object.keys(accountUpdateData).length > 0) {
+    try {
+      if (Object.keys(updateData).length > 1) {
+        await UserProfileModel.updateProfileByAccountId(accountId, updateData);
+      }
+      if (Object.keys(accountUpdateData).length > 0) {
+        await AccountModel.updateAccountById(accountId, accountUpdateData);
+      }
+    } catch (updateError) {
+      console.error('Lỗi DB:', updateError.message);
+      throw new Error('Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!');
+    }
+  }
+
+  const responseData = {
+    full_name: updateData.full_name || existingProfile.full_name,
+    email: accountUpdateData.email || existingAccount.email,
+    phone_number: updateData.phone_number || existingProfile.phone_number,
+    identity_card: updateData.identity_card || existingProfile.identity_card,
+    gender: updateData.gender || existingProfile.gender,
+    dob: updateData.dob || existingProfile.dob,
+    address: updateData.address || existingProfile.address,
+    avatar_url: avatarUrl || existingProfile.avatar_url 
+  };
+
+  return {
+    message: 'Cập nhật thông tin cá nhân thành công!',
+    profile: responseData
+  };
+};
 
 
 // ================== ADMIN =====================
