@@ -90,6 +90,42 @@ export const handleGetCustomerProfile = async (req, res) => {
 
 // ================== STAFF =====================
 
+// lấy thông tin nhân viên
+export const handleGetStaffProfile = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId; 
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Dữ liệu xác thực tài khoản bên trong mã Token không hợp lệ!'
+      });
+    }
+
+    const result = await userService.getStaffProfile(accountId);
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    if (error.message.includes('Không tìm thấy')) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Lấy Profile Nhân viên:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
 export const handleUpdateStaffProfile = async (req, res) => {
   try {
     const accountId = req.user?.accountId; 

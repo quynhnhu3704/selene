@@ -115,6 +115,32 @@ export const getCustomerProfile = async (accountId) => {
 };
 // ================== STAFF =====================
 
+// lấy thông tin nhân viên
+export const getStaffProfile = async (accountId) => {
+  const profile = await UserProfileModel.getProfileByAccountId(accountId);
+  const account = await AccountModel.findById(accountId);
+
+  if (!profile || !account) {
+    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+  }
+
+  return {
+    message: 'Lấy thông tin hồ sơ thành công!',
+    profile: {
+      profile_id: profile.profile_id,
+      full_name: profile.full_name,
+      email: account.email,
+      phone_number: profile.phone_number,
+      identity_card: profile.identity_card,
+      avatar_url: profile.avatar_url,
+      gender: profile.gender,
+      dob: profile.dob,
+      address: profile.address,
+      status: profile.status
+    }
+  };
+};
+
 // cập nhật hồ sơ thông tin nhân viên (cá nhân)
 export const updateStaffProfile = async (accountId, profileData, avatarFile) => {
   const { full_name, email, phone_number, identity_card, gender, dob, address } = profileData;
