@@ -88,6 +88,92 @@ export const handleGetCustomerProfile = async (req, res) => {
   }
 };
 
+// ================== STAFF =====================
+
+// lấy thông tin nhân viên
+export const handleGetStaffProfile = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId; 
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Dữ liệu xác thực tài khoản bên trong mã Token không hợp lệ!'
+      });
+    }
+
+    const result = await userService.getStaffProfile(accountId);
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    if (error.message.includes('Không tìm thấy')) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Lấy Profile Nhân viên:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
+export const handleUpdateStaffProfile = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId; 
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Dữ liệu xác thực tài khoản bên trong mã Token không hợp lệ!'
+      });
+    }
+
+    const { full_name, email, phone_number, identity_card, gender, dob, address } = req.body;
+    const avatarFile = req.file;
+
+    const result = await userService.updateStaffProfile(
+      accountId,
+      { full_name, email, phone_number, identity_card, gender, dob, address },
+      avatarFile
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: result.message,
+      profile: result.profile
+    });
+
+  } catch (error) {
+    if (
+      error.message.includes('Không tìm thấy') || 
+      error.message.includes('đã tồn tại') ||
+      error.message.includes('đã được sử dụng') ||
+      error.message.includes('tải ảnh đại diện')
+    ) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message
+      });
+    }
+
+    console.error('Lỗi Controller Cập nhật Profile Staff:', error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error!'
+    });
+  }
+};
+
+
 // ================== ADMIN =====================
 
 // thêm nhân viên
@@ -327,10 +413,10 @@ export const handleChangePassword = async (req, res) => {
       });
     }
 
-    const { newPassword } = req.body;
+    const { oldPassword, newPassword } = req.body;
 
     // Gọi tầng service xử lý nghiệp vụ
-    const result = await userService.changePassword(accountId, newPassword);
+    const result = await userService.changePassword(accountId, oldPassword, newPassword);
 
     return res.status(200).json({
       status: 200,
@@ -338,7 +424,11 @@ export const handleChangePassword = async (req, res) => {
     });
 
   } catch (error) {
-    if (error.message.includes('Vui lòng cung cấp')) {
+    if (
+      error.message.includes('Vui lòng cung cấp') ||
+      error.message.includes('Mật khẩu cũ không chính xác') ||
+      error.message.includes('Không tìm thấy tài khoản')
+    ) {
       return res.status(400).json({
         status: 400,
         message: error.message

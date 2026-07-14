@@ -113,6 +113,124 @@ export const getCustomerProfile = async (accountId) => {
     }
   };
 };
+// ================== STAFF =====================
+
+// lấy thông tin nhân viên
+export const getStaffProfile = async (accountId) => {
+  const profile = await UserProfileModel.getProfileByAccountId(accountId);
+  const account = await AccountModel.findById(accountId);
+
+  if (!profile || !account) {
+    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+  }
+
+  return {
+    message: 'Lấy thông tin hồ sơ thành công!',
+    profile: {
+      profile_id: profile.profile_id,
+      full_name: profile.full_name,
+      email: account.email,
+      phone_number: profile.phone_number,
+      identity_card: profile.identity_card,
+      avatar_url: profile.avatar_url,
+      gender: profile.gender,
+      dob: profile.dob,
+      address: profile.address,
+      status: profile.status
+    }
+  };
+};
+
+// cập nhật hồ sơ thông tin nhân viên (cá nhân)
+export const updateStaffProfile = async (accountId, profileData, avatarFile) => {
+  const { full_name, email, phone_number, identity_card, gender, dob, address } = profileData;
+  let avatarUrl = null;
+
+  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
+  const existingAccount = await UserProfileModel.getAccountById(accountId);
+
+  if (!existingProfile || !existingAccount) {
+    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+  }
+
+  if (identity_card && identity_card.trim() !== existingProfile.identity_card) {
+    const duplicateId = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
+    if (duplicateId && duplicateId.account_id !== accountId) {
+      throw new Error('Số CMND/CCCD này đã được sử dụng!');
+    }
+  }
+
+  if (phone_number && phone_number.trim() !== existingProfile.phone_number) {
+    const phoneCheck = await UserProfileModel.checkPhoneExists(phone_number.trim());
+    if (phoneCheck && phoneCheck.length > 0) {
+      const isDuplicate = phoneCheck.some(p => p.account_id !== accountId);
+      if (isDuplicate) {
+        throw new Error('Số điện thoại này đã được sử dụng!');
+      }
+    }
+  }
+
+  if (email && email.trim() !== existingAccount.email) {
+    const emailCheck = await UserProfileModel.checkEmailExists(email.trim());
+    if (emailCheck && emailCheck.length > 0) {
+      const isDuplicate = emailCheck.some(a => a.account_id !== accountId);
+      if (isDuplicate) {
+        throw new Error('Email này đã được sử dụng!');
+      }
+    }
+  }
+
+  if (avatarFile) {
+    avatarUrl = await uploadAvatar('_staff', accountId, avatarFile);
+  }
+
+  const updateData = {};
+  const accountUpdateData = {};
+  const isValidValue = (val) => val !== undefined && val !== null && String(val).trim() !== '';
+
+  if (isValidValue(full_name)) updateData.full_name = full_name.trim();
+  if (isValidValue(phone_number)) {
+    updateData.phone_number = phone_number.trim();
+  }
+  if (isValidValue(identity_card)) updateData.identity_card = identity_card.trim();
+  if (isValidValue(gender)) updateData.gender = gender;
+  if (isValidValue(dob)) updateData.dob = dob;
+  if (isValidValue(address)) updateData.address = address.trim();
+  if (avatarUrl) updateData.avatar_url = avatarUrl; 
+  updateData.updated_at = new Date();
+
+  if (isValidValue(email)) accountUpdateData.email = email.trim();
+
+  if (Object.keys(updateData).length > 1 || Object.keys(accountUpdateData).length > 0) {
+    try {
+      if (Object.keys(updateData).length > 1) {
+        await UserProfileModel.updateProfileByAccountId(accountId, updateData);
+      }
+      if (Object.keys(accountUpdateData).length > 0) {
+        await AccountModel.updateAccountById(accountId, accountUpdateData);
+      }
+    } catch (updateError) {
+      console.error('Lỗi DB:', updateError.message);
+      throw new Error('Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!');
+    }
+  }
+
+  const responseData = {
+    full_name: updateData.full_name || existingProfile.full_name,
+    email: accountUpdateData.email || existingAccount.email,
+    phone_number: updateData.phone_number || existingProfile.phone_number,
+    identity_card: updateData.identity_card || existingProfile.identity_card,
+    gender: updateData.gender || existingProfile.gender,
+    dob: updateData.dob || existingProfile.dob,
+    address: updateData.address || existingProfile.address,
+    avatar_url: avatarUrl || existingProfile.avatar_url 
+  };
+
+  return {
+    message: 'Cập nhật thông tin cá nhân thành công!',
+    profile: responseData
+  };
+};
 
 
 // ================== ADMIN =====================
@@ -197,6 +315,7 @@ export const createStaff = async (staffData, avatarFile) => {
       avatar_url: avatarUrl, 
       dob: dob || null,
       address: address ? address.trim() : null,
+      gender: gender,
       status: 'active',
       created_at: now,
       updated_at: now
@@ -291,18 +410,13 @@ export const getProfileDetail = async (profileId) => {
 };
 
 // cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles 
-export const updateAccount = async (accountId, { email, password, phone, status }) => {
+export const updateAccount = async (accountId, { email, phone, status }) => {
   const accountUpdateData = {};
   const profileUpdateData = {};
 
   // 1. Gom dữ liệu cập nhật cho bảng accounts
   if (email) accountUpdateData.email = email; // <-- ĐÃ BỔ SUNG EMAIL VÀO ĐÂY
-  if (phone) accountUpdateData.phone = phone;
   if (status) accountUpdateData.status = status;
-  if (password) {
-    const saltRounds = 10;
-    accountUpdateData.password = await bcrypt.hash(password, saltRounds);
-  }
 
   // 2. Gom dữ liệu cập nhật đồng bộ cho bảng user_profiles
   if (phone) profileUpdateData.phone_number = phone;
@@ -326,7 +440,7 @@ export const updateAccount = async (accountId, { email, password, phone, status 
   const updatedAccount = await UserProfileModel.getAccountById(accountId);
 
   return {
-    message: 'Admin cập nhật thông tin tài khoản và hồ sơ thành công!',
+    message: 'Cập nhật thông tin tài khoản và hồ sơ thành công!',
     account: updatedAccount
   };
 };
@@ -360,9 +474,21 @@ export const getAccountList = async (page = 1, limit = 10) => {
 };
 
 // thay đổ mật khẩu
-export const changePassword = async (accountId, newPassword) => {
-  if (!newPassword) {
-    throw new Error('Vui lòng cung cấp mật khẩu mới!');
+export const changePassword = async (accountId, oldPassword, newPassword) => {
+  if (!oldPassword || !newPassword) {
+    throw new Error('Vui lòng cung cấp đầy đủ mật khẩu cũ và mới!');
+  }
+
+  // Lấy thông tin tài khoản hiện tại
+  const account = await AccountModel.findById(accountId);
+  if (!account) {
+    throw new Error('Không tìm thấy tài khoản!');
+  }
+
+  // So sánh mật khẩu cũ
+  const isMatch = await bcrypt.compare(oldPassword, account.password);
+  if (!isMatch) {
+    throw new Error('Mật khẩu cũ không chính xác!');
   }
 
   // 1. Mã hóa mật khẩu mới bằng bcrypt

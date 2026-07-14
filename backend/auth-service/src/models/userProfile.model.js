@@ -27,7 +27,7 @@ export const UserProfileModel = {
   getAccountById: async (accountId) => {
     const { data } = await supabase
       .from('accounts')
-      .select('email, phone, status')
+      .select('email, status')
       .eq('account_id', accountId)
       .single();
     return data;
@@ -46,19 +46,22 @@ export const UserProfileModel = {
 
   // Kiểm tra trùng lặp dựa trên điều kiện tùy chọn
   checkDuplicate: async (table, column, value) => {
-    const { data } = await supabase.from(table).select('*').eq(column, value).single();
+    const { data, error } = await supabase.from(table).select('*').eq(column, value).single();
+    if (error && error.code !== 'PGRST116') throw error;
     return data;
   },
 
   // Kiểm tra Email đã tồn tại chưa
   checkEmailExists: async (email) => {
-    const { data } = await supabase.from('accounts').select('account_id').eq('email', email);
+    const { data, error } = await supabase.from('accounts').select('account_id').eq('email', email);
+    if (error) throw error;
     return data;
   },
 
   // Kiểm tra Số điện thoại đã tồn tại chưa
   checkPhoneExists: async (phone) => {
-    const { data } = await supabase.from('user_profiles').select('account_id').eq('phone_number', phone);
+    // Kiểm tra ở bảng user_profiles 
+    const { data, error } = await supabase.from('user_profiles').select('account_id').eq('phone_number', phone);
     return data;
   },
 
@@ -146,7 +149,7 @@ export const UserProfileModel = {
  updateProfileByAccountId: async (accountId, updateData) => {
     const dataWithTime = {
       ...updateData,
-      updated_at: new Date() // Tự động chèn thời gian cập nhật hiện tại
+      updated_at: new Date() 
     };
 
     const { error } = await supabase

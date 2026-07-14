@@ -1,4 +1,4 @@
-// backend\product-service\src\middlewares\auth.middleware.js
+// backend\auth-service\src\middlewares\auth.middleware.js
 import jwt from 'jsonwebtoken';
 import { config } from '../configs/index.js';
 
@@ -33,4 +33,29 @@ export const verifyToken = (req, res, next) => {
       message: 'Access Token không hợp lệ hoặc đã bị thay đổi trái phép!'
     });
   }
+};
+
+export const verifyPermission = (requiredPermissions) => {
+  return (req, res, next) => {
+    if (!req.user || !Array.isArray(req.user.permissions)) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Không thể xác thực quyền truy cập!'
+      });
+    }
+
+    const permissionsToCheck = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+    
+    // Kiểm tra xem user có ít nhất 1 trong các quyền yêu cầu hay không
+    const hasPermission = permissionsToCheck.some(permission => req.user.permissions.includes(permission));
+
+    if (!hasPermission) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Bạn không có đủ quyền để thực hiện hành động này!'
+      });
+    }
+
+    next();
+  };
 };
