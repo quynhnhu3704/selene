@@ -327,10 +327,10 @@ export const handleChangePassword = async (req, res) => {
       });
     }
 
-    const { newPassword } = req.body;
+    const { oldPassword, newPassword } = req.body;
 
     // Gọi tầng service xử lý nghiệp vụ
-    const result = await userService.changePassword(accountId, newPassword);
+    const result = await userService.changePassword(accountId, oldPassword, newPassword);
 
     return res.status(200).json({
       status: 200,
@@ -338,7 +338,11 @@ export const handleChangePassword = async (req, res) => {
     });
 
   } catch (error) {
-    if (error.message.includes('Vui lòng cung cấp')) {
+    if (
+      error.message.includes('Vui lòng cung cấp') ||
+      error.message.includes('Mật khẩu cũ không chính xác') ||
+      error.message.includes('Không tìm thấy tài khoản')
+    ) {
       return res.status(400).json({
         status: 400,
         message: error.message

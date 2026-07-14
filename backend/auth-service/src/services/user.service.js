@@ -356,9 +356,21 @@ export const getAccountList = async (page = 1, limit = 10) => {
 };
 
 // thay đổ mật khẩu
-export const changePassword = async (accountId, newPassword) => {
-  if (!newPassword) {
-    throw new Error('Vui lòng cung cấp mật khẩu mới!');
+export const changePassword = async (accountId, oldPassword, newPassword) => {
+  if (!oldPassword || !newPassword) {
+    throw new Error('Vui lòng cung cấp đầy đủ mật khẩu cũ và mới!');
+  }
+
+  // Lấy thông tin tài khoản hiện tại
+  const account = await AccountModel.findById(accountId);
+  if (!account) {
+    throw new Error('Không tìm thấy tài khoản!');
+  }
+
+  // So sánh mật khẩu cũ
+  const isMatch = await bcrypt.compare(oldPassword, account.password);
+  if (!isMatch) {
+    throw new Error('Mật khẩu cũ không chính xác!');
   }
 
   // 1. Mã hóa mật khẩu mới bằng bcrypt
