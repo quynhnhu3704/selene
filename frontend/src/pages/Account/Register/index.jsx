@@ -3,7 +3,6 @@ import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { Helmet } from "react-helmet-async";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { saveLogin } from "../../../utils/auth";
 import { toast } from "react-toastify";
 import { register } from "../../../services/auth.service";
 
@@ -60,8 +59,8 @@ export default function Register() {
       });
 
       toast.success(res.data.message);
-      navigate("/");
       handleReset();
+      navigate("/tai-khoan/dang-nhap");
 
     } catch (err) {
       toast.error(

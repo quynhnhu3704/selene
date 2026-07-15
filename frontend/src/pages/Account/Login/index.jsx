@@ -113,7 +113,7 @@ export default function Login() {
             <div>
               <div className="form-label-row">
                 <span className="form-label">Mật khẩu <span className="text-danger">*</span></span>
-                <Link to="/dat-lai-mat-khau" className="form-link-sm">Quên mật khẩu?</Link>
+                <Link to="/tai-khoan/quen-mat-khau" className="form-link-sm">Quên mật khẩu?</Link>
               </div>
               <div className="form-input-wrap">
                 <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" maxLength={50} required />
