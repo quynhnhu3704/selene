@@ -44,6 +44,12 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
     throw new Error('Email đã được đăng ký!');
   }
 
+  // kiểm tra số điện thoại có tồn tại chưa
+  const existingPhone = await UserProfileModel.checkPhoneExists(phone.trim());
+  if (existingPhone) {
+    throw new Error('Số điện thoại đã được đăng ký!');
+  }
+
   // Tìm Role customer
   const roleData = await AccountModel.findRoleByName('customer');
   if (!roleData) throw new Error('Hệ thống chưa cấu hình vai trò customer!');
