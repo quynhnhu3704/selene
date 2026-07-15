@@ -11,5 +11,6 @@ router.post('/cart/add', verifyToken, cartController.handleAddItemToCart);
 router.get('/cart', verifyToken, cartController.handleGetCart);
 router.delete('/cart/remove/:cartItemId', verifyToken, cartController.handleRemoveItemFromCart);
 router.put('/cart/decrease/:cartItemId', verifyToken, cartController.handleDecreaseItemQuantity);
+router.put('/cart/increase/:cartItemId', verifyToken, cartController.handleIncreaseItemQuantity);
 
 export default router;

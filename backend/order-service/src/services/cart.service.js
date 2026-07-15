@@ -1,10 +1,12 @@
 // backend\order-service\src\services\cart.service.js
 import { CartModel } from '../models/cart.model.js';
+import { requestProductDetails } from '../configs/rabbitmq.js';
 
 const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+// thêm vào giỏ hàng
 export const addItemToCart = async (accountId, productInfo) => {
   try {
     const { product_id, variant_id, quantity } = productInfo;
@@ -14,34 +16,20 @@ export const addItemToCart = async (accountId, productInfo) => {
       throw new Error('Thiếu thông tin bắt buộc!');
     }
 
-    // 1. Kiểm tra tồn kho và tính hợp lệ của sản phẩm thông qua Product Service
-    let productData;
+    // 1. Kiểm tra tồn kho và tính hợp lệ của sản phẩm thông qua RabbitMQ RPC
+    let productDetails = [];
     try {
-      const response = await fetch(`http://localhost:8002/product-detail/${product_id}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Sản phẩm không tồn tại!');
-        }
-        throw new Error('Lỗi kết nối đến Product Service');
-      }
-      const json = await response.json();
-      productData = json.data;
+      productDetails = await requestProductDetails([variant_id]);
     } catch (err) {
-      if (err.message === 'Sản phẩm không tồn tại!') throw err;
-      console.error('Lỗi fetch Product Service:', err);
+      console.error('Lỗi khi gọi RPC RabbitMQ:', err);
       throw new Error('Hệ thống đang bận, không thể kiểm tra thông tin sản phẩm lúc này');
     }
 
-    if (!productData) {
-      throw new Error('Sản phẩm không tồn tại!');
-    }
-
-    const variant = (productData.variants || []).find(v => v.variant_id === variant_id);
-    if (!variant) {
+    if (!productDetails || productDetails.length === 0) {
       throw new Error('Biến thể sản phẩm không tồn tại!');
     }
 
-    const stock = variant.stock_quantity || 0;
+    const stock = productDetails[0].stock_quantity || 0;
 
     // 1. Tìm hoặc tạo giỏ hàng
     let cart = await CartModel.findByAccountId(accountId);
@@ -99,8 +87,7 @@ export const addItemToCart = async (accountId, productInfo) => {
   }
 };
 
-import { requestProductDetails } from '../configs/rabbitmq.js';
-
+// lấy danh sách giỏ hàng
 export const getCart = async (accountId) => {
   try {
     if (!accountId) {
@@ -168,6 +155,7 @@ export const getCart = async (accountId) => {
   }
 };
 
+// xóa item khỏi giỏ hàng
 export const removeItemFromCart = async (accountId, cartItemId) => {
   try {
     if (!accountId || !cartItemId) {
@@ -206,6 +194,7 @@ export const removeItemFromCart = async (accountId, cartItemId) => {
   }
 };
 
+// giảm số lượng item trong giỏ hàng
 export const decreaseItemQuantity = async (accountId, cartItemId) => {
   try {
     if (!accountId || !cartItemId) {
@@ -243,5 +232,65 @@ export const decreaseItemQuantity = async (accountId, cartItemId) => {
   } catch (error) {
     console.error('Lỗi tại decreaseItemQuantity Service:', error.message);
     throw new Error(error.message || 'Không thể giảm số lượng sản phẩm!');
+  }
+};
+
+// tăng số lượng item trong giỏ hàng
+export const increaseItemQuantity = async (accountId, cartItemId) => {
+  try {
+    if (!accountId || !cartItemId) {
+      throw new Error('Thiếu thông tin bắt buộc!');
+    }
+
+    // 1. Lấy thông tin item để kiểm tra số lượng hiện tại
+    const cartItem = await CartModel.getCartItemByIdAndAccount(cartItemId, accountId);
+    
+    if (!cartItem) {
+      throw new Error('Sản phẩm không tồn tại trong giỏ hàng của bạn!');
+    }
+
+    const currentQuantity = cartItem.quantity;
+    const { variant_id } = cartItem;
+
+    // 2. Kiểm tra tồn kho từ RabbitMQ RPC
+    let productDetails = [];
+    try {
+      productDetails = await requestProductDetails([variant_id]);
+    } catch (err) {
+      console.error('Lỗi khi gọi RPC RabbitMQ:', err);
+      throw new Error('Hệ thống đang bận, không thể kiểm tra thông tin sản phẩm lúc này');
+    }
+
+    if (!productDetails || productDetails.length === 0) {
+      throw new Error('Biến thể sản phẩm không tồn tại!');
+    }
+
+    const stock = productDetails[0].stock_quantity || 0;
+
+    if (stock <= 0) {
+      throw new Error('Đã hết mặt hàng này');
+    }
+
+    if (stock < currentQuantity + 1) {
+      throw new Error('Số lượng tồn kho không đủ');
+    }
+
+    // 3. Tăng số lượng đi 1
+    await CartModel.updateItemQuantity(cartItemId, currentQuantity + 1);
+
+    // 4. Trả kết quả (tính lại tổng số lượng)
+    const cart = await CartModel.findByAccountId(accountId);
+    let totalQuantity = 0;
+    if (cart) {
+      totalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
+    }
+    
+    return {
+      new_quantity: currentQuantity + 1,
+      total_quantity: totalQuantity
+    };
+  } catch (error) {
+    console.error('Lỗi tại increaseItemQuantity Service:', error.message);
+    throw new Error(error.message || 'Không thể tăng số lượng sản phẩm!');
   }
 };

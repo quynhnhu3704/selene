@@ -28,8 +28,9 @@ export const handleAddItemToCart = async (req, res) => {
 
   } catch (error) {
     console.error('Lỗi tại handleAddItemToCart Controller:', error.message);
-    return res.status(500).json({
-      status: 500,
+    const statusCode = error.message && (error.message.includes('Không thể') || error.message.includes('Hệ thống đang bận')) ? 500 : 400;
+    return res.status(statusCode).json({
+      status: statusCode,
       message: error.message || 'Internal Server Error!'
     });
   }
@@ -99,3 +100,26 @@ export const handleDecreaseItemQuantity = async (req, res) => {
     });
   }
 };
+
+// tăng số lượng item trong giỏ hàng
+export const handleIncreaseItemQuantity = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId;
+    const { cartItemId } = req.params;
+
+    const result = await cartService.increaseItemQuantity(accountId, cartItemId);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Cập nhật số lượng sản phẩm thành công',
+      data: result
+    });
+  } catch (error) {
+    console.error('Lỗi tại handleIncreaseItemQuantity Controller:', error.message);
+    const statusCode = error.message && (error.message.includes('Không thể') || error.message.includes('Hệ thống đang bận')) ? 500 : 400;
+    return res.status(statusCode).json({
+      status: statusCode,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
