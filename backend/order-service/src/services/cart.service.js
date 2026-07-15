@@ -184,7 +184,52 @@ export const removeItemFromCart = async (accountId, cartItemId) => {
     // 2. Xóa
     await CartModel.removeCartItem(cartItemId);
     
-    // 3. Trả kết quả (có thể tính lại tổng số lượng)
+    // 3. Tính lại tổng số lượng
+    const cart = await CartModel.findByAccountId(accountId);
+    let totalQuantity = 0;
+
+    if (cart) {
+      totalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
+      
+      // Nếu giỏ hàng đã trống trơn, xóa luôn giỏ hàng đó
+      if (totalQuantity === 0) {
+        await CartModel.deleteCart(cart.cart_id);
+      }
+    }
+    
+    return {
+      total_quantity: totalQuantity,
+    };
+  } catch (error) {
+    console.error('Lỗi tại removeItemFromCart Service:', error.message);
+    throw new Error(error.message || 'Không thể xóa sản phẩm khỏi giỏ hàng!');
+  }
+};
+
+export const decreaseItemQuantity = async (accountId, cartItemId) => {
+  try {
+    if (!accountId || !cartItemId) {
+      throw new Error('Thiếu thông tin bắt buộc!');
+    }
+
+    // 1. Lấy thông tin item để kiểm tra số lượng hiện tại
+    const cartItem = await CartModel.getCartItemByIdAndAccount(cartItemId, accountId);
+    
+    if (!cartItem) {
+      throw new Error('Sản phẩm không tồn tại trong giỏ hàng của bạn!');
+    }
+
+    const currentQuantity = cartItem.quantity;
+
+    // 2. Kiểm tra nếu số lượng <= 1 thì xóa luôn
+    if (currentQuantity <= 1) {
+      return await removeItemFromCart(accountId, cartItemId);
+    }
+
+    // 3. Nếu số lượng > 1 thì giảm đi 1
+    await CartModel.updateItemQuantity(cartItemId, currentQuantity - 1);
+
+    // 4. Trả kết quả (tính lại tổng số lượng)
     const cart = await CartModel.findByAccountId(accountId);
     let totalQuantity = 0;
     if (cart) {
@@ -192,10 +237,11 @@ export const removeItemFromCart = async (accountId, cartItemId) => {
     }
     
     return {
+      new_quantity: currentQuantity - 1,
       total_quantity: totalQuantity
     };
   } catch (error) {
-    console.error('Lỗi tại removeItemFromCart Service:', error.message);
-    throw new Error(error.message || 'Không thể xóa sản phẩm khỏi giỏ hàng!');
+    console.error('Lỗi tại decreaseItemQuantity Service:', error.message);
+    throw new Error(error.message || 'Không thể giảm số lượng sản phẩm!');
   }
 };

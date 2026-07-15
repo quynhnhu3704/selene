@@ -125,5 +125,36 @@ export const CartModel = {
 
     if (error && error.code !== 'PGRST116') throw error;
     return data !== null;
+  },
+
+  // Lấy thông tin chi tiết một item trong giỏ (kèm check quyền)
+  getCartItemByIdAndAccount: async (cartItemId, accountId) => {
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select(`
+        *,
+        carts!inner (
+          account_id
+        )
+      `)
+      .eq('cart_item_id', cartItemId)
+      .eq('carts.account_id', accountId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  // Xóa toàn bộ giỏ hàng
+  deleteCart: async (cartId) => {
+    const { data, error } = await supabase
+      .from('carts')
+      .delete()
+      .eq('cart_id', cartId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };
