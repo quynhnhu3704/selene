@@ -80,5 +80,17 @@ export const CartModel = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Lấy danh sách item trong giỏ hàng
+  getCartItems: async (cartId) => {
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select('*')
+      .eq('cart_id', cartId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 };

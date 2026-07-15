@@ -27,5 +27,6 @@ export const config = {
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET,
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   supabaseUrl: process.env.SUPABASE_URL,
-  supabaseKey: process.env.SUPABASE_KEY
+  supabaseKey: process.env.SUPABASE_KEY,
+  rabbitMqUrl: process.env.RABBITMQ_URL
 };

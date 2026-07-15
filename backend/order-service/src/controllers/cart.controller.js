@@ -34,3 +34,24 @@ export const handleAddItemToCart = async (req, res) => {
     });
   }
 };
+
+// xem giỏ hàng
+export const handleGetCart = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId;
+
+    const result = await cartService.getCart(accountId);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Lấy thông tin giỏ hàng thành công',
+      data: result
+    });
+  } catch (error) {
+    console.error('Lỗi tại handleGetCart Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};

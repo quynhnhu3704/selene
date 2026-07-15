@@ -98,3 +98,72 @@ export const addItemToCart = async (accountId, productInfo) => {
     throw new Error(error.message || 'Không thể xử lý thêm sản phẩm vào giỏ hàng!');
   }
 };
+
+import { requestProductDetails } from '../configs/rabbitmq.js';
+
+export const getCart = async (accountId) => {
+  try {
+    if (!accountId) {
+      throw new Error('Thiếu thông tin người dùng!');
+    }
+
+    // 1. Tìm giỏ hàng
+    const cart = await CartModel.findByAccountId(accountId);
+    if (!cart) {
+      return { items: [], total_quantity: 0, total_price: 0 };
+    }
+
+    // 2. Lấy danh sách items
+    const cartItems = await CartModel.getCartItems(cart.cart_id);
+    
+    if (!cartItems || cartItems.length === 0) {
+      return { items: [], total_quantity: 0, total_price: 0 };
+    }
+
+    // 3. Lấy variant_ids
+    const variantIds = cartItems.map(item => item.variant_id);
+
+    // 4. Gửi request qua RabbitMQ RPC để lấy thông tin chi tiết
+    let productDetails = [];
+    try {
+      productDetails = await requestProductDetails(variantIds);
+    } catch (err) {
+      console.error('Lỗi khi gọi RPC RabbitMQ:', err);
+      throw new Error('Không thể lấy thông tin sản phẩm lúc này. Vui lòng thử lại sau.');
+    }
+
+    // 5. Gộp dữ liệu
+    let totalQuantity = 0;
+    let totalPrice = 0;
+
+    const populatedItems = cartItems.map(item => {
+      const detail = productDetails.find(p => p.variant_id === item.variant_id);
+      
+      const itemQuantity = item.quantity || 0;
+      const itemPrice = detail ? (detail.discount_price || detail.original_price || 0) : 0;
+      
+      totalQuantity += itemQuantity;
+      totalPrice += itemPrice * itemQuantity;
+
+      return {
+        cart_item_id: item.cart_item_id,
+        quantity: itemQuantity,
+        product: detail || { 
+          product_id: item.product_id, 
+          variant_id: item.variant_id, 
+          error: 'Sản phẩm không còn tồn tại' 
+        }
+      };
+    });
+
+    return {
+      items: populatedItems,
+      total_quantity: totalQuantity,
+      total_price: totalPrice
+    };
+
+  } catch (error) {
+    console.error('Lỗi tại getCart Service:', error.message);
+    throw new Error(error.message || 'Không thể lấy giỏ hàng!');
+  }
+};
