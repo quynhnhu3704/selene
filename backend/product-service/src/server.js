@@ -5,6 +5,7 @@ import cors from 'cors';
 import { config } from './configs/index.js';
 import productRoutes from './routes/product.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { connectRabbitMQ } from './configs/rabbitmq.js';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => {
 // Error Handling
 app.use(errorHandler);
 
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
   console.log(`Product Service running on port ${config.port}`);
+  await connectRabbitMQ();
 });
