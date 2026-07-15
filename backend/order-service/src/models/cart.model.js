@@ -92,5 +92,38 @@ export const CartModel = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Xóa sản phẩm khỏi giỏ hàng
+  removeCartItem: async (cartItemId) => {
+    const { data, error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_item_id', cartItemId)
+      .select()
+      .single();
+
+    // supabase có thể trả về lỗi nếu không tìm thấy bản ghi để xóa (hoặc trả về mảng rỗng)
+    if (error) throw error;
+    return data;
+  },
+
+  // Kiểm tra quyền sở hữu của user với cart_item (tránh user này xóa đồ của user khác)
+  verifyItemBelongsToAccount: async (cartItemId, accountId) => {
+    // Join 2 bảng cart_items và carts để kiểm tra
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select(`
+        cart_item_id,
+        carts!inner (
+          account_id
+        )
+      `)
+      .eq('cart_item_id', cartItemId)
+      .eq('carts.account_id', accountId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data !== null;
   }
 };

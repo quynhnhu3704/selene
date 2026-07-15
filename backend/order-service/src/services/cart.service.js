@@ -167,3 +167,35 @@ export const getCart = async (accountId) => {
     throw new Error(error.message || 'Không thể lấy giỏ hàng!');
   }
 };
+
+export const removeItemFromCart = async (accountId, cartItemId) => {
+  try {
+    if (!accountId || !cartItemId) {
+      throw new Error('Thiếu thông tin bắt buộc!');
+    }
+
+    // 1. Kiểm tra xem người dùng có quyền xóa sản phẩm này không (có nằm trong giỏ của họ không)
+    const isOwner = await CartModel.verifyItemBelongsToAccount(cartItemId, accountId);
+    
+    if (!isOwner) {
+      throw new Error('Sản phẩm không tồn tại trong giỏ hàng của bạn!');
+    }
+
+    // 2. Xóa
+    await CartModel.removeCartItem(cartItemId);
+    
+    // 3. Trả kết quả (có thể tính lại tổng số lượng)
+    const cart = await CartModel.findByAccountId(accountId);
+    let totalQuantity = 0;
+    if (cart) {
+      totalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
+    }
+    
+    return {
+      total_quantity: totalQuantity
+    };
+  } catch (error) {
+    console.error('Lỗi tại removeItemFromCart Service:', error.message);
+    throw new Error(error.message || 'Không thể xóa sản phẩm khỏi giỏ hàng!');
+  }
+};

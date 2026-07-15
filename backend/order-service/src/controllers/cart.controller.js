@@ -55,3 +55,25 @@ export const handleGetCart = async (req, res) => {
     });
   }
 };
+
+// xóa item khỏi giỏ hàng
+export const handleRemoveItemFromCart = async (req, res) => {
+  try {
+    const accountId = req.user?.accountId;
+    const { cartItemId } = req.params;
+
+    const result = await cartService.removeItemFromCart(accountId, cartItemId);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Xóa sản phẩm khỏi giỏ hàng thành công',
+      data: result
+    });
+  } catch (error) {
+    console.error('Lỗi tại handleRemoveItemFromCart Controller:', error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Internal Server Error!'
+    });
+  }
+};
