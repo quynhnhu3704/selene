@@ -31,7 +31,7 @@
 .Toastify__toast,
 .Toastify__toast-body,
 .Toastify__close-button {
-    font-family: 'Nunito', sans-serif !important;
+  font-family: 'Nunito', sans-serif !important;
 }
 
 .spinner-loading { min-height: 70vh; display: flex; justify-content: center; align-items: center; }
@@ -356,6 +356,7 @@
 .form-input-wrap { position: relative; margin-bottom: 18px; }
 .form-page .form-control::placeholder { color: #6C757D; }
 .form-control:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
+.form-select:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
 
 /* password eye */
 .form-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6C757D; font-size: 17px; padding: 0; display: flex; align-items: center; }
@@ -364,6 +365,11 @@
 /* ── BTN ĐĂNG NHẬP ── */
 .form-btn { font-size: 15px; transition: background 0.2s, transform 0.1s; margin-bottom: 16px; }
 .form-btn[type="reset"]:hover { color: #212529; border-color: #212529; background-color: whitesmoke; }
+.form-btn-cancel:hover,
+.form-btn-cancel:focus,
+.form-btn-cancel:active,
+.form-btn-cancel.active,
+.form-btn-cancel:focus-visible { color: #212529 !important; border-color: #212529 !important; background-color: whitesmoke !important; box-shadow: none !important; }
 
 /* ── LINK ĐĂNG KÝ ── */
 .form-register-row { text-align: center; font-size: 13.5px; color: #6C757D; margin-bottom: 20px; }
@@ -404,29 +410,7 @@
   margin-bottom: 24px;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* TRANG THÔNG TIN CÁ NHÂN */
 /* ── AVATAR ── */
 .info-avatar-wrap { position: relative; display: inline-block; }
 .info-avatar {
@@ -445,17 +429,17 @@
 
 /* ── HERO CARD ── */
 .info-hero {
-  background: linear-gradient(135deg, #1c1c1c 0%, #6C757D 50%, #6f1515 100%);
+  background-color: #F3F3F3;
   border-radius: 16px; padding: 26px 28px;
   display: flex; align-items: center; gap: 22px;
   margin-bottom: 28px; color: #fff;
 }
-.info-hero-name  { font-size: 19px; font-weight: 800; margin: 0 0 3px; }
-.info-hero-email { font-size: 13px; color: rgba(255,255,255,0.55); margin: 0; }
+.info-hero-name  { font-size: 19px; font-weight: 800; margin: 0 0 3px; color: #555; }
+.info-hero-email { font-size: 13px; color: #666; margin: 0; }
 .info-hero-role  {
   margin-top: 9px; display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(255,255,255,0.09); border-radius: 20px;
-  padding: 3px 12px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8);
+  background: #6C757D; border-radius: 20px;
+  padding: 3px 12px; font-size: 12px; font-weight: 600;
 }
 
 /* ── FIELD GRID ── */
@@ -464,14 +448,55 @@
 .info-field:nth-child(odd)  { padding-right: 32px; }
 .info-field:nth-child(even) { padding-left: 32px; }
 .info-field.full { grid-column: 1 / -1; padding-right: 0; padding-left: 0; border-right: none; }
-.info-field-label {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.5px; color: #999; margin-bottom: 6px;
-}
-.info-field-val { font-size: 15px; font-weight: 500; color: #212529; min-height: 24px; }
-.info-field-val .form-control,
-.info-field-val .form-select { font-size: 15px; padding: 7px 12px; }
+.info-field-label { display: flex; align-items: center; margin-bottom: 6px; font-weight: 700; }
+.info-field-val { font-size: 15px; min-height: 24px; color: #6C757D; font-weight: 500; }
+.info-field-val .form-control { font-size: 15px; padding: 7px 12px; }
 
 /* ── ACTIONS ── */
 .info-actions { margin-top: 26px; display: flex; gap: 10px; }
+
+/* DATE PICKER */
+.react-datepicker-wrapper { width: 100%; }
+.react-datepicker__input-container { width: 100%; }
+.react-datepicker { border: 1px solid #F3F3F3; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.12); font-size: 13.5px; }
+.react-datepicker__header { background: #212529; border-bottom: none; padding: 14px 12px 10px; }
+.react-datepicker__current-month { color: #fff; font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+.react-datepicker__day-name { font-weight: 600; font-size: 12px; width: 2.2rem; line-height: 2.2rem;}
+.react-datepicker__month { margin: 10px 12px 12px; }
+.react-datepicker__day { width: 2.2rem; line-height: 2.2rem; border-radius: 8px; font-weight: 500; transition: background 0.15s, color 0.15s; }
+.react-datepicker__day:hover { background: #f0f0f0; color: #000; border-radius: 8px !important; }
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected { background: #212529 !important; color: #fff !important; border-radius: 8px; font-weight: 700; }
+.react-datepicker__day--today { font-weight: 800; color: #871B1B; }
+.react-datepicker__day--today.react-datepicker__day--selected { color: #fff !important; }
+.react-datepicker__day--outside-month { color: #ccc; }
+.react-datepicker__month-select,
+.react-datepicker__year-select { background: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 6px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; }
+.react-datepicker__month-select:focus,
+.react-datepicker__year-select:focus { border-color: rgba(255,255,255,0.4); }
+.react-datepicker__navigation { top: 14px; }
+.react-datepicker__navigation-icon::before { border-color: rgba(255,255,255,0.8); }
+.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before { border-color: #fff; }
+.react-datepicker__input-container input:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 .25rem rgba(135,27,27,.15) !important; }
+
+
+
+
+
+.date-input {
+  position: relative;
+}
+
+.date-input .react-datepicker-wrapper {
+  width: 100%;
+}
+
+.date-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+  cursor: pointer !important;
+}

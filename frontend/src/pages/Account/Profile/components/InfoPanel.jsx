@@ -1,9 +1,11 @@
 // frontend\src\pages\Account\Profile\components\InfoPanel.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { saveUser } from "../../../../utils/auth";
 import { updateProfile } from "../../../../services/user.service";
 import defaultAvatar from "../../../../assets/images/default-avatar.png";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function InfoPanel({
   profile,
@@ -17,11 +19,48 @@ export default function InfoPanel({
     gender: "",
     dob: ""
   });
+  const [errors, setErrors] = useState({});
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(defaultAvatar);
+  const [genderOpen, setGenderOpen] = useState(false);
+  const genderRef = useRef(null);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^0\d{9}$/;
+  const today = new Date();
 
-  const handleChange = (e) =>
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const minDate = new Date(
+    today.getFullYear() - 100,
+    today.getMonth(),
+    today.getDate()
+  );
+
+  const handleChange = (e) => {
+    const { name } = e.target;
+    let { value } = e.target;
+
+    if (name === "phone_number") {
+      value = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
+  };
+
+  const handleGenderSelect = (gender) => {
+    setForm((prev) => ({
+      ...prev,
+      gender,
+    }));
+
+    setGenderOpen(false);
+  };
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -44,12 +83,60 @@ export default function InfoPanel({
     setAvatarFile(null);
   };
 
+  const normalizeFullName = (fullName) => {
+    return fullName
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .split(" ")
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase() +
+          word.slice(1)
+      )
+      .join(" ");
+  };
+
+  const validate = () => {
+    const trimmedName = form.full_name.trim();
+    const trimmedPhone = form.phone_number.trim();
+    const newErrors = {};
+
+    // Họ tên
+    if (!trimmedName) {
+      newErrors.full_name = "Vui lòng nhập họ tên";
+    }
+    else if (trimmedName.length < 2) {
+      newErrors.full_name = "Họ tên phải từ 2 ký tự trở lên";
+    }
+    else if (trimmedName.length > 100) {
+      newErrors.full_name = "Họ tên không được vượt quá 100 ký tự";
+    }
+    else if (!/[a-zA-ZÀ-ỹ]/.test(trimmedName)) {
+      newErrors.full_name = "Họ tên không hợp lệ";
+    }
+
+    // SĐT
+    if (!trimmedPhone) {
+      newErrors.phone_number = "Vui lòng nhập số điện thoại";
+    }
+    else if (!phoneRegex.test(trimmedPhone)) {
+      newErrors.phone_number = "Số điện thoại không hợp lệ";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
+
+    if (!validate()) return;
+
     try {
       const data = new FormData();
-      data.append("full_name", form.full_name);
-      data.append("phone_number", form.phone_number);
+      data.append("full_name", normalizeFullName(form.full_name));
+      data.append("phone_number", form.phone_number.trim());
       data.append("gender", form.gender);
       data.append("dob", form.dob);
       if (avatarFile) {
@@ -67,6 +154,7 @@ export default function InfoPanel({
         email: profile.email
       });
       toast.success(res.data.message);
+      setErrors({});
       setEditing(false);
       setAvatarFile(null);
     }
@@ -75,12 +163,51 @@ export default function InfoPanel({
     }
   };
 
+  const formatDate = (date) => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const displayDate = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const parseDate = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
   useEffect(() => {
     resetForm();
   }, [profile]);
 
-  const genderIcon = form.gender === "Nam" ? "bi-gender-male"
-    : form.gender === "Nữ" ? "bi-gender-female" : "bi-gender-ambiguous";
+  // Thêm
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        genderRef.current &&
+        !genderRef.current.contains(e.target)
+      ) {
+        setGenderOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
+  }, []);
 
   const Empty = () => <span style={{ color: "#ced4da", fontStyle: "italic", fontSize: 14 }}>Chưa cập nhật</span>;
 
@@ -102,8 +229,8 @@ export default function InfoPanel({
           )}
         </div>
         <div>
-          <p className="info-hero-name">{form.full_name || "—"}</p>
-          <p className="info-hero-email">{form.email}</p>
+          <p className="info-hero-name">{profile?.full_name || "—"}</p>
+          <p className="info-hero-email">{profile?.email}</p>
           <span className="info-hero-role"><i className="bi bi-person-check" />Khách hàng</span>
         </div>
       </div>
@@ -113,46 +240,91 @@ export default function InfoPanel({
 
           {/* Họ tên */}
           <div className="info-field">
-            <span className="info-field-label"><i className="bi bi-person" />Họ tên</span>
+            <span className="info-field-label">Họ tên{editing && <span className="text-danger ms-1">*</span>}</span>
             <div className="info-field-val">
-              {editing
-                ? <input name="full_name" className="form-control" value={form.full_name} onChange={handleChange} maxLength={80} />
-                : <span>{form.full_name || <Empty />}</span>}
+              {
+                editing ? (
+                  <>
+                    <input name="full_name" placeholder="Nhập họ tên" className={`form-control ${ errors.full_name ? "is-invalid" : "" }`} value={form.full_name} onChange={handleChange} maxLength={100} autoComplete="name" required
+                      onBlur={() => {
+                        if (form.full_name.trim()) {
+                          setForm((prev) => ({
+                            ...prev,
+                            full_name: normalizeFullName(prev.full_name),
+                          }));
+                        }
+                      }} />
+                    {errors.full_name && (
+                      <div className="invalid-feedback d-block">{errors.full_name}</div>
+                    )}
+                  </>
+                ) : (
+                  <span>{form.full_name || <Empty />}</span>
+                )
+              }
             </div>
           </div>
 
           {/* Email */}
           <div className="info-field">
-            <span className="info-field-label"><i className="bi bi-envelope" />Email</span>
+            <span className="info-field-label">Email</span>
             <div className="info-field-val">
-              {editing
-                ? <input className="form-control" value={form.email} disabled />
-                : <span>{form.email || <Empty />}</span>}
+              {
+                editing ? (
+                  <>
+                    <input placeholder="Địa chỉ email" className={`form-control ${ errors.email ? "is-invalid" : "" }`} value={form.email} disabled />
+                    {errors.email && (
+                      <div className="invalid-feedback d-block">{errors.email}</div>
+                    )}
+                  </>
+                ) : (
+                  <span>{form.email || <Empty />}</span>
+                )
+              }
+
             </div>
           </div>
 
           {/* Số điện thoại */}
           <div className="info-field">
-            <span className="info-field-label"><i className="bi bi-telephone" />Số điện thoại</span>
+            <span className="info-field-label">Số điện thoại{editing && <span className="text-danger ms-1">*</span>}</span>
             <div className="info-field-val">
-              {editing
-                ? <input name="phone_number" className="form-control" value={form.phone_number} onChange={handleChange} maxLength={15} />
-                : <span>{form.phone_number || <Empty />}</span>}
+              {
+                editing ? (
+                  <>
+                    <input name="phone_number" placeholder="Nhập số điện thoại" className={`form-control ${ errors.phone_number ? "is-invalid" : "" }`} value={form.phone_number} onChange={handleChange} maxLength={10} autoComplete="tel" required />
+                    {errors.phone_number && (
+                      <div className="invalid-feedback d-block">{errors.phone_number}</div>
+                    )}
+                  </>
+                ) : (
+                  <span>{form.phone_number || <Empty />}</span>
+                )
+              }
             </div>
           </div>
 
           {/* Giới tính */}
           <div className="info-field">
-            <span className="info-field-label"><i className={`bi ${genderIcon}`} />Giới tính</span>
+            <span className="info-field-label">Giới tính</span>
             <div className="info-field-val">
               {editing
                 ? (
-                  <select name="gender" className="form-select" value={form.gender} onChange={handleChange}>
-                    <option value="">-- Chọn --</option>
-                    <option>Nam</option>
-                    <option>Nữ</option>
-                    <option>Khác</option>
-                  </select>
+                  <div className="dropdown w-100" ref={genderRef}>
+                    <button type="button" className="form-control text-start d-flex justify-content-between align-items-center" onClick={() => setGenderOpen((prev) => !prev)}>
+                      <span>{form.gender || "-- Chọn --"}</span>
+                      <i className={`bi ${ genderOpen ? "bi-chevron-up" : "bi-chevron-down" }`} />
+                    </button>
+
+                    {genderOpen && (
+                      <ul className="dropdown-menu show w-100 mt-1 shadow-sm">
+                        <li><button type="button" className="dropdown-item fw-normal" onClick={() => handleGenderSelect("")}>-- Chọn --</button></li>
+                        <li><button type="button" className="dropdown-item fw-normal" onClick={() => handleGenderSelect("Nam")}>Nam</button></li>
+                        <li><button type="button" className="dropdown-item fw-normal" onClick={() => handleGenderSelect("Nữ")}>Nữ</button></li>
+                        <li><button type="button" className="dropdown-item fw-normal" onClick={() => handleGenderSelect("Khác")}>Khác</button></li>
+                      </ul>
+                    )}
+                  </div>
                 )
                 : <span>{form.gender || <Empty />}</span>}
             </div>
@@ -160,11 +332,30 @@ export default function InfoPanel({
 
           {/* Ngày sinh */}
           <div className="info-field">
-            <span className="info-field-label"><i className="bi bi-cake2" />Ngày sinh</span>
+            <span className="info-field-label">Ngày sinh</span>
             <div className="info-field-val">
-              {editing
-                ? <input name="dob" type="date" className="form-control" value={form.dob} onChange={handleChange} />
-                : <span>{form.dob || <Empty />}</span>}
+              {editing ? (
+                <DatePicker
+                  selected={parseDate(form.dob)}
+                  onChange={(date) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      dob: date ? formatDate(date) : "",
+                    }))
+                  }
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Chọn ngày sinh"
+                  className="form-control"
+                  showYearDropdown
+                  showMonthDropdown
+                  dropdownMode="select"
+                  minDate={minDate}
+                  maxDate={new Date()}
+                  showPopperArrow={false}
+                />
+              ) : (
+                <span>{form.dob ? displayDate(form.dob) : <Empty />}</span>
+              )}
             </div>
           </div>
           
@@ -177,7 +368,7 @@ export default function InfoPanel({
               <button type="submit" className="form-btn btn btn-dark fw-semibold px-4">
                 <i className="bi bi-check2 me-1" /> Lưu thay đổi
               </button>
-              <button type="button" className="form-btn btn btn-outline-dark fw-semibold px-4" onClick={() => { resetForm(); setEditing(false); }}>Huỷ</button>
+              <button type="button" className="form-btn form-btn-cancel btn btn-outline-dark fw-semibold px-4" onClick={() => { resetForm(); setErrors({}); setEditing(false); }}>Huỷ</button>
             </>
           ) : (
             <button type="button" className="form-btn btn btn-dark fw-semibold px-4" 
