@@ -9,6 +9,7 @@ import { login } from "../../../services/auth.service";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,27 +18,44 @@ export default function Login() {
   const handleReset = () => {
     setEmail("");
     setPassword("");
+    setErrors({});
+  };
+
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value.trimStart());
+    setErrors((prev) => ({
+      ...prev,
+      email: "",
+    }));
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    setErrors((prev) => ({
+      ...prev,
+      password: "",
+    }));
   };
 
   const validateForm = () => {
+    const newErrors = {};
+    const trimmedEmail = email.trim();
+
     // Email
-    if (!email.trim()) {
-      toast.error("Vui lòng nhập email");
-      return false;
+    if (!trimmedEmail) {
+      newErrors.email = "Vui lòng nhập email";
+    }
+    else if (!emailRegex.test(trimmedEmail)) {
+      newErrors.email = "Email không hợp lệ";
     }
 
-    if (!emailRegex.test(email)) {
-      toast.error("Email không đúng định dạng");
-      return false;
-    }
-
-    // Mật khẩu
+    // Password
     if (!password) {
-      toast.error("Vui lòng nhập mật khẩu");
-      return false;
+      newErrors.password = "Vui lòng nhập mật khẩu";
     }
 
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
@@ -102,24 +120,30 @@ export default function Login() {
             {/* EMAIL */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Email <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Email <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
-                <input type="email" className="form-control" placeholder="Nhập địa chỉ email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" maxLength={100} required />
+                <input type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`} placeholder="Nhập địa chỉ email" value={email} onChange={handleEmailChange} autoComplete="email" maxLength={100} required />
+                {errors.email && (
+                  <div className="invalid-feedback d-block">{errors.email}</div>
+                )}
               </div>
             </div>
 
             {/* MẬT KHẨU */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Mật khẩu <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Mật khẩu <span className="text-danger">*</span></span>
                 <Link to="/tai-khoan/quen-mat-khau" className="form-link-sm">Quên mật khẩu?</Link>
               </div>
               <div className="form-input-wrap">
-                <input type={showPassword ? "text" : "password"} className="form-control has-eye" placeholder="Nhập mật khẩu" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" maxLength={50} required />
+                <input type={showPassword ? "text" : "password"} className={`form-control has-eye ${errors.password ? "border-danger" : ""}`} placeholder="Nhập mật khẩu" value={password} onChange={handlePasswordChange} autoComplete="current-password" maxLength={50} required />
                 <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
+                {errors.password && (
+                  <div className="invalid-feedback d-block">{errors.password}</div>
+                )}
               </div>
             </div>
 

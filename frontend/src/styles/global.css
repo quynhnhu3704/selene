@@ -359,7 +359,7 @@
 .form-select:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important; }
 
 /* password eye */
-.form-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6C757D; font-size: 17px; padding: 0; display: flex; align-items: center; }
+.form-eye { position: absolute; right: 14px; top: 1.25em; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6C757D; font-size: 17px; padding: 0; display: flex; align-items: center; }
 .form-input.has-eye { padding-right: 44px; }
 
 /* ── BTN ĐĂNG NHẬP ── */
@@ -478,25 +478,3 @@
 .react-datepicker__navigation-icon::before { border-color: rgba(255,255,255,0.8); }
 .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before { border-color: #fff; }
 .react-datepicker__input-container input:focus { border-color: #FBC5C5 !important; box-shadow: 0 0 0 .25rem rgba(135,27,27,.15) !important; }
-
-
-
-
-
-.date-input {
-  position: relative;
-}
-
-.date-input .react-datepicker-wrapper {
-  width: 100%;
-}
-
-.date-icon {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6c757d;
-  pointer-events: none;
-  cursor: pointer !important;
-}

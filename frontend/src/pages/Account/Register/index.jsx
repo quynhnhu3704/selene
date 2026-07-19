@@ -107,20 +107,14 @@ export default function Register() {
 
       const res = await register({
         email: email.trim(),
-        phone: phone.trim(), // SỬA CHỖ NÀY ĐỂ HẾT LỖI NÈ
+        phone: phone.trim(),
         password,
         full_name: formattedName,
       });
 
       toast.success(res.data.message);
       handleReset();
-  
-      navigate("/tai-khoan/dang-nhap", {
-          state: {
-              message: res.data.message,
-          },
-      });
-
+      navigate("/tai-khoan/dang-nhap");
     } catch (err) {
       toast.error(
         err.response?.data?.message || "Đăng ký thất bại!"
@@ -144,67 +138,64 @@ export default function Register() {
   };
 
   const validateForm = () => {
-      const newErrors = {};
-      const trimmedName = name.trim();
-      const trimmedEmail = email.trim();
-      const trimmedPhone = phone.trim();
+    const newErrors = {};
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
 
-      // Họ tên
-      if (!trimmedName) {
-          newErrors.name = "Vui lòng nhập họ tên";
-      }
-      else if (trimmedName.length < 2) {
-          newErrors.name = "Họ tên phải từ 2 ký tự trở lên";
-      }
-      else if (trimmedName.length > 100) {
-          newErrors.name = "Họ tên không được vượt quá 100 ký tự";
-      }
-      else if (!/[a-zA-ZÀ-ỹ]/.test(trimmedName)) {
-          newErrors.name = "Họ tên không hợp lệ";
-      }
+    // Họ tên
+    if (!trimmedName) {
+      newErrors.name = "Vui lòng nhập họ tên";
+    }
+    else if (trimmedName.length < 2) {
+      newErrors.name = "Họ tên phải từ 2 ký tự trở lên";
+    }
+    else if (trimmedName.length > 100) {
+      newErrors.name = "Họ tên không được vượt quá 100 ký tự";
+    }
+    else if (!/[a-zA-ZÀ-ỹ]/.test(trimmedName)) {
+      newErrors.name = "Họ tên không hợp lệ";
+    }
 
-      // Email
-      if (!trimmedEmail) {
-          newErrors.email = "Vui lòng nhập email";
-      }
-      else if (!emailRegex.test(trimmedEmail)) {
-          newErrors.email = "Email không hợp lệ";
-      }
+    // Email
+    if (!trimmedEmail) {
+      newErrors.email = "Vui lòng nhập email";
+    }
+    else if (!emailRegex.test(trimmedEmail)) {
+      newErrors.email = "Email không hợp lệ";
+    }
 
-      // Phone
-      if (!trimmedPhone) {
-          newErrors.phone = "Vui lòng nhập số điện thoại";
-      }
-      else if (!phoneRegex.test(trimmedPhone)) {
-          newErrors.phone = "Số điện thoại không hợp lệ";
-      }
+    // Phone
+    if (!trimmedPhone) {
+      newErrors.phone = "Vui lòng nhập số điện thoại";
+    }
+    else if (!phoneRegex.test(trimmedPhone)) {
+      newErrors.phone = "Số điện thoại không hợp lệ";
+    }
 
-      // Password
-      if (!password) {
-          newErrors.password = "Vui lòng nhập mật khẩu";
-      }
-      else if (!passwordRegex.test(password)) {
-          newErrors.password =
-              "Mật khẩu phải từ 8-50 ký tự, gồm chữ hoa, chữ thường và số";
-      }
+    // Password
+    if (!password) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+    }
+    else if (!passwordRegex.test(password)) {
+      newErrors.password = "Mật khẩu phải từ 8-50 ký tự, gồm chữ hoa, chữ thường và số";
+    }
 
-      // Confirm
-      if (!confirmPassword) {
-          newErrors.confirmPassword =
-              "Vui lòng nhập xác nhận mật khẩu";
-      }
-      else if (password !== confirmPassword) {
-          newErrors.confirmPassword =
-              "Mật khẩu xác nhận không khớp";
-      }
+    // Confirm
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Vui lòng nhập xác nhận mật khẩu";
+    }
+    else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
+    }
 
-      // Checkbox
-      if (!agree) {
-          newErrors.agree = "Bạn phải đồng ý điều khoản sử dụng";
-      }
+    // Checkbox
+    if (!agree) {
+      newErrors.agree = "Bạn phải đồng ý điều khoản sử dụng";
+    }
 
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   return (
@@ -228,7 +219,7 @@ export default function Register() {
             {/* HỌ TÊN */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Họ và tên <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Họ và tên <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="text" className={`form-control ${errors.name ? "is-invalid" : ""}`} placeholder="Nhập họ và tên" value={name} onChange={handleNameChange} onBlur={() => { if (name.trim()) { setName(normalizeFullName(name)); }}} autoComplete="name" maxLength={100} required />
@@ -241,7 +232,7 @@ export default function Register() {
             {/* EMAIL */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Email <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Email <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`} placeholder="Nhập địa chỉ email" value={email} onChange={handleEmailChange} autoComplete="email" maxLength={100} required />
@@ -254,7 +245,7 @@ export default function Register() {
             {/* SỐ ĐIỆN THOẠI */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Số điện thoại <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Số điện thoại <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
                 <input type="tel" className={`form-control ${errors.phone ? "is-invalid" : ""}`} placeholder="Nhập số điện thoại" value={phone} onChange={handlePhoneChange} autoComplete="tel" maxLength={10} required />
@@ -264,36 +255,36 @@ export default function Register() {
               </div>
             </div>
 
-            {/* MẬT KHẨU */}
+            {/* MẬT KHẨU */}  
             <div>
               <div className="form-label-row">
-                <span className="form-label">Mật khẩu <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Mật khẩu <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
-                <input type={showPassword ? "text" : "password"} className={`form-control has-eye ${errors.password ? "is-invalid" : ""}`} placeholder="Tạo mật khẩu" value={password} onChange={handlePasswordChange} autoComplete="new-password" maxLength={50} required />
+                <input type={showPassword ? "text" : "password"} className={`form-control has-eye ${errors.password ? "border-danger" : ""}`} placeholder="Tạo mật khẩu" value={password} onChange={handlePasswordChange} autoComplete="new-password" maxLength={50} required />
                 <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
+                {errors.password && (
+                  <div className="invalid-feedback d-block">{errors.password}</div>
+                )}
               </div>
-              {errors.password && (
-                <div className="invalid-feedback d-block">{errors.password}</div>
-              )}
             </div>
 
             {/* XÁC NHẬN MẬT KHẨU */}
             <div>
               <div className="form-label-row">
-                <span className="form-label">Xác nhận mật khẩu <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Xác nhận mật khẩu <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
-                <input type={showConfirmPassword ? "text" : "password"} className={`form-control has-eye ${errors.confirmPassword ? "is-invalid" : ""}`} placeholder="Nhập lại mật khẩu" value={confirmPassword} onChange={handleConfirmPasswordChange} autoComplete="new-password" maxLength={50} required />
+                <input type={showConfirmPassword ? "text" : "password"} className={`form-control has-eye ${errors.confirmPassword ? "border-danger" : ""}`} placeholder="Nhập lại mật khẩu" value={confirmPassword} onChange={handleConfirmPasswordChange} autoComplete="new-password" maxLength={50} required />
                 <button type="button" className="form-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
                   <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
                 </button>
+                {errors.confirmPassword && (
+                  <div className="invalid-feedback d-block">{errors.confirmPassword}</div>
+                )}
               </div>
-              {errors.confirmPassword && (
-                <div className="invalid-feedback d-block">{errors.confirmPassword}</div>
-              )}
             </div>
 
             {/* CHECKBOX ĐỒNG Ý ĐIỀU KHOẢN */}
