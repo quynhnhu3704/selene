@@ -46,7 +46,7 @@ export const registerUser = async ({ email, phone, password, full_name }) => {
 
   // kiểm tra số điện thoại có tồn tại chưa
   const existingPhone = await UserProfileModel.checkPhoneExists(phone.trim());
-  if (existingPhone) {
+  if (existingPhone && existingPhone.length > 0) {
     throw new Error('Số điện thoại đã được đăng ký!');
   }
 

@@ -1,9 +1,16 @@
+// backend\order-service\src\routes\order.routes.js
 import express from 'express';
-import { orderController } from '../controllers/order.controller.js';
-import { requireAuth } from '../middlewares/auth.middleware.js';
+import * as cartController from '../controllers/cart.controller.js';
+import { verifyToken } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/', requireAuth, orderController.getOrders);
+// customer
+// cart
+router.post('/cart/add', verifyToken, cartController.handleAddItemToCart);
+router.get('/cart', verifyToken, cartController.handleGetCart);
+router.delete('/cart/remove/:cartItemId', verifyToken, cartController.handleRemoveItemFromCart);
+router.put('/cart/decrease/:cartItemId', verifyToken, cartController.handleDecreaseItemQuantity);
+router.put('/cart/increase/:cartItemId', verifyToken, cartController.handleIncreaseItemQuantity);
 
 export default router;
