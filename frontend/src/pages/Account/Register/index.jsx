@@ -219,10 +219,10 @@ export default function Register() {
             {/* HỌ TÊN */}
             <div>
               <div className="form-label-row">
-                <span className="form-label mb-0">Họ và tên <span className="text-danger">*</span></span>
+                <span className="form-label mb-0">Họ tên <span className="text-danger">*</span></span>
               </div>
               <div className="form-input-wrap">
-                <input type="text" className={`form-control ${errors.name ? "is-invalid" : ""}`} placeholder="Nhập họ và tên" value={name} onChange={handleNameChange} onBlur={() => { if (name.trim()) { setName(normalizeFullName(name)); }}} autoComplete="name" maxLength={100} required />
+                <input type="text" className={`form-control ${errors.name ? "is-invalid" : ""}`} placeholder="Nhập họ tên" value={name} onChange={handleNameChange} onBlur={() => { if (name.trim()) { setName(normalizeFullName(name)); }}} autoComplete="name" maxLength={100} required />
                 {errors.name && (
                   <div className="invalid-feedback d-block">{errors.name}</div>
                 )}
