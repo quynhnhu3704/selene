@@ -8,24 +8,42 @@ import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { forgotPassword } from "../../../services/auth.service";
 
 export default function ForgotPassword() {
+  const [errors, setErrors] = useState({});
   const [email, setEmail] = useState("");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const handleReset = () => {
     setEmail("");
+    setErrors({});
+  };
+
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value.trimStart());
+    setErrors((prev) => ({
+      ...prev,
+      email: "",
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      newErrors.email = "Vui lòng nhập email";
+    }
+    else if (!emailRegex.test(trimmedEmail)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email.trim()) {
-      toast.error("Vui lòng nhập email");
-      return;
-    }
-
-    if (!emailRegex.test(email)) {
-      toast.error("Email không đúng định dạng");
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       const res = await forgotPassword({
@@ -33,7 +51,7 @@ export default function ForgotPassword() {
       });
 
       toast.success(res.data.message);
-      setEmail("");
+      handleReset();
 
     } catch (err) {
       toast.error(err.response?.data?.message || "Khôi phục mật khẩu thất bại!");
@@ -67,7 +85,10 @@ export default function ForgotPassword() {
               </div>
 
               <div className="form-input-wrap">
-                <input type="email" className="form-control" placeholder="Nhập email đã đăng ký" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={100} autoComplete="email" required />
+                <input type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`} placeholder="Nhập email đã đăng ký" value={email} onChange={handleEmailChange} maxLength={100} autoComplete="email" required />
+                {errors.email && (
+                  <div className="invalid-feedback d-block">{errors.email}</div>
+                )}
               </div>
             </div>
 
