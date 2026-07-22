@@ -17,6 +17,13 @@ import Orders from "../../pages/Account/Profile/pages/Orders";
 import ChangePassword from "../../pages/Account/Profile/pages/ChangePassword";
 import ForgotPassword from "../../pages/Account/ForgotPassword";
 
+import AdminLayout from "../../pages/Admin";
+import AdminDashboard from "../../pages/Admin/Dashboard";
+import AdminProducts from "../../pages/Admin/Products";
+import AdminOrders from "../../pages/Admin/Orders";
+import AdminUsers from "../../pages/Admin/Users";
+import AdminCategories from "../../pages/Admin/Categories";
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -45,6 +52,15 @@ export default function AppRouter() {
         <Route path="/san-pham/:id" element={<ProductDetail />} />
 
         <Route path="/ve-chung-toi" element={<About />} />
+      </Route>
+
+      {/* Layout Admin */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index                   element={<AdminDashboard />} />
+        <Route path="san-pham"         element={<AdminProducts />} />
+        <Route path="don-hang"         element={<AdminOrders />} />
+        <Route path="nguoi-dung"       element={<AdminUsers />} />
+        <Route path="danh-muc"         element={<AdminCategories />} />
       </Route>
 
       {/* 404 */}

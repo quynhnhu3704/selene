@@ -63,9 +63,12 @@ export default function Profile() {
 
         /* SIDEBAR */
         .acc-sidebar { border-right: 1px solid #f0f0f0; padding-right: 32px; }
-        .acc-sidebar-heading { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #212529; margin-bottom: 4px; }
+
+        .acc-sidebar-heading { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+        
         .acc-greeting { font-size: 14px; color: #6c757d; margin-bottom: 24px; }
         .acc-greeting strong { color: #212529; }
+
         .acc-nav { list-style: none; padding: 0; margin: 0 0 32px; }
         .acc-nav li { border-bottom: 1px solid #f5f5f5; }
         .acc-nav li:last-child { border-bottom: none; }
@@ -78,15 +81,6 @@ export default function Profile() {
         }
         .acc-nav-btn:hover { color: #871B1B; }
         .acc-nav-btn.active { color: #871B1B; font-weight: 700; }
-
-        /* Logout button */
-        .acc-logout-btn {
-          display: flex; align-items: center; gap: 7px;
-          background: none; border: none; padding: 0;
-          font-size: 14px; color: #aaa; cursor: pointer;
-          font-family: 'Nunito', sans-serif; transition: color 0.15s;
-        }
-        .acc-logout-btn:hover { color: #871B1B; }
 
         /* RIGHT PANEL */
         .acc-panel { padding-left: 40px; }

@@ -20,6 +20,7 @@
     "react-helmet-async": "^3.0.0",
     "react-router-dom": "^7.1.5",
     "react-toastify": "^11.1.0",
+    "recharts": "^3.10.0",
     "selene-shop": "file:..",
     "sweetalert2": "^11.26.25"
   },
