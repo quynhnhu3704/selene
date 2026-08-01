@@ -119,7 +119,7 @@ export default function PasswordPanel() {
 
   return (
     <>
-      <h5 className="panel-title">ĐỔI MẬT KHẨU</h5>          
+      <h5 className="page-panel-title">ĐỔI MẬT KHẨU</h5>          
         <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 420 }}>
 
           {/* MẬT KHẨU HIỆN TẠI */}

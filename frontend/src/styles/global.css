@@ -404,10 +404,32 @@
 .text-danger { color: #871B1B !important; }
 
 /* TRANG TÀI KHOẢN */
-.panel-title {
-  font-size: 15px; font-weight: 800; text-transform: uppercase;
-  padding-bottom: 14px; border-bottom: 1px solid #f0f0f0;
-  margin-bottom: 24px;
+.acc-page { padding: 40px 75px 72px; min-height: 60vh; }
+.page-panel-title { font-size: 15px; font-weight: 800; text-transform: uppercase; padding-bottom: 14px; margin-bottom: 24px; }
+
+/* SIDEBAR */
+.page-sidebar { padding-right: 32px; }
+.page-sidebar-heading { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+.page-greeting { font-size: 14px; color: #6c757d; margin-bottom: 24px; }
+.page-greeting strong { color: #212529; }
+
+.page-nav { list-style: none; padding: 0; margin: 0 0 32px; }
+.page-nav-btn { display: block; padding: 11px 0; text-decoration: none; font-size: 14.5px; font-weight: 500; color: #212529; transition: color .2s ease; }
+.page-nav-btn:hover { color: #871B1B; }
+.page-nav-btn.active { color: #871B1B; }
+
+/* RIGHT PANEL */
+.page-panel { padding-left: 40px; }
+
+/* Empty state */
+.page-empty { text-align: center; padding: 48px 0; color: #6c757d; }
+.page-empty-icon { font-size: 48px; color: #d0d0d0; }
+
+/* Responsive */
+@media (max-width: 1520px) { .acc-page { padding: 32px 24px 56px; } }
+@media (max-width: 768px) {
+  .page-sidebar { border-right: none; border-bottom: 1px solid #f0f0f0; padding-right: 0; padding-bottom: 20px; margin-bottom: 24px; }
+  .page-panel { padding-left: 0; }
 }
 
 /* TRANG THÔNG TIN CÁ NHÂN */

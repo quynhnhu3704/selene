@@ -7,10 +7,10 @@ export default function OrdersPanel() {
 
   return (
     <>
-      <h5 className="panel-title">ĐƠN HÀNG CỦA BẠN</h5>
+      <h5 className="page-panel-title">ĐƠN HÀNG CỦA BẠN</h5>
       {orders.length === 0 ? (
-        <div className="acc-empty">
-          <i className="bi bi-bag-x acc-empty-icon" />
+        <div className="page-empty">
+          <i className="bi bi-bag-x page-empty-icon" />
           <p className="mt-3 mb-1 fw-semibold text-secondary">Bạn chưa có đơn hàng nào</p>
           <p className="text-muted" style={{ fontSize: 14 }}>Khám phá sản phẩm và đặt hàng ngay!</p>
           <Link to="/san-pham" className="btn btn-dark mt-3 px-4 form-btn fw-semibold">Mua sắm ngay</Link>

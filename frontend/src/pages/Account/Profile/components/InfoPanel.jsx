@@ -213,7 +213,7 @@ export default function InfoPanel({
 
   return (
     <>
-      <h5 className="panel-title">THÔNG TIN TÀI KHOẢN</h5>
+      <h5 className="page-panel-title">THÔNG TIN TÀI KHOẢN</h5>
 
       {/* ── HERO ── */}
       <div className="info-hero">
