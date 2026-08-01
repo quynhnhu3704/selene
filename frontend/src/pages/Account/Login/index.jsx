@@ -76,7 +76,13 @@ export default function Login() {
       );
 
       toast.success(res.data.message);
-      navigate("/");
+
+      if (res.data.user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+
       handleReset();
 
     } catch (err) {

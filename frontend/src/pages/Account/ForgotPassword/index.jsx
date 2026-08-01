@@ -1,13 +1,14 @@
 // frontend\src\pages\Account\ForgotPassword\index.jsx
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { forgotPassword } from "../../../services/auth.service";
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [email, setEmail] = useState("");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,6 +53,10 @@ export default function ForgotPassword() {
 
       toast.success(res.data.message);
       handleReset();
+
+      setTimeout(() => {
+        navigate("/tai-khoan/dang-nhap");
+      }, 1800);
 
     } catch (err) {
       toast.error(err.response?.data?.message || "Khôi phục mật khẩu thất bại!");

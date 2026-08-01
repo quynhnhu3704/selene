@@ -33,7 +33,11 @@ export default function GoogleSuccess() {
         toast.success("Chào mừng bạn đến với Selene!");
 
         setTimeout(() => {
-            navigate("/");
+            if (user.role === "admin") {
+                navigate("/admin");
+            } else {
+                navigate("/");
+            }
         }, 1200);
 
     }, []);

@@ -38,3 +38,8 @@ export const saveUser = (user) => {
         JSON.stringify(user)
     );
 };
+
+export const isAdmin = () => {
+    const user = getUser();
+    return user?.role?.toLowerCase() === "admin";
+};

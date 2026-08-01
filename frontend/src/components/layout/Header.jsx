@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
-import { isLoggedIn, logout as clearLogin } from "../../utils/auth";
+import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
 import Swal from "sweetalert2";
 
@@ -12,19 +12,21 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isLogin,setIsLogin] = useState(isLoggedIn());
+  const [admin, setAdmin] = useState(isAdmin());
 
   const navClass = ({ isActive }) => isActive ? "rb-navlink rb-active" : "rb-navlink";
 
   // Lúc nào login thành công Header sẽ tự đổi
   useEffect(() => {
     const syncLogin=()=>{
-        setIsLogin(isLoggedIn());
+      setIsLogin(isLoggedIn());
+      setAdmin(isAdmin());
     }
     window.addEventListener("storage",syncLogin);
     window.addEventListener("login-success",syncLogin);
     return ()=>{
-        window.removeEventListener("storage",syncLogin);
-        window.removeEventListener("login-success",syncLogin);
+      window.removeEventListener("storage",syncLogin);
+      window.removeEventListener("login-success",syncLogin);
     }
   },[]);
 
@@ -164,6 +166,11 @@ export default function Header() {
               ) : (
                 <>
                   <li><Link className="dropdown-item" to="/tai-khoan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
+                  {admin && (
+                    <>
+                      <li><Link className="dropdown-item" to="/admin"><i className="bi bi-speedometer2 me-1"></i>Trang quản trị</Link></li>
+                    </>
+                  )}
                   <li><button className="dropdown-item" onClick={handleLogout}><i className="bi bi-box-arrow-right me-1"></i> Đăng xuất</button></li>
                 </>
               )}
@@ -221,6 +228,11 @@ export default function Header() {
               ) : (
                 <>
                   <li><Link className="dropdown-item" to="/tai-khoan"><i className="bi bi-person-bounding-box me-1"></i> Tài khoản</Link></li>
+                  {admin && (
+                    <>
+                      <li><Link className="dropdown-item" to="/admin"><i className="bi bi-speedometer2 me-1"></i>Trang quản trị</Link></li>
+                    </>
+                  )}
                   <li><button className="dropdown-item" onClick={handleLogout}><i className="bi bi-box-arrow-right me-1"></i> Đăng xuất</button></li>
                 </>
               )}
