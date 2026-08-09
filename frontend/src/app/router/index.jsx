@@ -11,6 +11,9 @@ import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
 import Profile from "../../pages/Account/Profile";
+import Cart from "../../pages/Cart";
+import Checkout from "../../pages/Checkout";
+import Payment from "../../pages/Payment";
 
 import Info from "../../pages/Account/Profile/pages/Info";
 import Orders from "../../pages/Account/Profile/pages/Orders";
@@ -50,6 +53,13 @@ export default function AppRouter() {
         {/* ===== SẢN PHẨM ===== */}
         <Route path="/san-pham" element={<ProductList />} />
         <Route path="/san-pham/:id" element={<ProductDetail />} />
+
+        {/* ===== GIỎ HÀNG ===== */}
+        <Route path="/gio-hang" element={<Cart />} />
+
+        {/* ===== THANH TOÁN ===== */}
+        <Route path="/thanh-toan" element={<Checkout />} />
+        <Route path="/thanh-toan/qr" element={<Payment />} />
 
         <Route path="/ve-chung-toi" element={<About />} />
       </Route>

@@ -1,9 +1,10 @@
 // frontend\src\pages\ProductDetail.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import { getProductById } from "../../services/product.service";
+import { CartContext } from "../../context/CartContext";
 
 /* ── DỮ LIỆU MẪU ── */
 // const PRODUCT = {
@@ -37,6 +38,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useContext(CartContext);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -109,6 +111,20 @@ export default function ProductDetail() {
       lines: (product.description || "").split("\n"),
     },
   };
+
+  const selectedColor = PRODUCT.colors[activeColor]?.label;
+  const selectedSize = PRODUCT.sizes[activeSize];
+
+  const selectedVariant = (product.variants || []).find(
+    v =>
+      v.color === selectedColor &&
+      v.size === selectedSize
+  );
+
+
+console.log("PRODUCT:", product);
+console.log("VARIANTS:", product.variants);
+console.log("SELECTED VARIANT:", selectedVariant);
 
   return (
     <>
@@ -516,9 +532,34 @@ export default function ProductDetail() {
                   <i className="bi bi-plus" />
                 </button>
               </div>
-              <button className="pd-btn-cart">
-                Thêm vào giỏ&nbsp;<i className="bi bi-handbag" />
-              </button>
+
+<button
+  className="pd-btn-cart"
+  onClick={async () => {
+    if (!selectedVariant) {
+      alert("Sản phẩm với màu và kích thước này không tồn tại");
+      return;
+    }
+
+    try {
+      await addToCart(
+        product.product_id,
+        selectedVariant.variant_id,
+        qty
+      );
+
+      alert("Đã thêm sản phẩm vào giỏ hàng!");
+    } catch (error) {
+      console.error(
+        "Lỗi thêm giỏ hàng:",
+        error.response?.data || error
+      );
+    }
+  }}
+>
+  Thêm vào giỏ&nbsp;<i className="bi bi-handbag" />
+</button>
+
             </div>
 
             {/* Xem cửa hàng */}

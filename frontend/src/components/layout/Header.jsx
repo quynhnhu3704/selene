@@ -5,10 +5,11 @@ import logo from "../../assets/images/logo.png";
 import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
 import Swal from "sweetalert2";
+import { useCart } from "../../context/CartContext";
 
 export default function Header() {
   const [wl] = useState(0);
-  const [ct] = useState(0);
+  const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isLogin,setIsLogin] = useState(isLoggedIn());
@@ -177,13 +178,13 @@ export default function Header() {
             </ul>
           </div>
 
-          <div className="rb-icon-wrap">
+          <Link to="/gio-hang" className="rb-icon-wrap text-decoration-none text-dark">
             <div className="rb-icon-rel">
               <i className="bi bi-handbag fs-5" />
-              <span className="rb-bdot">{ct}</span>
+              <span className="rb-bdot">{cartCount}</span>
             </div>
             <strong className="rb-ilabel mt-1">Giỏ Hàng</strong>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -239,10 +240,10 @@ export default function Header() {
             </ul>
           </div>
 
-          <div className="rb-mob-icon">
+          <Link to="/gio-hang" className="rb-mob-icon text-decoration-none">
             <i className="bi bi-handbag" />
-            <span className="rb-mob-bdot">{ct}</span>
-          </div>
+            <span className="rb-mob-bdot">{cartCount}</span>
+          </Link>
         </div>
       </div>
 
