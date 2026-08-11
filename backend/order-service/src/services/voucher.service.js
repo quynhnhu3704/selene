@@ -51,6 +51,11 @@ export const VoucherService = {
     }
   },
 
+  // Lấy danh sách voucher cho khách hàng (không phân trang, chỉ các trường cần thiết)
+  getCustomerVouchers: async () => {
+    return await VoucherModel.findAllActiveForCustomer();
+  },
+
   // Tìm chi tiết một voucher theo ID, ném lỗi nếu không tìm thấy
   getVoucherById: async (id) => {
     const voucher = await VoucherModel.findById(id);

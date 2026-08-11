@@ -33,6 +33,17 @@ export const VoucherModel = {
     return data;
   },
 
+  // Lấy danh sách tất cả voucher đang hoạt động cho khách hàng (không phân trang, chỉ lấy trường cần thiết)
+  findAllActiveForCustomer: async () => {
+    const { data, error } = await supabase
+      .from('vouchers')
+      .select('voucher_id, code, name, discount_type, discount_value, min_order_value, max_discount_amount')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
   // Tìm một voucher cụ thể dựa theo ID của nó
   findById: async (voucherId) => {
     const { data, error } = await supabase

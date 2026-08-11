@@ -44,6 +44,20 @@ export const getAllVouchers = async (req, res, next) => {
   }
 };
 
+// Controller lấy danh sách voucher cho khách hàng (không phân trang)
+export const getCustomerVouchers = async (req, res, next) => {
+  try {
+    const vouchers = await VoucherService.getCustomerVouchers();
+    res.status(200).json({
+      status: 200,
+      message: 'Lấy danh sách voucher thành công',
+      data: vouchers
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Controller lấy chi tiết một voucher theo ID truyền trên params
 export const getVoucherById = async (req, res, next) => {
   try {
