@@ -2,6 +2,7 @@
 import express from 'express';
 import * as cartController from '../controllers/cart.controller.js';
 import * as voucherController from '../controllers/voucher.controller.js';
+import * as orderController from '../controllers/order.controller.js';
 import { verifyToken, verifyPermission } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -20,6 +21,9 @@ router.get('/vouchers/:voucherId/usages', verifyToken, verifyPermission('voucher
 router.get('/vouchers/account/:accountId/usages', verifyToken, voucherController.getVoucherUsagesByAccountId);
 
 // ================= CUSTOMER =================
+
+// ================= ORDER (CUSTOMER) =================
+router.post('/customer/place', verifyToken, orderController.handlePlaceOrder);
 
 // ================= CART (CUSTOMER) =================
 router.post('/cart/add', verifyToken, cartController.handleAddItemToCart);

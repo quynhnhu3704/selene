@@ -145,6 +145,18 @@ export const CartModel = {
     return data;
   },
 
+  // Xóa toàn bộ sản phẩm trong giỏ hàng (làm trống giỏ hàng)
+  clearCartItems: async (cartId) => {
+    const { data, error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cartId)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Xóa toàn bộ giỏ hàng
   deleteCart: async (cartId) => {
     const { data, error } = await supabase
