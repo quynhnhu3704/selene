@@ -2,7 +2,7 @@
 import { OrderModel } from '../models/order.model.js';
 import { CartModel } from '../models/cart.model.js';
 import { VoucherModel } from '../models/voucher.model.js';
-import { requestProductDetails, sendUpdateProductStock } from '../configs/rabbitmq.js';
+import { requestProductDetails, sendUpdateProductStock, sendOrderNotificationEvent } from '../configs/rabbitmq.js';
 
 const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -177,6 +177,27 @@ export const placeOrder = async (accountId, orderData) => {
     } catch (stockErr) {
       console.error('Lỗi khi gửi sự kiện cập nhật tồn kho:', stockErr.message);
       // Có thể log lại hoặc xử lý bù trừ sau (retry), không nên fail cả đơn hàng vì lỗi rabbitmq nếu đơn đã lưu
+    }
+
+    // 11. Gửi sự kiện thông báo qua email
+    try {
+      const orderNotificationData = {
+        accountId,
+        orderId: createdOrder.order_id,
+        orderCode: createdOrder.order_code,
+        recipientName: createdOrder.recipient_name,
+        recipientPhone: createdOrder.recipient_phone,
+        recipientAddress: createdOrder.recipient_address,
+        totalOriginalPrice: createdOrder.total_original_price,
+        totalDiscountPrice: createdOrder.total_discount_price,
+        shippingFee: createdOrder.shipping_fee,
+        finalAmount: createdOrder.final_amount,
+        paymentMethod: createdOrder.payment_method,
+        items: finalOrderItems // Danh sách sản phẩm mua
+      };
+      await sendOrderNotificationEvent(orderNotificationData);
+    } catch (notifyErr) {
+      console.error('Lỗi khi gửi sự kiện thông báo email:', notifyErr.message);
     }
 
     return createdOrder;

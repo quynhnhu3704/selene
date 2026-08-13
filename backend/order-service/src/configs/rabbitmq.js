@@ -103,3 +103,17 @@ export const sendUpdateProductStock = async (orderItems) => {
   channel.sendToQueue(queueName, Buffer.from(JSON.stringify(payload)));
   console.log('[x] Sent stock update event to queue:', queueName);
 };
+
+// Hàm gửi sự kiện thông báo (ví dụ: email hóa đơn) khi đặt hàng thành công
+export const sendOrderNotificationEvent = async (orderData) => {
+  if (!channel) {
+    throw new Error('RabbitMQ channel not initialized');
+  }
+
+  const queueName = 'order_notification_queue';
+  // Đảm bảo queue tồn tại và bền bỉ
+  await channel.assertQueue(queueName, { durable: true });
+
+  channel.sendToQueue(queueName, Buffer.from(JSON.stringify(orderData)));
+  console.log('[x] Sent order notification event to queue:', queueName);
+};
