@@ -23,7 +23,8 @@ router.get('/vouchers/account/:accountId/usages', verifyToken, voucherController
 // ================= CUSTOMER =================
 
 // ================= ORDER (CUSTOMER) =================
-router.post('/customer/place', verifyToken, orderController.handlePlaceOrder);
+router.post('/place-order', verifyToken, verifyPermission('order:create'), orderController.handleCreateOrder);
+router.get('/order-list', verifyToken, verifyPermission('order:view'), orderController.handleGetOrders);
 
 // ================= CART (CUSTOMER) =================
 router.post('/cart/add', verifyToken, cartController.handleAddItemToCart);

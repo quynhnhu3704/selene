@@ -41,12 +41,13 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
     items.forEach(item => {
       itemsHtml += `
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.product_name} <br>
-            <small style="color: #666;">Size: ${item.size} | Màu: ${item.color}</small>
+          <td style="padding: 15px 0; border-bottom: 1px solid #f0f0f0; min-width: 200px;">
+            <p style="margin: 0; font-weight: 500; color: #111;">${item.product_name}</p>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: #777;">Size: ${item.size} | Màu: ${item.color}</p>
           </td>
-          <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${formatCurrency(item.unit_price)}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(item.unit_price * item.quantity)}</td>
+          <td style="padding: 15px 15px; border-bottom: 1px solid #f0f0f0; text-align: center; color: #555; white-space: nowrap;">${item.quantity}</td>
+          <td style="padding: 15px 15px; border-bottom: 1px solid #f0f0f0; text-align: right; color: #555; white-space: nowrap;">${formatCurrency(item.unit_price)}</td>
+          <td style="padding: 15px 20px 15px 0; border-bottom: 1px solid #f0f0f0; text-align: right; font-weight: 600; color: #111; white-space: nowrap;">${formatCurrency(item.unit_price * item.quantity)}</td>
         </tr>
       `;
     });
@@ -55,58 +56,110 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
   const mailOptions = {
     from: `"Selene Shop" <${process.env.EMAIL_USER}>`,
     to: userEmail,
-    subject: `[Selene Shop] Hóa đơn điện tử - Đơn hàng #${orderCode}`,
+    subject: `[Selene Shop] Xác nhận đơn hàng #${orderCode}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd;">
-        <h2 style="color: #333; text-align: center;">CẢM ƠN BẠN ĐÃ ĐẶT HÀNG!</h2>
-        <p>Xin chào <strong>${recipientName}</strong>,</p>
-        <p>Đơn hàng <strong>#${orderCode}</strong> của bạn đã được đặt thành công. Dưới đây là thông tin chi tiết (Hóa đơn điện tử):</p>
-        
-        <div style="background-color: #fff; padding: 15px; margin-bottom: 20px; border: 1px solid #eee;">
-          <h3 style="margin-top: 0; color: #555;">Thông tin giao hàng</h3>
-          <p style="margin: 5px 0;"><strong>Người nhận:</strong> ${recipientName}</p>
-          <p style="margin: 5px 0;"><strong>Số điện thoại:</strong> ${recipientPhone}</p>
-          <p style="margin: 5px 0;"><strong>Địa chỉ:</strong> ${recipientAddress}</p>
-          <p style="margin: 5px 0;"><strong>Phương thức thanh toán:</strong> ${paymentMethod}</p>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; color: #333; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+        <!-- Header -->
+        <div style="text-align: center; padding: 40px 0; border-bottom: 1px solid #eaeaea; background-color: #fafafa;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 4px; color: #000;">SELENE</h1>
+          <p style="margin: 10px 0 0; font-size: 12px; letter-spacing: 2px; color: #888; text-transform: uppercase;">Xác nhận đơn hàng</p>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; background-color: #fff; margin-bottom: 20px;">
-          <thead>
-            <tr style="background-color: #f1f1f1;">
-              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Sản phẩm</th>
-              <th style="padding: 10px; text-align: center; border-bottom: 1px solid #ddd;">SL</th>
-              <th style="padding: 10px; text-align: right; border-bottom: 1px solid #ddd;">Đơn giá</th>
-              <th style="padding: 10px; text-align: right; border-bottom: 1px solid #ddd;">Thành tiền</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3" style="padding: 10px; text-align: right; border-top: 2px solid #ddd;"><strong>Tổng tiền sản phẩm:</strong></td>
-              <td style="padding: 10px; text-align: right; border-top: 2px solid #ddd;">${formatCurrency(totalOriginalPrice)}</td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding: 10px; text-align: right;"><strong>Khuyến mãi (Voucher):</strong></td>
-              <td style="padding: 10px; text-align: right; color: red;">- ${formatCurrency(totalDiscountPrice)}</td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding: 10px; text-align: right;"><strong>Phí vận chuyển:</strong></td>
-              <td style="padding: 10px; text-align: right;">${formatCurrency(shippingFee || 0)}</td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding: 10px; text-align: right; font-size: 1.2em;"><strong>Tổng thanh toán:</strong></td>
-              <td style="padding: 10px; text-align: right; font-size: 1.2em; font-weight: bold; color: #28a745;">${formatCurrency(finalAmount)}</td>
-            </tr>
-          </tfoot>
-        </table>
+        <!-- Greeting -->
+        <div style="padding: 40px 30px 20px;">
+          <h2 style="margin: 0 0 15px; font-size: 20px; font-weight: 400; color: #111;">Cảm ơn bạn đã mua sắm, ${recipientName}!</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #555;">
+            Đơn hàng <strong>#${orderCode}</strong> của bạn đã được xác nhận. Chúng tôi đang chuẩn bị các sản phẩm và sẽ thông báo cho bạn ngay khi đơn hàng được giao cho đơn vị vận chuyển.
+          </p>
+        </div>
+        
+        <!-- Order Info -->
+        <div style="padding: 0 30px;">
+          <div style="background-color: #fcfcfc; padding: 25px; border-radius: 6px; border: 1px solid #f0f0f0;">
+            <h3 style="margin: 0 0 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #eaeaea; padding-bottom: 10px;">Thông tin giao hàng</h3>
+            <table style="width: 100%; font-size: 14px; line-height: 1.6; color: #555; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 4px 0; width: 130px; color: #888;">Người nhận:</td>
+                <td style="padding: 4px 0; font-weight: 500; color: #111;">${recipientName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #888;">Số điện thoại:</td>
+                <td style="padding: 4px 0;">${recipientPhone}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #888; vertical-align: top;">Địa chỉ:</td>
+                <td style="padding: 4px 0;">${recipientAddress}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #888;">Phương thức:</td>
+                <td style="padding: 4px 0;">${paymentMethod}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
 
-        <p style="text-align: center; color: #888; font-size: 0.9em;">
-          Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua email này hoặc gọi hotline 1900 xxxx.<br>
-          Trân trọng,<br>
-          <strong>Đội ngũ Selene Shop</strong>
-        </p>
+        <!-- Order Items -->
+        <div style="padding: 30px;">
+          <h3 style="margin: 0 0 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111;">Chi tiết đơn hàng</h3>
+          <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table style="width: 100%; min-width: 450px; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr>
+                  <th style="padding: 10px 0; text-align: left; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;">Sản phẩm</th>
+                  <th style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; white-space: nowrap;">SL</th>
+                  <th style="padding: 10px 15px; text-align: right; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; white-space: nowrap;">Đơn giá</th>
+                  <th style="padding: 10px 20px 10px 0; text-align: right; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; white-space: nowrap;">Tổng</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totals -->
+          <div style="margin-top: 25px; padding-top: 15px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                <!-- Empty spacer column to push totals to the right -->
+                <td style="padding: 0;"></td>
+                <!-- Totals Box -->
+                <td style="width: 320px; padding: 0;">
+                  <div style="background-color: #f8f9fa; border: 1px solid #eaeaea; border-radius: 8px; padding: 20px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 6px 0; color: #555;">Tạm tính</td>
+                        <td style="padding: 6px 0; text-align: right; font-weight: 500; color: #111;">${formatCurrency(totalOriginalPrice)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #555;">Khuyến mãi</td>
+                        <td style="padding: 6px 0; text-align: right; color: #d9534f; font-weight: 500;">- ${formatCurrency(totalDiscountPrice)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #555;">Phí vận chuyển</td>
+                        <td style="padding: 6px 0; text-align: right; font-weight: 500; color: #111;">${formatCurrency(shippingFee || 0)}</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding: 15px 0 5px;"><div style="border-top: 1px dashed #ccc;"></div></td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0 0; font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase;">Tổng thanh toán</td>
+                        <td style="padding: 10px 0 0; text-align: right; font-size: 18px; font-weight: 700; color: #000;">${formatCurrency(finalAmount)}</td>
+                      </tr>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #fafafa; padding: 30px; text-align: center; border-top: 1px solid #eaeaea;">
+          <p style="margin: 0 0 10px; font-size: 14px; color: #555;">Bạn cần hỗ trợ?</p>
+          <p style="margin: 0 0 20px; font-size: 13px; color: #888;">Vui lòng phản hồi email này hoặc liên hệ hotline: <strong>1900 xxxx</strong></p>
+          <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #aaa;">© ${new Date().getFullYear()} SELENE SHOP. ALL RIGHTS RESERVED.</p>
+        </div>
       </div>
     `,
   };

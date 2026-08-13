@@ -34,5 +34,17 @@ export const OrderModel = {
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;
+  },
+
+  // Lấy danh sách đơn hàng theo accountId
+  findByAccountId: async (accountId) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 };

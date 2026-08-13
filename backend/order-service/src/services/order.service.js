@@ -12,7 +12,7 @@ const generateOrderCode = () => {
   return generateId('HD');
 };
 
-export const placeOrder = async (accountId, orderData) => {
+export const createOrder = async (accountId, orderData) => {
   try {
     const { recipient_name, recipient_phone, recipient_address, payment_method, voucher_code } = orderData;
 
@@ -205,5 +205,56 @@ export const placeOrder = async (accountId, orderData) => {
   } catch (error) {
     console.error('Lỗi tại placeOrder Service:', error.message);
     throw new Error(error.message || 'Không thể đặt hàng!');
+  }
+};
+
+export const getOrdersByAccountId = async (accountId) => {
+  try {
+    const orders = await OrderModel.findByAccountId(accountId);
+    
+    // Thu thập tất cả variant_id từ các order_items
+    const variantIdsSet = new Set();
+    orders.forEach(order => {
+      if (order.order_items) {
+        order.order_items.forEach(item => {
+          if (item.variant_id) variantIdsSet.add(item.variant_id);
+        });
+      }
+    });
+
+    const variantIds = Array.from(variantIdsSet);
+    
+    // Gọi RPC để lấy hình ảnh sản phẩm nếu có variant
+    if (variantIds.length > 0) {
+      try {
+        const productDetails = await requestProductDetails(variantIds);
+        
+        const productMap = {};
+        productDetails.forEach(p => {
+           productMap[p.variant_id] = p;
+        });
+
+        // Gắn image_url vào từng order_item
+        orders.forEach(order => {
+          if (order.order_items) {
+            order.order_items.forEach(item => {
+               if (productMap[item.variant_id]) {
+                 item.image_url = productMap[item.variant_id].image_url;
+               } else {
+                 item.image_url = null;
+               }
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Lỗi khi lấy hình ảnh sản phẩm từ RabbitMQ:', err.message);
+        // Vẫn trả về orders nếu gọi RPC thất bại, chỉ là không có hình ảnh
+      }
+    }
+
+    return orders;
+  } catch (error) {
+    console.error('Lỗi tại getOrdersByAccountId Service:', error.message);
+    throw new Error('Không thể lấy danh sách đơn hàng!');
   }
 };
