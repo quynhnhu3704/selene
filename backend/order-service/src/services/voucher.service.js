@@ -52,8 +52,67 @@ export const VoucherService = {
   },
 
   // Lấy danh sách voucher cho khách hàng (không phân trang, chỉ các trường cần thiết)
-  getCustomerVouchers: async () => {
-    return await VoucherModel.findAllActiveForCustomer();
+  getCustomerVouchers: async (accountId, orderValue = null) => {
+    const activeVouchers = await VoucherModel.findAllActiveForCustomer();
+    const now = new Date();
+    
+    const validVouchers = [];
+    
+    for (const voucher of activeVouchers) {
+      // 1. Kiểm tra thời hạn sử dụng
+      if (now < new Date(voucher.start_date) || now > new Date(voucher.end_date)) {
+        continue;
+      }
+      
+      // Kiểm tra số lượng voucher trên hệ thống đã hết chưa
+      if (voucher.total_quantity > 0 && voucher.used_quantity >= voucher.total_quantity) {
+        continue;
+      }
+
+      // 2. Kiểm tra giá trị đơn hàng tối thiểu (nếu có truyền giá trị đơn hàng)
+      if (orderValue !== null && voucher.min_order_value && orderValue < voucher.min_order_value) {
+        continue;
+      }
+
+      // 3. Kiểm tra số lần khách hàng đã sử dụng voucher (per_user_limit)
+      if (accountId && voucher.per_user_limit > 0) {
+        const usageCount = await VoucherModel.countUsagesByVoucherAndAccount(voucher.voucher_id, accountId);
+        if (usageCount >= voucher.per_user_limit) {
+          continue;
+        }
+      }
+      
+      // Chỉ trả về các trường cần thiết
+      validVouchers.push({
+        voucher_id: voucher.voucher_id,
+        code: voucher.code,
+        name: voucher.name,
+        discount_type: voucher.discount_type,
+        discount_value: voucher.discount_value,
+        min_order_value: voucher.min_order_value,
+        max_discount_amount: voucher.max_discount_amount
+      });
+    }
+
+    // Tính toán số tiền sẽ giảm được cho mỗi voucher dựa trên orderValue hiện tại
+    validVouchers.forEach(v => {
+      let estimatedDiscount = 0;
+      if (v.discount_type === 'percentage') {
+        estimatedDiscount = ((orderValue || 0) * v.discount_value) / 100;
+        if (v.max_discount_amount && estimatedDiscount > v.max_discount_amount) {
+          estimatedDiscount = v.max_discount_amount;
+        }
+      } else if (v.discount_type === 'fixed_amount' || v.discount_type === 'free_shipping') {
+        estimatedDiscount = v.discount_value;
+      }
+      // Lưu tạm vào object để sắp xếp (Frontend cũng có thể dùng biến này để hiển thị)
+      v.estimated_discount = estimatedDiscount; 
+    });
+
+    // Sắp xếp danh sách giảm dần theo số tiền giảm được
+    validVouchers.sort((a, b) => b.estimated_discount - a.estimated_discount);
+
+    return validVouchers;
   },
 
   // Tìm chi tiết một voucher theo ID, ném lỗi nếu không tìm thấy

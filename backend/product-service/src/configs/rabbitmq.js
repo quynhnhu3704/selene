@@ -16,6 +16,7 @@ export const connectRabbitMQ = async () => {
     
     // 3. Kích hoạt hàm lắng nghe queue ngay lập tức sau khi kết nối thành công
     await listenForCartProductDetails();
+    await listenForStockUpdate();
   } catch (error) {
     console.error('Failed to connect to RabbitMQ:', error.message);
   }
@@ -122,4 +123,53 @@ export const listenForCartProductDetails = async () => {
       // Lúc này RabbitMQ mới xóa tin nhắn khỏi queue và sẵn sàng phân phối tin nhắn mới (nhờ prefetch(1))
       channel.ack(msg);
     });
+};
+
+// Hàm lắng nghe yêu cầu cập nhật (trừ) tồn kho sau khi đơn hàng được đặt thành công
+export const listenForStockUpdate = async () => {
+  if (!channel) throw new Error('RabbitMQ channel is not initialized');
+
+  const queueName = 'update_stock_queue';
+  await channel.assertQueue(queueName, { durable: false });
+
+  console.log(`[x] Awaiting stock update events on ${queueName}`);
+
+  channel.consume(queueName, async (msg) => {
+    try {
+      const items = JSON.parse(msg.content.toString());
+      console.log(`[.] Received stock update event for variants:`, items);
+
+      for (const item of items) {
+        // Lấy số lượng tồn kho hiện tại
+        const { data: variant, error: fetchErr } = await supabase
+          .from('product_variants')
+          .select('stock_quantity')
+          .eq('variant_id', item.variant_id)
+          .single();
+
+        if (fetchErr || !variant) {
+          console.error(`Không tìm thấy variant ${item.variant_id} hoặc lỗi DB:`, fetchErr);
+          continue;
+        }
+
+        const newStock = Math.max(0, variant.stock_quantity - item.quantity);
+
+        // Cập nhật tồn kho mới
+        const { error: updateErr } = await supabase
+          .from('product_variants')
+          .update({ stock_quantity: newStock })
+          .eq('variant_id', item.variant_id);
+
+        if (updateErr) {
+          console.error(`Lỗi cập nhật tồn kho cho variant ${item.variant_id}:`, updateErr);
+        } else {
+          console.log(`[+] Cập nhật thành công tồn kho cho variant ${item.variant_id}: ${variant.stock_quantity} -> ${newStock}`);
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi xử lý sự kiện cập nhật tồn kho:', err);
+    }
+    // Xác nhận đã nhận và xử lý xong message
+    channel.ack(msg);
+  });
 };

@@ -84,3 +84,22 @@ export const requestProductDetails = async (variantIds) => {
     });
   });
 };
+
+// Hàm gửi sự kiện cập nhật tồn kho khi đặt hàng thành công
+export const sendUpdateProductStock = async (orderItems) => {
+  if (!channel) {
+    throw new Error('RabbitMQ channel not initialized');
+  }
+
+  const queueName = 'update_stock_queue';
+  await channel.assertQueue(queueName, { durable: false });
+
+  // Lọc ra các thông tin cần thiết: variant_id và quantity
+  const payload = orderItems.map(item => ({
+    variant_id: item.variant_id,
+    quantity: item.quantity
+  }));
+
+  channel.sendToQueue(queueName, Buffer.from(JSON.stringify(payload)));
+  console.log('[x] Sent stock update event to queue:', queueName);
+};

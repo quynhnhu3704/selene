@@ -2,17 +2,14 @@
 import { OrderModel } from '../models/order.model.js';
 import { CartModel } from '../models/cart.model.js';
 import { VoucherModel } from '../models/voucher.model.js';
-import { requestProductDetails } from '../configs/rabbitmq.js';
+import { requestProductDetails, sendUpdateProductStock } from '../configs/rabbitmq.js';
 
 const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
 const generateOrderCode = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `HD-${year}-${rand}`;
+  return generateId('HD');
 };
 
 export const placeOrder = async (accountId, orderData) => {
@@ -173,6 +170,14 @@ export const placeOrder = async (accountId, orderData) => {
     // 9. Xóa sản phẩm khỏi giỏ hàng và xóa luôn giỏ hàng
     await CartModel.clearCartItems(cart.cart_id);
     await CartModel.deleteCart(cart.cart_id);
+
+    // 10. Trừ số lượng tồn kho của sản phẩm
+    try {
+      await sendUpdateProductStock(finalOrderItems);
+    } catch (stockErr) {
+      console.error('Lỗi khi gửi sự kiện cập nhật tồn kho:', stockErr.message);
+      // Có thể log lại hoặc xử lý bù trừ sau (retry), không nên fail cả đơn hàng vì lỗi rabbitmq nếu đơn đã lưu
+    }
 
     return createdOrder;
 

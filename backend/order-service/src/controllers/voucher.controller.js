@@ -1,5 +1,6 @@
 // backend\order-service\src\controllers\voucher.controller.js
 import { VoucherService } from '../services/voucher.service.js';
+import * as cartService from '../services/cart.service.js';
 
 // Controller xử lý request tạo mới voucher và trả về kết quả
 export const createVoucher = async (req, res, next) => {
@@ -47,7 +48,15 @@ export const getAllVouchers = async (req, res, next) => {
 // Controller lấy danh sách voucher cho khách hàng (không phân trang)
 export const getCustomerVouchers = async (req, res, next) => {
   try {
-    const vouchers = await VoucherService.getCustomerVouchers();
+    const accountId = req.user?.accountId;
+    let orderValue = 0;
+    if (accountId) {
+      // Tự động lấy giỏ hàng của user và tính tổng tiền
+      const cartInfo = await cartService.getCart(accountId);
+      orderValue = cartInfo.total_price || 0;
+    }
+    
+    const vouchers = await VoucherService.getCustomerVouchers(accountId, orderValue);
     res.status(200).json({
       status: 200,
       message: 'Lấy danh sách voucher thành công',
