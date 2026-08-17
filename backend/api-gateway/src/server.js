@@ -1,11 +1,11 @@
 // backend\api-gateway\src\server.js
-import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import morgan from 'morgan';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import axios from 'axios';
-import cookieParser from 'cookie-parser';
+import express from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import morgan from "morgan";
+import cors from "cors";
+import dotenv from "dotenv";
+import axios from "axios";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -13,13 +13,15 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Middleware
-app.use(morgan('dev')); // Logging
+app.use(morgan("dev")); // Logging
 app.use(cookieParser()); // Kích hoạt middleware đọc Cookie
 
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  }),
+);
 
 // Check required env vars
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
@@ -27,68 +29,88 @@ const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL;
 
 if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
-  console.error('Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL).');
+  console.error(
+    "Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL).",
+  );
   process.exit(1);
 }
 
 // Routes - API Gateway
-app.use('/api/auth', createProxyMiddleware({
-  target: AUTH_SERVICE_URL,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/auth': '', 
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    // Nếu client gửi cookie lên Gateway, đảm bảo header Cookie được giữ nguyên sang Auth Service
-    if (req.headers.cookie) {
-      proxyReq.setHeader('Cookie', req.headers.cookie);
-    }
-  },
-  onError: (err, req, res) => {
-    console.error('Proxy Error (Auth):', err);
-    res.status(502).json({ success: false, message: 'Auth Service Unavailable' });
-  }
-}));
+app.use(
+  "/api/auth",
+  createProxyMiddleware({
+    target: AUTH_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/auth": "",
+    },
+    onProxyReq: (proxyReq, req, res) => {
+      // Nếu client gửi cookie lên Gateway, đảm bảo header Cookie được giữ nguyên sang Auth Service
+      if (req.headers.cookie) {
+        proxyReq.setHeader("Cookie", req.headers.cookie);
+      }
+    },
+    onError: (err, req, res) => {
+      console.error("Proxy Error (Auth):", err);
+      res
+        .status(502)
+        .json({ success: false, message: "Auth Service Unavailable" });
+    },
+  }),
+);
 
+app.use(
+  "/api/products",
+  createProxyMiddleware({
+    target: PRODUCT_SERVICE_URL,
+    changeOrigin: true,
+    onError: (err, req, res) => {
+      console.error("Proxy Error (Product):", err);
+      res
+        .status(502)
+        .json({ success: false, message: "Product Service Unavailable" });
+    },
+  }),
+);
 
-app.use('/api/products', createProxyMiddleware({
-  target: PRODUCT_SERVICE_URL,
-  changeOrigin: true,
-  onError: (err, req, res) => {
-    console.error('Proxy Error (Product):', err);
-    res.status(502).json({ success: false, message: 'Product Service Unavailable' });
-  }
-}));
-
-app.use('/api/orders', createProxyMiddleware({
-  target: ORDER_SERVICE_URL,
-  changeOrigin: true,
-  onError: (err, req, res) => {
-    console.error('Proxy Error (Order):', err);
-    res.status(502).json({ success: false, message: 'Order Service Unavailable' });
-  }
-}));
+app.use(
+  "/api/orders",
+  createProxyMiddleware({
+    target: ORDER_SERVICE_URL,
+    changeOrigin: true,
+    onError: (err, req, res) => {
+      console.error("Proxy Error (Order):", err);
+      res
+        .status(502)
+        .json({ success: false, message: "Order Service Unavailable" });
+    },
+  }),
+);
 
 // Health Check Endpoint
-app.get('/health', async (req, res) => {
+app.get("/health", async (req, res) => {
   const healthStatus = {
-    gateway: 'UP',
-    auth: 'DOWN',
-    order: 'DOWN'
+    gateway: "UP",
+    auth: "DOWN",
+    order: "DOWN",
   };
 
   try {
-    const authRes = await axios.get(`${AUTH_SERVICE_URL}/health`, { timeout: 2000 });
-    if (authRes.data.status === 'UP') healthStatus.auth = 'UP';
+    const authRes = await axios.get(`${AUTH_SERVICE_URL}/health`, {
+      timeout: 2000,
+    });
+    if (authRes.data.status === "UP") healthStatus.auth = "UP";
   } catch (error) {
-    console.error('Auth service health check failed:', error.message);
+    console.error("Auth service health check failed:", error.message);
   }
 
   try {
-    const orderRes = await axios.get(`${ORDER_SERVICE_URL}/health`, { timeout: 2000 });
-    if (orderRes.data.status === 'UP') healthStatus.order = 'UP';
+    const orderRes = await axios.get(`${ORDER_SERVICE_URL}/health`, {
+      timeout: 2000,
+    });
+    if (orderRes.data.status === "UP") healthStatus.order = "UP";
   } catch (error) {
-    console.error('Order service health check failed:', error.message);
+    console.error("Order service health check failed:", error.message);
   }
 
   res.json(healthStatus);
@@ -96,10 +118,10 @@ app.get('/health', async (req, res) => {
 
 // Centralized Error Handling for Gateway
 app.use((err, req, res, next) => {
-  console.error('Gateway Error:', err.stack);
+  console.error("Gateway Error:", err.stack);
   res.status(500).json({
     success: false,
-    message: 'Internal Gateway Error'
+    message: "Internal Gateway Error",
   });
 });
 

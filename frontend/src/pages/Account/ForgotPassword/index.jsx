@@ -31,8 +31,7 @@ export default function ForgotPassword() {
 
     if (!trimmedEmail) {
       newErrors.email = "Vui lòng nhập email";
-    }
-    else if (!emailRegex.test(trimmedEmail)) {
+    } else if (!emailRegex.test(trimmedEmail)) {
       newErrors.email = "Email không hợp lệ";
     }
 
@@ -57,9 +56,10 @@ export default function ForgotPassword() {
       setTimeout(() => {
         navigate("/tai-khoan/dang-nhap");
       }, 1800);
-
     } catch (err) {
-      toast.error(err.response?.data?.message || "Khôi phục mật khẩu thất bại!");
+      toast.error(
+        err.response?.data?.message || "Khôi phục mật khẩu thất bại!",
+      );
     }
   };
 
@@ -79,18 +79,27 @@ export default function ForgotPassword() {
 
       <div className="login-page">
         <div className="login-card">
-
           <h1 className="form-title">Quên mật khẩu</h1>
 
           <form onSubmit={handleSubmit} noValidate>
-
             <div>
               <div className="form-label-row">
-                <span className="form-label">Email <span className="text-danger">*</span></span>
+                <span className="form-label">
+                  Email <span className="text-danger">*</span>
+                </span>
               </div>
 
               <div className="form-input-wrap">
-                <input type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`} placeholder="Nhập email đã đăng ký" value={email} onChange={handleEmailChange} maxLength={100} autoComplete="email" required />
+                <input
+                  type="email"
+                  className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                  placeholder="Nhập email đã đăng ký"
+                  value={email}
+                  onChange={handleEmailChange}
+                  maxLength={100}
+                  autoComplete="email"
+                  required
+                />
                 {errors.email && (
                   <div className="invalid-feedback d-block">{errors.email}</div>
                 )}
@@ -99,20 +108,31 @@ export default function ForgotPassword() {
 
             <div className="row">
               <div className="col-6">
-                <button type="reset" onClick={handleReset} className="form-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
+                <button
+                  type="reset"
+                  onClick={handleReset}
+                  className="form-btn btn btn-outline-dark fw-semibold w-100"
+                >
+                  Đặt lại
+                </button>
               </div>
 
               <div className="col-6">
-                <button type="submit" className="form-btn btn btn-dark fw-semibold w-100"><i className="bi bi-send me-1"></i> Gửi</button>
+                <button
+                  type="submit"
+                  className="form-btn btn btn-dark fw-semibold w-100"
+                >
+                  <i className="bi bi-send me-1"></i> Gửi
+                </button>
               </div>
             </div>
-
           </form>
 
           <div className="form-register-row">
-            <Link to="/tai-khoan/dang-nhap"><i className="bi bi-arrow-left me-1"></i> Quay lại đăng nhập</Link>
+            <Link to="/tai-khoan/dang-nhap">
+              <i className="bi bi-arrow-left me-1"></i> Quay lại đăng nhập
+            </Link>
           </div>
-
         </div>
       </div>
     </>

@@ -6,16 +6,41 @@ import Swal from "sweetalert2";
 import logo from "../../assets/images/logo.png";
 
 const MENU = [
-  { key: "dashboard",  label: "Dashboard",       icon: "bi-speedometer2",   path: "/admin" },
-  { key: "products",   label: "Sản phẩm",         icon: "bi-box-seam",       path: "/admin/san-pham" },
-  { key: "orders",     label: "Đơn hàng",          icon: "bi-receipt",        path: "/admin/don-hang" },
-  { key: "users",      label: "Người dùng",        icon: "bi-people",         path: "/admin/nguoi-dung" },
-  { key: "categories", label: "Danh mục",          icon: "bi-tag",            path: "/admin/danh-muc" },
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: "bi-speedometer2",
+    path: "/admin",
+  },
+  {
+    key: "products",
+    label: "Sản phẩm",
+    icon: "bi-box-seam",
+    path: "/admin/san-pham",
+  },
+  {
+    key: "orders",
+    label: "Đơn hàng",
+    icon: "bi-receipt",
+    path: "/admin/don-hang",
+  },
+  {
+    key: "users",
+    label: "Người dùng",
+    icon: "bi-people",
+    path: "/admin/nguoi-dung",
+  },
+  {
+    key: "categories",
+    label: "Danh mục",
+    icon: "bi-tag",
+    path: "/admin/danh-muc",
+  },
 ];
 
 export default function AdminLayout() {
-  const location  = useLocation();
-  const navigate  = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
   const active = (path) =>
@@ -35,9 +60,12 @@ export default function AdminLayout() {
       focusCancel: true,
       buttonsStyling: false,
       customClass: {
-        popup: "se-swal-popup", title: "se-swal-title",
-        htmlContainer: "se-swal-text", confirmButton: "se-btn-confirm",
-        cancelButton: "se-btn-cancel", actions: "se-swal-actions",
+        popup: "se-swal-popup",
+        title: "se-swal-title",
+        htmlContainer: "se-swal-text",
+        confirmButton: "se-btn-confirm",
+        cancelButton: "se-btn-cancel",
+        actions: "se-swal-actions",
       },
     });
     if (!result.isConfirmed) return;
@@ -47,7 +75,9 @@ export default function AdminLayout() {
 
   return (
     <>
-      <Helmet><title>Admin | Selene</title></Helmet>
+      <Helmet>
+        <title>Admin | Selene</title>
+      </Helmet>
 
       <style>{`
         .adm-wrap   { display: flex; min-height: 100vh; background: #f8f9fa; }
@@ -179,7 +209,6 @@ export default function AdminLayout() {
       `}</style>
 
       <div className="adm-wrap">
-
         {/* ── SIDEBAR ── */}
         <aside className="adm-sidebar">
           <div className="adm-logo-wrap">
@@ -214,11 +243,16 @@ export default function AdminLayout() {
         {/* ── MAIN AREA ── */}
         <div className="adm-main">
           <div className="adm-topbar">
-            <button className="adm-toggle-btn" onClick={() => setCollapsed(c => !c)}>
-              <i className={`bi ${collapsed ? "bi-layout-sidebar-inset" : "bi-layout-sidebar-inset-reverse"}`} />
+            <button
+              className="adm-toggle-btn"
+              onClick={() => setCollapsed((c) => !c)}
+            >
+              <i
+                className={`bi ${collapsed ? "bi-layout-sidebar-inset" : "bi-layout-sidebar-inset-reverse"}`}
+              />
             </button>
             <span className="adm-topbar-title">
-              {MENU.find(m => active(m.path))?.label ?? "Admin"}
+              {MENU.find((m) => active(m.path))?.label ?? "Admin"}
             </span>
             <div className="adm-topbar-right">
               <div className="adm-admin-badge">

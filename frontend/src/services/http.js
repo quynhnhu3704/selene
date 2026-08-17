@@ -1,15 +1,11 @@
 // frontend\src\services\http.js
 import axios from "axios";
-import {
-  getAccessToken,
-  saveAccessToken,
-  logout
-} from "../utils/auth";
+import { getAccessToken, saveAccessToken, logout } from "../utils/auth";
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 10000,
-  withCredentials: true
+  withCredentials: true,
 });
 
 // interceptor (sau này thêm token)
@@ -27,14 +23,14 @@ let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -52,14 +48,16 @@ http.interceptors.response.use(
       !originalRequest.url.includes("/auth/refresh-token")
     ) {
       if (isRefreshing) {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = 'Bearer ' + token;
-          return http(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = "Bearer " + token;
+            return http(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
@@ -69,12 +67,10 @@ http.interceptors.response.use(
         const res = await http.post("/auth/refresh-token");
         const newAccessToken = res.data.accessToken;
         saveAccessToken(newAccessToken);
-        originalRequest.headers.Authorization =
-          `Bearer ${newAccessToken}`;
-        
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
         processQueue(null, newAccessToken);
         return http(originalRequest);
-
       } catch (err) {
         processQueue(err, null);
         logout();
@@ -85,7 +81,7 @@ http.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default http;

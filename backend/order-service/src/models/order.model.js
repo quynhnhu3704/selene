@@ -1,10 +1,10 @@
-import { supabase } from '../configs/supabase.js';
+import { supabase } from "../configs/supabase.js";
 
 export const OrderModel = {
   // Tạo đơn hàng mới
   createOrder: async (orderData) => {
     const { data, error } = await supabase
-      .from('orders')
+      .from("orders")
       .insert([orderData])
       .select()
       .single();
@@ -16,7 +16,7 @@ export const OrderModel = {
   // Tạo chi tiết đơn hàng (order items)
   createOrderItems: async (orderItemsData) => {
     const { data, error } = await supabase
-      .from('order_items')
+      .from("order_items")
       .insert(orderItemsData)
       .select();
 
@@ -27,24 +27,24 @@ export const OrderModel = {
   // Tìm đơn hàng theo ID
   findById: async (orderId) => {
     const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('order_id', orderId)
+      .from("orders")
+      .select("*")
+      .eq("order_id", orderId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
   // Lấy danh sách đơn hàng theo accountId
   findByAccountId: async (accountId) => {
     const { data, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('account_id', accountId)
-      .order('created_at', { ascending: false });
+      .from("orders")
+      .select("*, order_items(*)")
+      .eq("account_id", accountId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data;
-  }
+  },
 };

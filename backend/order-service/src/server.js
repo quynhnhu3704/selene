@@ -1,28 +1,30 @@
 // backend\order-service\src\server.js
-import express from 'express';
-import morgan from 'morgan';
-import cors from 'cors';
-import { config } from './configs/index.js';
-import orderRoutes from './routes/order.routes.js';
-import { errorHandler } from './middlewares/error.middleware.js';
-import { connectRabbitMQ } from './configs/rabbitmq.js';
+import express from "express";
+import morgan from "morgan";
+import cors from "cors";
+import { config } from "./configs/index.js";
+import orderRoutes from "./routes/order.routes.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
+import { connectRabbitMQ } from "./configs/rabbitmq.js";
 
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Routes
-app.use('/', orderRoutes);
+app.use("/", orderRoutes);
 
 // Health Check
-app.get('/health', (req, res) => {
-  res.json({ service: 'order', status: 'UP' });
+app.get("/health", (req, res) => {
+  res.json({ service: "order", status: "UP" });
 });
 
 // Error Handling

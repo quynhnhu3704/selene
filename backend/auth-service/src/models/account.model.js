@@ -1,53 +1,53 @@
 // backend\auth-service\src\models\account.model.js
-import { supabase } from '../configs/supabase.js';
+import { supabase } from "../configs/supabase.js";
 
 export const AccountModel = {
   // Tìm tài khoản theo Email
   findByEmail: async (email) => {
     const { data, error } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('email', email)
+      .from("accounts")
+      .select("*")
+      .eq("email", email)
       .single();
-    if (error && error.code !== 'PGRST116') throw error; // Bỏ qua lỗi không tìm thấy dòng nào
+    if (error && error.code !== "PGRST116") throw error; // Bỏ qua lỗi không tìm thấy dòng nào
     return data;
   },
 
   // Tìm tài khoản theo ID
   findById: async (accountId) => {
     const { data, error } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('account_id', accountId)
+      .from("accounts")
+      .select("*")
+      .eq("account_id", accountId)
       .single();
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
   // Tìm vai trò (Role) theo tên
   findRoleByName: async (roleName) => {
     const { data, error } = await supabase
-      .from('roles')
-      .select('role_id')
-      .eq('name', roleName)
+      .from("roles")
+      .select("role_id")
+      .eq("name", roleName)
       .single();
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
   // Lấy danh sách quyền hạn dựa theo role_id
   getPermissionsByRoleId: async (roleId) => {
     const { data } = await supabase
-      .from('role_permissions')
-      .select('permissions(name)')
-      .eq('role_id', roleId);
-    return data ? data.map(p => p.permissions?.name).filter(Boolean) : [];
+      .from("role_permissions")
+      .select("permissions(name)")
+      .eq("role_id", roleId);
+    return data ? data.map((p) => p.permissions?.name).filter(Boolean) : [];
   },
 
   // Thêm mới tài khoản
   createAccount: async (accountData) => {
     const { data, error } = await supabase
-      .from('accounts')
+      .from("accounts")
       .insert([accountData])
       .select()
       .single();
@@ -58,7 +58,7 @@ export const AccountModel = {
   // Tạo mới hồ sơ người dùng
   createProfile: async (profileData) => {
     const { error } = await supabase
-      .from('user_profiles')
+      .from("user_profiles")
       .insert([profileData]);
     if (error) throw error;
     return true;
@@ -67,9 +67,9 @@ export const AccountModel = {
   // Cập nhật thông tin tài khoản (Ví dụ: mật khẩu)
   updateAccount: async (email, updateData) => {
     const { error } = await supabase
-      .from('accounts')
+      .from("accounts")
       .update(updateData)
-      .eq('email', email);
+      .eq("email", email);
     if (error) throw error;
     return true;
   },
@@ -77,8 +77,8 @@ export const AccountModel = {
   // Đếm tổng số tài khoản hiện có trong bảng accounts
   countAccounts: async () => {
     const { count, error } = await supabase
-      .from('accounts')
-      .select('account_id', { count: 'exact', head: true });
+      .from("accounts")
+      .select("account_id", { count: "exact", head: true });
     if (error) throw error;
     return count || 0;
   },
@@ -86,32 +86,34 @@ export const AccountModel = {
   // Lấy danh sách accounts theo khoảng phân trang
   getAccountsInRange: async (from, to) => {
     const { data, error } = await supabase
-      .from('accounts')
-      .select(`
+      .from("accounts")
+      .select(
+        `
       account_id,
       email,
       role_name,
       status,
       created_at
-    `)
-      .order('created_at', { ascending: false })
+    `,
+      )
+      .order("created_at", { ascending: false })
       .range(from, to);
 
     if (error) throw error;
     return data || [];
   },
 
-   // Thực thi thay đổi vào bảng accounts
+  // Thực thi thay đổi vào bảng accounts
   updateAccountById: async (accountId, accountData) => {
     const dataWithTime = {
       ...accountData,
-      updated_at: new Date() // Tự động chèn thời gian cập nhật hiện tại
+      updated_at: new Date(), // Tự động chèn thời gian cập nhật hiện tại
     };
 
     const { error } = await supabase
-      .from('accounts')
+      .from("accounts")
       .update(dataWithTime)
-      .eq('account_id', accountId);
+      .eq("account_id", accountId);
 
     if (error) throw error;
   },
@@ -119,10 +121,10 @@ export const AccountModel = {
   // Xóa tài khoản (dùng để rollback nếu bị lỗi giữa chừng)
   deleteAccountById: async (accountId) => {
     const { error } = await supabase
-      .from('accounts')
+      .from("accounts")
       .delete()
-      .eq('account_id', accountId);
+      .eq("account_id", accountId);
     if (error) throw error;
     return true;
-  }
+  },
 };

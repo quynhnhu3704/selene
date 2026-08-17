@@ -1,56 +1,59 @@
 // backend\order-service\src\models\cart.model.js
-import { supabase } from '../configs/supabase.js';
+import { supabase } from "../configs/supabase.js";
 
 export const CartModel = {
   // Tìm giỏ hàng hiện có của User
   findByAccountId: async (accountId) => {
     const { data, error } = await supabase
-      .from('carts')
-      .select('cart_id')
-      .eq('account_id', accountId)
+      .from("carts")
+      .select("cart_id")
+      .eq("account_id", accountId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error; 
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
   // Tìm kiếm xem item đã tồn tại trong giỏ chưa
   findItemInCart: async (cartId, productId, variantId) => {
     const { data, error } = await supabase
-      .from('cart_items')
-      .select('cart_item_id, quantity')
-      .eq('cart_id', cartId)
-      .eq('product_id', productId)
-      .eq('variant_id', variantId)
+      .from("cart_items")
+      .select("cart_item_id, quantity")
+      .eq("cart_id", cartId)
+      .eq("product_id", productId)
+      .eq("variant_id", variantId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error; 
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
   // Tính tổng số lượng tất cả sản phẩm trong một giỏ hàng
   getTotalQuantity: async (cartId) => {
     const { data, error } = await supabase
-      .from('cart_items')
-      .select('quantity')
-      .eq('cart_id', cartId);
+      .from("cart_items")
+      .select("quantity")
+      .eq("cart_id", cartId);
 
     if (error) throw error;
 
     // Tính tổng trường quantity của tất cả các dòng tìm được
-    const totalQuantity = data.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const totalQuantity = data.reduce(
+      (sum, item) => sum + (item.quantity || 0),
+      0,
+    );
     return totalQuantity;
   },
 
   // Cập nhật lại số lượng của item cũ
   updateItemQuantity: async (cartItemId, newQuantity) => {
     const { data, error } = await supabase
-      .from('cart_items')
-      .update({ 
+      .from("cart_items")
+      .update({
         quantity: newQuantity,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
-      .eq('cart_item_id', cartItemId)
+      .eq("cart_item_id", cartItemId)
       .select()
       .single();
 
@@ -61,7 +64,7 @@ export const CartModel = {
   // Tạo giỏ hàng mới
   createCart: async (cartData) => {
     const { data, error } = await supabase
-      .from('carts')
+      .from("carts")
       .insert([cartData])
       .select()
       .single();
@@ -73,7 +76,7 @@ export const CartModel = {
   // Thêm sản phẩm vào giỏ hàng
   addCartItem: async (itemData) => {
     const { data, error } = await supabase
-      .from('cart_items')
+      .from("cart_items")
       .insert([itemData])
       .select()
       .single();
@@ -85,10 +88,10 @@ export const CartModel = {
   // Lấy danh sách item trong giỏ hàng
   getCartItems: async (cartId) => {
     const { data, error } = await supabase
-      .from('cart_items')
-      .select('*')
-      .eq('cart_id', cartId)
-      .order('created_at', { ascending: false });
+      .from("cart_items")
+      .select("*")
+      .eq("cart_id", cartId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data;
@@ -97,9 +100,9 @@ export const CartModel = {
   // Xóa sản phẩm khỏi giỏ hàng
   removeCartItem: async (cartItemId) => {
     const { data, error } = await supabase
-      .from('cart_items')
+      .from("cart_items")
       .delete()
-      .eq('cart_item_id', cartItemId)
+      .eq("cart_item_id", cartItemId)
       .select()
       .single();
 
@@ -112,45 +115,49 @@ export const CartModel = {
   verifyItemBelongsToAccount: async (cartItemId, accountId) => {
     // Join 2 bảng cart_items và carts để kiểm tra
     const { data, error } = await supabase
-      .from('cart_items')
-      .select(`
+      .from("cart_items")
+      .select(
+        `
         cart_item_id,
         carts!inner (
           account_id
         )
-      `)
-      .eq('cart_item_id', cartItemId)
-      .eq('carts.account_id', accountId)
+      `,
+      )
+      .eq("cart_item_id", cartItemId)
+      .eq("carts.account_id", accountId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data !== null;
   },
 
   // Lấy thông tin chi tiết một item trong giỏ (kèm check quyền)
   getCartItemByIdAndAccount: async (cartItemId, accountId) => {
     const { data, error } = await supabase
-      .from('cart_items')
-      .select(`
+      .from("cart_items")
+      .select(
+        `
         *,
         carts!inner (
           account_id
         )
-      `)
-      .eq('cart_item_id', cartItemId)
-      .eq('carts.account_id', accountId)
+      `,
+      )
+      .eq("cart_item_id", cartItemId)
+      .eq("carts.account_id", accountId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
   // Xóa toàn bộ sản phẩm trong giỏ hàng (làm trống giỏ hàng)
   clearCartItems: async (cartId) => {
     const { data, error } = await supabase
-      .from('cart_items')
+      .from("cart_items")
       .delete()
-      .eq('cart_id', cartId)
+      .eq("cart_id", cartId)
       .select();
 
     if (error) throw error;
@@ -160,13 +167,13 @@ export const CartModel = {
   // Xóa toàn bộ giỏ hàng
   deleteCart: async (cartId) => {
     const { data, error } = await supabase
-      .from('carts')
+      .from("carts")
       .delete()
-      .eq('cart_id', cartId)
+      .eq("cart_id", cartId)
       .select()
       .single();
 
     if (error) throw error;
     return data;
-  }
+  },
 };

@@ -297,10 +297,10 @@ const PRODUCT = {
   colors: [
     { label: "Trắng 001", hex: "#f5f5f0", border: "#ccc" },
     { label: "Xanh Navy", hex: "#1a2f5a", border: "#1a2f5a" },
-    { label: "Đen",       hex: "#111",    border: "#111" },
-    { label: "Xanh Rêu",  hex: "#b5b87a", border: "#b5b87a" },
-    { label: "Hồng",      hex: "#f4b8c1", border: "#f4b8c1" },
-    { label: "Xanh Đậm",  hex: "#1b4332", border: "#1b4332" },
+    { label: "Đen", hex: "#111", border: "#111" },
+    { label: "Xanh Rêu", hex: "#b5b87a", border: "#b5b87a" },
+    { label: "Hồng", hex: "#f4b8c1", border: "#f4b8c1" },
+    { label: "Xanh Đậm", hex: "#1b4332", border: "#1b4332" },
   ],
   sizes: ["S", "M", "L", "XL", "2XL"],
   images: [
@@ -332,23 +332,49 @@ const PRODUCT = {
     { q: "Sản phẩm không vừa có thể đổi trả không?", a: "" },
   ],
   commits: [
-    { icon: "bi-arrow-repeat",  text1: "Đổi, trả miễn phí",   text2: "tại nhà nếu không hài lòng", link: "Xem chính sách ↗", zalo: false },
-    { icon: "bi-truck",         text1: "Giao trong 3-5 ngày",  text2: "và freeship đơn từ 498k",    link: "",               zalo: false },
-    { icon: "bi-shield-check",  text1: "Cam kết bảo mật",      text2: "thông tin khách hàng",        link: "",               zalo: false },
-    { icon: "bi-chat-dots",     text1: "Cần tư vấn thêm?",     text2: "",                            link: "Chat ngay!",     zalo: true  },
+    {
+      icon: "bi-arrow-repeat",
+      text1: "Đổi, trả miễn phí",
+      text2: "tại nhà nếu không hài lòng",
+      link: "Xem chính sách ↗",
+      zalo: false,
+    },
+    {
+      icon: "bi-truck",
+      text1: "Giao trong 3-5 ngày",
+      text2: "và freeship đơn từ 498k",
+      link: "",
+      zalo: false,
+    },
+    {
+      icon: "bi-shield-check",
+      text1: "Cam kết bảo mật",
+      text2: "thông tin khách hàng",
+      link: "",
+      zalo: false,
+    },
+    {
+      icon: "bi-chat-dots",
+      text1: "Cần tư vấn thêm?",
+      text2: "",
+      link: "Chat ngay!",
+      zalo: true,
+    },
   ],
 };
 
-function fmt(n) { return n.toLocaleString("vi-VN") + "đ"; }
+function fmt(n) {
+  return n.toLocaleString("vi-VN") + "đ";
+}
 
 export default function ProductDetail() {
-  const [activeImg,  setActiveImg]  = useState(0);
-  const [activeColor, setColor]     = useState(0);
-  const [activeSize,  setSize]      = useState(0);
-  const [qty,         setQty]       = useState(1);
-  const [showMore,    setShowMore]  = useState(false);
-  const [openFaq,     setOpenFaq]   = useState(0);
-  const [copied,      setCopied]    = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
+  const [activeColor, setColor] = useState(0);
+  const [activeSize, setSize] = useState(0);
+  const [qty, setQty] = useState(1);
+  const [showMore, setShowMore] = useState(false);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const copySku = () => {
     navigator.clipboard?.writeText(PRODUCT.sku);
@@ -358,7 +384,9 @@ export default function ProductDetail() {
 
   return (
     <>
-      <Helmet><title>{PRODUCT.name} | Rubies</title></Helmet>
+      <Helmet>
+        <title>{PRODUCT.name} | Rubies</title>
+      </Helmet>
 
       <Breadcrumb
         items={[
@@ -602,16 +630,16 @@ export default function ProductDetail() {
 
       <div className="pd-page">
         <div className="pd-layout">
-
           {/* ════════════ CỘT TRÁI ════════════ */}
           <div className="pd-left">
-
             {/* GALLERY */}
             <div className="pd-gallery">
               <div className="pd-thumbs">
                 {PRODUCT.images.map((img, i) => (
                   <img
-                    key={i} src={img} alt={`Ảnh ${i + 1}`}
+                    key={i}
+                    src={img}
+                    alt={`Ảnh ${i + 1}`}
                     className={`pd-thumb${activeImg === i ? " active" : ""}`}
                     onClick={() => setActiveImg(i)}
                   />
@@ -619,14 +647,29 @@ export default function ProductDetail() {
               </div>
 
               <div className="pd-main-img-wrap">
-                <img src={PRODUCT.images[activeImg]} alt={PRODUCT.name} className="pd-main-img" />
+                <img
+                  src={PRODUCT.images[activeImg]}
+                  alt={PRODUCT.name}
+                  className="pd-main-img"
+                />
 
-                <button className="pd-arrow prev"
-                  onClick={() => setActiveImg(p => (p - 1 + PRODUCT.images.length) % PRODUCT.images.length)}>
+                <button
+                  className="pd-arrow prev"
+                  onClick={() =>
+                    setActiveImg(
+                      (p) =>
+                        (p - 1 + PRODUCT.images.length) % PRODUCT.images.length,
+                    )
+                  }
+                >
                   <i className="bi bi-chevron-left" />
                 </button>
-                <button className="pd-arrow next"
-                  onClick={() => setActiveImg(p => (p + 1) % PRODUCT.images.length)}>
+                <button
+                  className="pd-arrow next"
+                  onClick={() =>
+                    setActiveImg((p) => (p + 1) % PRODUCT.images.length)
+                  }
+                >
                   <i className="bi bi-chevron-right" />
                 </button>
 
@@ -642,7 +685,11 @@ export default function ProductDetail() {
               <h3>Chi tiết sản phẩm</h3>
               <div className="pd-detail-sku">
                 {PRODUCT.detail.sku}
-                <button className="pd-sku-copy" onClick={copySku} title="Sao chép">
+                <button
+                  className="pd-sku-copy"
+                  onClick={copySku}
+                  title="Sao chép"
+                >
                   <i className={`bi ${copied ? "bi-check2" : "bi-copy"}`} />
                 </button>
               </div>
@@ -650,14 +697,23 @@ export default function ProductDetail() {
               <p className="pd-detail-label">CHI TIẾT SẢN PHẨM</p>
 
               <div
-                className={!showMore ? "pd-detail-blur pd-detail-lines" : "pd-detail-lines"}
+                className={
+                  !showMore
+                    ? "pd-detail-blur pd-detail-lines"
+                    : "pd-detail-lines"
+                }
                 style={!showMore ? { maxHeight: 120, overflow: "hidden" } : {}}
               >
-                {PRODUCT.detail.lines.map((l, i) => <p key={i}>{l}</p>)}
+                {PRODUCT.detail.lines.map((l, i) => (
+                  <p key={i}>{l}</p>
+                ))}
               </div>
 
               {!showMore && (
-                <button className="pd-showmore-btn" onClick={() => setShowMore(true)}>
+                <button
+                  className="pd-showmore-btn"
+                  onClick={() => setShowMore(true)}
+                >
                   Xem thêm
                 </button>
               )}
@@ -671,17 +727,29 @@ export default function ProductDetail() {
               </div>
               {PRODUCT.faqs.map((faq, i) => (
                 <div className="pd-faq-item" key={i}>
-                  <div className="pd-faq-q" onClick={() => setOpenFaq(openFaq === i ? -1 : i)}>
+                  <div
+                    className="pd-faq-q"
+                    onClick={() => setOpenFaq(openFaq === i ? -1 : i)}
+                  >
                     <span>{faq.q}</span>
-                    <i className={`bi ${openFaq === i ? "bi-dash" : "bi-plus"}`} />
+                    <i
+                      className={`bi ${openFaq === i ? "bi-dash" : "bi-plus"}`}
+                    />
                   </div>
                   {openFaq === i && faq.a && (
                     <div className="pd-faq-a">
                       {faq.bold
                         ? faq.a.split(faq.bold).map((part, pi) =>
-                            pi === 0
-                              ? <span key={pi}>{part}<strong style={{ color: "#c8860b" }}>{faq.bold}</strong></span>
-                              : <span key={pi}>{part}</span>
+                            pi === 0 ? (
+                              <span key={pi}>
+                                {part}
+                                <strong style={{ color: "#c8860b" }}>
+                                  {faq.bold}
+                                </strong>
+                              </span>
+                            ) : (
+                              <span key={pi}>{part}</span>
+                            ),
                           )
                         : faq.a}
                     </div>
@@ -689,17 +757,17 @@ export default function ProductDetail() {
                 </div>
               ))}
             </div>
-
           </div>
 
           {/* ════════════ CỘT PHẢI (sticky) ════════════ */}
           <div className="pd-right">
-
             {/* Giá */}
             <div className="d-flex align-items-center gap-3 mb-2">
               <div className="pd-price">{fmt(PRODUCT.price)}</div>
               {PRODUCT.originalPrice > PRODUCT.price && (
-                <del className="text-muted fs-6">{fmt(PRODUCT.originalPrice)}</del>
+                <del className="text-muted fs-6">
+                  {fmt(PRODUCT.originalPrice)}
+                </del>
               )}
             </div>
 
@@ -709,7 +777,11 @@ export default function ProductDetail() {
             {/* SKU */}
             <div className="pd-sku">
               {PRODUCT.sku}
-              <button className="pd-sku-copy" onClick={copySku} title="Sao chép">
+              <button
+                className="pd-sku-copy"
+                onClick={copySku}
+                title="Sao chép"
+              >
                 <i className={`bi ${copied ? "bi-check2" : "bi-copy"}`} />
               </button>
             </div>
@@ -726,8 +798,13 @@ export default function ProductDetail() {
                   onClick={() => setColor(i)}
                   title={c.label}
                 >
-                  <span className="pd-color-swatch"
-                    style={{ background: c.hex, border: `1px solid ${c.border}` }} />
+                  <span
+                    className="pd-color-swatch"
+                    style={{
+                      background: c.hex,
+                      border: `1px solid ${c.border}`,
+                    }}
+                  />
                 </button>
               ))}
             </div>
@@ -737,7 +814,9 @@ export default function ProductDetail() {
               <div className="pd-section-label mb-0">
                 Kích thước: <strong>{PRODUCT.sizes[activeSize]}</strong>
               </div>
-              <a href="#" className="pd-guide-link">Hướng dẫn chọn size</a>
+              <a href="#" className="pd-guide-link">
+                Hướng dẫn chọn size
+              </a>
             </div>
             <div className="pd-sizes">
               {PRODUCT.sizes.map((sz, i) => (
@@ -754,16 +833,23 @@ export default function ProductDetail() {
             {/* Qty + Thêm vào giỏ */}
             <div className="pd-action-row">
               <div className="pd-qty">
-                <button className="pd-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>
+                <button
+                  className="pd-qty-btn"
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                >
                   <i className="bi bi-dash" />
                 </button>
                 <span className="pd-qty-val">{qty}</span>
-                <button className="pd-qty-btn" onClick={() => setQty(q => q + 1)}>
+                <button
+                  className="pd-qty-btn"
+                  onClick={() => setQty((q) => q + 1)}
+                >
                   <i className="bi bi-plus" />
                 </button>
               </div>
               <button className="pd-btn-cart">
-                Thêm vào giỏ&nbsp;<i className="bi bi-handbag" />
+                Thêm vào giỏ&nbsp;
+                <i className="bi bi-handbag" />
               </button>
             </div>
 
@@ -785,13 +871,24 @@ export default function ProductDetail() {
                   <div className="pd-commit-text">
                     <strong>{c.text1}</strong>
                     {c.text2 && " " + c.text2}
-                    {c.link && !c.zalo && <><br /><a href="#">{c.link}</a></>}
-                    {c.link && c.zalo  && <><br /><a href="#" style={{ color: "#0068ff" }}>{c.link}</a></>}
+                    {c.link && !c.zalo && (
+                      <>
+                        <br />
+                        <a href="#">{c.link}</a>
+                      </>
+                    )}
+                    {c.link && c.zalo && (
+                      <>
+                        <br />
+                        <a href="#" style={{ color: "#0068ff" }}>
+                          {c.link}
+                        </a>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </div>

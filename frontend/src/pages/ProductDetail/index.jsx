@@ -25,16 +25,18 @@ import { CartContext } from "../../context/CartContext";
 //   ],
 // };
 
-function fmt(n) { return n.toLocaleString("vi-VN") + "đ"; }
+function fmt(n) {
+  return n.toLocaleString("vi-VN") + "đ";
+}
 
 export default function ProductDetail() {
-  const [activeImg,  setActiveImg]  = useState(0);
-  const [activeColor, setColor]     = useState(0);
-  const [activeSize,  setSize]      = useState(0);
-  const [qty,         setQty]       = useState(1);
-  const [showMore,    setShowMore]  = useState(false);
-  const [openFaq,     setOpenFaq]   = useState(0);
-  const [copied,      setCopied]    = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
+  const [activeColor, setColor] = useState(0);
+  const [activeSize, setSize] = useState(0);
+  const [qty, setQty] = useState(1);
+  const [showMore, setShowMore] = useState(false);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [copied, setCopied] = useState(false);
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,19 +67,11 @@ export default function ProductDetail() {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: 40 }}>
-        Đang tải...
-      </div>
-    );
+    return <div style={{ padding: 40 }}>Đang tải...</div>;
   }
 
   if (!product) {
-    return (
-      <div style={{ padding: 40 }}>
-        Không tìm thấy sản phẩm
-      </div>
-    );
+    return <div style={{ padding: 40 }}>Không tìm thấy sản phẩm</div>;
   }
 
   const PRODUCT = {
@@ -92,18 +86,18 @@ export default function ProductDetail() {
 
     colors: [
       ...new Map(
-        (product.variants || []).map(v => [
+        (product.variants || []).map((v) => [
           v.color,
           {
             label: v.color,
             hex: "#ddd",
             border: "#999",
           },
-        ])
+        ]),
       ).values(),
     ],
 
-    sizes: [...new Set((product.variants || []).map(v => v.size))],
+    sizes: [...new Set((product.variants || []).map((v) => v.size))],
 
     detail: {
       sku: product.product_id,
@@ -116,19 +110,18 @@ export default function ProductDetail() {
   const selectedSize = PRODUCT.sizes[activeSize];
 
   const selectedVariant = (product.variants || []).find(
-    v =>
-      v.color === selectedColor &&
-      v.size === selectedSize
+    (v) => v.color === selectedColor && v.size === selectedSize,
   );
 
-
-console.log("PRODUCT:", product);
-console.log("VARIANTS:", product.variants);
-console.log("SELECTED VARIANT:", selectedVariant);
+  console.log("PRODUCT:", product);
+  console.log("VARIANTS:", product.variants);
+  console.log("SELECTED VARIANT:", selectedVariant);
 
   return (
     <>
-      <Helmet><title>{PRODUCT.name} | Rubies</title></Helmet>
+      <Helmet>
+        <title>{PRODUCT.name} | Rubies</title>
+      </Helmet>
 
       <Breadcrumb
         items={[
@@ -372,16 +365,16 @@ console.log("SELECTED VARIANT:", selectedVariant);
 
       <div className="pd-page">
         <div className="pd-layout">
-
           {/* ════════════ CỘT TRÁI ════════════ */}
           <div className="pd-left">
-
             {/* GALLERY */}
             <div className="pd-gallery">
               <div className="pd-thumbs">
                 {PRODUCT.images.map((img, i) => (
                   <img
-                    key={i} src={img} alt={`Ảnh ${i + 1}`}
+                    key={i}
+                    src={img}
+                    alt={`Ảnh ${i + 1}`}
                     className={`pd-thumb${activeImg === i ? " active" : ""}`}
                     onClick={() => setActiveImg(i)}
                   />
@@ -389,14 +382,29 @@ console.log("SELECTED VARIANT:", selectedVariant);
               </div>
 
               <div className="pd-main-img-wrap">
-                <img src={PRODUCT.images[activeImg]} alt={PRODUCT.name} className="pd-main-img" />
+                <img
+                  src={PRODUCT.images[activeImg]}
+                  alt={PRODUCT.name}
+                  className="pd-main-img"
+                />
 
-                <button className="pd-arrow prev"
-                  onClick={() => setActiveImg(p => (p - 1 + PRODUCT.images.length) % PRODUCT.images.length)}>
+                <button
+                  className="pd-arrow prev"
+                  onClick={() =>
+                    setActiveImg(
+                      (p) =>
+                        (p - 1 + PRODUCT.images.length) % PRODUCT.images.length,
+                    )
+                  }
+                >
                   <i className="bi bi-chevron-left" />
                 </button>
-                <button className="pd-arrow next"
-                  onClick={() => setActiveImg(p => (p + 1) % PRODUCT.images.length)}>
+                <button
+                  className="pd-arrow next"
+                  onClick={() =>
+                    setActiveImg((p) => (p + 1) % PRODUCT.images.length)
+                  }
+                >
                   <i className="bi bi-chevron-right" />
                 </button>
 
@@ -412,7 +420,11 @@ console.log("SELECTED VARIANT:", selectedVariant);
               <h3>Chi tiết sản phẩm</h3>
               <div className="pd-detail-sku">
                 {PRODUCT.detail.sku}
-                <button className="pd-sku-copy" onClick={copySku} title="Sao chép">
+                <button
+                  className="pd-sku-copy"
+                  onClick={copySku}
+                  title="Sao chép"
+                >
                   <i className={`bi ${copied ? "bi-check2" : "bi-copy"}`} />
                 </button>
               </div>
@@ -420,14 +432,23 @@ console.log("SELECTED VARIANT:", selectedVariant);
               <p className="pd-detail-label">CHI TIẾT SẢN PHẨM</p>
 
               <div
-                className={!showMore ? "pd-detail-blur pd-detail-lines" : "pd-detail-lines"}
+                className={
+                  !showMore
+                    ? "pd-detail-blur pd-detail-lines"
+                    : "pd-detail-lines"
+                }
                 style={!showMore ? { maxHeight: 120, overflow: "hidden" } : {}}
               >
-                {PRODUCT.detail.lines.map((l, i) => <p key={i}>{l}</p>)}
+                {PRODUCT.detail.lines.map((l, i) => (
+                  <p key={i}>{l}</p>
+                ))}
               </div>
 
               {!showMore && (
-                <button className="pd-showmore-btn" onClick={() => setShowMore(true)}>
+                <button
+                  className="pd-showmore-btn"
+                  onClick={() => setShowMore(true)}
+                >
                   Xem thêm
                 </button>
               )}
@@ -441,17 +462,29 @@ console.log("SELECTED VARIANT:", selectedVariant);
               </div>
               {(PRODUCT.faqs || []).map((faq, i) => (
                 <div className="pd-faq-item" key={i}>
-                  <div className="pd-faq-q" onClick={() => setOpenFaq(openFaq === i ? -1 : i)}>
+                  <div
+                    className="pd-faq-q"
+                    onClick={() => setOpenFaq(openFaq === i ? -1 : i)}
+                  >
                     <span>{faq.q}</span>
-                    <i className={`bi ${openFaq === i ? "bi-dash" : "bi-plus"}`} />
+                    <i
+                      className={`bi ${openFaq === i ? "bi-dash" : "bi-plus"}`}
+                    />
                   </div>
                   {openFaq === i && faq.a && (
                     <div className="pd-faq-a">
                       {faq.bold
                         ? faq.a.split(faq.bold).map((part, pi) =>
-                            pi === 0
-                              ? <span key={pi}>{part}<strong style={{ color: "#c8860b" }}>{faq.bold}</strong></span>
-                              : <span key={pi}>{part}</span>
+                            pi === 0 ? (
+                              <span key={pi}>
+                                {part}
+                                <strong style={{ color: "#c8860b" }}>
+                                  {faq.bold}
+                                </strong>
+                              </span>
+                            ) : (
+                              <span key={pi}>{part}</span>
+                            ),
                           )
                         : faq.a}
                     </div>
@@ -459,17 +492,17 @@ console.log("SELECTED VARIANT:", selectedVariant);
                 </div>
               ))}
             </div>
-
           </div>
 
           {/* ════════════ CỘT PHẢI (sticky) ════════════ */}
           <div className="pd-right">
-
             {/* Giá */}
             <div className="d-flex align-items-center gap-3 mb-2">
               <div className="pd-price">{fmt(PRODUCT.price)}</div>
               {PRODUCT.originalPrice > PRODUCT.price && (
-                <del className="text-muted fs-6">{fmt(PRODUCT.originalPrice)}</del>
+                <del className="text-muted fs-6">
+                  {fmt(PRODUCT.originalPrice)}
+                </del>
               )}
             </div>
 
@@ -479,7 +512,11 @@ console.log("SELECTED VARIANT:", selectedVariant);
             {/* SKU */}
             <div className="pd-sku">
               {PRODUCT.sku}
-              <button className="pd-sku-copy" onClick={copySku} title="Sao chép">
+              <button
+                className="pd-sku-copy"
+                onClick={copySku}
+                title="Sao chép"
+              >
                 <i className={`bi ${copied ? "bi-check2" : "bi-copy"}`} />
               </button>
             </div>
@@ -496,8 +533,13 @@ console.log("SELECTED VARIANT:", selectedVariant);
                   onClick={() => setColor(i)}
                   title={c.label}
                 >
-                  <span className="pd-color-swatch"
-                    style={{ background: c.hex, border: `1px solid ${c.border}` }} />
+                  <span
+                    className="pd-color-swatch"
+                    style={{
+                      background: c.hex,
+                      border: `1px solid ${c.border}`,
+                    }}
+                  />
                 </button>
               ))}
             </div>
@@ -507,7 +549,9 @@ console.log("SELECTED VARIANT:", selectedVariant);
               <div className="pd-section-label mb-0">
                 Kích thước: <strong>{PRODUCT.sizes[activeSize]}</strong>
               </div>
-              <a href="#" className="pd-guide-link">Hướng dẫn chọn size</a>
+              <a href="#" className="pd-guide-link">
+                Hướng dẫn chọn size
+              </a>
             </div>
             <div className="pd-sizes">
               {PRODUCT.sizes.map((sz, i) => (
@@ -524,42 +568,48 @@ console.log("SELECTED VARIANT:", selectedVariant);
             {/* Qty + Thêm vào giỏ */}
             <div className="pd-action-row">
               <div className="pd-qty">
-                <button className="pd-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>
+                <button
+                  className="pd-qty-btn"
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                >
                   <i className="bi bi-dash" />
                 </button>
                 <span className="pd-qty-val">{qty}</span>
-                <button className="pd-qty-btn" onClick={() => setQty(q => q + 1)}>
+                <button
+                  className="pd-qty-btn"
+                  onClick={() => setQty((q) => q + 1)}
+                >
                   <i className="bi bi-plus" />
                 </button>
               </div>
 
-<button
-  className="pd-btn-cart"
-  onClick={async () => {
-    if (!selectedVariant) {
-      alert("Sản phẩm với màu và kích thước này không tồn tại");
-      return;
-    }
+              <button
+                className="pd-btn-cart"
+                onClick={async () => {
+                  if (!selectedVariant) {
+                    alert("Sản phẩm với màu và kích thước này không tồn tại");
+                    return;
+                  }
 
-    try {
-      await addToCart(
-        product.product_id,
-        selectedVariant.variant_id,
-        qty
-      );
+                  try {
+                    await addToCart(
+                      product.product_id,
+                      selectedVariant.variant_id,
+                      qty,
+                    );
 
-      alert("Đã thêm sản phẩm vào giỏ hàng!");
-    } catch (error) {
-      console.error(
-        "Lỗi thêm giỏ hàng:",
-        error.response?.data || error
-      );
-    }
-  }}
->
-  Thêm vào giỏ&nbsp;<i className="bi bi-handbag" />
-</button>
-
+                    alert("Đã thêm sản phẩm vào giỏ hàng!");
+                  } catch (error) {
+                    console.error(
+                      "Lỗi thêm giỏ hàng:",
+                      error.response?.data || error,
+                    );
+                  }
+                }}
+              >
+                Thêm vào giỏ&nbsp;
+                <i className="bi bi-handbag" />
+              </button>
             </div>
 
             {/* Xem cửa hàng */}
@@ -580,13 +630,24 @@ console.log("SELECTED VARIANT:", selectedVariant);
                   <div className="pd-commit-text">
                     <strong>{c.text1}</strong>
                     {c.text2 && " " + c.text2}
-                    {c.link && !c.zalo && <><br /><a href="#">{c.link}</a></>}
-                    {c.link && c.zalo  && <><br /><a href="#" style={{ color: "#0068ff" }}>{c.link}</a></>}
+                    {c.link && !c.zalo && (
+                      <>
+                        <br />
+                        <a href="#">{c.link}</a>
+                      </>
+                    )}
+                    {c.link && c.zalo && (
+                      <>
+                        <br />
+                        <a href="#" style={{ color: "#0068ff" }}>
+                          {c.link}
+                        </a>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </div>

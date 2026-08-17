@@ -1,4 +1,5 @@
 Dưới đây là cấu trúc frontend React (chuẩn doanh nghiệp, dùng với Node.js microservices + API Gateway). Mục tiêu: dễ scale, dễ tách service, dễ maintain.
+
 ```
 frontend/
 │
@@ -58,6 +59,7 @@ frontend/
 ├── package.json
 └── vite.config.js
 ```
+
 ---
 
 # 1. Cấu trúc chuẩn (React + Microservices backend)
@@ -125,8 +127,7 @@ frontend/
 Ví dụ:
 
 ```js id="s1"
-export const getProducts = () =>
-  http.get("/products");
+export const getProducts = () => http.get("/products");
 ```
 
 👉 `/products` thực tế đi qua API Gateway
@@ -173,7 +174,7 @@ import axios from "axios";
 
 const http = axios.create({
   baseURL: "http://localhost:8000/api",
-  withCredentials: true
+  withCredentials: true,
 });
 
 export default http;
@@ -199,27 +200,27 @@ Frontend KHÔNG gọi trực tiếp service → chỉ gọi gateway.
 
 ## Option A (phổ biến nhất)
 
-* Feature-based structure (ở trên)
-* Redux Toolkit / Zustand
-* Axios + service layer
+- Feature-based structure (ở trên)
+- Redux Toolkit / Zustand
+- Axios + service layer
 
 ## Option B (enterprise lớn hơn)
 
-* Clean Architecture frontend
-* domain / application / infrastructure split
+- Clean Architecture frontend
+- domain / application / infrastructure split
 
 ---
 
 # 5. Quy tắc quan trọng
 
-* ❌ Không gọi API trong component UI
-* ❌ Không nhét logic vào pages
-* ❌ Không hardcode URL backend trong component
-* ✔ Tất cả API đi qua services/
+- ❌ Không gọi API trong component UI
+- ❌ Không nhét logic vào pages
+- ❌ Không hardcode URL backend trong component
+- ✔ Tất cả API đi qua services/
 
 ---
 
 Nếu muốn, tôi có thể:
 
-* dựng skeleton React hoàn chỉnh cho bạn (copy chạy luôn)
-* hoặc map luôn UI ecommerce (product/cart/order flow) theo backend microservice bạn đang làm.
+- dựng skeleton React hoàn chỉnh cho bạn (copy chạy luôn)
+- hoặc map luôn UI ecommerce (product/cart/order flow) theo backend microservice bạn đang làm.

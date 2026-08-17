@@ -20,7 +20,11 @@ export default function Home() {
       <Hero />
       <Features />
 
-      <ProductSection title="Sản Phẩm Bán Chạy" items={bestSellers} type="best" />
+      <ProductSection
+        title="Sản Phẩm Bán Chạy"
+        items={bestSellers}
+        type="best"
+      />
 
       <ProductSection title="Sản Phẩm Mới" items={newProds} type="new" />
 

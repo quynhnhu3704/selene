@@ -38,8 +38,7 @@ export default function Profile() {
         saveUser(res.data.profile);
       } catch (err) {
         toast.error(
-          err.response?.data?.message ||
-          "Không thể tải thông tin tài khoản"
+          err.response?.data?.message || "Không thể tải thông tin tài khoản",
         );
       }
     };
@@ -48,28 +47,37 @@ export default function Profile() {
 
   return (
     <>
-      <Helmet><title>Tài Khoản Của Tôi | Selene</title></Helmet>
+      <Helmet>
+        <title>Tài Khoản Của Tôi | Selene</title>
+      </Helmet>
 
       <Breadcrumb
         items={
-          breadcrumbItems[location.pathname] ||
-          breadcrumbItems["/tai-khoan"]
+          breadcrumbItems[location.pathname] || breadcrumbItems["/tai-khoan"]
         }
       />
 
       <div className="acc-page">
         <div className="row g-0">
-
           {/* ══════ SIDEBAR ══════ */}
           <div className="col-12 col-md-3 page-sidebar">
-
             <p className="page-sidebar-heading">TRANG TÀI KHOẢN</p>
-            <p className="page-greeting">Xin chào, <strong>{profile?.full_name || ""} !</strong></p>
+            <p className="page-greeting">
+              Xin chào, <strong>{profile?.full_name || ""} !</strong>
+            </p>
 
             <ul className="page-nav">
               {NAV.map((item) => (
                 <li key={item.key}>
-                  <NavLink to={item.path} end={item.path === "/tai-khoan"} className={({ isActive }) => `page-nav-btn${isActive ? " active" : ""}`}>{item.label}</NavLink>
+                  <NavLink
+                    to={item.path}
+                    end={item.path === "/tai-khoan"}
+                    className={({ isActive }) =>
+                      `page-nav-btn${isActive ? " active" : ""}`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
                 </li>
               ))}
             </ul>
@@ -77,9 +85,8 @@ export default function Profile() {
 
           {/* ══════ MAIN PANEL ══════ */}
           <div className="col-12 col-md-9 page-panel">
-            <Outlet context={{ profile, setProfile, }} />
+            <Outlet context={{ profile, setProfile }} />
           </div>
-
         </div>
       </div>
     </>

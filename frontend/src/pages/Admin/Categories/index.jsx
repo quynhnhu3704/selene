@@ -2,26 +2,67 @@
 import { useState } from "react";
 
 const INIT = [
-  { id: 1, name: "Áo Nữ",     slug: "ao-nu",      products: 86, order: 1, active: true },
-  { id: 2, name: "Áo Khoác",  slug: "ao-khoac",   products: 24, order: 2, active: true },
-  { id: 3, name: "Quần Nữ",   slug: "quan-nu",     products: 51, order: 3, active: true },
-  { id: 4, name: "Váy",        slug: "vay",         products: 38, order: 4, active: true },
-  { id: 5, name: "Đầm",        slug: "dam",         products: 42, order: 5, active: true },
-  { id: 6, name: "Set Đồ Nữ", slug: "set-do-nu",  products: 19, order: 6, active: false },
-  { id: 7, name: "Phụ Kiện",  slug: "phu-kien",   products: 15, order: 7, active: true },
-  { id: 8, name: "Jumpsuit",   slug: "jumpsuit",    products: 9,  order: 8, active: true },
+  { id: 1, name: "Áo Nữ", slug: "ao-nu", products: 86, order: 1, active: true },
+  {
+    id: 2,
+    name: "Áo Khoác",
+    slug: "ao-khoac",
+    products: 24,
+    order: 2,
+    active: true,
+  },
+  {
+    id: 3,
+    name: "Quần Nữ",
+    slug: "quan-nu",
+    products: 51,
+    order: 3,
+    active: true,
+  },
+  { id: 4, name: "Váy", slug: "vay", products: 38, order: 4, active: true },
+  { id: 5, name: "Đầm", slug: "dam", products: 42, order: 5, active: true },
+  {
+    id: 6,
+    name: "Set Đồ Nữ",
+    slug: "set-do-nu",
+    products: 19,
+    order: 6,
+    active: false,
+  },
+  {
+    id: 7,
+    name: "Phụ Kiện",
+    slug: "phu-kien",
+    products: 15,
+    order: 7,
+    active: true,
+  },
+  {
+    id: 8,
+    name: "Jumpsuit",
+    slug: "jumpsuit",
+    products: 9,
+    order: 8,
+    active: true,
+  },
 ];
 
 export default function AdminCategories() {
-  const [cats, setCats]     = useState(INIT);
+  const [cats, setCats] = useState(INIT);
   const [search, setSearch] = useState("");
   const [showModal, setShow] = useState(false);
-  const [editing, setEditing] = useState(null);   // null = thêm mới
-  const [form, setForm]     = useState({ name: "", slug: "", order: "", active: true });
+  const [editing, setEditing] = useState(null); // null = thêm mới
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    order: "",
+    active: true,
+  });
 
-  const filtered = cats.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.slug.toLowerCase().includes(search.toLowerCase())
+  const filtered = cats.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.slug.toLowerCase().includes(search.toLowerCase()),
   );
 
   const openAdd = () => {
@@ -32,27 +73,36 @@ export default function AdminCategories() {
 
   const openEdit = (cat) => {
     setEditing(cat);
-    setForm({ name: cat.name, slug: cat.slug, order: cat.order, active: cat.active });
+    setForm({
+      name: cat.name,
+      slug: cat.slug,
+      order: cat.order,
+      active: cat.active,
+    });
     setShow(true);
   };
 
   const handleSave = () => {
     if (!form.name.trim()) return;
     if (editing) {
-      setCats(prev => prev.map(c => c.id === editing.id ? { ...c, ...form } : c));
+      setCats((prev) =>
+        prev.map((c) => (c.id === editing.id ? { ...c, ...form } : c)),
+      );
     } else {
-      setCats(prev => [...prev, { id: Date.now(), ...form, products: 0 }]);
+      setCats((prev) => [...prev, { id: Date.now(), ...form, products: 0 }]);
     }
     setShow(false);
   };
 
   const handleDelete = (id) => {
     if (!window.confirm("Xoá danh mục này?")) return;
-    setCats(prev => prev.filter(c => c.id !== id));
+    setCats((prev) => prev.filter((c) => c.id !== id));
   };
 
   const toggleActive = (id) =>
-    setCats(prev => prev.map(c => c.id === id ? { ...c, active: !c.active } : c));
+    setCats((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
+    );
 
   return (
     <>
@@ -85,13 +135,17 @@ export default function AdminCategories() {
               className="form-control border-start-0 ps-0"
               placeholder="Tìm danh mục..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               style={{ fontSize: 14 }}
             />
           </div>
           <div className="ms-auto">
-            <button className="btn btn-dark form-btn fw-semibold" onClick={openAdd}>
-              <i className="bi bi-plus-lg me-1" />Thêm danh mục
+            <button
+              className="btn btn-dark form-btn fw-semibold"
+              onClick={openAdd}
+            >
+              <i className="bi bi-plus-lg me-1" />
+              Thêm danh mục
             </button>
           </div>
         </div>
@@ -111,7 +165,9 @@ export default function AdminCategories() {
             <tbody>
               {filtered.map((c, idx) => (
                 <tr key={c.id}>
-                  <td className="text-muted" style={{ fontSize: 13 }}>{idx + 1}</td>
+                  <td className="text-muted" style={{ fontSize: 13 }}>
+                    {idx + 1}
+                  </td>
                   <td>
                     <div className="fw-semibold">{c.name}</div>
                     <div className="adm-slug">/{c.slug}</div>
@@ -131,10 +187,18 @@ export default function AdminCategories() {
                   </td>
                   <td>
                     <div className="d-flex gap-1">
-                      <button className="adm-action-btn text-muted" onClick={() => openEdit(c)} title="Sửa">
+                      <button
+                        className="adm-action-btn text-muted"
+                        onClick={() => openEdit(c)}
+                        title="Sửa"
+                      >
                         <i className="bi bi-pencil" />
                       </button>
-                      <button className="adm-action-btn text-danger" onClick={() => handleDelete(c.id)} title="Xoá">
+                      <button
+                        className="adm-action-btn text-danger"
+                        onClick={() => handleDelete(c.id)}
+                        title="Xoá"
+                      >
                         <i className="bi bi-trash3" />
                       </button>
                     </div>
@@ -145,7 +209,10 @@ export default function AdminCategories() {
           </table>
         </div>
 
-        <div className="px-4 py-3 border-top" style={{ fontSize: 13, color: "#adb5bd" }}>
+        <div
+          className="px-4 py-3 border-top"
+          style={{ fontSize: 13, color: "#adb5bd" }}
+        >
           {cats.length} danh mục
         </div>
       </div>
@@ -153,7 +220,7 @@ export default function AdminCategories() {
       {/* ── MODAL THÊM / SỬA ── */}
       {showModal && (
         <div className="adm-modal-backdrop" onClick={() => setShow(false)}>
-          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+          <div className="adm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="adm-modal-title">
               {editing ? "Chỉnh sửa danh mục" : "Thêm danh mục mới"}
             </div>
@@ -167,10 +234,16 @@ export default function AdminCategories() {
                   className="form-control"
                   placeholder="Nhập tên danh mục"
                   value={form.name}
-                  onChange={e => setForm(p => ({
-                    ...p, name: e.target.value,
-                    slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
-                  }))}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      name: e.target.value,
+                      slug: e.target.value
+                        .toLowerCase()
+                        .replace(/\s+/g, "-")
+                        .replace(/[^a-z0-9-]/g, ""),
+                    }))
+                  }
                   maxLength={80}
                   autoFocus
                 />
@@ -186,7 +259,9 @@ export default function AdminCategories() {
                   className="form-control"
                   placeholder="slug-danh-muc"
                   value={form.slug}
-                  onChange={e => setForm(p => ({ ...p, slug: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, slug: e.target.value }))
+                  }
                   style={{ fontFamily: "monospace", fontSize: 14 }}
                 />
               </div>
@@ -198,33 +273,51 @@ export default function AdminCategories() {
               </div>
               <div className="form-input-wrap">
                 <input
-                  type="number" className="form-control" min={1}
+                  type="number"
+                  className="form-control"
+                  min={1}
                   value={form.order}
-                  onChange={e => setForm(p => ({ ...p, order: +e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, order: +e.target.value }))
+                  }
                 />
               </div>
             </div>
 
             <div className="form-check form-switch mb-4">
               <input
-                className="form-check-input" type="checkbox"
-                id="cat-active" checked={form.active}
-                onChange={e => setForm(p => ({ ...p, active: e.target.checked }))}
+                className="form-check-input"
+                type="checkbox"
+                id="cat-active"
+                checked={form.active}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, active: e.target.checked }))
+                }
                 style={{ width: 36, height: 20, cursor: "pointer" }}
               />
-              <label className="form-check-label ms-2" htmlFor="cat-active" style={{ fontSize: 15, fontWeight: 500 }}>
+              <label
+                className="form-check-label ms-2"
+                htmlFor="cat-active"
+                style={{ fontSize: 15, fontWeight: 500 }}
+              >
                 Hiển thị danh mục
               </label>
             </div>
 
             <div className="row">
               <div className="col-6">
-                <button className="form-btn btn btn-outline-dark fw-semibold w-100"
-                  onClick={() => setShow(false)}>Huỷ</button>
+                <button
+                  className="form-btn btn btn-outline-dark fw-semibold w-100"
+                  onClick={() => setShow(false)}
+                >
+                  Huỷ
+                </button>
               </div>
               <div className="col-6">
-                <button className="form-btn btn btn-dark fw-semibold w-100"
-                  onClick={handleSave}>
+                <button
+                  className="form-btn btn btn-dark fw-semibold w-100"
+                  onClick={handleSave}
+                >
                   {editing ? "Lưu thay đổi" : "Thêm danh mục"}
                 </button>
               </div>

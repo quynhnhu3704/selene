@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 
-const fmt = (n) =>
-  Number(n || 0).toLocaleString("vi-VN") + "đ";
+const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Payment() {
   const location = useLocation();
@@ -131,10 +130,7 @@ export default function Payment() {
         </Helmet>
 
         <Breadcrumb
-          items={[
-            { label: "Trang chủ", path: "/" },
-            { label: "Thanh toán" },
-          ]}
+          items={[{ label: "Trang chủ", path: "/" }, { label: "Thanh toán" }]}
         />
 
         <div
@@ -157,10 +153,7 @@ export default function Payment() {
               margin: "0 auto 24px",
             }}
           >
-            <i
-              className="bi bi-check-lg"
-              style={{ fontSize: 42 }}
-            />
+            <i className="bi bi-check-lg" style={{ fontSize: 42 }} />
           </div>
 
           <h2
@@ -351,7 +344,6 @@ export default function Payment() {
       />
 
       <div className="payment-page">
-
         <div className="d-flex align-items-center gap-3 mb-4">
           <button
             className="btn btn-light rounded-circle"
@@ -361,9 +353,7 @@ export default function Payment() {
           </button>
 
           <div>
-            <h1 className="payment-title mb-1">
-              Thanh toán QR
-            </h1>
+            <h1 className="payment-title mb-1">Thanh toán QR</h1>
 
             <div className="payment-subtitle">
               Quét mã QR bằng ứng dụng ngân hàng để thanh toán
@@ -372,12 +362,9 @@ export default function Payment() {
         </div>
 
         <div className="row g-5 align-items-start">
-
           {/* QR */}
           <div className="col-12 col-lg-5">
-
             <div className="payment-card text-center">
-
               <div className="mb-3">
                 <span className="badge text-bg-dark px-3 py-2 rounded-pill">
                   <i className="bi bi-qr-code me-2" />
@@ -386,23 +373,16 @@ export default function Payment() {
               </div>
 
               <div className="qr-wrapper mb-3">
-                <img
-                  src={payment.qrUrl}
-                  alt="QR thanh toán SePay"
-                />
+                <img src={payment.qrUrl} alt="QR thanh toán SePay" />
               </div>
 
               <div className="mb-3">
-                <div className="text-muted small mb-2">
-                  Mã QR còn hiệu lực
-                </div>
+                <div className="text-muted small mb-2">Mã QR còn hiệu lực</div>
 
                 <div className="payment-timer">
                   <i className="bi bi-clock" />
 
-                  {isExpired
-                    ? "Hết hạn"
-                    : `${mm}:${ss}`}
+                  {isExpired ? "Hết hạn" : `${mm}:${ss}`}
                 </div>
               </div>
 
@@ -412,23 +392,16 @@ export default function Payment() {
                   paddingTop: 18,
                 }}
               >
-                <div className="text-muted small">
-                  Số tiền cần thanh toán
-                </div>
+                <div className="text-muted small">Số tiền cần thanh toán</div>
 
-                <div className="payment-amount">
-                  {fmt(payment.amount)}
-                </div>
+                <div className="payment-amount">{fmt(payment.amount)}</div>
               </div>
-
             </div>
           </div>
 
           {/* INFO */}
           <div className="col-12 col-lg-7">
-
             <div className="payment-card">
-
               <h5
                 style={{
                   fontWeight: 800,
@@ -440,39 +413,22 @@ export default function Payment() {
 
               <div className="payment-info">
                 <div>
-                  <div className="payment-info-label">
-                    Mã đơn hàng
-                  </div>
+                  <div className="payment-info-label">Mã đơn hàng</div>
 
-                  <div className="payment-info-value">
-                    {payment.orderId}
-                  </div>
+                  <div className="payment-info-value">{payment.orderId}</div>
                 </div>
 
                 <button
-                  className={`copy-btn ${
-                    copied === "order"
-                      ? "copied"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    copyToClipboard(
-                      payment.orderId,
-                      "order"
-                    )
-                  }
+                  className={`copy-btn ${copied === "order" ? "copied" : ""}`}
+                  onClick={() => copyToClipboard(payment.orderId, "order")}
                 >
-                  {copied === "order"
-                    ? "Đã copy"
-                    : "Copy"}
+                  {copied === "order" ? "Đã copy" : "Copy"}
                 </button>
               </div>
 
               <div className="payment-info">
                 <div>
-                  <div className="payment-info-label">
-                    Số tiền
-                  </div>
+                  <div className="payment-info-label">Số tiền</div>
 
                   <div
                     className="payment-info-value"
@@ -486,21 +442,10 @@ export default function Payment() {
                 </div>
 
                 <button
-                  className={`copy-btn ${
-                    copied === "amount"
-                      ? "copied"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    copyToClipboard(
-                      payment.amount,
-                      "amount"
-                    )
-                  }
+                  className={`copy-btn ${copied === "amount" ? "copied" : ""}`}
+                  onClick={() => copyToClipboard(payment.amount, "amount")}
                 >
-                  {copied === "amount"
-                    ? "Đã copy"
-                    : "Copy"}
+                  {copied === "amount" ? "Đã copy" : "Copy"}
                 </button>
               </div>
 
@@ -522,26 +467,14 @@ export default function Payment() {
                 </div>
 
                 <button
-                  className={`copy-btn ${
-                    copied === "note"
-                      ? "copied"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    copyToClipboard(
-                      payment.transferNote,
-                      "note"
-                    )
-                  }
+                  className={`copy-btn ${copied === "note" ? "copied" : ""}`}
+                  onClick={() => copyToClipboard(payment.transferNote, "note")}
                 >
-                  {copied === "note"
-                    ? "Đã copy"
-                    : "Copy"}
+                  {copied === "note" ? "Đã copy" : "Copy"}
                 </button>
               </div>
 
               <div className="mt-4">
-
                 <h6
                   style={{
                     fontWeight: 800,
@@ -589,19 +522,14 @@ export default function Payment() {
                     </span>
                   </div>
                 ))}
-
               </div>
 
               <div className="payment-warning mt-4">
                 <i className="bi bi-exclamation-triangle-fill me-2" />
-
-                Vui lòng chuyển khoản đúng số tiền và
-                nội dung chuyển khoản để hệ thống có
-                thể tự động xác nhận thanh toán.
+                Vui lòng chuyển khoản đúng số tiền và nội dung chuyển khoản để
+                hệ thống có thể tự động xác nhận thanh toán.
               </div>
-
             </div>
-
           </div>
         </div>
       </div>

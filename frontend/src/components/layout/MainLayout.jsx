@@ -16,10 +16,20 @@ export default function MainLayout() {
 
       <Footer />
 
-      <ToastContainer position="top-right" autoClose={4000} newestOnTop closeOnClick />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        newestOnTop
+        closeOnClick
+      />
 
       {/* Scroll to top button */}
-      <button className="rb-scroll-top" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}><i className="bi bi-chevron-double-up"></i></button>
+      <button
+        className="rb-scroll-top"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      >
+        <i className="bi bi-chevron-double-up"></i>
+      </button>
     </>
   );
 }

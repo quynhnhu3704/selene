@@ -6,12 +6,24 @@ import hero3 from "../../../assets/images/hero3.png";
 export default function Hero() {
   return (
     <div id="heroCarousel" className="carousel slide" data-bs-ride="carousel">
-
       {/* indicators */}
       <div className="carousel-indicators">
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" className="active"></button>
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+        <button
+          type="button"
+          data-bs-target="#heroCarousel"
+          data-bs-slide-to="0"
+          className="active"
+        ></button>
+        <button
+          type="button"
+          data-bs-target="#heroCarousel"
+          data-bs-slide-to="1"
+        ></button>
+        <button
+          type="button"
+          data-bs-target="#heroCarousel"
+          data-bs-slide-to="2"
+        ></button>
       </div>
 
       {/* slides */}
@@ -43,7 +55,6 @@ export default function Hero() {
       <button className="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
         <span className="carousel-control-next-icon"></span>
       </button> */}
-
     </div>
   );
 }

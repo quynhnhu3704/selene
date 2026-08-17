@@ -1,9 +1,16 @@
 // frontend\src\pages\Admin\Dashboard\index.jsx
 import { useState } from "react";
 import {
-  LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 /* ── DỮ LIỆU MẪU ── */
@@ -18,45 +25,112 @@ const revenueData = [
 ];
 
 const categoryData = [
-  { name: "Áo",        value: 38 },
-  { name: "Quần",      value: 24 },
-  { name: "Váy/Đầm",  value: 21 },
-  { name: "Set đồ",   value: 11 },
+  { name: "Áo", value: 38 },
+  { name: "Quần", value: 24 },
+  { name: "Váy/Đầm", value: 21 },
+  { name: "Set đồ", value: 11 },
   { name: "Phụ kiện", value: 6 },
 ];
 
 const recentOrders = [
-  { id: "#ORD-1024", customer: "Nguyễn Thị Mai",    total: "620.000đ", status: "Đang giao",   time: "10 phút trước" },
-  { id: "#ORD-1023", customer: "Trần Văn Bình",      total: "1.240.000đ", status: "Đã giao",   time: "32 phút trước" },
-  { id: "#ORD-1022", customer: "Lê Hoàng Anh",       total: "480.000đ", status: "Chờ xác nhận", time: "1 giờ trước" },
-  { id: "#ORD-1021", customer: "Phạm Thị Lan",       total: "850.000đ", status: "Đã giao",   time: "2 giờ trước" },
-  { id: "#ORD-1020", customer: "Võ Minh Khoa",       total: "390.000đ", status: "Đã huỷ",    time: "3 giờ trước" },
+  {
+    id: "#ORD-1024",
+    customer: "Nguyễn Thị Mai",
+    total: "620.000đ",
+    status: "Đang giao",
+    time: "10 phút trước",
+  },
+  {
+    id: "#ORD-1023",
+    customer: "Trần Văn Bình",
+    total: "1.240.000đ",
+    status: "Đã giao",
+    time: "32 phút trước",
+  },
+  {
+    id: "#ORD-1022",
+    customer: "Lê Hoàng Anh",
+    total: "480.000đ",
+    status: "Chờ xác nhận",
+    time: "1 giờ trước",
+  },
+  {
+    id: "#ORD-1021",
+    customer: "Phạm Thị Lan",
+    total: "850.000đ",
+    status: "Đã giao",
+    time: "2 giờ trước",
+  },
+  {
+    id: "#ORD-1020",
+    customer: "Võ Minh Khoa",
+    total: "390.000đ",
+    status: "Đã huỷ",
+    time: "3 giờ trước",
+  },
 ];
 
 const STATUS_BADGE = {
-  "Đang giao":      "warning",
-  "Đã giao":        "success",
-  "Chờ xác nhận":  "secondary",
-  "Đã huỷ":        "danger",
+  "Đang giao": "warning",
+  "Đã giao": "success",
+  "Chờ xác nhận": "secondary",
+  "Đã huỷ": "danger",
 };
 
 const fmtVND = (v) => (v / 1000000).toFixed(1) + "M";
 
 const STATS = [
-  { label: "Doanh thu tháng",  value: "31,5 triệu", sub: "+12% so với tháng trước", icon: "bi-graph-up-arrow",  color: "#212529" },
-  { label: "Đơn hàng",         value: "125",          sub: "+18 đơn so với tháng trước", icon: "bi-receipt",     color: "#212529" },
-  { label: "Sản phẩm",         value: "284",          sub: "12 sản phẩm mới tháng này",  icon: "bi-box-seam",    color: "#212529" },
-  { label: "Người dùng",       value: "1.842",        sub: "+34 thành viên mới",         icon: "bi-people",      color: "#212529" },
+  {
+    label: "Doanh thu tháng",
+    value: "31,5 triệu",
+    sub: "+12% so với tháng trước",
+    icon: "bi-graph-up-arrow",
+    color: "#212529",
+  },
+  {
+    label: "Đơn hàng",
+    value: "125",
+    sub: "+18 đơn so với tháng trước",
+    icon: "bi-receipt",
+    color: "#212529",
+  },
+  {
+    label: "Sản phẩm",
+    value: "284",
+    sub: "12 sản phẩm mới tháng này",
+    icon: "bi-box-seam",
+    color: "#212529",
+  },
+  {
+    label: "Người dùng",
+    value: "1.842",
+    sub: "+34 thành viên mới",
+    icon: "bi-people",
+    color: "#212529",
+  },
 ];
 
 /* Custom tooltip */
 const RevenueTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: "#fff", border: "1px solid #eee", borderRadius: 10, padding: "10px 14px", fontSize: 13 }}>
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #eee",
+        borderRadius: 10,
+        padding: "10px 14px",
+        fontSize: 13,
+      }}
+    >
       <p style={{ fontWeight: 700, marginBottom: 4 }}>{label}</p>
-      <p style={{ color: "#212529", margin: 0 }}>Doanh thu: <strong>{(payload[0]?.value / 1000000).toFixed(1)}M đ</strong></p>
-      <p style={{ color: "#871B1B", margin: 0 }}>Đơn hàng: <strong>{payload[1]?.value}</strong></p>
+      <p style={{ color: "#212529", margin: 0 }}>
+        Doanh thu:{" "}
+        <strong>{(payload[0]?.value / 1000000).toFixed(1)}M đ</strong>
+      </p>
+      <p style={{ color: "#871B1B", margin: 0 }}>
+        Đơn hàng: <strong>{payload[1]?.value}</strong>
+      </p>
     </div>
   );
 };
@@ -102,7 +176,9 @@ export default function Dashboard() {
         {STATS.map((s) => (
           <div className="col-6 col-xl-3" key={s.label}>
             <div className="dash-stat-card">
-              <div className="dash-stat-icon"><i className={`bi ${s.icon}`} /></div>
+              <div className="dash-stat-icon">
+                <i className={`bi ${s.icon}`} />
+              </div>
               <div>
                 <div className="dash-stat-label">{s.label}</div>
                 <div className="dash-stat-val">{s.value}</div>
@@ -115,19 +191,47 @@ export default function Dashboard() {
 
       {/* ── CHARTS ROW ── */}
       <div className="row g-3 mb-4">
-
         {/* Doanh thu */}
         <div className="col-12 col-xl-8">
           <div className="dash-chart-card">
             <div className="dash-chart-title">Doanh thu & đơn hàng</div>
             <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={revenueData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <LineChart
+                data={revenueData}
+                margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={fmtVND} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={44} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={fmtVND}
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={44}
+                />
                 <Tooltip content={<RevenueTooltip />} />
-                <Line type="monotone" dataKey="revenue" stroke="#212529" strokeWidth={2.5} dot={{ r: 4, fill: "#212529" }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="orders" stroke="#871B1B" strokeWidth={2} strokeDasharray="5 4" dot={false} yAxisId={0} />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#212529"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: "#212529" }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="orders"
+                  stroke="#871B1B"
+                  strokeWidth={2}
+                  strokeDasharray="5 4"
+                  dot={false}
+                  yAxisId={0}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -138,12 +242,37 @@ export default function Dashboard() {
           <div className="dash-chart-card h-100">
             <div className="dash-chart-title">Cơ cấu danh mục</div>
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
+              <BarChart
+                data={categoryData}
+                layout="vertical"
+                margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#f0f0f0"
+                  horizontal={false}
+                />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={60}
+                />
                 <Tooltip formatter={(v) => [`${v}%`, "Tỷ lệ"]} />
-                <Bar dataKey="value" fill="#212529" radius={[0, 6, 6, 0]} barSize={18} />
+                <Bar
+                  dataKey="value"
+                  fill="#212529"
+                  radius={[0, 6, 6, 0]}
+                  barSize={18}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -154,7 +283,13 @@ export default function Dashboard() {
       <div className="dash-chart-card">
         <div className="d-flex align-items-center justify-content-between mb-3">
           <div className="dash-chart-title mb-0">Đơn hàng gần đây</div>
-          <a href="/admin/don-hang" className="form-link-sm" style={{ fontSize: 13 }}>Xem tất cả →</a>
+          <a
+            href="/admin/don-hang"
+            className="form-link-sm"
+            style={{ fontSize: 13 }}
+          >
+            Xem tất cả →
+          </a>
         </div>
 
         {recentOrders.map((o) => (
@@ -163,8 +298,10 @@ export default function Dashboard() {
               <div className="dash-order-id">{o.id}</div>
               <div className="dash-order-name">{o.customer}</div>
             </div>
-            <span className={`badge bg-${STATUS_BADGE[o.status]} bg-opacity-10 text-${STATUS_BADGE[o.status]} fw-semibold`}
-              style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8 }}>
+            <span
+              className={`badge bg-${STATUS_BADGE[o.status]} bg-opacity-10 text-${STATUS_BADGE[o.status]} fw-semibold`}
+              style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8 }}
+            >
               {o.status}
             </span>
             <div className="text-end">

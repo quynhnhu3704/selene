@@ -1,6 +1,6 @@
 // backend\order-service\src\controllers\voucher.controller.js
-import { VoucherService } from '../services/voucher.service.js';
-import * as cartService from '../services/cart.service.js';
+import { VoucherService } from "../services/voucher.service.js";
+import * as cartService from "../services/cart.service.js";
 
 // Controller xử lý request tạo mới voucher và trả về kết quả
 export const createVoucher = async (req, res, next) => {
@@ -8,8 +8,8 @@ export const createVoucher = async (req, res, next) => {
     const voucher = await VoucherService.createVoucher(req.body);
     res.status(201).json({
       status: 201,
-      message: 'Tạo voucher thành công',
-      data: voucher
+      message: "Tạo voucher thành công",
+      data: voucher,
     });
   } catch (error) {
     next(error);
@@ -25,20 +25,20 @@ export const getAllVouchers = async (req, res, next) => {
     if (page < 1 || limit < 1) {
       return res.status(400).json({
         status: 400,
-        message: 'Tham số phân trang page hoặc limit không hợp lệ!'
+        message: "Tham số phân trang page hoặc limit không hợp lệ!",
       });
     }
 
     const result = await VoucherService.getAllVouchers(page, limit);
     res.status(200).json({
       status: 200,
-      message: 'Lấy danh sách voucher thành công',
+      message: "Lấy danh sách voucher thành công",
       data: result.vouchers,
       pagination: {
         currentPage: page,
         limit: limit,
-        totalItems: result.totalItems
-      }
+        totalItems: result.totalItems,
+      },
     });
   } catch (error) {
     next(error);
@@ -55,12 +55,15 @@ export const getCustomerVouchers = async (req, res, next) => {
       const cartInfo = await cartService.getCart(accountId);
       orderValue = cartInfo.total_price || 0;
     }
-    
-    const vouchers = await VoucherService.getCustomerVouchers(accountId, orderValue);
+
+    const vouchers = await VoucherService.getCustomerVouchers(
+      accountId,
+      orderValue,
+    );
     res.status(200).json({
       status: 200,
-      message: 'Lấy danh sách voucher thành công',
-      data: vouchers
+      message: "Lấy danh sách voucher thành công",
+      data: vouchers,
     });
   } catch (error) {
     next(error);
@@ -73,8 +76,8 @@ export const getVoucherById = async (req, res, next) => {
     const voucher = await VoucherService.getVoucherById(req.params.voucherId);
     res.status(200).json({
       status: 200,
-      message: 'Lấy thông tin voucher thành công',
-      data: voucher
+      message: "Lấy thông tin voucher thành công",
+      data: voucher,
     });
   } catch (error) {
     next(error);
@@ -85,31 +88,34 @@ export const getVoucherById = async (req, res, next) => {
 export const getVoucherByCode = async (req, res, next) => {
   try {
     const voucher = await VoucherService.getVoucherByCode(req.params.code);
-    
+
     const now = new Date();
     // Nếu voucher đã hết hạn sử dụng
     if (now > new Date(voucher.end_date)) {
       return res.status(200).json({
         status: 200,
-        message: 'Voucher đã hết hạn sử dụng.',
+        message: "Voucher đã hết hạn sử dụng.",
         data: {
           voucher_id: voucher.voucher_id,
           code: voucher.code,
-          name: voucher.name
-        }
+          name: voucher.name,
+        },
       });
     }
 
     // Nếu voucher có giới hạn số lượng và đã dùng hết
-    if (voucher.total_quantity > 0 && voucher.used_quantity >= voucher.total_quantity) {
+    if (
+      voucher.total_quantity > 0 &&
+      voucher.used_quantity >= voucher.total_quantity
+    ) {
       return res.status(200).json({
         status: 200,
-        message: 'Voucher đã hết lượt sử dụng.',
+        message: "Voucher đã hết lượt sử dụng.",
         data: {
           voucher_id: voucher.voucher_id,
           code: voucher.code,
-          name: voucher.name
-        }
+          name: voucher.name,
+        },
       });
     }
 
@@ -121,13 +127,13 @@ export const getVoucherByCode = async (req, res, next) => {
       discount_type: voucher.discount_type,
       discount_value: voucher.discount_value,
       min_order_value: voucher.min_order_value,
-      max_discount_amount: voucher.max_discount_amount
+      max_discount_amount: voucher.max_discount_amount,
     };
 
     res.status(200).json({
       status: 200,
-      message: 'Lấy thông tin voucher thành công',
-      data: filteredVoucher
+      message: "Lấy thông tin voucher thành công",
+      data: filteredVoucher,
     });
   } catch (error) {
     next(error);
@@ -137,27 +143,34 @@ export const getVoucherByCode = async (req, res, next) => {
 // Controller xử lý cập nhật thông tin voucher
 export const updateVoucher = async (req, res, next) => {
   try {
-    const voucher = await VoucherService.updateVoucher(req.params.voucherId, req.body);
+    const voucher = await VoucherService.updateVoucher(
+      req.params.voucherId,
+      req.body,
+    );
     res.status(200).json({
       status: 200,
-      message: 'Cập nhật thông tin voucher thành công',
-      data: voucher
+      message: "Cập nhật thông tin voucher thành công",
+      data: voucher,
     });
   } catch (error) {
     next(error);
   }
 };
 
-
 // Controller nhận request áp dụng voucher vào đơn hàng
 export const applyVoucher = async (req, res, next) => {
   try {
     const { voucherId, accountId, orderId, orderValue } = req.body;
-    const result = await VoucherService.applyVoucher(voucherId, accountId, orderId, orderValue);
+    const result = await VoucherService.applyVoucher(
+      voucherId,
+      accountId,
+      orderId,
+      orderValue,
+    );
     res.status(200).json({
       status: 200,
-      message: 'Áp dụng voucher thành công',
-      data: result
+      message: "Áp dụng voucher thành công",
+      data: result,
     });
   } catch (error) {
     next(error);
@@ -167,11 +180,13 @@ export const applyVoucher = async (req, res, next) => {
 // Controller lấy lịch sử sử dụng của một mã voucher (Admin xem)
 export const getVoucherUsagesByVoucherId = async (req, res, next) => {
   try {
-    const usages = await VoucherService.getVoucherUsagesByVoucherId(req.params.voucherId);
+    const usages = await VoucherService.getVoucherUsagesByVoucherId(
+      req.params.voucherId,
+    );
     res.status(200).json({
       status: 200,
-      message: 'Lấy lịch sử sử dụng voucher thành công',
-      data: usages
+      message: "Lấy lịch sử sử dụng voucher thành công",
+      data: usages,
     });
   } catch (error) {
     next(error);
@@ -181,11 +196,13 @@ export const getVoucherUsagesByVoucherId = async (req, res, next) => {
 // Controller lấy danh sách các voucher mà tài khoản đã dùng
 export const getVoucherUsagesByAccountId = async (req, res, next) => {
   try {
-    const usages = await VoucherService.getVoucherUsagesByAccountId(req.params.accountId);
+    const usages = await VoucherService.getVoucherUsagesByAccountId(
+      req.params.accountId,
+    );
     res.status(200).json({
       status: 200,
-      message: 'Lấy danh sách voucher đã dùng thành công',
-      data: usages
+      message: "Lấy danh sách voucher đã dùng thành công",
+      data: usages,
     });
   } catch (error) {
     next(error);

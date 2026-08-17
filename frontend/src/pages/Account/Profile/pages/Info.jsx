@@ -12,10 +12,7 @@ export default function Info() {
         <title>Tài khoản của tôi | Selene</title>
       </Helmet>
 
-      <InfoPanel
-        profile={profile}
-        setProfile={setProfile}
-      />
+      <InfoPanel profile={profile} setProfile={setProfile} />
     </>
   );
 }

@@ -1,5 +1,5 @@
 // backend\product-service\src\controllers\brand.controller.js
-import * as brandService from '../services/brand.service.js';
+import * as brandService from "../services/brand.service.js";
 
 // lấy danh sách brand
 export const handleGetAllBrands = async (req, res) => {
@@ -12,16 +12,15 @@ export const handleGetAllBrands = async (req, res) => {
     // Trả về cấu trúc JSON chuẩn của hệ thống
     return res.status(200).json({
       status: 200,
-      message: 'Lấy danh sách thương hiệu thành công!',
+      message: "Lấy danh sách thương hiệu thành công!",
       data: result.brands,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
-
   } catch (error) {
-    console.error('Lỗi tại handleGetAllBrands Controller:', error.message);
+    console.error("Lỗi tại handleGetAllBrands Controller:", error.message);
     return res.status(500).json({
       status: 500,
-      message: error.message || 'Internal Server Error!'
+      message: error.message || "Internal Server Error!",
     });
   }
 };
@@ -32,23 +31,28 @@ export const handleCreateBrand = async (req, res) => {
     const { name, description, status } = req.body;
 
     // Gọi service xử lý nghiệp vụ
-    const result = await brandService.createBrand({ name, description, status });
+    const result = await brandService.createBrand({
+      name,
+      description,
+      status,
+    });
 
     return res.status(201).json({
       status: 201,
-      message: 'Tạo mới thương hiệu thành công!',
-      data: result
+      message: "Tạo mới thương hiệu thành công!",
+      data: result,
     });
-
   } catch (error) {
-    console.error('Lỗi tại handleCreateBrand Controller:', error.message);
+    console.error("Lỗi tại handleCreateBrand Controller:", error.message);
 
     // Phân tách lỗi Client (400) vs lỗi Server (500)
-    const isClientError = error.message.includes('bắt buộc') || error.message.includes('đã tồn tại');
+    const isClientError =
+      error.message.includes("bắt buộc") ||
+      error.message.includes("đã tồn tại");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
-      message: error.message || 'Internal Server Error!'
+      message: error.message || "Internal Server Error!",
     });
   }
 };
@@ -60,24 +64,28 @@ export const handleUpdateBrand = async (req, res) => {
     const { name, description, status } = req.body;
 
     // Gọi service xử lý
-    const result = await brandService.updateBrand(brandId, { name, description, status });
+    const result = await brandService.updateBrand(brandId, {
+      name,
+      description,
+      status,
+    });
 
     return res.status(200).json({
       status: 200,
-      message: 'Cập nhật thương hiệu thành công!',
-      data: result
+      message: "Cập nhật thương hiệu thành công!",
+      data: result,
     });
-
   } catch (error) {
-    console.error('Lỗi tại handleUpdateBrand Controller:', error.message);
+    console.error("Lỗi tại handleUpdateBrand Controller:", error.message);
 
-    const isClientError = error.message.includes('trống') || 
-                          error.message.includes('đã được sử dụng') || 
-                          error.message.includes('Không tìm thấy');
+    const isClientError =
+      error.message.includes("trống") ||
+      error.message.includes("đã được sử dụng") ||
+      error.message.includes("Không tìm thấy");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
-      message: error.message || 'Internal Server Error!'
+      message: error.message || "Internal Server Error!",
     });
   }
 };

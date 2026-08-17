@@ -1,11 +1,11 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 // Cấu hình transporter với Google SMTP
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  host: process.env.EMAIL_HOST || "smtp.gmail.com",
   port: parseInt(process.env.EMAIL_PORT) || 465,
   secure: true,
   auth: {
@@ -18,7 +18,10 @@ const transporter = nodemailer.createTransport({
  * Định dạng tiền tệ VND
  */
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(amount);
 };
 
 export const sendOrderSuccessEmail = async (userEmail, orderData) => {
@@ -36,9 +39,9 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
   } = orderData;
 
   // Tạo dòng HTML cho danh sách sản phẩm
-  let itemsHtml = '';
+  let itemsHtml = "";
   if (items && items.length > 0) {
-    items.forEach(item => {
+    items.forEach((item) => {
       itemsHtml += `
         <tr>
           <td style="padding: 15px 0; border-bottom: 1px solid #f0f0f0; min-width: 200px;">
@@ -166,10 +169,10 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent: ' + info.response);
+    console.log("Email sent: " + info.response);
     return info;
   } catch (error) {
-    console.error('Lỗi khi gửi email:', error);
+    console.error("Lỗi khi gửi email:", error);
     throw error;
   }
 };

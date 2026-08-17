@@ -47,7 +47,11 @@ function Pagination({ page, total, onChange }) {
     <div className="pl-pagination">
       {pages.map((p, idx) =>
         p === "..." ? (
-          <button key={`ellipsis-${idx}`} className="pl-pg-btn pl-pg-ellipsis" disabled>
+          <button
+            key={`ellipsis-${idx}`}
+            className="pl-pg-btn pl-pg-ellipsis"
+            disabled
+          >
             ...
           </button>
         ) : (
@@ -58,7 +62,7 @@ function Pagination({ page, total, onChange }) {
           >
             {p}
           </button>
-        )
+        ),
       )}
       <button
         className="pl-pg-btn pl-pg-next"
@@ -75,9 +79,7 @@ function Pagination({ page, total, onChange }) {
 export default function ProductList() {
   const [openCats, setOpenCats] = useState({});
   const [showAllCats, setShowAll] = useState(false);
-  const visibleCategories = showAllCats
-  ? CATEGORIES
-  : CATEGORIES.slice(0, 5);
+  const visibleCategories = showAllCats ? CATEGORIES : CATEGORIES.slice(0, 5);
   const [sortOpen, setSortOpen] = useState(false);
   const [sortVal, setSortVal] = useState("default");
   const [page, setPage] = useState(1);
@@ -98,16 +100,15 @@ export default function ProductList() {
   const [checkedLocation, setCheckedLocation] = useState([]);
 
   const toggleCat = (label) =>
-    setOpenCats(prev => ({ ...prev, [label]: !prev[label] }));
+    setOpenCats((prev) => ({ ...prev, [label]: !prev[label] }));
 
-    const toggleCheck = (setter, val) =>
-    setter(prev =>
-      prev.includes(val)
-        ? prev.filter(v => v !== val)
-        : [...prev, val]
+  const toggleCheck = (setter, val) =>
+    setter((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val],
     );
 
-  const sortLabel = SORT_OPTIONS.find(o => o.value === sortVal)?.label ?? "Mặc định";
+  const sortLabel =
+    SORT_OPTIONS.find((o) => o.value === sortVal)?.label ?? "Mặc định";
 
   /* sort products (demo) */
   let displayed = [...products];
@@ -124,8 +125,15 @@ export default function ProductList() {
   if (sortVal === "price_desc")
     displayed.sort((a, b) => b.discount_price - a.discount_price);
 
-  const handleSort = (val) => { setSortVal(val); setSortOpen(false); setPage(1); };
-  const handlePage = (p) => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const handleSort = (val) => {
+    setSortVal(val);
+    setSortOpen(false);
+    setPage(1);
+  };
+  const handlePage = (p) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -504,33 +512,45 @@ export default function ProductList() {
       <div className="pl-breadcrumb-wrap">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb mb-0">
-            <li className="breadcrumb-item"><Link to="/">Trang chủ</Link></li>
-            <li className="breadcrumb-item active" aria-current="page">Thời Trang Nữ</li>
+            <li className="breadcrumb-item">
+              <Link to="/">Trang chủ</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Thời Trang Nữ
+            </li>
           </ol>
         </nav>
       </div>
 
       {/* ── LAYOUT: SIDEBAR + MAIN ── */}
       <div className="pl-layout">
-
         {/* ══════════ SIDEBAR ══════════ */}
         <aside className="pl-sidebar">
-
           {/* DANH MỤC */}
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Danh Mục Sản Phẩm</div>
 
-            <button className="pl-cat-all-btn" onClick={() => setShowAll(s => !s)}>
+            <button
+              className="pl-cat-all-btn"
+              onClick={() => setShowAll((s) => !s)}
+            >
               Xem tất cả danh mục
-              <i className={`bi bi-chevron-${showAllCats ? "up" : "down"}`} style={{ fontSize: 11 }} />
+              <i
+                className={`bi bi-chevron-${showAllCats ? "up" : "down"}`}
+                style={{ fontSize: 11 }}
+              />
             </button>
 
             <div className="pl-sidebar-scroll">
               <ul className="pl-cat-list">
-                {visibleCategories.map(cat => (
+                {visibleCategories.map((cat) => (
                   <li key={cat.label} className="pl-cat-item">
                     <div className="pl-cat-row">
-                      <Link to="#" className="pl-cat-row" style={{ flex: 1, padding: 0 }}>
+                      <Link
+                        to="#"
+                        className="pl-cat-row"
+                        style={{ flex: 1, padding: 0 }}
+                      >
                         {cat.label}
                       </Link>
                       {cat.children && (
@@ -543,12 +563,17 @@ export default function ProductList() {
                         </button>
                       )}
                       {!cat.children && (
-                        <button className="pl-cat-toggle" style={{ visibility: "hidden" }}>+</button>
+                        <button
+                          className="pl-cat-toggle"
+                          style={{ visibility: "hidden" }}
+                        >
+                          +
+                        </button>
                       )}
                     </div>
                     {cat.children && openCats[cat.label] && (
                       <ul className="pl-subcat-list">
-                        {cat.children.map(sub => (
+                        {cat.children.map((sub) => (
                           <li key={sub}>
                             <Link to="#">{sub}</Link>
                           </li>
@@ -565,9 +590,16 @@ export default function ProductList() {
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Nơi Bán</div>
             <ul className="pl-check-list">
-              {["Hồ Chí Minh", "Hà Nội"].map(loc => (
-                <li key={loc} onClick={() => toggleCheck(setCheckedLocation, loc)}>
-                  <input type="checkbox" readOnly checked={checkedLocation.includes(loc)} />
+              {["Hồ Chí Minh", "Hà Nội"].map((loc) => (
+                <li
+                  key={loc}
+                  onClick={() => toggleCheck(setCheckedLocation, loc)}
+                >
+                  <input
+                    type="checkbox"
+                    readOnly
+                    checked={checkedLocation.includes(loc)}
+                  />
                   {loc}
                 </li>
               ))}
@@ -578,9 +610,13 @@ export default function ProductList() {
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Thương Hiệu</div>
             <ul className="pl-check-list">
-              {["Rubies Studio", "Rubies Rubies"].map(b => (
+              {["Rubies Studio", "Rubies Rubies"].map((b) => (
                 <li key={b} onClick={() => toggleCheck(setCheckedBrand, b)}>
-                  <input type="checkbox" readOnly checked={checkedBrand.includes(b)} />
+                  <input
+                    type="checkbox"
+                    readOnly
+                    checked={checkedBrand.includes(b)}
+                  />
                   {b}
                 </li>
               ))}
@@ -598,9 +634,13 @@ export default function ProductList() {
                   "Từ 400.000đ - 600.000đ",
                   "Từ 600.000đ - 800.000đ",
                   "Từ 800.000đ - 1 triệu",
-                ].map(r => (
+                ].map((r) => (
                   <li key={r} onClick={() => toggleCheck(setCheckedPrice, r)}>
-                    <input type="checkbox" readOnly checked={checkedPrice.includes(r)} />
+                    <input
+                      type="checkbox"
+                      readOnly
+                      checked={checkedPrice.includes(r)}
+                    />
                     {r}
                   </li>
                 ))}
@@ -612,24 +652,27 @@ export default function ProductList() {
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Kích Thước</div>
             <div className="pl-size-wrap">
-              {["XS", "S", "M", "L", "XL", "XXL", "XXXL"].map(sz => (
-                <button key={sz} className="pl-size-btn">{sz}</button>
+              {["XS", "S", "M", "L", "XL", "XXL", "XXXL"].map((sz) => (
+                <button key={sz} className="pl-size-btn">
+                  {sz}
+                </button>
               ))}
             </div>
           </div>
-
         </aside>
 
         {/* ══════════ MAIN ══════════ */}
         <main className="pl-main">
-
           {/* TOP ROW */}
           <div className="pl-main-top">
             <h1 className="pl-main-heading">Thời Trang Nữ</h1>
 
             {/* Sort dropdown */}
             <div className="pl-sort-wrap">
-              <button className="pl-sort-btn" onClick={() => setSortOpen(s => !s)}>
+              <button
+                className="pl-sort-btn"
+                onClick={() => setSortOpen((s) => !s)}
+              >
                 <i className="bi bi-sort-down-alt" />
                 Sắp xếp:&nbsp;<strong>{sortLabel}</strong>
                 <i className="bi bi-chevron-down" />
@@ -637,7 +680,7 @@ export default function ProductList() {
 
               {sortOpen && (
                 <div className="pl-sort-menu">
-                  {SORT_OPTIONS.map(opt => (
+                  {SORT_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       className={`pl-sort-option${sortVal === opt.value ? " selected" : ""}`}
@@ -653,54 +696,54 @@ export default function ProductList() {
 
           {/* GRID */}
 
-{loading ? (
-  <div style={{ padding: 40, textAlign: "center" }}>
-    Đang tải sản phẩm...
-  </div>
-) : (
-  <>
-    <div className="pl-grid">
-      {displayed.map((p) => (
-        <div className="pl-pcard" key={p.product_id}>
-          <div className="pl-pimg-wrap">
-            <Link to={`/san-pham/${p.product_id}`}>
-              <img
-                src={p.image_url}
-                alt={p.product_name}
-                loading="lazy"
-              />
-            </Link>
-          </div>
-
-          <div className="pl-pinfo">
-            <Link
-              to={`/san-pham/${p.product_id}`}
-              className="pl-pname"
-            >
-              {p.product_name}
-            </Link>
-
-            <div className="pl-price-row">
-              <span className="pl-price-current">
-                {fmt(p.discount_price)}
-              </span>
-
-              <span className="pl-price-original">
-                {fmt(p.original_price)}
-              </span>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: "center" }}>
+              Đang tải sản phẩm...
             </div>
-          </div>
-        </div>
-      ))}
-    </div>
+          ) : (
+            <>
+              <div className="pl-grid">
+                {displayed.map((p) => (
+                  <div className="pl-pcard" key={p.product_id}>
+                    <div className="pl-pimg-wrap">
+                      <Link to={`/san-pham/${p.product_id}`}>
+                        <img
+                          src={p.image_url}
+                          alt={p.product_name}
+                          loading="lazy"
+                        />
+                      </Link>
+                    </div>
 
-    <Pagination
-      page={pagination.currentPage}
-      total={pagination.totalPages}
-      onChange={handlePage}
-    />
-  </>
-)}
+                    <div className="pl-pinfo">
+                      <Link
+                        to={`/san-pham/${p.product_id}`}
+                        className="pl-pname"
+                      >
+                        {p.product_name}
+                      </Link>
+
+                      <div className="pl-price-row">
+                        <span className="pl-price-current">
+                          {fmt(p.discount_price)}
+                        </span>
+
+                        <span className="pl-price-original">
+                          {fmt(p.original_price)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Pagination
+                page={pagination.currentPage}
+                total={pagination.totalPages}
+                onChange={handlePage}
+              />
+            </>
+          )}
         </main>
       </div>
 

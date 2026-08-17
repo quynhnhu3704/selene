@@ -1,25 +1,25 @@
 // backend\product-service\src\server.js
-import express from 'express';
-import morgan from 'morgan';
-import cors from 'cors';
-import { config } from './configs/index.js';
-import productRoutes from './routes/product.routes.js';
-import { errorHandler } from './middlewares/error.middleware.js';
-import { connectRabbitMQ } from './configs/rabbitmq.js';
+import express from "express";
+import morgan from "morgan";
+import cors from "cors";
+import { config } from "./configs/index.js";
+import productRoutes from "./routes/product.routes.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
+import { connectRabbitMQ } from "./configs/rabbitmq.js";
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Routes
-app.use('/', productRoutes);
+app.use("/", productRoutes);
 
 // Health Check
-app.get('/health', (req, res) => {
-  res.json({ service: 'product', status: 'UP' });
+app.get("/health", (req, res) => {
+  res.json({ service: "product", status: "UP" });
 });
 
 // Error Handling

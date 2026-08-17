@@ -5,12 +5,11 @@ import { Helmet } from "react-helmet-async";
 import { CartContext } from "../../context/CartContext";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 
-const fmt = (n) =>
-  Number(n || 0).toLocaleString("vi-VN") + "đ";
+const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Checkout() {
-const [paymentMethod, setPaymentMethod] = useState("cod");
-    const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [submitting, setSubmitting] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -19,49 +18,42 @@ const [paymentMethod, setPaymentMethod] = useState("cod");
   const selected = location.state?.selected || [];
   const cartItems = cart?.items || [];
 
-const handlePlaceOrder = async () => {
-  try {
-    setSubmitting(true);
+  const handlePlaceOrder = async () => {
+    try {
+      setSubmitting(true);
 
-    const payload = {
-      cart_item_ids: selected,
-      payment_method: paymentMethod,
-      shipping_name: "",
-      shipping_phone: "",
-      shipping_address: "",
-      note: "",
-    };
+      const payload = {
+        cart_item_ids: selected,
+        payment_method: paymentMethod,
+        shipping_name: "",
+        shipping_phone: "",
+        shipping_address: "",
+        note: "",
+      };
 
-    console.log("Creating order:", payload);
+      console.log("Creating order:", payload);
 
-    // TODO: gọi order service
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setSubmitting(false);
-  }
-};
+      // TODO: gọi order service
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Chỉ lấy những sản phẩm được chọn từ Cart
   const selectedItems = cartItems.filter(
-    (item) =>
-      item.product &&
-      selected.includes(item.cart_item_id)
+    (item) => item.product && selected.includes(item.cart_item_id),
   );
 
-  const totalQty = selectedItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
+  const totalQty = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const totalPrice = selectedItems.reduce(
     (sum, item) =>
       sum +
-      (item.product.discount_price ??
-        item.product.original_price ??
-        0) *
+      (item.product.discount_price ?? item.product.original_price ?? 0) *
         item.quantity,
-    0
+    0,
   );
 
   // Nếu vào trang thanh toán trực tiếp mà không có sản phẩm
@@ -357,26 +349,18 @@ const handlePlaceOrder = async () => {
       />
 
       <div className="checkout-page">
-        <h1 className="checkout-title">
-          Thanh toán
-        </h1>
+        <h1 className="checkout-title">Thanh toán</h1>
 
         <div className="row g-5 align-items-start">
-
           {/* ================= LEFT ================= */}
           <div className="col-12 col-lg-7">
-
             {/* Thông tin giao hàng */}
             <div className="checkout-card">
-              <div className="checkout-card-title">
-                Thông tin giao hàng
-              </div>
+              <div className="checkout-card-title">Thông tin giao hàng</div>
 
               <div className="row">
                 <div className="col-md-6">
-                  <label className="checkout-label">
-                    Họ và tên
-                  </label>
+                  <label className="checkout-label">Họ và tên</label>
 
                   <input
                     type="text"
@@ -386,9 +370,7 @@ const handlePlaceOrder = async () => {
                 </div>
 
                 <div className="col-md-6">
-                  <label className="checkout-label">
-                    Số điện thoại
-                  </label>
+                  <label className="checkout-label">Số điện thoại</label>
 
                   <input
                     type="tel"
@@ -398,9 +380,7 @@ const handlePlaceOrder = async () => {
                 </div>
               </div>
 
-              <label className="checkout-label">
-                Địa chỉ nhận hàng
-              </label>
+              <label className="checkout-label">Địa chỉ nhận hàng</label>
 
               <input
                 type="text"
@@ -408,9 +388,7 @@ const handlePlaceOrder = async () => {
                 placeholder="Nhập địa chỉ nhận hàng"
               />
 
-              <label className="checkout-label">
-                Ghi chú
-              </label>
+              <label className="checkout-label">Ghi chú</label>
 
               <textarea
                 className="checkout-textarea"
@@ -420,73 +398,65 @@ const handlePlaceOrder = async () => {
 
             {/* Phương thức thanh toán */}
             <div className="checkout-card">
-              <div className="checkout-card-title">
-                Phương thức thanh toán
-              </div>
+              <div className="checkout-card-title">Phương thức thanh toán</div>
 
-{/* COD */}
-<label className="checkout-payment-option">
-  <input
-    type="radio"
-    name="payment"
-    value="cod"
-    checked={paymentMethod === "cod"}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-  />
+              {/* COD */}
+              <label className="checkout-payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cod"
+                  checked={paymentMethod === "cod"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
 
-  <i className="bi bi-cash-coin" />
+                <i className="bi bi-cash-coin" />
 
-  <span className="checkout-payment-text">
-    Thanh toán khi nhận hàng
-  </span>
-</label>
+                <span className="checkout-payment-text">
+                  Thanh toán khi nhận hàng
+                </span>
+              </label>
 
-{/* CHUYỂN KHOẢN */}
-<label className="checkout-payment-option">
-  <input
-    type="radio"
-    name="payment"
-    value="bank"
-    checked={paymentMethod === "bank"}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-  />
+              {/* CHUYỂN KHOẢN */}
+              <label className="checkout-payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="bank"
+                  checked={paymentMethod === "bank"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
 
-  <i className="bi bi-bank" />
+                <i className="bi bi-bank" />
 
-  <span className="checkout-payment-text">
-    Chuyển khoản ngân hàng
-  </span>
-</label>
+                <span className="checkout-payment-text">
+                  Chuyển khoản ngân hàng
+                </span>
+              </label>
 
-{/* SEPAY QR */}
-<label className="checkout-payment-option">
-  <input
-    type="radio"
-    name="payment"
-    value="sepay"
-    checked={paymentMethod === "sepay"}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-  />
+              {/* SEPAY QR */}
+              <label className="checkout-payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="sepay"
+                  checked={paymentMethod === "sepay"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
 
-  <i className="bi bi-qr-code" />
+                <i className="bi bi-qr-code" />
 
-  <span className="checkout-payment-text">
-    Thanh toán QR qua SePay
-  </span>
-</label>
-
+                <span className="checkout-payment-text">
+                  Thanh toán QR qua SePay
+                </span>
+              </label>
             </div>
-
           </div>
 
           {/* ================= RIGHT ================= */}
           <div className="col-12 col-lg-5">
-
             <div className="checkout-summary">
-
-              <div className="checkout-card-title">
-                Đơn hàng của bạn
-              </div>
+              <div className="checkout-card-title">Đơn hàng của bạn</div>
 
               {selectedItems.map((item) => {
                 const price =
@@ -495,20 +465,13 @@ const handlePlaceOrder = async () => {
                   0;
 
                 return (
-                  <div
-                    className="checkout-item"
-                    key={item.cart_item_id}
-                  >
+                  <div className="checkout-item" key={item.cart_item_id}>
                     <img
-                      src={
-                        item.product.image_url ||
-                        "/placeholder.jpg"
-                      }
+                      src={item.product.image_url || "/placeholder.jpg"}
                       alt={item.product.product_name}
                       className="checkout-item-img"
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "/placeholder.jpg";
+                        e.currentTarget.src = "/placeholder.jpg";
                       }}
                     />
 
@@ -544,33 +507,23 @@ const handlePlaceOrder = async () => {
               <hr className="checkout-divider" />
 
               <div className="checkout-summary-row">
-                <span>
-                  Tạm tính ({totalQty} sản phẩm)
-                </span>
+                <span>Tạm tính ({totalQty} sản phẩm)</span>
 
-                <strong>
-                  {fmt(totalPrice)}
-                </strong>
+                <strong>{fmt(totalPrice)}</strong>
               </div>
 
               <div className="checkout-summary-row">
                 <span>Phí vận chuyển</span>
 
-                <strong style={{ color: "#28a745" }}>
-                  Miễn phí
-                </strong>
+                <strong style={{ color: "#28a745" }}>Miễn phí</strong>
               </div>
 
               <hr className="checkout-divider" />
 
               <div className="checkout-total">
-                <span className="checkout-total-label">
-                  Tổng cộng
-                </span>
+                <span className="checkout-total-label">Tổng cộng</span>
 
-                <span className="checkout-total-value">
-                  {fmt(totalPrice)}
-                </span>
+                <span className="checkout-total-value">{fmt(totalPrice)}</span>
               </div>
 
               <button
@@ -582,9 +535,7 @@ const handlePlaceOrder = async () => {
               >
                 Đặt hàng
               </button>
-
             </div>
-
           </div>
         </div>
       </div>

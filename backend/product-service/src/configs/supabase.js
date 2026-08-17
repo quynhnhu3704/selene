@@ -1,9 +1,5 @@
 // backend\product-service\src\configs\supabase.js
-import { createClient } from '@supabase/supabase-js';
-import { config } from './index.js';
+import { createClient } from "@supabase/supabase-js";
+import { config } from "./index.js";
 
-
-export const supabase = createClient(
-    config.supabaseUrl,
-    config.supabaseKey
-);
+export const supabase = createClient(config.supabaseUrl, config.supabaseKey);

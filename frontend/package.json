@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "all": "^0.0.0",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",

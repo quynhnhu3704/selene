@@ -13,10 +13,16 @@ const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 /* ── SKELETON ROW ── */
 function SkeletonRow() {
   return (
-    <div className="cart-item placeholder-glow">
-      <div className="placeholder rounded" style={{ width: 80, height: 100, flexShrink: 0 }} />
+    <div className="cart-item placeholder-item">
+      <div
+        className="placeholder rounded"
+        style={{ width: 80, height: 100, flexShrink: 0 }}
+      />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="placeholder col-8 rounded mb-2" style={{ height: 16 }} />
+        <div
+          className="placeholder col-8 rounded mb-2"
+          style={{ height: 16 }}
+        />
         <div className="placeholder col-4 rounded" style={{ height: 13 }} />
       </div>
       <div className="placeholder rounded" style={{ width: 100, height: 36 }} />
@@ -27,9 +33,10 @@ function SkeletonRow() {
 }
 
 export default function Cart() {
-  const { cart, removeFromCart, increaseQuantity, decreaseQuantity } = useContext(CartContext);
+  const { cart, removeFromCart, increaseQuantity, decreaseQuantity } =
+    useContext(CartContext);
   const [selected, setSelected] = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const cartItems = cart?.items || [];
 
@@ -43,34 +50,33 @@ export default function Cart() {
   useEffect(() => {
     if (cartItems.length > 0 && selected.length === 0) {
       setSelected(
-        cartItems
-          .filter(i => i.product)
-          .map(i => i.cart_item_id)
+        cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
       );
     }
   }, [cartItems]);
 
-  const allSelected = selected.length === cartItems.length && cartItems.length > 0;
+  const allSelected =
+    selected.length === cartItems.length && cartItems.length > 0;
   const toggleAll = () =>
     setSelected(
       allSelected
         ? []
-        : cartItems
-            .filter(i => i.product)
-            .map(i => i.cart_item_id)
+        : cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
     );
-  const toggleOne     = (id) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  const toggleOne = (id) =>
+    setSelected((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id],
+    );
 
   const selectedItems = cartItems.filter(
-    i => i.product && selected.includes(i.cart_item_id)
+    (i) => i.product && selected.includes(i.cart_item_id),
   );
-  const totalQty      = selectedItems.reduce((s, i) => s + i.quantity, 0);
+  const totalQty = selectedItems.reduce((s, i) => s + i.quantity, 0);
   const totalPrice = selectedItems.reduce(
     (s, i) =>
       s +
-      (i.product.discount_price ?? i.product.original_price ?? 0) *
-      i.quantity,
-    0
+      (i.product.discount_price ?? i.product.original_price ?? 0) * i.quantity,
+    0,
   );
 
   const handleDelete = async (id) => {
@@ -84,14 +90,17 @@ export default function Cart() {
       reverseButtons: true,
       buttonsStyling: false,
       customClass: {
-        popup: "se-swal-popup", title: "se-swal-title",
-        htmlContainer: "se-swal-text", confirmButton: "se-btn-confirm",
-        cancelButton: "se-btn-cancel", actions: "se-swal-actions",
+        popup: "se-swal-popup",
+        title: "se-swal-title",
+        htmlContainer: "se-swal-text",
+        confirmButton: "se-btn-confirm",
+        cancelButton: "se-btn-cancel",
+        actions: "se-swal-actions",
       },
     });
     if (!res.isConfirmed) return;
     await removeFromCart(id);
-    setSelected(p => p.filter(x => x !== id));
+    setSelected((p)       => p.filter((x) => x !== id));
   };
 
   const handleDeleteSelected = async () => {
@@ -105,9 +114,12 @@ export default function Cart() {
       reverseButtons: true,
       buttonsStyling: false,
       customClass: {
-        popup: "se-swal-popup", title: "se-swal-title",
-        htmlContainer: "se-swal-text", confirmButton: "se-btn-confirm",
-        cancelButton: "se-btn-cancel", actions: "se-swal-actions",
+        popup: "se-swal-popup",
+        title: "se-swal-title",
+        htmlContainer: "se-swal-text",
+        confirmButton: "se-btn-confirm",
+        cancelButton: "se-btn-cancel",
+        actions: "se-swal-actions",
       },
     });
     if (!res.isConfirmed) return;
@@ -119,15 +131,38 @@ export default function Cart() {
   if (!loading && cartItems.length === 0) {
     return (
       <>
-        <Helmet><title>Giỏ hàng | Selene</title></Helmet>
-        <Breadcrumb items={[{ label: "Trang chủ", path: "/" }, { label: "Giỏ hàng" }]} />
-        <div style={{ padding: "80px 75px", textAlign: "center", background: "#fff" }}>
-          <i className="bi bi-bag-x" style={{ fontSize: 64, color: "#e0e0e0", display: "block", marginBottom: 20 }} />
-          <h4 style={{ fontWeight: 800, color: "#212529", marginBottom: 8 }}>Giỏ hàng đang trống</h4>
+        <Helmet>
+          <title>Giỏ hàng | Selene</title>
+        </Helmet>
+        <Breadcrumb
+          items={[{ label: "Trang chủ", path: "/" }, { label: "Giỏ hàng" }]}
+        />
+        <div
+          style={{
+            padding: "80px 75px",
+            textAlign: "center",
+            background: "#fff",
+          }}
+        >
+          <i
+            className="bi bi-bag-x"
+            style={{
+              fontSize: 64,
+              color: "#e0e0e0",
+              display: "block",
+              marginBottom: 20,
+            }}
+          />
+          <h4 style={{ fontWeight: 800, color: "#212529", marginBottom: 8 }}>
+            Giỏ hàng đang trống
+          </h4>
           <p style={{ color: "#6c757d", fontSize: 15, marginBottom: 28 }}>
             Khám phá bộ sưu tập và chọn ngay những món đồ yêu thích!
           </p>
-          <Link to="/san-pham" className="btn btn-dark fw-semibold px-5 form-btn">
+          <Link
+            to="/san-pham"
+            className="btn btn-dark fw-semibold px-5 form-btn"
+          >
             Khám phá sản phẩm
           </Link>
         </div>
@@ -137,7 +172,9 @@ export default function Cart() {
 
   return (
     <>
-      <Helmet><title>Giỏ hàng | Selene</title></Helmet>
+      <Helmet>
+        <title>Giỏ hàng | Selene</title>
+      </Helmet>
 
       <style>{`
         /* ── LAYOUT ── */
@@ -276,21 +313,19 @@ export default function Cart() {
         }
       `}</style>
 
-      <Breadcrumb items={[{ label: "Trang chủ", path: "/" }, { label: "Giỏ hàng" }]} />
+      <Breadcrumb
+        items={[{ label: "Trang chủ", path: "/" }, { label: "Giỏ hàng" }]}
+      />
 
       <div className="cart-page">
         <div className="row g-5 align-items-start">
-
           {/* ══════════════════ CỘT TRÁI: DANH SÁCH ══════════════════ */}
           <div className="col-12 col-lg-8">
-
             {/* heading */}
             <div className="d-flex align-items-baseline gap-3 mb-4">
               <h1 className="cart-heading">Giỏ hàng</h1>
               {!loading && (
-                <span className="cart-sub">
-                  {cart.total_quantity} sản phẩm
-                </span>
+                <span className="cart-sub">{cart.total_quantity} sản phẩm</span>
               )}
             </div>
 
@@ -317,101 +352,104 @@ export default function Cart() {
             {/* items */}
             <div className="cart-list">
               {loading
-                ? [1, 2, 3].map(k => <SkeletonRow key={k} />)
-                : cartItems.filter(i => i.product).map(item => (
-                  <div className="cart-item" key={item.cart_item_id}>
+                ? [1, 2, 3].map((k) => <SkeletonRow key={k} />)
+                : cartItems
+                    .filter((i) => i.product)
+                    .map((item) => (
+                      <div className="cart-item" key={item.cart_item_id}>
+                        {/* checkbox */}
+                        <input
+                          type="checkbox"
+                          className="cart-item-check"
+                          checked={selected.includes(item.cart_item_id)}
+                          onChange={() => toggleOne(item.cart_item_id)}
+                        />
 
-                    {/* checkbox */}
-<input
-  type="checkbox"
-  className="cart-item-check"
-  checked={selected.includes(item.cart_item_id)}
-  onChange={() => toggleOne(item.cart_item_id)}
-/>
+                        {/* image */}
+                        <div className="cart-item-img-wrap">
+                          <Link to={`/san-pham/${item.product.product_id}`}>
+                            <img
+                              src={item.product.image_url || "/placeholder.jpg"}
+                              alt={item.product.product_name}
+                              className="cart-item-img"
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder.jpg";
+                              }}
+                            />
+                          </Link>
+                        </div>
 
-                    {/* image */}
-<div className="cart-item-img-wrap">
-  <Link to={`/san-pham/${item.product.product_id}`}>
-    <img
-      src={item.product.image_url || "/placeholder.jpg"}
-      alt={item.product.product_name}
-      className="cart-item-img"
-      onError={(e) => {
-        e.currentTarget.src = "/placeholder.jpg";
-      }}
-    />
-  </Link>
-</div>
+                        {/* info */}
+                        <div className="cart-item-info">
+                          <Link
+                            to={`/san-pham/${item.product.product_id}`}
+                            className="cart-item-name"
+                          >
+                            {item.product.product_name}
+                          </Link>
+                          {item.product.color && (
+                            <span className="cart-item-meta">
+                              Màu: {item.product.color}
+                            </span>
+                          )}
 
-                    {/* info */}
-                    <div className="cart-item-info">
-                      <Link
-  to={`/san-pham/${item.product.product_id}`}
-  className="cart-item-name"
->
-  {item.product.product_name}
-</Link>
-          {item.product.color && (
-            <span className="cart-item-meta">
-              Màu: {item.product.color}
-            </span>
-          )}
+                          {item.product.size && (
+                            <span className="cart-item-meta ms-2">
+                              · Size: {item.product.size}
+                            </span>
+                          )}
+                        </div>
 
-          {item.product.size && (
-            <span className="cart-item-meta ms-2">
-              · Size: {item.product.size}
-            </span>
-          )}
-                    </div>
+                        {/* đơn giá */}
+                        <div className="cart-item-price">
+                          {fmt(
+                            item.product.discount_price ??
+                              item.product.original_price ??
+                              0,
+                          )}
+                        </div>
 
-                    {/* đơn giá */}
-                    <div className="cart-item-price">
-                      {fmt(
-                        item.product.discount_price ??
-                        item.product.original_price ??
-                        0
-                      )}
-                    </div>
+                        {/* qty stepper */}
+                        <div className="cart-qty">
+                          <button
+                            className="cart-qty-btn"
+                            disabled={item.quantity <= 1}
+                            onClick={() => decreaseQuantity(item.cart_item_id)}
+                          >
+                            <i className="bi bi-dash" />
+                          </button>
+                          <span className="cart-qty-val">{item.quantity}</span>
+                          <button
+                            className="cart-qty-btn"
+                            disabled={
+                              item.quantity >=
+                              (item.product.stock_quantity ?? 0)
+                            }
+                            onClick={() => increaseQuantity(item.cart_item_id)}
+                          >
+                            <i className="bi bi-plus" />
+                          </button>
+                        </div>
 
-                    {/* qty stepper */}
-                    <div className="cart-qty">
-                      <button
-                        className="cart-qty-btn"
-                        disabled={item.quantity <= 1}
-                        onClick={() => decreaseQuantity(item.cart_item_id)}
-                      >
-                        <i className="bi bi-dash" />
-                      </button>
-                      <span className="cart-qty-val">{item.quantity}</span>
-                      <button
-                        className="cart-qty-btn"
-                        disabled={item.quantity >= (item.product.stock_quantity ?? 0)}
-                        onClick={() => increaseQuantity(item.cart_item_id)}
-                      >
-                        <i className="bi bi-plus" />
-                      </button>
-                    </div>
+                        {/* thành tiền */}
+                        <div className="cart-item-subtotal">
+                          {fmt(
+                            (item.product.discount_price ??
+                              item.product.original_price ??
+                              0) * item.quantity,
+                          )}
+                        </div>
 
-                    {/* thành tiền */}
-<div className="cart-item-subtotal">
-  {fmt(
-    (item.product.discount_price ??
-      item.product.original_price ??
-      0) * item.quantity
-  )}
-</div>
-
-                    {/* delete */}
-                    <button
-                      className="cart-del-btn"
-                      onClick={() => handleDelete(item.cart_item_id)}
-                      title="Xoá sản phẩm"
-                    >
-                      <i className="bi bi-trash3" />
-                    </button>
-                  </div>
-                ))
-              }
+                        {/* delete */}
+                        <button
+                          className="cart-del-btn"
+                          onClick={() => handleDelete(item.cart_item_id)}
+                          title="Xoá sản phẩm"
+                        >
+                          <i className="bi bi-trash3" />
+                        </button>
+                      </div>
+                    ))}
             </div>
 
             {/* back link */}
@@ -434,10 +472,22 @@ export default function Cart() {
 
               {loading ? (
                 <div className="placeholder-glow">
-                  <div className="placeholder col-8 rounded mb-3" style={{ height: 16 }} />
-                  <div className="placeholder col-6 rounded mb-2" style={{ height: 14 }} />
-                  <div className="placeholder col-5 rounded mb-4" style={{ height: 14 }} />
-                  <div className="placeholder w-100 rounded-pill" style={{ height: 50 }} />
+                  <div
+                    className="placeholder col-8 rounded mb-3"
+                    style={{ height: 16 }}
+                  />
+                  <div
+                    className="placeholder col-6 rounded mb-2"
+                    style={{ height: 14 }}
+                  />
+                  <div
+                    className="placeholder col-5 rounded mb-4"
+                    style={{ height: 14 }}
+                  />
+                  <div
+                    className="placeholder w-100 rounded-pill"
+                    style={{ height: 50 }}
+                  />
                 </div>
               ) : (
                 <>
@@ -447,20 +497,26 @@ export default function Cart() {
                   </div>
                   <div className="cart-summary-row">
                     <span>Phí vận chuyển</span>
-                    <span style={{ color: "#28a745", fontWeight: 700 }}>Miễn phí</span>
+                    <span style={{ color: "#28a745", fontWeight: 700 }}>
+                      Miễn phí
+                    </span>
                   </div>
 
                   <hr className="cart-summary-divider" />
 
                   <div className="cart-summary-total">
                     <span className="cart-summary-total-label">Tổng cộng</span>
-                    <span className="cart-summary-total-val">{fmt(totalPrice)}</span>
+                    <span className="cart-summary-total-val">
+                      {fmt(totalPrice)}
+                    </span>
                   </div>
 
                   <button
                     className="cart-checkout-btn"
                     disabled={selected.length === 0}
-                    onClick={() => navigate("/thanh-toan", { state: { selected } })}
+                    onClick={() =>
+                      navigate("/thanh-toan", { state: { selected } })
+                    }
                   >
                     <i className="bi bi-bag-check" />
                     Thanh toán ngay
@@ -473,12 +529,20 @@ export default function Cart() {
 
                   {/* payment icons */}
                   <div className="d-flex justify-content-center gap-2 mt-3 flex-wrap">
-                    {["bi-credit-card", "bi-wallet2", "bi-bank", "bi-qr-code"].map(ic => (
+                    {[
+                      "bi-credit-card",
+                      "bi-wallet2",
+                      "bi-bank",
+                      "bi-qr-code",
+                    ].map((ic) => (
                       <div
                         key={ic}
                         style={{
-                          border: "1px solid #eee", borderRadius: 8,
-                          padding: "5px 10px", fontSize: 18, color: "#adb5bd",
+                          border: "1px solid #eee",
+                          borderRadius: 8,
+                          padding: "5px 10px",
+                          fontSize: 18,
+                          color: "#adb5bd",
                         }}
                       >
                         <i className={`bi ${ic}`} />
@@ -489,7 +553,6 @@ export default function Cart() {
               )}
             </div>
           </div>
-
         </div>
       </div>
     </>

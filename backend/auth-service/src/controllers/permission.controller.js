@@ -1,6 +1,5 @@
 // backend\auth-service\src\controllers\permission.controller.js
-import * as permissionService from '../services/permission.service.js';
-
+import * as permissionService from "../services/permission.service.js";
 
 // lấy tất cả các quyền hiện có
 export const handleGetAllPermissions = async (req, res) => {
@@ -10,15 +9,14 @@ export const handleGetAllPermissions = async (req, res) => {
     // Thành công (OK -> 200)
     return res.status(200).json({
       status: 200,
-      message: 'Lấy danh sách tất cả các quyền thành công!',
-      data: result
+      message: "Lấy danh sách tất cả các quyền thành công!",
+      data: result,
     });
-
   } catch (error) {
     // Lỗi hệ thống không lường trước
     return res.status(500).json({
       status: 500,
-      message: 'Internal Server Error!'
+      message: "Internal Server Error!",
     });
   }
 };
@@ -26,12 +24,12 @@ export const handleGetAllPermissions = async (req, res) => {
 // lấy các quyển theo accountId
 export const handleGetPermissionsByAccountId = async (req, res) => {
   try {
-    const { accountId } = req.params; 
+    const { accountId } = req.params;
 
     if (!accountId) {
       return res.status(400).json({
         status: 400,
-        message: 'Vui lòng cung cấp mã tài khoản (accountId)!'
+        message: "Vui lòng cung cấp mã tài khoản (accountId)!",
       });
     }
 
@@ -39,21 +37,20 @@ export const handleGetPermissionsByAccountId = async (req, res) => {
 
     return res.status(200).json({
       status: 200,
-      message: 'Lấy danh sách quyền thành công!',
-      data: result
+      message: "Lấy danh sách quyền thành công!",
+      data: result,
     });
-
   } catch (error) {
-    if (error.message.includes('không tồn tại')) {
+    if (error.message.includes("không tồn tại")) {
       return res.status(404).json({
         status: 404,
-        message: error.message
+        message: error.message,
       });
     }
 
     return res.status(500).json({
       status: 500,
-      message: 'Internal Server Error!'
+      message: "Internal Server Error!",
     });
   }
 };
@@ -66,16 +63,15 @@ export const handleCreatePermission = async (req, res) => {
     // Thành công (Created -> 211 hoặc 201. Ở đây dùng chuẩn 201 Created)
     return res.status(201).json({
       status: 201,
-      message: 'Thêm mới quyền hạn thành công!',
-      data: result
+      message: "Thêm mới quyền hạn thành công!",
+      data: result,
     });
-
   } catch (error) {
     // Nếu là lỗi nghiệp vụ được throw chủ động từ Service (400, 409)
     if (error.status) {
       return res.status(error.status).json({
         status: error.status,
-        message: error.message
+        message: error.message,
       });
     }
 
@@ -83,7 +79,7 @@ export const handleCreatePermission = async (req, res) => {
     console.error("Error at handleCreatePermission: ", error);
     return res.status(500).json({
       status: 500,
-      message: 'Internal Server Error!'
+      message: "Internal Server Error!",
     });
   }
 };
@@ -94,21 +90,23 @@ export const handleUpdatePermission = async (req, res) => {
     const { permissionId } = req.params;
 
     // Gọi đúng tên hàm trong Service
-    const result = await permissionService.updatePermission(permissionId, req.body);
+    const result = await permissionService.updatePermission(
+      permissionId,
+      req.body,
+    );
 
     // Thành công (OK -> 200)
     return res.status(200).json({
       status: 200,
-      message: 'Cập nhật thông tin quyền hạn thành công!',
-      data: result
+      message: "Cập nhật thông tin quyền hạn thành công!",
+      data: result,
     });
-
   } catch (error) {
     // Trả về lỗi nghiệp vụ (404 Not Found, 409 Conflict)
     if (error.status) {
       return res.status(error.status).json({
         status: error.status,
-        message: error.message
+        message: error.message,
       });
     }
 
@@ -116,7 +114,7 @@ export const handleUpdatePermission = async (req, res) => {
     console.error("Error at handleUpdatePermission: ", error);
     return res.status(500).json({
       status: 500,
-      message: 'Internal Server Error!'
+      message: "Internal Server Error!",
     });
   }
 };

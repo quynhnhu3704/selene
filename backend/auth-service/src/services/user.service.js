@@ -1,8 +1,8 @@
 // backend\auth-service\src\services\permission.service.js
-import { config } from '../configs/index.js';
-import bcrypt from 'bcrypt';
-import { UserProfileModel } from '../models/userProfile.model.js';
-import { AccountModel } from '../models/account.model.js';
+import { config } from "../configs/index.js";
+import bcrypt from "bcrypt";
+import { UserProfileModel } from "../models/userProfile.model.js";
+import { AccountModel } from "../models/account.model.js";
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -17,17 +17,17 @@ const uploadAvatar = async (prefix, identifier, avatarFile) => {
   }
 
   // 1. Lấy phần mở rộng của file
-  const fileExt = avatarFile.originalname.split('.').pop();
-  
+  const fileExt = avatarFile.originalname.split(".").pop();
+
   // 2. Tạo tên file chuẩn hóa không dùng dấu gạch dưới theo yêu cầu cũ
   const fileName = `Avatar${prefix}${identifier}${Date.now()}.${fileExt}`;
 
   // 3. Tiến hành upload lên bucket 'avatars' thông qua Model
   try {
     const publicUrl = await UserProfileModel.uploadAvatarFile(
-      fileName, 
-      avatarFile.buffer, 
-      avatarFile.mimetype || 'image/jpeg'
+      fileName,
+      avatarFile.buffer,
+      avatarFile.mimetype || "image/jpeg",
     );
     return publicUrl;
   } catch (uploadError) {
@@ -39,39 +39,45 @@ const uploadAvatar = async (prefix, identifier, avatarFile) => {
 // ================== CUSTOMER =====================
 
 // cập nhật hồ sơ thông tin khách hàng
-export const updateCustomerProfile = async (accountId, profileData, avatarFile) => {
+export const updateCustomerProfile = async (
+  accountId,
+  profileData,
+  avatarFile,
+) => {
   const { full_name, phone_number, gender, dob } = profileData;
   let avatarUrl = null;
 
-  // 1. LẤY GIÁ TRỊ BAN ĐẦU: 
-  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
+  // 1. LẤY GIÁ TRỊ BAN ĐẦU:
+  const existingProfile =
+    await UserProfileModel.getProfileByAccountId(accountId);
 
   if (!existingProfile) {
-    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+    throw new Error("Không tìm thấy hồ sơ người dùng hợp lệ!");
   }
 
   // 2. Xử lý tải ảnh lên Supabase Storage nếu có file mới được chọn
   if (avatarFile) {
-    avatarUrl = await uploadAvatar('_customer', accountId, avatarFile);
+    avatarUrl = await uploadAvatar("_customer", accountId, avatarFile);
   }
 
   // 3. XỬ LÝ LOGIC ĐỘNG: Tạo object update loại bỏ toàn bộ trường rỗng/null/undefined
   const updateData = {};
-  const isValidValue = (val) => val !== undefined && val !== null && String(val).trim() !== '';
+  const isValidValue = (val) =>
+    val !== undefined && val !== null && String(val).trim() !== "";
 
   if (isValidValue(full_name)) updateData.full_name = full_name.trim();
   if (isValidValue(phone_number)) updateData.phone_number = phone_number.trim();
   if (isValidValue(gender)) updateData.gender = gender;
   if (isValidValue(dob)) updateData.dob = dob;
-  if (avatarUrl) updateData.avatar_url = avatarUrl; 
+  if (avatarUrl) updateData.avatar_url = avatarUrl;
   updateData.updated_at = new Date();
 
   // 4. Tiến hành cập nhật vào bảng user_profiles
   try {
     await UserProfileModel.updateProfileByAccountId(accountId, updateData);
   } catch (updateError) {
-    console.error('Lỗi DB:', updateError.message);
-    throw new Error('Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!');
+    console.error("Lỗi DB:", updateError.message);
+    throw new Error("Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!");
   }
 
   // 5. TRẢ VỀ GIÁ TRỊ MỚI NẾU THAY ĐỔI - NẾU KHÔNG THÌ TRẢ VỀ GIÁ TRỊ BAN ĐẦU
@@ -80,12 +86,12 @@ export const updateCustomerProfile = async (accountId, profileData, avatarFile) 
     phone_number: updateData.phone_number || existingProfile.phone_number,
     gender: updateData.gender || existingProfile.gender,
     dob: updateData.dob || existingProfile.dob,
-    avatar_url: avatarUrl || existingProfile.avatar_url 
+    avatar_url: avatarUrl || existingProfile.avatar_url,
   };
 
   return {
-    message: 'Cập nhật thông tin hồ sơ thành công!',
-    profile: responseData
+    message: "Cập nhật thông tin hồ sơ thành công!",
+    profile: responseData,
   };
 };
 
@@ -96,12 +102,12 @@ export const getCustomerProfile = async (accountId) => {
   const account = await AccountModel.findById(accountId);
 
   if (!profile || !account) {
-    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+    throw new Error("Không tìm thấy hồ sơ người dùng hợp lệ!");
   }
 
   // 2. Trả về thông tin profile tìm được
   return {
-    message: 'Lấy thông tin hồ sơ thành công!',
+    message: "Lấy thông tin hồ sơ thành công!",
     profile: {
       profile_id: profile.profile_id,
       full_name: profile.full_name,
@@ -110,7 +116,7 @@ export const getCustomerProfile = async (accountId) => {
       avatar_url: profile.avatar_url,
       gender: profile.gender,
       dob: profile.dob,
-    }
+    },
   };
 };
 // ================== STAFF =====================
@@ -121,11 +127,11 @@ export const getStaffProfile = async (accountId) => {
   const account = await AccountModel.findById(accountId);
 
   if (!profile || !account) {
-    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+    throw new Error("Không tìm thấy hồ sơ người dùng hợp lệ!");
   }
 
   return {
-    message: 'Lấy thông tin hồ sơ thành công!',
+    message: "Lấy thông tin hồ sơ thành công!",
     profile: {
       profile_id: profile.profile_id,
       full_name: profile.full_name,
@@ -136,36 +142,55 @@ export const getStaffProfile = async (accountId) => {
       gender: profile.gender,
       dob: profile.dob,
       address: profile.address,
-      status: profile.status
-    }
+      status: profile.status,
+    },
   };
 };
 
 // cập nhật hồ sơ thông tin nhân viên (cá nhân)
-export const updateStaffProfile = async (accountId, profileData, avatarFile) => {
-  const { full_name, email, phone_number, identity_card, gender, dob, address } = profileData;
+export const updateStaffProfile = async (
+  accountId,
+  profileData,
+  avatarFile,
+) => {
+  const {
+    full_name,
+    email,
+    phone_number,
+    identity_card,
+    gender,
+    dob,
+    address,
+  } = profileData;
   let avatarUrl = null;
 
-  const existingProfile = await UserProfileModel.getProfileByAccountId(accountId);
+  const existingProfile =
+    await UserProfileModel.getProfileByAccountId(accountId);
   const existingAccount = await UserProfileModel.getAccountById(accountId);
 
   if (!existingProfile || !existingAccount) {
-    throw new Error('Không tìm thấy hồ sơ người dùng hợp lệ!');
+    throw new Error("Không tìm thấy hồ sơ người dùng hợp lệ!");
   }
 
   if (identity_card && identity_card.trim() !== existingProfile.identity_card) {
-    const duplicateId = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
+    const duplicateId = await UserProfileModel.checkDuplicate(
+      "user_profiles",
+      "identity_card",
+      identity_card.trim(),
+    );
     if (duplicateId && duplicateId.account_id !== accountId) {
-      throw new Error('Số CMND/CCCD này đã được sử dụng!');
+      throw new Error("Số CMND/CCCD này đã được sử dụng!");
     }
   }
 
   if (phone_number && phone_number.trim() !== existingProfile.phone_number) {
-    const phoneCheck = await UserProfileModel.checkPhoneExists(phone_number.trim());
+    const phoneCheck = await UserProfileModel.checkPhoneExists(
+      phone_number.trim(),
+    );
     if (phoneCheck && phoneCheck.length > 0) {
-      const isDuplicate = phoneCheck.some(p => p.account_id !== accountId);
+      const isDuplicate = phoneCheck.some((p) => p.account_id !== accountId);
       if (isDuplicate) {
-        throw new Error('Số điện thoại này đã được sử dụng!');
+        throw new Error("Số điện thoại này đã được sử dụng!");
       }
     }
   }
@@ -173,35 +198,40 @@ export const updateStaffProfile = async (accountId, profileData, avatarFile) => 
   if (email && email.trim() !== existingAccount.email) {
     const emailCheck = await UserProfileModel.checkEmailExists(email.trim());
     if (emailCheck && emailCheck.length > 0) {
-      const isDuplicate = emailCheck.some(a => a.account_id !== accountId);
+      const isDuplicate = emailCheck.some((a) => a.account_id !== accountId);
       if (isDuplicate) {
-        throw new Error('Email này đã được sử dụng!');
+        throw new Error("Email này đã được sử dụng!");
       }
     }
   }
 
   if (avatarFile) {
-    avatarUrl = await uploadAvatar('_staff', accountId, avatarFile);
+    avatarUrl = await uploadAvatar("_staff", accountId, avatarFile);
   }
 
   const updateData = {};
   const accountUpdateData = {};
-  const isValidValue = (val) => val !== undefined && val !== null && String(val).trim() !== '';
+  const isValidValue = (val) =>
+    val !== undefined && val !== null && String(val).trim() !== "";
 
   if (isValidValue(full_name)) updateData.full_name = full_name.trim();
   if (isValidValue(phone_number)) {
     updateData.phone_number = phone_number.trim();
   }
-  if (isValidValue(identity_card)) updateData.identity_card = identity_card.trim();
+  if (isValidValue(identity_card))
+    updateData.identity_card = identity_card.trim();
   if (isValidValue(gender)) updateData.gender = gender;
   if (isValidValue(dob)) updateData.dob = dob;
   if (isValidValue(address)) updateData.address = address.trim();
-  if (avatarUrl) updateData.avatar_url = avatarUrl; 
+  if (avatarUrl) updateData.avatar_url = avatarUrl;
   updateData.updated_at = new Date();
 
   if (isValidValue(email)) accountUpdateData.email = email.trim();
 
-  if (Object.keys(updateData).length > 1 || Object.keys(accountUpdateData).length > 0) {
+  if (
+    Object.keys(updateData).length > 1 ||
+    Object.keys(accountUpdateData).length > 0
+  ) {
     try {
       if (Object.keys(updateData).length > 1) {
         await UserProfileModel.updateProfileByAccountId(accountId, updateData);
@@ -210,8 +240,8 @@ export const updateStaffProfile = async (accountId, profileData, avatarFile) => 
         await AccountModel.updateAccountById(accountId, accountUpdateData);
       }
     } catch (updateError) {
-      console.error('Lỗi DB:', updateError.message);
-      throw new Error('Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!');
+      console.error("Lỗi DB:", updateError.message);
+      throw new Error("Cập nhật thất bại do lỗi hệ thống cơ sở dữ liệu!");
     }
   }
 
@@ -223,25 +253,23 @@ export const updateStaffProfile = async (accountId, profileData, avatarFile) => 
     gender: updateData.gender || existingProfile.gender,
     dob: updateData.dob || existingProfile.dob,
     address: updateData.address || existingProfile.address,
-    avatar_url: avatarUrl || existingProfile.avatar_url 
+    avatar_url: avatarUrl || existingProfile.avatar_url,
   };
 
   return {
-    message: 'Cập nhật thông tin cá nhân thành công!',
-    profile: responseData
+    message: "Cập nhật thông tin cá nhân thành công!",
+    profile: responseData,
   };
 };
-
 
 // ================== ADMIN =====================
 
 // thêm nhân viên
 export const createStaff = async (staffData, avatarFile) => {
-  const { 
-    email, phone, full_name, identity_card, gender, dob, address 
-  } = staffData;
+  const { email, phone, full_name, identity_card, gender, dob, address } =
+    staffData;
   let avatarUrl = null;
-  
+
   const now = new Date().toISOString();
 
   // 1. Kiểm tra Email đã tồn tại chưa
@@ -249,7 +277,7 @@ export const createStaff = async (staffData, avatarFile) => {
 
   // Nếu có dữ liệu trả về (mảng không rỗng) -> Email đã tồn tại
   if (emailCheck && emailCheck.length > 0) {
-    throw new Error('Email này đã được sử dụng!');
+    throw new Error("Email này đã được sử dụng!");
   }
 
   // 2. Kiểm tra Số điện thoại đã tồn tại chưa
@@ -257,33 +285,37 @@ export const createStaff = async (staffData, avatarFile) => {
 
   // Nếu có dữ liệu trả về (mảng không rỗng) -> Số điện thoại đã tồn tại
   if (phoneCheck && phoneCheck.length > 0) {
-    throw new Error('Số điện thoại này đã được sử dụng!');
+    throw new Error("Số điện thoại này đã được sử dụng!");
   }
 
   if (identity_card) {
-    const existingProfile = await UserProfileModel.checkDuplicate('user_profiles', 'identity_card', identity_card.trim());
+    const existingProfile = await UserProfileModel.checkDuplicate(
+      "user_profiles",
+      "identity_card",
+      identity_card.trim(),
+    );
 
     if (existingProfile) {
-      throw new Error('Số CMND/CCCD này đã tồn tại trên hệ thống!');
+      throw new Error("Số CMND/CCCD này đã tồn tại trên hệ thống!");
     }
   }
 
   // Tải ảnh đại diện lên Supabase Storage nếu Admin có chọn file ảnh
   if (avatarFile) {
-    avatarUrl = await uploadAvatar('_staff', Date.now(), avatarFile);
+    avatarUrl = await uploadAvatar("_staff", Date.now(), avatarFile);
   }
 
   // 2. Tìm Role 'staff' động từ DB để lấy đúng role_id
   let roleData;
   try {
-    roleData = await UserProfileModel.findRoleByName('staff');
+    roleData = await UserProfileModel.findRoleByName("staff");
   } catch (roleError) {
     throw new Error('Hệ thống chưa cấu hình vai trò "staff" (nhân viên)!');
   }
 
   // 3. Tạo mật khẩu mặc định bằng chính số điện thoại và mã hóa Bcrypt
   const hashedPassword = await bcrypt.hash(phone.trim(), 10);
-  const accountId = 'acc-' + generateId();
+  const accountId = "acc-" + generateId();
 
   // 4. BƯỚC 1: Tạo tài khoản trong bảng accounts trước
   try {
@@ -294,53 +326,55 @@ export const createStaff = async (staffData, avatarFile) => {
       password: hashedPassword,
       role_id: roleData.role_id,
       role_name: roleData.name,
-      status: 'active',
+      status: "active",
       created_at: now,
-      updated_at: now
+      updated_at: now,
     });
   } catch (accError) {
-    console.error('Lỗi insert accounts:', accError.message);
+    console.error("Lỗi insert accounts:", accError.message);
     throw new Error(`Lỗi khi tạo tài khoản nhân viên: ${accError.message}`);
   }
 
   // 5. BƯỚC 2: Tạo hồ sơ thông tin chi tiết trong bảng user_profiles
-  const profileId = 'user-' + generateId();
+  const profileId = "user-" + generateId();
   try {
     await UserProfileModel.insertProfile({
       profile_id: profileId,
-      account_id: accountId, 
+      account_id: accountId,
       full_name: full_name ? full_name.trim() : null,
       phone_number: phone.trim(),
       identity_card: identity_card ? identity_card.trim() : null,
-      avatar_url: avatarUrl, 
+      avatar_url: avatarUrl,
       dob: dob || null,
       address: address ? address.trim() : null,
       gender: gender,
-      status: 'active',
+      status: "active",
       created_at: now,
-      updated_at: now
+      updated_at: now,
     });
   } catch (profileError) {
-    console.error('Lỗi insert user_profiles:', profileError.message);
-    throw new Error(`Tạo tài khoản thành công nhưng lỗi tạo hồ sơ: ${profileError.message}`);
+    console.error("Lỗi insert user_profiles:", profileError.message);
+    throw new Error(
+      `Tạo tài khoản thành công nhưng lỗi tạo hồ sơ: ${profileError.message}`,
+    );
   }
 
   return {
     accountId,
     profileId,
     email,
-    role_name: roleData.name
+    role_name: roleData.name,
   };
 };
 
-// lấy danh sách hồ sơ người dùng 
+// lấy danh sách hồ sơ người dùng
 export const getProfileList = async (page, limit) => {
   // 1. Đếm tổng số bản ghi hiện có trong DB trước bằng cơ chế head: true (tối ưu hóa tốc độ đếm)
   let totalItems = 0;
   try {
     totalItems = await UserProfileModel.countProfiles();
   } catch (countError) {
-    console.error('Lỗi DB khi đếm số lượng profile:', countError.message);
+    console.error("Lỗi DB khi đếm số lượng profile:", countError.message);
     throw new Error(`Lỗi hệ thống cơ sở dữ liệu: ${countError.message}`);
   }
 
@@ -351,21 +385,21 @@ export const getProfileList = async (page, limit) => {
   if (from >= totalItems || totalItems === 0) {
     return {
       profiles: [],
-      totalItems: totalItems
+      totalItems: totalItems,
     };
   }
 
-  // 2. TIẾN HÀNH LẤY DỮ LIỆU 
+  // 2. TIẾN HÀNH LẤY DỮ LIỆU
   let profiles = [];
   try {
     profiles = await UserProfileModel.getProfilesInRange(from, to);
   } catch (error) {
-    console.error('Lỗi DB khi lấy danh sách profile:', error.message);
+    console.error("Lỗi DB khi lấy danh sách profile:", error.message);
     throw new Error(`Lỗi hệ thống cơ sở dữ liệu: ${error.message}`);
   }
 
   // Chuẩn hóa cấu trúc dữ liệu trả về giống cấp cũ
-  const formattedProfiles = (profiles || []).map(item => ({
+  const formattedProfiles = (profiles || []).map((item) => ({
     profile_id: item.profile_id,
     account_id: item.account_id,
     name: item.full_name,
@@ -373,12 +407,12 @@ export const getProfileList = async (page, limit) => {
     identity_card: item.identity_card,
     email: item.accounts ? item.accounts.email : null,
     status: item.accounts ? item.accounts.status : null,
-    role_name: item.accounts ? item.accounts.role_name : null
+    role_name: item.accounts ? item.accounts.role_name : null,
   }));
 
   return {
     profiles: formattedProfiles,
-    totalItems: totalItems
+    totalItems: totalItems,
   };
 };
 
@@ -388,7 +422,7 @@ export const getProfileDetail = async (profileId) => {
 
   // Nếu không tìm thấy hoặc có lỗi
   if (!profile) {
-    throw new Error('Không tìm thấy thông tin hồ sơ người dùng hợp lệ!');
+    throw new Error("Không tìm thấy thông tin hồ sơ người dùng hợp lệ!");
   }
 
   const formattedDetail = {
@@ -400,16 +434,16 @@ export const getProfileDetail = async (profileId) => {
     dob: profile.dob,
     address: profile.address,
     status: profile.status,
-    
+
     email: profile.accounts ? profile.accounts.email : null,
-    phone: profile.phone_number, 
+    phone: profile.phone_number,
     role_name: profile.accounts ? profile.accounts.role_name : null,
   };
 
   return formattedDetail;
 };
 
-// cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles 
+// cập nhật thông tin tối ưu đồng bộ 2 bảng accounts và user_profiles
 export const updateAccount = async (accountId, { email, phone, status }) => {
   const accountUpdateData = {};
   const profileUpdateData = {};
@@ -426,10 +460,14 @@ export const updateAccount = async (accountId, { email, phone, status }) => {
   const updatePromises = [];
 
   if (Object.keys(accountUpdateData).length > 0) {
-    updatePromises.push(AccountModel.updateAccountById(accountId, accountUpdateData));
+    updatePromises.push(
+      AccountModel.updateAccountById(accountId, accountUpdateData),
+    );
   }
   if (Object.keys(profileUpdateData).length > 0) {
-    updatePromises.push(UserProfileModel.updateProfileByAccountId(accountId, profileUpdateData));
+    updatePromises.push(
+      UserProfileModel.updateProfileByAccountId(accountId, profileUpdateData),
+    );
   }
 
   if (updatePromises.length > 0) {
@@ -440,8 +478,8 @@ export const updateAccount = async (accountId, { email, phone, status }) => {
   const updatedAccount = await UserProfileModel.getAccountById(accountId);
 
   return {
-    message: 'Cập nhật thông tin tài khoản và hồ sơ thành công!',
-    account: updatedAccount
+    message: "Cập nhật thông tin tài khoản và hồ sơ thành công!",
+    account: updatedAccount,
   };
 };
 
@@ -456,7 +494,7 @@ export const getAccountList = async (page = 1, limit = 10) => {
 
   const [totalItems, accounts] = await Promise.all([
     AccountModel.countAccounts(),
-    AccountModel.getAccountsInRange(from, to)
+    AccountModel.getAccountsInRange(from, to),
   ]);
 
   // Tính toán tổng số trang
@@ -468,27 +506,27 @@ export const getAccountList = async (page = 1, limit = 10) => {
       currentPage: pageNum,
       limit: limitNum,
       totalItems,
-      totalPages
-    }
+      totalPages,
+    },
   };
 };
 
 // thay đổ mật khẩu
 export const changePassword = async (accountId, oldPassword, newPassword) => {
   if (!oldPassword || !newPassword) {
-    throw new Error('Vui lòng cung cấp đầy đủ mật khẩu cũ và mới!');
+    throw new Error("Vui lòng cung cấp đầy đủ mật khẩu cũ và mới!");
   }
 
   // Lấy thông tin tài khoản hiện tại
   const account = await AccountModel.findById(accountId);
   if (!account) {
-    throw new Error('Không tìm thấy tài khoản!');
+    throw new Error("Không tìm thấy tài khoản!");
   }
 
   // So sánh mật khẩu cũ
   const isMatch = await bcrypt.compare(oldPassword, account.password);
   if (!isMatch) {
-    throw new Error('Mật khẩu cũ không chính xác!');
+    throw new Error("Mật khẩu cũ không chính xác!");
   }
 
   // 1. Mã hóa mật khẩu mới bằng bcrypt
@@ -496,7 +534,9 @@ export const changePassword = async (accountId, oldPassword, newPassword) => {
   const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
   // 2. Chỉ gọi DUY NHẤT lớp Model để cập nhật xuống DB (Không viết lệnh supabase tại đây nữa)
-  await AccountModel.updateAccountById(accountId, { password: hashedNewPassword });
+  await AccountModel.updateAccountById(accountId, {
+    password: hashedNewPassword,
+  });
 
-  return { message: 'Đổi mật khẩu mới thành công!' };
+  return { message: "Đổi mật khẩu mới thành công!" };
 };

@@ -58,18 +58,17 @@ export default function PasswordPanel() {
 
     if (!password) {
       newErrors.password = "Vui lòng nhập mật khẩu mới";
-    }
-    else if (!passwordRegex.test(password)) {
-      newErrors.password = "Mật khẩu phải từ 8-50 ký tự, gồm chữ hoa, chữ thường và số";
-    }
-    else if (oldPassword === password) {
-      newErrors.password = "Mật khẩu mới không được trùng với mật khẩu hiện tại";
+    } else if (!passwordRegex.test(password)) {
+      newErrors.password =
+        "Mật khẩu phải từ 8-50 ký tự, gồm chữ hoa, chữ thường và số";
+    } else if (oldPassword === password) {
+      newErrors.password =
+        "Mật khẩu mới không được trùng với mật khẩu hiện tại";
     }
 
     if (!confirmPassword) {
       newErrors.confirmPassword = "Vui lòng nhập xác nhận mật khẩu";
-    }
-    else if (password !== confirmPassword) {
+    } else if (password !== confirmPassword) {
       newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
     }
 
@@ -87,7 +86,7 @@ export default function PasswordPanel() {
       // Giữ nguyên logic gọi API cũ: gửi đúng trường `newPassword` lên backend
       const res = await changePassword({
         oldPassword,
-        newPassword: password
+        newPassword: password,
       });
 
       toast.success(res.data.message);
@@ -102,84 +101,147 @@ export default function PasswordPanel() {
 
         clearLogin();
 
-        window.dispatchEvent(
-          new Event("login-success")
-        );
+        window.dispatchEvent(new Event("login-success"));
 
         window.location.href = "/tai-khoan/dang-nhap";
       }, 1800);
-
     } catch (err) {
-      toast.error(
-        err.response?.data?.message ||
-        "Đổi mật khẩu thất bại"
-      );
+      toast.error(err.response?.data?.message || "Đổi mật khẩu thất bại");
     }
   };
 
   return (
     <>
-      <h5 className="page-panel-title">ĐỔI MẬT KHẨU</h5>          
-        <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 420 }}>
-
-          {/* MẬT KHẨU HIỆN TẠI */}
-          <div>
-            <div className="form-label-row">
-              <span className="form-label mb-0">Mật khẩu hiện tại <span className="text-danger">*</span></span>
-            </div>
-            <div className="form-input-wrap">
-              <input type={showOldPassword ? "text" : "password"} className={`form-control has-eye ${errors.oldPassword ? "border-danger" : ""}`} placeholder="Nhập mật khẩu hiện tại" value={oldPassword} onChange={handleOldPasswordChange} autoComplete="current-password" maxLength={50} required />
-              <button type="button" className="form-eye" onClick={() => setShowOldPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
-                <i className={`bi ${showOldPassword ? "bi-eye-slash" : "bi-eye"}`} />
-              </button>
-              {errors.oldPassword && (
-                <div className="invalid-feedback d-block">{errors.oldPassword}</div>
-              )}
-            </div>
+      <h5 className="page-panel-title">ĐỔI MẬT KHẨU</h5>
+      <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 420 }}>
+        {/* MẬT KHẨU HIỆN TẠI */}
+        <div>
+          <div className="form-label-row">
+            <span className="form-label mb-0">
+              Mật khẩu hiện tại <span className="text-danger">*</span>
+            </span>
           </div>
-
-          {/* MẬT KHẨU MỚI */}
-          <div>
-            <div className="form-label-row">
-              <span className="form-label mb-0">Mật khẩu mới <span className="text-danger">*</span></span>
-            </div>
-            <div className="form-input-wrap">
-              <input type={showPassword ? "text" : "password"} className={`form-control has-eye ${errors.password ? "border-danger" : ""}`} placeholder="Nhập mật khẩu mới" value={password} onChange={handlePasswordChange} autoComplete="new-password" maxLength={50} required />
-              <button type="button" className="form-eye" onClick={() => setShowPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
-                <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
-              </button>
-              {errors.password && (
-                <div className="invalid-feedback d-block">{errors.password}</div>
-              )}
-            </div>
+          <div className="form-input-wrap">
+            <input
+              type={showOldPassword ? "text" : "password"}
+              className={`form-control has-eye ${errors.oldPassword ? "border-danger" : ""}`}
+              placeholder="Nhập mật khẩu hiện tại"
+              value={oldPassword}
+              onChange={handleOldPasswordChange}
+              autoComplete="current-password"
+              maxLength={50}
+              required
+            />
+            <button
+              type="button"
+              className="form-eye"
+              onClick={() => setShowOldPassword((s) => !s)}
+              tabIndex={-1}
+              aria-label="Hiện/ẩn mật khẩu"
+            >
+              <i
+                className={`bi ${showOldPassword ? "bi-eye-slash" : "bi-eye"}`}
+              />
+            </button>
+            {errors.oldPassword && (
+              <div className="invalid-feedback d-block">
+                {errors.oldPassword}
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* XÁC NHẬN MẬT KHẨU MỚI */}
-          <div>
-            <div className="form-label-row">
-              <span className="form-label mb-0">Xác nhận mật khẩu mới <span className="text-danger">*</span></span>
-            </div>
-            <div className="form-input-wrap">
-              <input type={showConfirmPassword ? "text" : "password"} className={`form-control has-eye ${errors.confirmPassword ? "border-danger" : ""}`} placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={handleConfirmPasswordChange} autoComplete="new-password" maxLength={50} required />
-              <button type="button" className="form-eye" onClick={() => setShowConfirmPassword(s => !s)} tabIndex={-1} aria-label="Hiện/ẩn mật khẩu">
-                <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
-              </button>
-              {errors.confirmPassword && (
-                <div className="invalid-feedback d-block">{errors.confirmPassword}</div>
-              )}
-            </div>
+        {/* MẬT KHẨU MỚI */}
+        <div>
+          <div className="form-label-row">
+            <span className="form-label mb-0">
+              Mật khẩu mới <span className="text-danger">*</span>
+            </span>
           </div>
+          <div className="form-input-wrap">
+            <input
+              type={showPassword ? "text" : "password"}
+              className={`form-control has-eye ${errors.password ? "border-danger" : ""}`}
+              placeholder="Nhập mật khẩu mới"
+              value={password}
+              onChange={handlePasswordChange}
+              autoComplete="new-password"
+              maxLength={50}
+              required
+            />
+            <button
+              type="button"
+              className="form-eye"
+              onClick={() => setShowPassword((s) => !s)}
+              tabIndex={-1}
+              aria-label="Hiện/ẩn mật khẩu"
+            >
+              <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
+            </button>
+            {errors.password && (
+              <div className="invalid-feedback d-block">{errors.password}</div>
+            )}
+          </div>
+        </div>
 
-          {/* CỤM NÚT HÀNH ĐỘNG */}
-          <div className="row mt-4">
-            <div className="col-6">
-              <button type="reset" onClick={handleReset} className="form-btn btn btn-outline-dark fw-semibold w-100">Đặt lại</button>
-            </div>
-            <div className="col-6">
-              <button type="submit" className="form-btn btn btn-dark fw-semibold w-100">Cập nhật</button>
-            </div>
+        {/* XÁC NHẬN MẬT KHẨU MỚI */}
+        <div>
+          <div className="form-label-row">
+            <span className="form-label mb-0">
+              Xác nhận mật khẩu mới <span className="text-danger">*</span>
+            </span>
           </div>
-        </form>
+          <div className="form-input-wrap">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              className={`form-control has-eye ${errors.confirmPassword ? "border-danger" : ""}`}
+              placeholder="Nhập lại mật khẩu mới"
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              autoComplete="new-password"
+              maxLength={50}
+              required
+            />
+            <button
+              type="button"
+              className="form-eye"
+              onClick={() => setShowConfirmPassword((s) => !s)}
+              tabIndex={-1}
+              aria-label="Hiện/ẩn mật khẩu"
+            >
+              <i
+                className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`}
+              />
+            </button>
+            {errors.confirmPassword && (
+              <div className="invalid-feedback d-block">
+                {errors.confirmPassword}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* CỤM NÚT HÀNH ĐỘNG */}
+        <div className="row mt-4">
+          <div className="col-6">
+            <button
+              type="reset"
+              onClick={handleReset}
+              className="form-btn btn btn-outline-dark fw-semibold w-100"
+            >
+              Đặt lại
+            </button>
+          </div>
+          <div className="col-6">
+            <button
+              type="submit"
+              className="form-btn btn btn-dark fw-semibold w-100"
+            >
+              Cập nhật
+            </button>
+          </div>
+        </div>
+      </form>
     </>
   );
 }

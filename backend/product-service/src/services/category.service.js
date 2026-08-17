@@ -10,8 +10,8 @@ export const createCategory = async (categoryInput) => {
   try {
     const { name, description, status } = categoryInput;
 
-    if (!name || name.trim() === '') {
-      throw new Error('Tên danh mục là bắt buộc và không được để trống!');
+    if (!name || name.trim() === "") {
+      throw new Error("Tên danh mục là bắt buộc và không được để trống!");
     }
 
     const isExists = await CategoryModel.checkNameExists(name.trim());
@@ -20,23 +20,22 @@ export const createCategory = async (categoryInput) => {
     }
 
     // Sinh ID ngẫu nhiên cho danh mục
-    const category_id = 'cat-' + generateId(); 
+    const category_id = "cat-" + generateId();
 
-    const currentTime = new Date().toISOString(); 
+    const currentTime = new Date().toISOString();
 
     const newCategory = await CategoryModel.create({
       category_id,
       name: name.trim(),
       description,
       status,
-      created_at: currentTime, 
-      updated_at: currentTime
+      created_at: currentTime,
+      updated_at: currentTime,
     });
 
     return newCategory;
-
   } catch (error) {
-    console.error('Lỗi tại createCategory Service:', error.message);
+    console.error("Lỗi tại createCategory Service:", error.message);
     throw error;
   }
 };
@@ -47,15 +46,20 @@ export const updateCategory = async (category_id, updateInput) => {
     const { name, description, status } = updateInput;
 
     // 1. Kiểm tra nếu có cập nhật tên thì không được để trống
-    if (name !== undefined && name.trim() === '') {
-      throw new Error('Tên danh mục không được để trống!');
+    if (name !== undefined && name.trim() === "") {
+      throw new Error("Tên danh mục không được để trống!");
     }
 
     // 2. Nếu sửa tên, kiểm tra xem tên mới có bị trùng với danh mục khác không
     if (name) {
-      const isNameDup = await CategoryModel.checkNameExistsForUpdate(name.trim(), category_id);
+      const isNameDup = await CategoryModel.checkNameExistsForUpdate(
+        name.trim(),
+        category_id,
+      );
       if (isNameDup) {
-        throw new Error(`Tên danh mục '${name}' đã được sử dụng bởi một danh mục khác!`);
+        throw new Error(
+          `Tên danh mục '${name}' đã được sử dụng bởi một danh mục khác!`,
+        );
       }
     }
 
@@ -67,23 +71,24 @@ export const updateCategory = async (category_id, updateInput) => {
       ...(name && { name: name.trim() }),
       ...(description !== undefined && { description }),
       ...(status && { status }),
-      updated_at
+      updated_at,
     };
 
     // 5. Gọi model thực thi
     const updatedCategory = await CategoryModel.update(category_id, updateData);
 
     if (!updatedCategory) {
-      throw new Error('Không tìm thấy danh mục yêu cầu hoặc cập nhật thất bại!');
+      throw new Error(
+        "Không tìm thấy danh mục yêu cầu hoặc cập nhật thất bại!",
+      );
     }
 
     return updatedCategory;
-
   } catch (error) {
-    console.error('Lỗi tại updateCategory Service:', error.message);
+    console.error("Lỗi tại updateCategory Service:", error.message);
     throw error;
   }
-}
+};
 
 // lấy danh sách
 export const getAllCategories = async (options = {}) => {
@@ -106,12 +111,13 @@ export const getAllCategories = async (options = {}) => {
         currentPage: page,
         limit,
         totalItems: count,
-        totalPages
-      }
+        totalPages,
+      },
     };
-
   } catch (error) {
-    console.error('Lỗi tại getAllCategories Service:', error.message);
-    throw new Error('Không thể kết nối đến Supabase để lấy danh sách danh mục!');
+    console.error("Lỗi tại getAllCategories Service:", error.message);
+    throw new Error(
+      "Không thể kết nối đến Supabase để lấy danh sách danh mục!",
+    );
   }
 };
