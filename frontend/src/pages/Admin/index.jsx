@@ -48,29 +48,8 @@ export default function AdminLayout() {
       ? location.pathname === "/admin"
       : location.pathname.startsWith(path);
 
-  const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: "Đăng xuất",
-      text: "Bạn có chắc chắn muốn đăng xuất?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Đăng xuất",
-      cancelButtonText: "Ở lại",
-      reverseButtons: true,
-      focusCancel: true,
-      buttonsStyling: false,
-      customClass: {
-        popup: "se-swal-popup",
-        title: "se-swal-title",
-        htmlContainer: "se-swal-text",
-        confirmButton: "se-btn-confirm",
-        cancelButton: "se-btn-cancel",
-        actions: "se-swal-actions",
-      },
-    });
-    if (!result.isConfirmed) return;
-    // TODO: clearLogin()
-    navigate("/tai-khoan/dang-nhap");
+  const handleGoToStore = () => {
+    navigate("/");
   };
 
   return (
@@ -155,7 +134,7 @@ export default function AdminLayout() {
           border-top: 1px solid rgba(255,255,255,0.07);
           flex-shrink: 0;
         }
-        .adm-logout-btn {
+        .adm-store-btn {
           display: flex; align-items: center; gap: 10px;
           justify-content: ${collapsed ? "center" : "flex-start"};
           background: none; border: none; cursor: pointer;
@@ -165,8 +144,15 @@ export default function AdminLayout() {
           border-radius: 8px; width: 100%;
           transition: all 0.15s;
         }
-        .adm-logout-btn:hover { color: #fff; background: rgba(255,255,255,0.07); }
-        .adm-logout-btn span { display: ${collapsed ? "none" : "inline"}; }
+
+        .adm-store-btn:hover {
+          color: #fff;
+          background: rgba(255,255,255,0.07);
+        }
+
+        .adm-store-btn span {
+          display: ${collapsed ? "none" : "inline"};
+        }
 
         /* ── MAIN ── */
         .adm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -233,9 +219,9 @@ export default function AdminLayout() {
           </nav>
 
           <div className="adm-sidebar-footer">
-            <button className="adm-logout-btn" onClick={handleLogout}>
-              <i className="bi bi-box-arrow-left" style={{ fontSize: 17 }} />
-              <span>Đăng xuất</span>
+            <button className="adm-store-btn" onClick={handleGoToStore}>
+              <i className="bi bi-shop" style={{ fontSize: 17 }} />
+              <span>Về cửa hàng</span>
             </button>
           </div>
         </aside>

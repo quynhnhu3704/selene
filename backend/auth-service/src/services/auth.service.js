@@ -309,15 +309,22 @@ export const loginWithGoogle = async (code) => {
     throw new Error("Tài khoản liên kết Google này hiện đang bị tạm khóa!");
   }
 
-  // 6. Ký cấp bộ mã token nội bộ của riêng hệ thống shop quần áo để người dùng truy cập API
+  // 6. Lấy danh sách quyền theo Role hiện tại
+  const permissions = await AccountModel.getPermissionsByRoleId(
+    account.role_id,
+  );
+
+  // 7. Ký cấp bộ mã token nội bộ của hệ thống
   const jwtPayload = {
     accountId: account.account_id,
     role: account.role_name,
-    permissions: [],
+    permissions,
   };
+
   const accessToken = jwt.sign(jwtPayload, config.jwtAccessSecret, {
     expiresIn: "15m",
   });
+
   const refreshToken = jwt.sign(
     { accountId: account.account_id },
     config.jwtRefreshSecret,
@@ -344,6 +351,7 @@ export const loginWithGoogle = async (code) => {
       accountId: account.account_id,
       email: account.email,
       role: account.role_name,
+      permissions,
     },
   };
 };

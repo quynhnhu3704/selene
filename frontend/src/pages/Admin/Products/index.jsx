@@ -1,92 +1,58 @@
 // frontend\src\pages\Admin\Products\index.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-/* ── DỮ LIỆU MẪU ── */
-const INIT = [
-  {
-    id: 1,
-    sku: "RR26AK53",
-    name: "Áo Kiểu Nữ Nami Top",
-    category: "Áo Nữ",
-    price: 440000,
-    stock: 128,
-    status: "Đang bán",
-  },
-  {
-    id: 2,
-    sku: "RR26QJ10",
-    name: "Quần Jeans Nữ Eric",
-    category: "Quần Nữ",
-    price: 620000,
-    stock: 54,
-    status: "Đang bán",
-  },
-  {
-    id: 3,
-    sku: "RR26DL04",
-    name: "Đầm Linen Nữ Calla",
-    category: "Đầm",
-    price: 750000,
-    stock: 0,
-    status: "Hết hàng",
-  },
-  {
-    id: 4,
-    sku: "RR26SD05",
-    name: "Set Đồ Nữ Coco",
-    category: "Set Đồ",
-    price: 820000,
-    stock: 31,
-    status: "Đang bán",
-  },
-  {
-    id: 5,
-    sku: "RR26JS07",
-    name: "Jumpsuit Nữ Rena",
-    category: "Jumpsuit",
-    price: 540000,
-    stock: 17,
-    status: "Đang bán",
-  },
-  {
-    id: 6,
-    sku: "RR26VD05",
-    name: "Váy Dài Linie Skirt",
-    category: "Váy",
-    price: 630000,
-    stock: 0,
-    status: "Ngừng bán",
-  },
-];
+import { getAdminProducts } from "../../../services/product.service";
 
 const fmtVND = (n) => n.toLocaleString("vi-VN") + "đ";
 
-const STATUS_COLOR = {
-  "Đang bán": { bg: "success", text: "Đang bán" },
-  "Hết hàng": { bg: "warning", text: "Hết hàng" },
-  "Ngừng bán": { bg: "danger", text: "Ngừng bán" },
-};
-
 export default function AdminProducts() {
-  const [products, setProducts] = useState(INIT);
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const categories = ["all", ...new Set(INIT.map((p) => p.category))];
-
-  const filtered = products.filter((p) => {
-    const matchSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase());
-    const matchCat = filterCat === "all" || p.category === filterCat;
-    return matchSearch && matchCat;
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total_items: 0,
+    total_pages: 0,
   });
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Xoá sản phẩm này?")) return;
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const fetchProducts = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const res = await getAdminProducts(page, 10);
+
+      setProducts(res.data?.products || []);
+
+      setPagination(
+        res.data?.pagination || {
+          page: 1,
+          limit: 10,
+          total_items: 0,
+          total_pages: 0,
+        },
+      );
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách sản phẩm:", error);
+
+      setError(
+        error.response?.data?.message || "Không thể tải danh sách sản phẩm!",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const filtered = products.filter((p) =>
+    p.product_name?.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <>
@@ -113,25 +79,12 @@ export default function AdminProducts() {
             </span>
             <input
               className="form-control border-start-0 ps-0"
-              placeholder="Tìm tên hoặc SKU..."
+              placeholder="Tìm tên sản phẩm..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ fontSize: 14 }}
             />
           </div>
-
-          <select
-            className="form-select"
-            style={{ maxWidth: 160, fontSize: 14 }}
-            value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c === "all" ? "Tất cả danh mục" : c}
-              </option>
-            ))}
-          </select>
 
           <div className="ms-auto">
             <Link
@@ -159,7 +112,27 @@ export default function AdminProducts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="text-center text-muted py-5"
+                    style={{ fontSize: 14 }}
+                  >
+                    Đang tải danh sách sản phẩm...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="text-center text-danger py-5"
+                    style={{ fontSize: 14 }}
+                  >
+                    {error}
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
@@ -180,65 +153,74 @@ export default function AdminProducts() {
                 </tr>
               ) : (
                 filtered.map((p, idx) => {
-                  const s = STATUS_COLOR[p.status];
+                  const statusMap = {
+                    active: {
+                      bg: "success",
+                      text: "Đang bán",
+                    },
+                    inactive: {
+                      bg: "danger",
+                      text: "Ngừng bán",
+                    },
+                  };
+
+                  const status = statusMap[p.status] || {
+                    bg: "secondary",
+                    text: p.status || "Không xác định",
+                  };
+
                   return (
-                    <tr key={p.id}>
+                    <tr key={p.product_id}>
                       <td className="text-muted" style={{ fontSize: 13 }}>
                         {idx + 1}
                       </td>
+
                       <td>
                         <div className="fw-semibold" style={{ fontSize: 14 }}>
-                          {p.name}
+                          {p.product_name}
                         </div>
-                        <div className="adm-sku">{p.sku}</div>
+
+                        <div className="adm-sku">{p.product_id}</div>
                       </td>
-                      <td>{p.category}</td>
-                      <td className="fw-semibold">{fmtVND(p.price)}</td>
+
+                      <td>{p.category_name || "—"}</td>
+
+                      <td className="fw-semibold">
+                        {fmtVND(p.discount_price || p.price || 0)}
+                      </td>
+
+                      <td>—</td>
+
                       <td>
                         <span
-                          style={{
-                            color: p.stock === 0 ? "#871B1B" : "#212529",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {p.stock}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`badge bg-${s.bg} bg-opacity-10 text-${s.bg} fw-semibold`}
+                          className={`badge bg-${status.bg} bg-opacity-10 text-${status.bg} fw-semibold`}
                           style={{
                             fontSize: 12,
                             padding: "5px 10px",
                             borderRadius: 8,
                           }}
                         >
-                          {s.text}
+                          {status.text}
                         </span>
                       </td>
+
                       <td>
                         <div className="d-flex gap-1">
                           <Link
-                            to={`/admin/san-pham/${p.id}`}
+                            to={`/admin/san-pham/${p.product_id}`}
                             className="adm-action-btn text-muted"
                             title="Xem"
                           >
                             <i className="bi bi-eye" />
                           </Link>
+
                           <Link
-                            to={`/admin/san-pham/${p.id}/sua`}
+                            to={`/admin/san-pham/${p.product_id}/sua`}
                             className="adm-action-btn text-muted"
                             title="Sửa"
                           >
                             <i className="bi bi-pencil" />
                           </Link>
-                          <button
-                            className="adm-action-btn text-danger"
-                            title="Xoá"
-                            onClick={() => handleDelete(p.id)}
-                          >
-                            <i className="bi bi-trash3" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -254,7 +236,7 @@ export default function AdminProducts() {
           className="px-4 py-3 border-top"
           style={{ fontSize: 13, color: "#adb5bd" }}
         >
-          Hiển thị {filtered.length} / {products.length} sản phẩm
+          Hiển thị {filtered.length} / {pagination.total_items} sản phẩm
         </div>
       </div>
     </>

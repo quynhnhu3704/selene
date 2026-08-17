@@ -100,7 +100,7 @@ export default function Cart() {
     });
     if (!res.isConfirmed) return;
     await removeFromCart(id);
-    setSelected((p)       => p.filter((x) => x !== id));
+    setSelected((p) => p.filter((x) => x !== id));
   };
 
   const handleDeleteSelected = async () => {

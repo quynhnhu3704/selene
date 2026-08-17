@@ -1,4 +1,4 @@
-// backend\product-service\src\models\product.model.js
+// backend\product-service\src\routes\product.routes.js
 import express from "express";
 import * as productController from "../controllers/product.controller.js";
 import * as categoryController from "../controllers/category.controller.js";

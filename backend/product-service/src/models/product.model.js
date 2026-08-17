@@ -223,7 +223,7 @@ export const ProductModel = {
         price,
         original_price,
         discount_price,
-        brands:brand_id ( name ),
+        categories:category_id ( name ),
         status
       `,
         { count: "exact" },

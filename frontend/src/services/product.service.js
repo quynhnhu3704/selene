@@ -20,3 +20,15 @@ export const getProductById = async (id) => {
 
   return res.data;
 };
+
+// Lấy danh sách sản phẩm cho Admin
+export const getAdminProducts = async (page = 1, limit = 10) => {
+  const res = await http.get("/products/manage/products", {
+    params: {
+      page,
+      limit,
+    },
+  });
+
+  return res.data;
+};

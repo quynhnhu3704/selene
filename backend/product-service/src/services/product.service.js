@@ -473,7 +473,7 @@ export const getAllProductsAdmin = async (page = 1, limit = 10) => {
         original_price: product.original_price,
         discount_price: product.discount_price,
         status: product.status,
-        brand_name: product.brands ? product.brands.name : null,
+        category_name: product.categories ? product.categories.name : null,
       };
     });
 
