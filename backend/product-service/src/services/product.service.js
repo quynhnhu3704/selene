@@ -466,14 +466,22 @@ export const getAllProductsAdmin = async (page = 1, limit = 10) => {
 
     // Chuẩn hóa lại dữ liệu trước khi gửi về client
     const formattedProducts = data.map((product) => {
+      // Tính tổng tồn kho của tất cả variant
+      const totalStock = (product.product_variants || []).reduce(
+        (total, variant) => total + (Number(variant.stock_quantity) || 0),
+        0,
+      );
+
       return {
         product_id: product.product_id,
         product_name: product.product_name,
+        image_url: getFirstImage(product.image_urls),
         price: product.price,
         original_price: product.original_price,
         discount_price: product.discount_price,
         status: product.status,
         category_name: product.categories ? product.categories.name : null,
+        stock_quantity: totalStock,
       };
     });
 
@@ -520,8 +528,12 @@ export const getProductDetailForAdmin = async (productId) => {
     // 3. Khớp định dạng dữ liệu trả về gọn gàng nhất
     return {
       product_id: rawProduct.product_id,
-      category_id: rawProduct.category_id,
-      brand_id: rawProduct.brand_id,
+      category_name: rawProduct.categories
+        ? rawProduct.categories.name
+        : null,
+      brand_name: rawProduct.brands
+        ? rawProduct.brands.name
+        : null,
       product_name: rawProduct.product_name,
       product_url: rawProduct.product_url,
       image_urls: processedImages,

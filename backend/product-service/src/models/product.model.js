@@ -220,10 +220,14 @@ export const ProductModel = {
         `
         product_id,
         product_name,
+        image_urls,
         price,
         original_price,
         discount_price,
-        categories:category_id ( name ),
+        categories: category_id (name),
+        product_variants (
+          stock_quantity
+        ),
         status
       `,
         { count: "exact" },
@@ -242,8 +246,6 @@ export const ProductModel = {
       .select(
         `
         product_id,
-        category_id,
-        brand_id,
         product_name,
         image_urls,
         product_url,
@@ -258,6 +260,12 @@ export const ProductModel = {
           color,
           stock_quantity,
           status
+        ),
+        categories:category_id (
+          name
+        ),
+        brands:brand_id (
+          name
         )
       `,
       )
