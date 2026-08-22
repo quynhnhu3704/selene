@@ -44,6 +44,12 @@ router.get(
   verifyPermission("category:view"),
   categoryController.handleGetAllCategories,
 );
+router.get(
+  "/manage/product-categories",
+  verifyToken,
+  verifyPermission("product:view"),
+  categoryController.handleGetCategoriesForProductFilter,
+);
 
 // brand
 router.get(
@@ -79,6 +85,12 @@ router.put(
   verifyPermission("product:update"),
   upload.array("images", 10),
   productController.handleUpdateProduct,
+);
+router.patch(
+  "/manage/product/status/:productId",
+  verifyToken,
+  verifyPermission("product:update"),
+  productController.handleUpdateProductStatus,
 );
 router.get(
   "/manage/products",

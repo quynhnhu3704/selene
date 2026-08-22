@@ -6,6 +6,46 @@ const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+const ADMIN_PRODUCT_PRICE_RANGES = {
+  "under-200k": { max: 200000 },
+  "200k-500k": { min: 200000, max: 500000 },
+  "500k-1m": { min: 500000, max: 1000000 },
+  "over-1m": { min: 1000000 },
+};
+
+const ADMIN_PRODUCT_STATUSES = ["active", "archived"];
+
+const getPositiveInteger = (value, defaultValue) => {
+  const parsedValue = parseInt(value, 10);
+  return parsedValue > 0 ? parsedValue : defaultValue;
+};
+
+const getQueryValue = (value) => {
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const getAdminProductFilters = (options) => {
+  const q = getQueryValue(options.q);
+  const category = getQueryValue(options.category);
+  const priceKey = getQueryValue(options.price);
+  const status = getQueryValue(options.status);
+
+  if (priceKey && !ADMIN_PRODUCT_PRICE_RANGES[priceKey]) {
+    throw new Error("Khoảng giá lọc không hợp lệ!");
+  }
+
+  if (status && !ADMIN_PRODUCT_STATUSES.includes(status)) {
+    throw new Error("Trạng thái lọc không hợp lệ!");
+  }
+
+  return {
+    q,
+    category,
+    price: priceKey ? ADMIN_PRODUCT_PRICE_RANGES[priceKey] : null,
+    status,
+  };
+};
+
 //  Hàm dùng chung: Trích xuất 1 tấm ảnh đầu tiên từ dữ liệu image_urls trong DB
 const getFirstImage = (imageUrlsData) => {
   if (!imageUrlsData) return "";
@@ -446,10 +486,11 @@ export const updateProductWithVariants = async (
 };
 
 // lấy tất cả sản phẩm cho admin
-export const getAllProductsAdmin = async (page = 1, limit = 10) => {
+export const getAllProductsAdmin = async (options = {}) => {
   try {
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 10;
+    const pageNum = getPositiveInteger(options.page, 1);
+    const limitNum = getPositiveInteger(options.limit, 10);
+    const filters = getAdminProductFilters(options);
 
     // Tính toán dải range cắt dữ liệu cho Supabase (bắt đầu từ 0)
     const from = (pageNum - 1) * limitNum;
@@ -457,6 +498,7 @@ export const getAllProductsAdmin = async (page = 1, limit = 10) => {
 
     // Gọi dữ liệu từ Model
     const { data, count } = await ProductModel.getAllProductsWithPagination(
+      filters,
       from,
       to,
     );
@@ -476,10 +518,11 @@ export const getAllProductsAdmin = async (page = 1, limit = 10) => {
         product_id: product.product_id,
         product_name: product.product_name,
         image_url: getFirstImage(product.image_urls),
-        price: product.price,
-        original_price: product.original_price,
-        discount_price: product.discount_price,
-        status: product.status,
+        price: Number(product.price) || 0,
+        original_price: Number(product.original_price) || 0,
+        discount_price: Number(product.discount_price) || 0,
+        status: product.status === "active" ? "active" : "archived",
+        category_id: product.category_id,
         category_name: product.categories ? product.categories.name : null,
         stock_quantity: totalStock,
       };
@@ -496,6 +539,36 @@ export const getAllProductsAdmin = async (page = 1, limit = 10) => {
     };
   } catch (error) {
     console.error("Lỗi tại getAllProductsAdminService:", error.message);
+    throw error;
+  }
+};
+
+// khóa hoặc mở khóa sản phẩm
+export const updateProductStatus = async (productId, status) => {
+  try {
+    if (!productId) {
+      throw new Error("Mã ID sản phẩm không được để trống!");
+    }
+
+    if (!ADMIN_PRODUCT_STATUSES.includes(status)) {
+      throw new Error("Trạng thái sản phẩm không hợp lệ!");
+    }
+
+    // URL/API dùng `archived` theo nghĩa nghiệp vụ, DB cũ vẫn lưu là `inactive`
+    const databaseStatus = status === "archived" ? "inactive" : "active";
+    const updatedAt = new Date().toISOString();
+    const updatedProduct = await ProductModel.updateProductStatus(
+      productId,
+      databaseStatus,
+      updatedAt,
+    );
+
+    return {
+      ...updatedProduct,
+      status,
+    };
+  } catch (error) {
+    console.error("Lỗi tại updateProductStatus Service:", error.message);
     throw error;
   }
 };

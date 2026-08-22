@@ -362,7 +362,7 @@ export default function InfoPanel({ profile, setProfile }) {
                   >
                     <span>{form.gender || "-- Chọn --"}</span>
                     <i
-                      className={`bi ${genderOpen ? "bi-chevron-up" : "bi-chevron-down"}`}
+                      className={`bi ${genderOpen ? "bi-caret-up" : "bi-caret-down"}`}
                     />
                   </button>
 

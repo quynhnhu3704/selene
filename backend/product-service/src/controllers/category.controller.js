@@ -90,3 +90,25 @@ export const handleGetAllCategories = async (req, res) => {
     });
   }
 };
+
+// lấy danh mục cho bộ lọc sản phẩm Admin
+export const handleGetCategoriesForProductFilter = async (req, res) => {
+  try {
+    const categories = await categoryService.getCategoriesForProductFilter();
+
+    return res.status(200).json({
+      status: 200,
+      message: "Lấy danh sách danh mục cho bộ lọc sản phẩm thành công!",
+      data: categories,
+    });
+  } catch (error) {
+    console.error(
+      "Lỗi tại handleGetCategoriesForProductFilter Controller:",
+      error.message,
+    );
+    return res.status(500).json({
+      status: 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};

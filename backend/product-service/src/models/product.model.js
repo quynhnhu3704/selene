@@ -199,6 +199,23 @@ export const ProductModel = {
     return data[0];
   },
 
+  // Cập nhật riêng trạng thái hiển thị của sản phẩm
+  updateProductStatus: async (productId, status, updatedAt) => {
+    const { data, error } = await supabase
+      .from("products")
+      .update({
+        status,
+        updated_at: updatedAt,
+      })
+      .eq("product_id", productId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0)
+      throw new Error("Không tìm thấy sản phẩm để cập nhật!");
+    return data[0];
+  },
+
   // Chỉ cần duy nhất hàm này để vừa Update vừa Insert biến thể
   upsertVariants: async (variantsArray) => {
     const { data, error } = await supabase
@@ -212,26 +229,57 @@ export const ProductModel = {
     return data;
   },
 
-  // lấy tất cả sản phẩm cho admin
-  getAllProductsWithPagination: async (from, to) => {
-    const { data, error, count } = await supabase
-      .from("products")
-      .select(
-        `
+  // lấy tất cả sản phẩm cho admin kèm các điều kiện lọc
+  getAllProductsWithPagination: async (filters, from, to) => {
+    let query = supabase.from("products").select(
+      `
         product_id,
         product_name,
         image_urls,
         price,
         original_price,
         discount_price,
-        categories: category_id (name),
+        category_id,
+        categories: category_id (
+          category_id,
+          name
+        ),
         product_variants (
           stock_quantity
         ),
         status
       `,
-        { count: "exact" },
-      ) // Đếm tổng số bản ghi thực tế trong DB
+      { count: "exact" },
+    ); // Đếm tổng số bản ghi thực tế trong DB
+
+    if (filters.q) {
+      query = query.or(
+        `product_name.ilike.%${filters.q}%,product_id.ilike.%${filters.q}%`,
+      );
+    }
+
+    if (filters.category) {
+      query = query.eq("category_id", filters.category);
+    }
+
+    if (filters.price?.min !== undefined) {
+      query = query.gte("price", filters.price.min);
+    }
+
+    if (filters.price?.max !== undefined) {
+      query = query.lt("price", filters.price.max);
+    }
+
+    if (filters.status === "archived") {
+      // Hỗ trợ cả dữ liệu cũ dùng `inactive` và dữ liệu mới dùng `archived`
+      query = query.in("status", ["archived", "inactive"]);
+    }
+
+    if (filters.status === "active") {
+      query = query.eq("status", "active");
+    }
+
+    const { data, error, count } = await query
       .order("created_at", { ascending: false }) // Sản phẩm mới nhất xếp lên đầu
       .range(from, to); // Cắt dữ liệu theo trang
 

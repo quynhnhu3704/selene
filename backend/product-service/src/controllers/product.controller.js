@@ -164,9 +164,16 @@ export const handleUpdateProduct = async (req, res) => {
 // lấy tất cả sản phẩm cho admin
 export const handleGetAllProductsForAdmin = async (req, res) => {
   try {
-    const { page, limit } = req.query;
+    const { q, category, price, status, page, limit } = req.query;
 
-    const result = await productService.getAllProductsAdmin(page, limit);
+    const result = await productService.getAllProductsAdmin({
+      q,
+      category,
+      price,
+      status,
+      page,
+      limit,
+    });
 
     return res.status(200).json({
       status: 200,
@@ -178,8 +185,50 @@ export const handleGetAllProductsForAdmin = async (req, res) => {
       "Lỗi tại handleGetAllProductsForAdmin Controller:",
       error.message,
     );
-    return res.status(500).json({
-      status: 500,
+    const isClientError = error.message.includes("không hợp lệ");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};
+
+// khóa hoặc mở khóa sản phẩm
+export const handleUpdateProductStatus = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { status } = req.body;
+
+    const result = await productService.updateProductStatus(productId, status);
+
+    return res.status(200).json({
+      status: 200,
+      message:
+        status === "active"
+          ? "Mở khóa sản phẩm thành công!"
+          : "Khóa sản phẩm thành công!",
+      data: result,
+    });
+  } catch (error) {
+    console.error(
+      "Lỗi tại handleUpdateProductStatus Controller:",
+      error.message,
+    );
+
+    if (error.message.includes("Không tìm thấy")) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message,
+      });
+    }
+
+    const isClientError =
+      error.message.includes("không hợp lệ") ||
+      error.message.includes("không được để trống");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
       message: error.message || "Internal Server Error!",
     });
   }

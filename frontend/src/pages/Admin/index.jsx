@@ -364,7 +364,9 @@ export default function AdminLayout() {
                   <div className="adm-admin-name">
                     {profile?.full_name || "Chủ cửa hàng"}
                   </div>
-                  <div className="adm-admin-role">{getRoleName(profile?.role_id)}</div>
+                  <div className="adm-admin-role">
+                    {getRoleName(profile?.role_id)}
+                  </div>
                 </div>
               </div>
             </div>

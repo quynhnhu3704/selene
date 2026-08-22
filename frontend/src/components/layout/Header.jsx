@@ -145,20 +145,20 @@ export default function Header() {
               TRANG CHỦ
             </NavLink>
             <NavLink to="/san-pham" className={navClass}>
-              SẢN PHẨM<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              SẢN PHẨM<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/bo-suu-tap" className={navClass}>
-              BỘ SƯU TẬP<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              BỘ SƯU TẬP<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/tin-tuc" className={navClass}>
-              TIN TỨC<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              TIN TỨC<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/ve-chung-toi" className={navClass}>
-              VỀ SELENE<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              VỀ SELENE<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink
               to="/khuyen-mai"
