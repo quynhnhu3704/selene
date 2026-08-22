@@ -1,7 +1,9 @@
 // frontend\src\pages\ProductList.jsx
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { getProducts } from "../../services/product.service";
+import Pagination from "../../components/common/Pagination";
 
 function fmt(n) {
   return n.toLocaleString("vi-VN") + "vnđ";
@@ -28,52 +30,6 @@ const CATEGORIES = [
 ];
 
 /* ── PAGINATION ── */
-function Pagination({ page, total, onChange }) {
-  const pages = [];
-
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-  } else {
-    if (page <= 4) {
-      pages.push(1, 2, 3, 4, 5, "...", total);
-    } else if (page >= total - 3) {
-      pages.push(1, "...", total - 4, total - 3, total - 2, total - 1, total);
-    } else {
-      pages.push(1, "...", page - 1, page, page + 1, "...", total);
-    }
-  }
-
-  return (
-    <div className="pl-pagination">
-      {pages.map((p, idx) =>
-        p === "..." ? (
-          <button
-            key={`ellipsis-${idx}`}
-            className="pl-pg-btn pl-pg-ellipsis"
-            disabled
-          >
-            ...
-          </button>
-        ) : (
-          <button
-            key={p}
-            className={`pl-pg-btn${p === page ? " active" : ""}`}
-            onClick={() => onChange(p)}
-          >
-            {p}
-          </button>
-        ),
-      )}
-      <button
-        className="pl-pg-btn pl-pg-next"
-        onClick={() => onChange(Math.min(page + 1, total))}
-        disabled={page === total}
-      >
-        »
-      </button>
-    </div>
-  );
-}
 
 /* ── MAIN COMPONENT ── */
 export default function ProductList() {
@@ -82,7 +38,22 @@ export default function ProductList() {
   const visibleCategories = showAllCats ? CATEGORIES : CATEGORIES.slice(0, 5);
   const [sortOpen, setSortOpen] = useState(false);
   const [sortVal, setSortVal] = useState("default");
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get("page")) || 1;
+
+  useEffect(() => {
+    if (!searchParams.get("page")) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("page", "1");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, setSearchParams]);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,11 +99,30 @@ export default function ProductList() {
   const handleSort = (val) => {
     setSortVal(val);
     setSortOpen(false);
-    setPage(1);
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("page", "1");
+        return next;
+      },
+      { replace: false },
+    );
   };
   const handlePage = (p) => {
-    setPage(p);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("page", p.toString());
+        return next;
+      },
+      { replace: false },
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
@@ -739,8 +729,12 @@ export default function ProductList() {
 
               <Pagination
                 page={pagination.currentPage}
-                total={pagination.totalPages}
-                onChange={handlePage}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                displayedCount={products.length}
+                label="sản phẩm"
+                showInfo={false}
+                onPageChange={handlePage}
               />
             </>
           )}

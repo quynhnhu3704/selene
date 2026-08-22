@@ -6,7 +6,7 @@ export default function Orders() {
   return (
     <>
       <Helmet>
-        <title>Đơn hàng của tôi | Selene</title>
+        <title>Đơn hàng của bạn | Selene</title>
       </Helmet>
 
       <OrdersPanel />

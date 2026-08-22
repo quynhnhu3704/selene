@@ -528,12 +528,8 @@ export const getProductDetailForAdmin = async (productId) => {
     // 3. Khớp định dạng dữ liệu trả về gọn gàng nhất
     return {
       product_id: rawProduct.product_id,
-      category_name: rawProduct.categories
-        ? rawProduct.categories.name
-        : null,
-      brand_name: rawProduct.brands
-        ? rawProduct.brands.name
-        : null,
+      category_name: rawProduct.categories ? rawProduct.categories.name : null,
+      brand_name: rawProduct.brands ? rawProduct.brands.name : null,
       product_name: rawProduct.product_name,
       product_url: rawProduct.product_url,
       image_urls: processedImages,

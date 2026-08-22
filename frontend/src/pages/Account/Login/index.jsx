@@ -101,7 +101,7 @@ export default function Login() {
   return (
     <>
       <Helmet>
-        <title>Đăng Nhập | Selene</title>
+        <title>Đăng nhập | Selene</title>
       </Helmet>
 
       <Breadcrumb

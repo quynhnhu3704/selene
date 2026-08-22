@@ -23,6 +23,18 @@ export default function InfoPanel({ profile, setProfile }) {
   const genderRef = useRef(null);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^0\d{9}$/;
+  const getRoleName = (roleId) => {
+    switch (Number(roleId)) {
+      case 1:
+        return "Chủ cửa hàng";
+      case 2:
+        return "Nhân viên";
+      case 3:
+        return "Khách hàng";
+      default:
+        return "Không xác định";
+    }
+  };
   const today = new Date();
 
   const minDate = new Date(
@@ -237,7 +249,7 @@ export default function InfoPanel({ profile, setProfile }) {
           <p className="info-hero-email">{profile?.email}</p>
           <span className="info-hero-role">
             <i className="bi bi-person-check" />
-            Khách hàng
+            {getRoleName(profile?.role_id)}
           </span>
         </div>
       </div>

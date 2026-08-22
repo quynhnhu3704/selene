@@ -941,6 +941,9 @@
   position: relative;
   margin-bottom: 18px;
 }
+.form-control {
+  font-size: 15px;
+}
 .form-page .form-control::placeholder {
   color: #6c757d;
 }
@@ -1380,4 +1383,83 @@
 .react-datepicker__input-container input:focus {
   border-color: #fbc5c5 !important;
   box-shadow: 0 0 0 0.25rem rgba(135, 27, 27, 0.15) !important;
+}
+
+/* PAGINATION */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pagination-info {
+  font-size: 13.5px;
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.pagination-info strong {
+  color: #17151f;
+  font-weight: 800;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-btn {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid #212529;
+  background: #fff;
+  color: #212529;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  transition: all 0.15s;
+}
+
+.pagination-btn:hover:not(:disabled):not(.active) {
+  background: #212529;
+  color: #fff;
+}
+
+.pagination-btn.active {
+  background: #212529;
+  color: #fff;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pagination-btn.ellipsis {
+  border: none;
+  background: none;
+  cursor: default;
+  color: #212529;
+  min-width: 28px;
+}
+
+.pagination-btn.ellipsis:hover {
+  background: none !important;
+  border: none !important;
+  color: #212529 !important;
+}
+
+@media (max-width: 640px) {
+  .pagination-wrap {
+    justify-content: center;
+  }
 }

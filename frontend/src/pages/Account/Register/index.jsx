@@ -189,7 +189,7 @@ export default function Register() {
   return (
     <>
       <Helmet>
-        <title>Đăng Ký | Selene</title>
+        <title>Đăng ký | Selene</title>
       </Helmet>
 
       <Breadcrumb

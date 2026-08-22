@@ -221,9 +221,14 @@ export default function Header() {
                   {admin && (
                     <>
                       <li>
-                        <Link className="dropdown-item" to="/admin">
-                          <i className="bi bi-speedometer2 me-1"></i>Trang quản
-                          trị
+                        <Link
+                          className="dropdown-item"
+                          to="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i className="bi bi-speedometer2 me-1"></i>
+                          Trang quản trị
                         </Link>
                       </li>
                     </>
@@ -322,9 +327,14 @@ export default function Header() {
                   {admin && (
                     <>
                       <li>
-                        <Link className="dropdown-item" to="/admin">
-                          <i className="bi bi-speedometer2 me-1"></i>Trang quản
-                          trị
+                        <Link
+                          className="dropdown-item"
+                          to="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i className="bi bi-speedometer2 me-1"></i>
+                          Trang quản trị
                         </Link>
                       </li>
                     </>
