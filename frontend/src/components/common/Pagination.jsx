@@ -7,7 +7,7 @@ export default function Pagination({
   label,
   onPageChange,
 }) {
-  if (!totalPages || totalPages <= 1) return null;
+  if (!totalPages) return null;
 
   const getPages = () => {
     const pages = [];

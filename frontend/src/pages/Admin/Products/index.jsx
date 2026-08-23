@@ -51,9 +51,10 @@ export default function AdminProducts() {
   const [updatingProductId, setUpdatingProductId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [searchValue, setSearchValue] = useState(q);
   const categoryRef = useRef(null);
   const priceRef = useRef(null);
+  const isComposing = useRef(false);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -135,7 +136,11 @@ export default function AdminProducts() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [q, category, price, status, page, refreshVersion]);
+  }, [q, category, price, status, page]);
+
+  useEffect(() => {
+    setSearchValue(q);
+  }, [q]);
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -181,15 +186,38 @@ export default function AdminProducts() {
 
     try {
       setUpdatingProductId(product.product_id);
+
       await updateAdminProductStatus(product.product_id, nextStatus);
+
+      // Load lại danh sách theo filter + pagination hiện tại
+      const res = await getAdminProducts({
+        q,
+        category,
+        price,
+        status,
+        page,
+        limit: PRODUCTS_PER_PAGE,
+      });
+
+      setProducts(res.data?.products || []);
+
+      setPagination(
+        res.data?.pagination || {
+          page: 1,
+          limit: PRODUCTS_PER_PAGE,
+          total_items: 0,
+          total_pages: 0,
+        },
+      );
+
       toast.success(
         isLocked
           ? `Đã mở khóa "${product.product_name}"`
           : `Đã khóa "${product.product_name}"`,
       );
-      setRefreshVersion((version) => version + 1);
     } catch (err) {
       console.error(err);
+
       toast.error(
         err.response?.data?.message ||
           "Không thể cập nhật trạng thái sản phẩm!",
@@ -200,6 +228,8 @@ export default function AdminProducts() {
   };
 
   const handleResetFilters = () => {
+    setSearchValue("");
+
     updateProductQuery({
       q: "",
       category: "",
@@ -356,10 +386,23 @@ export default function AdminProducts() {
           <input
             className="form-control"
             placeholder="Tìm theo tên hoặc mã sản phẩm..."
-            value={q}
-            onChange={(e) =>
-              updateProductQuery({ q: e.target.value }, { replace: true })
-            }
+            value={searchValue}
+            onCompositionStart={() => {
+              isComposing.current = true;
+            }}
+            onCompositionEnd={(e) => {
+              isComposing.current = false;
+              updateProductQuery({ q: e.target.value }, { replace: true });
+            }}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              setSearchValue(value);
+
+              if (!isComposing.current) {
+                updateProductQuery({ q: value }, { replace: true });
+              }
+            }}
           />
         </div>
 

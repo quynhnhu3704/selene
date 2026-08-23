@@ -1,12 +1,48 @@
 // frontend/src/services/product.service.js
 import http from "./http";
 
-export const getProducts = async (page = 1, limit = 12) => {
+export const getProducts = async (filters = {}, fallbackLimit = 12) => {
+  const normalizedFilters =
+    typeof filters === "number"
+      ? { page: filters, limit: fallbackLimit }
+      : filters;
+  const {
+    q,
+    categories = [],
+    sizes = [],
+    colors = [],
+    minPrice,
+    maxPrice,
+    sort,
+    page = 1,
+    limit = 12,
+  } = normalizedFilters;
+  const params = { limit };
+
+  if (q) params.q = q;
+  if (categories.length > 0) params.category = categories.join(",");
+  if (sizes.length > 0) params.sizes = sizes.join(",");
+  if (colors.length > 0) params.colors = colors.join(",");
+  if (minPrice !== undefined && minPrice !== null) {
+    params.min_price = minPrice;
+  }
+  if (maxPrice !== undefined && maxPrice !== null) {
+    params.max_price = maxPrice;
+  }
+  if (sort && sort !== "default") params.sort = sort;
+  if (Number(page) > 1) params.page = page;
+
   const res = await http.get("/products/product-list", {
-    params: {
-      page,
-      limit,
-    },
+    params,
+    withCredentials: false,
+  });
+
+  return res.data;
+};
+
+// Lấy dữ liệu thật để dựng sidebar filter cho customer
+export const getProductFilterOptions = async () => {
+  const res = await http.get("/products/product-filters", {
     withCredentials: false,
   });
 

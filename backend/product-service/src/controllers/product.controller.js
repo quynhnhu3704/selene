@@ -4,10 +4,8 @@ import * as productService from "../services/product.service.js";
 // lấy tất cả sản phẩm cho customer
 export const handleGetAllProducts = async (req, res) => {
   try {
-    const { page, limit } = req.query;
-
     // Gọi xuống service để truy vấn dữ liệu từ Supabase
-    const result = await productService.getAllProduct({ page, limit });
+    const result = await productService.getAllProduct(req.query);
 
     // Trả về dữ liệu kèm cấu trúc JSON chuẩn của hệ thống
     return res.status(200).json({
@@ -18,6 +16,30 @@ export const handleGetAllProducts = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi tại handleGetAllProducts Controller:", error.message);
+    const isClientError = error.message.includes("không hợp lệ");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};
+
+// Lấy dữ liệu thực tế để dựng sidebar filter sản phẩm cho customer
+export const handleGetCustomerProductFilters = async (req, res) => {
+  try {
+    const filters = await productService.getCustomerProductFilters();
+
+    return res.status(200).json({
+      status: 200,
+      message: "Lấy dữ liệu bộ lọc sản phẩm thành công!",
+      data: filters,
+    });
+  } catch (error) {
+    console.error(
+      "Lỗi tại handleGetCustomerProductFilters Controller:",
+      error.message,
+    );
     return res.status(500).json({
       status: 500,
       message: error.message || "Internal Server Error!",

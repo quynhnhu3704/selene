@@ -1,6 +1,6 @@
 // frontend\src\components\layout\Header.jsx
 import { useState, useEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
@@ -8,15 +8,29 @@ import Swal from "sweetalert2";
 import { useCart } from "../../context/CartContext";
 
 export default function Header() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [wl] = useState(0);
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLogin, setIsLogin] = useState(isLoggedIn());
   const [admin, setAdmin] = useState(isAdmin());
 
   const navClass = ({ isActive }) =>
     isActive ? "rb-navlink rb-active" : "rb-navlink";
+
+  const handleProductSearch = (event) => {
+    event.preventDefault();
+
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    const params = new URLSearchParams({ q: query });
+    navigate(`/san-pham?${params.toString()}`);
+    setSearchOpen(false);
+  };
 
   // Lúc nào login thành công Header sẽ tự đổi
   useEffect(() => {
@@ -31,6 +45,12 @@ export default function Header() {
       window.removeEventListener("login-success", syncLogin);
     };
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/san-pham") return;
+
+    setSearchQuery(new URLSearchParams(location.search).get("q") || "");
+  }, [location.pathname, location.search]);
 
   // Tự động đóng search khi resize về desktop
   useEffect(() => {
@@ -129,14 +149,20 @@ export default function Header() {
               </span>
             </div>
 
-            <div className="rb-search mx-5">
+            <form className="rb-search mx-5" onSubmit={handleProductSearch}>
               <div className="input-group">
-                <input className="form-control" placeholder="Tìm sản phẩm..." />
-                <button className="input-group-text">
+                <input
+                  className="form-control"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Tìm tên hoặc mã sản phẩm..."
+                  aria-label="Tìm tên hoặc mã sản phẩm"
+                />
+                <button className="input-group-text" type="submit">
                   <i className="bi bi-search" />
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
           {/* HÀNG 2: NAV LINKS */}
@@ -359,16 +385,19 @@ export default function Header() {
       {/* Mobile search bar dropdown */}
       {searchOpen && (
         <div className="rb-mob-search-bar">
-          <div className="input-group">
+          <form className="input-group" onSubmit={handleProductSearch}>
             <input
               className="form-control"
-              placeholder="Tìm sản phẩm..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Tìm tên hoặc mã sản phẩm..."
+              aria-label="Tìm tên hoặc mã sản phẩm"
               autoFocus
             />
-            <button className="input-group-text">
+            <button className="input-group-text" type="submit">
               <i className="bi bi-search" />
             </button>
-          </div>
+          </form>
         </div>
       )}
 

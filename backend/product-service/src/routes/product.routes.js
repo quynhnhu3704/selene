@@ -17,6 +17,10 @@ const upload = multer({
 });
 
 router.get("/product-list", productController.handleGetAllProducts);
+router.get(
+  "/product-filters",
+  productController.handleGetCustomerProductFilters,
+);
 router.get("/product-detail/:id", productController.handleGetProductDetail);
 router.get("/product-search", productController.handleSearchProductsByName);
 router.get(

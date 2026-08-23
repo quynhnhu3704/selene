@@ -1,6 +1,7 @@
 // backend\product-service\src\services\product.service.js
 import { ProductModel } from "../models/product.model.js";
 import { BrandModel } from "../models/brand.model.js";
+import { CategoryModel } from "../models/category.model.js";
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -15,6 +16,34 @@ const ADMIN_PRODUCT_PRICE_RANGES = {
 
 const ADMIN_PRODUCT_STATUSES = ["active", "archived"];
 
+const CUSTOMER_PRODUCT_SORT_OPTIONS = [
+  "",
+  "default",
+  "az",
+  "za",
+  "price_asc",
+  "price_desc",
+];
+
+const AO_CHILD_CATEGORY_NAMES = [
+  "Áo cổ",
+  "Áo công sở",
+  "Áo dài",
+  "Áo khoác",
+  "Áo ký giả",
+  "Áo lụa",
+  "Áo sơ mi",
+  "Áo thêu",
+  "Áo thiết kế",
+  "Áo thô",
+  "Áo tơ",
+  "Áo vest và gile",
+  "Áo voan",
+];
+
+const CUSTOMER_ROOT_CATEGORY_NAMES = ["Áo", "Chân váy", "Đầm", "Quần", "Set bộ"];
+const FILTER_VARIANT_BATCH_SIZE = 1000;
+
 const getPositiveInteger = (value, defaultValue) => {
   const parsedValue = parseInt(value, 10);
   return parsedValue > 0 ? parsedValue : defaultValue;
@@ -22,6 +51,135 @@ const getPositiveInteger = (value, defaultValue) => {
 
 const getQueryValue = (value) => {
   return typeof value === "string" ? value.trim() : "";
+};
+
+const getQueryValues = (value) => {
+  return getQueryValue(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 30);
+};
+
+const getOptionalPrice = (value, label) => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+    throw new Error(`${label} không hợp lệ!`);
+  }
+
+  return Math.round(parsedValue);
+};
+
+const normalizeCategoryName = (name) => {
+  return getQueryValue(name).toLocaleLowerCase("vi");
+};
+
+const getCustomerProductQueryFilters = (options) => {
+  const minPrice = getOptionalPrice(options.min_price, "Giá tối thiểu");
+  const maxPrice = getOptionalPrice(options.max_price, "Giá tối đa");
+  const sort = getQueryValue(options.sort);
+
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+    throw new Error("Khoảng giá lọc không hợp lệ!");
+  }
+
+  if (!CUSTOMER_PRODUCT_SORT_OPTIONS.includes(sort)) {
+    throw new Error("Kiểu sắp xếp không hợp lệ!");
+  }
+
+  return {
+    q: getQueryValue(options.q).replace(/[(),]/g, " ").slice(0, 100),
+    categoryIds: getQueryValues(options.category),
+    sizes: getQueryValues(options.sizes),
+    colors: getQueryValues(options.colors),
+    minPrice,
+    maxPrice,
+    sort: sort === "default" ? "" : sort,
+  };
+};
+
+const sortCategoriesByName = (categories, names) => {
+  const positionByName = new Map(
+    names.map((name, index) => [normalizeCategoryName(name), index]),
+  );
+
+  return [...categories].sort((firstCategory, secondCategory) => {
+    const firstPosition = positionByName.get(
+      normalizeCategoryName(firstCategory.name),
+    );
+    const secondPosition = positionByName.get(
+      normalizeCategoryName(secondCategory.name),
+    );
+
+    return (
+      (firstPosition ?? Number.MAX_SAFE_INTEGER) -
+        (secondPosition ?? Number.MAX_SAFE_INTEGER) ||
+      firstCategory.name.localeCompare(secondCategory.name, "vi")
+    );
+  });
+};
+
+const buildCustomerCategoryTree = (categories) => {
+  const shirtCategory = categories.find(
+    (category) => normalizeCategoryName(category.name) === "áo",
+  );
+  const shirtChildNameSet = new Set(
+    AO_CHILD_CATEGORY_NAMES.map(normalizeCategoryName),
+  );
+  const shirtChildren = sortCategoriesByName(
+    categories.filter((category) =>
+      shirtChildNameSet.has(normalizeCategoryName(category.name)),
+    ),
+    AO_CHILD_CATEGORY_NAMES,
+  );
+
+  const rootCategories = sortCategoriesByName(
+    categories.filter((category) => {
+      const normalizedName = normalizeCategoryName(category.name);
+
+      return normalizedName !== "áo" && !shirtChildNameSet.has(normalizedName);
+    }),
+    CUSTOMER_ROOT_CATEGORY_NAMES,
+  );
+
+  return [
+    ...(shirtCategory
+      ? [
+          {
+            ...shirtCategory,
+            children: shirtChildren,
+          },
+        ]
+      : []),
+    ...rootCategories.map((category) => ({ ...category, children: [] })),
+  ];
+};
+
+const getExpandedCustomerCategoryIds = async (categoryIds) => {
+  if (categoryIds.length === 0) return [];
+
+  const categories =
+    await CategoryModel.getActiveCategoriesForProductFilter();
+  const shirtCategory = categories.find(
+    (category) => normalizeCategoryName(category.name) === "áo",
+  );
+
+  if (!shirtCategory || !categoryIds.includes(shirtCategory.category_id)) {
+    return categoryIds;
+  }
+
+  const shirtChildNameSet = new Set(
+    AO_CHILD_CATEGORY_NAMES.map(normalizeCategoryName),
+  );
+  const shirtChildIds = categories
+    .filter((category) => shirtChildNameSet.has(normalizeCategoryName(category.name)))
+    .map((category) => category.category_id);
+
+  return [...new Set([...categoryIds, ...shirtChildIds])];
 };
 
 const getAdminProductFilters = (options) => {
@@ -78,18 +236,26 @@ const getFirstImage = (imageUrlsData) => {
 export const getAllProduct = async (options = {}) => {
   try {
     // 1. Cấu hình phân trang (Pagination)
-    const page = parseInt(options.page) || 1;
-    const limit = parseInt(options.limit) || 12;
+    const page = getPositiveInteger(options.page, 1);
+    const limit = getPositiveInteger(options.limit, 12);
+    const filters = getCustomerProductQueryFilters(options);
+    const categoryIds = await getExpandedCustomerCategoryIds(
+      filters.categoryIds,
+    );
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
     // 2. Gọi Model lấy dữ liệu từ DB
     const { data, count } = await ProductModel.getProductsWithPagination(
+      {
+        ...filters,
+        categoryIds,
+      },
       from,
       to,
     );
 
-    const formattedProducts = data.map((product) => ({
+    const formattedProducts = (data || []).map((product) => ({
       product_id: product.product_id,
       product_name: product.product_name,
       image_url: getFirstImage(product.image_urls),
@@ -110,9 +276,84 @@ export const getAllProduct = async (options = {}) => {
     };
   } catch (error) {
     console.error("Lỗi tại getAllProducts:", error.message);
+
+    if (error.message.includes("không hợp lệ")) {
+      throw error;
+    }
+
     throw new Error(
       "Không thể kết nối đến Supabase để lấy danh sách sản phẩm!",
     );
+  }
+};
+
+// Lấy toàn bộ dữ liệu thực tế để dựng sidebar filter phía customer
+export const getCustomerProductFilters = async () => {
+  try {
+    const [categories, priceBounds] = await Promise.all([
+      CategoryModel.getActiveCategoriesForProductFilter(),
+      ProductModel.getCustomerPriceBounds(),
+    ]);
+
+    const availableProducts = [];
+    let from = 0;
+
+    while (true) {
+      const batch = await ProductModel.getAvailableVariantsForFilter(
+        from,
+        from + FILTER_VARIANT_BATCH_SIZE - 1,
+      );
+
+      availableProducts.push(...batch);
+
+      if (batch.length < FILTER_VARIANT_BATCH_SIZE) break;
+      from += FILTER_VARIANT_BATCH_SIZE;
+    }
+
+    const sizes = new Set();
+    const colors = new Map();
+
+    availableProducts.forEach((product) => {
+      const imageUrl = getFirstImage(product.image_urls);
+
+      (product.product_variants || []).forEach((variant) => {
+        const size = getQueryValue(variant.size);
+        const color = getQueryValue(variant.color);
+
+        if (size) sizes.add(size);
+
+        if (color) {
+          const existingColor = colors.get(color);
+
+          if (!existingColor || (!existingColor.image_url && imageUrl)) {
+            colors.set(color, {
+              value: color,
+              label: color,
+              image_url: imageUrl,
+            });
+          }
+        }
+      });
+    });
+
+    return {
+      categories: buildCustomerCategoryTree(categories),
+      sizes: [...sizes]
+        .sort((firstSize, secondSize) =>
+          firstSize.localeCompare(secondSize, "vi", { numeric: true }),
+        )
+        .map((size) => ({ value: size, label: size })),
+      colors: [...colors.values()].sort((firstColor, secondColor) =>
+        firstColor.label.localeCompare(secondColor.label, "vi"),
+      ),
+      price: {
+        min: Number(priceBounds.min) || 0,
+        max: Number(priceBounds.max) || 0,
+      },
+    };
+  } catch (error) {
+    console.error("Lỗi tại getCustomerProductFilters Service:", error.message);
+    throw new Error("Không thể lấy dữ liệu bộ lọc sản phẩm!");
   }
 };
 
@@ -120,7 +361,7 @@ export const getAllProduct = async (options = {}) => {
 export const getProductDetail = async (productId) => {
   try {
     // 1. Gọi Model lấy chi tiết sản phẩm
-    const product = await ProductModel.getProductById(productId);
+    const product = await ProductModel.getPublicProductById(productId);
     if (!product) throw new Error("Sản phẩm không tồn tại!");
 
     // 2. Gọi Model lấy các biến thể kích thước / màu sắc
