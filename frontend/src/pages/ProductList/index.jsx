@@ -100,18 +100,18 @@ function getProductListQueryState(searchParams) {
 }
 
 const COLOR_IMAGES = {
-  "Cam": orangeColor,
-  "Đen": blackColor,
-  "Đỏ": redColor,
+  Cam: orangeColor,
+  Đen: blackColor,
+  Đỏ: redColor,
   "Hỗn hợp": mixedColor,
-  "Hồng": pinkColor,
-  "Kẻ": stripeColor,
-  "Nâu": brownColor,
-  "Tím": purpleColor,
-  "Trắng": whiteColor,
-  "Vàng": yellowColor,
-  "Xám": grayColor,
-  "Xanh": blueColor,
+  Hồng: pinkColor,
+  Kẻ: stripeColor,
+  Nâu: brownColor,
+  Tím: purpleColor,
+  Trắng: whiteColor,
+  Vàng: yellowColor,
+  Xám: grayColor,
+  Xanh: blueColor,
   "Xanh lá": greenColor,
 };
 
@@ -234,8 +234,7 @@ export default function ProductList() {
         const isDefaultValue =
           !normalizedValue ||
           (key === "sort" && normalizedValue === "default") ||
-          (key === "page" &&
-            (!Number.isInteger(pageValue) || pageValue <= 1));
+          (key === "page" && (!Number.isInteger(pageValue) || pageValue <= 1));
 
         if (isDefaultValue) {
           nextParams.delete(key);
@@ -420,19 +419,16 @@ export default function ProductList() {
 
   return (
     <>
-<Helmet>
-  <title>
-    {searchQuery
-      ? `Tìm kiếm "${searchQuery}" | Selene`
-      : "Sản phẩm | Selene"}
-  </title>
-</Helmet>
+      <Helmet>
+        <title>
+          {searchQuery
+            ? `Tìm kiếm "${searchQuery}" | Selene`
+            : "Sản phẩm | Selene"}
+        </title>
+      </Helmet>
 
-<Breadcrumb
-        items={[
-          { label: "Trang chủ", path: "/" },
-          { label: "Sản phẩm" },
-        ]}
+      <Breadcrumb
+        items={[{ label: "Trang chủ", path: "/" }, { label: "Sản phẩm" }]}
       />
 
       <style>{`
@@ -1043,9 +1039,7 @@ export default function ProductList() {
                 ))}
               </div>
             ) : (
-              <p className="pl-selected-empty">
-                Chưa có bộ lọc nào được chọn.
-              </p>
+              <p className="pl-selected-empty">Chưa có bộ lọc nào được chọn.</p>
             )}
           </div>
 
@@ -1229,12 +1223,12 @@ export default function ProductList() {
                         aria-label={"Lọc màu " + color.label}
                         aria-pressed={isSelected}
                       >
-                      <img
-  className="pl-color-swatch"
-  src={COLOR_IMAGES[color.value]}
-  alt={color.label}
-  loading="lazy"
-/>
+                        <img
+                          className="pl-color-swatch"
+                          src={COLOR_IMAGES[color.value]}
+                          alt={color.label}
+                          loading="lazy"
+                        />
                       </button>
                     );
                   })}
@@ -1287,12 +1281,10 @@ export default function ProductList() {
           {searchQuery && (
             <div className="pl-search-summary">
               <span>
-                Có <strong>{pagination.totalItems}</strong> kết quả tìm kiếm
-                phù hợp với từ khóa <strong>"{searchQuery}"</strong>
+                Có <strong>{pagination.totalItems}</strong> kết quả tìm kiếm phù
+                hợp với từ khóa <strong>"{searchQuery}"</strong>
               </span>
-              <button
-                onClick={() => removeSelectedFilter({ type: "search" })}
-              >
+              <button onClick={() => removeSelectedFilter({ type: "search" })}>
                 Xóa kết quả tìm kiếm
               </button>
             </div>

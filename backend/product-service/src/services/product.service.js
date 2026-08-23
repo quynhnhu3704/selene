@@ -41,7 +41,13 @@ const AO_CHILD_CATEGORY_NAMES = [
   "Áo voan",
 ];
 
-const CUSTOMER_ROOT_CATEGORY_NAMES = ["Áo", "Chân váy", "Đầm", "Quần", "Set bộ"];
+const CUSTOMER_ROOT_CATEGORY_NAMES = [
+  "Áo",
+  "Chân váy",
+  "Đầm",
+  "Quần",
+  "Set bộ",
+];
 const FILTER_VARIANT_BATCH_SIZE = 1000;
 
 const getPositiveInteger = (value, defaultValue) => {
@@ -162,8 +168,7 @@ const buildCustomerCategoryTree = (categories) => {
 const getExpandedCustomerCategoryIds = async (categoryIds) => {
   if (categoryIds.length === 0) return [];
 
-  const categories =
-    await CategoryModel.getActiveCategoriesForProductFilter();
+  const categories = await CategoryModel.getActiveCategoriesForProductFilter();
   const shirtCategory = categories.find(
     (category) => normalizeCategoryName(category.name) === "áo",
   );
@@ -176,7 +181,9 @@ const getExpandedCustomerCategoryIds = async (categoryIds) => {
     AO_CHILD_CATEGORY_NAMES.map(normalizeCategoryName),
   );
   const shirtChildIds = categories
-    .filter((category) => shirtChildNameSet.has(normalizeCategoryName(category.name)))
+    .filter((category) =>
+      shirtChildNameSet.has(normalizeCategoryName(category.name)),
+    )
     .map((category) => category.category_id);
 
   return [...new Set([...categoryIds, ...shirtChildIds])];
