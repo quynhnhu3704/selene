@@ -55,6 +55,7 @@ router.get(
 // ================= CUSTOMER =================
 
 // ================= ORDER (CUSTOMER) =================
+router.post("/sepay-webhook", orderController.handleSePayWebhook);
 router.post(
   "/place-order",
   verifyToken,
@@ -66,6 +67,12 @@ router.get(
   verifyToken,
   verifyPermission("order:view"),
   orderController.handleGetOrders,
+);
+router.get(
+  "/order/:orderId",
+  verifyToken,
+  verifyPermission("order:view"),
+  orderController.handleGetOrderById,
 );
 
 // ================= CART (CUSTOMER) =================

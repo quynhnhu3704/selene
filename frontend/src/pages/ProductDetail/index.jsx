@@ -120,7 +120,7 @@ export default function ProductDetail() {
   return (
     <>
       <Helmet>
-        <title>{PRODUCT.name} | Rubies</title>
+        <title>{PRODUCT.name ? `${PRODUCT.name} | Selene` : "Selene"}</title>
       </Helmet>
 
       <Breadcrumb

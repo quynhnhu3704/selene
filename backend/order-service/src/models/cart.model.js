@@ -164,6 +164,19 @@ export const CartModel = {
     return data;
   },
 
+  // Xóa các item đã được dùng để tạo đơn, giữ nguyên các item chưa chọn.
+  removeCartItems: async (cartId, cartItemIds) => {
+    const { data, error } = await supabase
+      .from("cart_items")
+      .delete()
+      .eq("cart_id", cartId)
+      .in("cart_item_id", cartItemIds)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Xóa toàn bộ giỏ hàng
   deleteCart: async (cartId) => {
     const { data, error } = await supabase

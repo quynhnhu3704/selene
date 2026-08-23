@@ -2,40 +2,117 @@
 import { useContext, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { toast } from "react-toastify";
 import { CartContext } from "../../context/CartContext";
 import Breadcrumb from "../../components/layout/Breadcrumb";
+import { placeOrder } from "../../services/order.service";
+import { getUser } from "../../utils/auth";
 
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [submitting, setSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { cart } = useContext(CartContext);
+  const { cart, fetchCart } = useContext(CartContext);
+  const currentUser = getUser();
+  const [shippingInfo, setShippingInfo] = useState({
+    recipient_name: currentUser?.full_name || "",
+    recipient_phone: currentUser?.phone_number || "",
+    recipient_address: "",
+    note: "",
+  });
 
   const selected = location.state?.selected || [];
   const cartItems = cart?.items || [];
 
+  const updateShippingInfo = (field, value) => {
+    setShippingInfo((current) => ({ ...current, [field]: value }));
+    setFormErrors((current) => ({ ...current, [field]: "" }));
+  };
+
+  const validateShippingInfo = () => {
+    const errors = {};
+    const phoneDigits = shippingInfo.recipient_phone.replace(/\D/g, "");
+
+    if (!shippingInfo.recipient_name.trim()) {
+      errors.recipient_name = "Vui lòng nhập họ và tên.";
+    }
+
+    if (!shippingInfo.recipient_phone.trim()) {
+      errors.recipient_phone = "Vui lòng nhập số điện thoại.";
+    } else if (phoneDigits.length < 9 || phoneDigits.length > 11) {
+      errors.recipient_phone = "Số điện thoại chưa hợp lệ.";
+    }
+
+    if (!shippingInfo.recipient_address.trim()) {
+      errors.recipient_address = "Vui lòng nhập địa chỉ nhận hàng.";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handlePlaceOrder = async () => {
+    if (submitting || !validateShippingInfo()) {
+      return;
+    }
+
     try {
       setSubmitting(true);
 
       const payload = {
         cart_item_ids: selected,
         payment_method: paymentMethod,
-        shipping_name: "",
-        shipping_phone: "",
-        shipping_address: "",
-        note: "",
+        recipient_name: shippingInfo.recipient_name.trim(),
+        recipient_phone: shippingInfo.recipient_phone.trim(),
+        recipient_address: shippingInfo.recipient_address.trim(),
+        note: shippingInfo.note.trim(),
       };
 
-      console.log("Creating order:", payload);
+      const response = await placeOrder(payload);
+      const order = response.data;
 
-      // TODO: gọi order service
+      await fetchCart();
+
+      if (paymentMethod === "cod") {
+        toast.success(response.message || "Đặt hàng thành công!");
+        navigate("/tai-khoan/don-hang", { replace: true });
+        return;
+      }
+
+      const payment = {
+        orderId: order.order_id,
+        orderCode: order.order_code,
+        amount: order.final_amount,
+        paymentMethod,
+        transferNote: order.payment?.transfer_note || order.order_code,
+        qrUrl: order.payment?.qr_url,
+        bank: order.payment?.bank,
+      };
+
+      try {
+        sessionStorage.setItem(
+          `selene:payment:${order.order_id}`,
+          JSON.stringify(payment),
+        );
+      } catch {
+        // Chuyển trang vẫn hoạt động qua router state nếu sessionStorage không khả dụng.
+      }
+
+      navigate(`/thanh-toan/qr?orderId=${encodeURIComponent(order.order_id)}`, {
+        state: payment,
+        replace: true,
+      });
     } catch (error) {
       console.error(error);
+      toast.error(
+        error.response?.data?.message ||
+          "Không thể đặt hàng. Vui lòng thử lại sau.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -181,6 +258,18 @@ export default function Checkout() {
 
         .checkout-input:focus {
           border-color: #212529;
+        }
+
+        .checkout-input.input-error,
+        .checkout-textarea.input-error {
+          border-color: #dc3545;
+        }
+
+        .checkout-field-error {
+          display: block;
+          color: #dc3545;
+          font-size: 12px;
+          margin: -11px 0 12px;
         }
 
         .checkout-textarea {
@@ -333,6 +422,18 @@ export default function Checkout() {
           color: #343a40;
         }
 
+        .checkout-payment-hint {
+          margin: -2px 0 12px 35px;
+          color: #6c757d;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .checkout-btn:disabled {
+          cursor: not-allowed;
+          opacity: .65;
+        }
+
         @media (max-width: 1520px) {
           .checkout-page {
             padding: 28px 24px 56px;
@@ -364,9 +465,22 @@ export default function Checkout() {
 
                   <input
                     type="text"
-                    className="checkout-input"
+                    className={`checkout-input ${
+                      formErrors.recipient_name ? "input-error" : ""
+                    }`}
                     placeholder="Nhập họ và tên"
+                    value={shippingInfo.recipient_name}
+                    onChange={(event) =>
+                      updateShippingInfo("recipient_name", event.target.value)
+                    }
+                    aria-invalid={Boolean(formErrors.recipient_name)}
                   />
+
+                  {formErrors.recipient_name && (
+                    <span className="checkout-field-error">
+                      {formErrors.recipient_name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="col-md-6">
@@ -374,9 +488,22 @@ export default function Checkout() {
 
                   <input
                     type="tel"
-                    className="checkout-input"
+                    className={`checkout-input ${
+                      formErrors.recipient_phone ? "input-error" : ""
+                    }`}
                     placeholder="Nhập số điện thoại"
+                    value={shippingInfo.recipient_phone}
+                    onChange={(event) =>
+                      updateShippingInfo("recipient_phone", event.target.value)
+                    }
+                    aria-invalid={Boolean(formErrors.recipient_phone)}
                   />
+
+                  {formErrors.recipient_phone && (
+                    <span className="checkout-field-error">
+                      {formErrors.recipient_phone}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -384,15 +511,32 @@ export default function Checkout() {
 
               <input
                 type="text"
-                className="checkout-input"
+                className={`checkout-input ${
+                  formErrors.recipient_address ? "input-error" : ""
+                }`}
                 placeholder="Nhập địa chỉ nhận hàng"
+                value={shippingInfo.recipient_address}
+                onChange={(event) =>
+                  updateShippingInfo("recipient_address", event.target.value)
+                }
+                aria-invalid={Boolean(formErrors.recipient_address)}
               />
+
+              {formErrors.recipient_address && (
+                <span className="checkout-field-error">
+                  {formErrors.recipient_address}
+                </span>
+              )}
 
               <label className="checkout-label">Ghi chú</label>
 
               <textarea
                 className="checkout-textarea"
                 placeholder="Ghi chú cho đơn hàng (nếu có)"
+                value={shippingInfo.note}
+                onChange={(event) =>
+                  updateShippingInfo("note", event.target.value)
+                }
               />
             </div>
 
@@ -434,6 +578,13 @@ export default function Checkout() {
                 </span>
               </label>
 
+              {paymentMethod === "bank" && (
+                <div className="checkout-payment-hint">
+                  Sau khi tạo đơn, hệ thống sẽ hiển thị tên chủ tài khoản, số
+                  tài khoản và ngân hàng để bạn chuyển khoản.
+                </div>
+              )}
+
               {/* SEPAY QR */}
               <label className="checkout-payment-option">
                 <input
@@ -450,6 +601,13 @@ export default function Checkout() {
                   Thanh toán QR qua SePay
                 </span>
               </label>
+
+              {paymentMethod === "sepay" && (
+                <div className="checkout-payment-hint">
+                  Mã QR mang đúng số tiền và mã đơn; giao dịch sẽ được xác nhận
+                  tự động khi SePay gửi webhook hợp lệ.
+                </div>
+              )}
             </div>
           </div>
 
@@ -528,12 +686,21 @@ export default function Checkout() {
 
               <button
                 className="checkout-btn"
-                onClick={() => {
-                  // Tạm thời chưa gọi API tạo đơn
-                  console.log("Đặt hàng:", selectedItems);
-                }}
+                type="button"
+                onClick={handlePlaceOrder}
+                disabled={submitting}
               >
-                Đặt hàng
+                {submitting ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                    Đang tạo đơn...
+                  </>
+                ) : (
+                  "Đặt hàng"
+                )}
               </button>
             </div>
           </div>
