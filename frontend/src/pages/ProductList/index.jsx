@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import Breadcrumb from "../../components/layout/Breadcrumb";
 import {
   getProductFilterOptions,
   getProducts,
@@ -427,14 +428,14 @@ export default function ProductList() {
   </title>
 </Helmet>
 
-      <style>{`
-        /* ── BREADCRUMB WRAP ── */
-        .pl-breadcrumb-wrap {
-          padding: 13px 75px;
-          background: #fff;
-          border-bottom: 1px solid #f0f0f0;
-        }
+<Breadcrumb
+        items={[
+          { label: "Trang chủ", path: "/" },
+          { label: "Sản phẩm" },
+        ]}
+      />
 
+      <style>{`
         /* ── LAYOUT ── */
         .pl-layout {
           display: flex;
@@ -927,56 +928,29 @@ export default function ProductList() {
         .pl-color-list {
           display: flex;
           flex-wrap: wrap;
-          // gap: 9px;
-          gap: 25px;
+          gap: 9px;
         }
         .pl-color-btn {
           position: relative;
-          // width: 42px;
-          // height: 42px;
-          // padding: 2px;
-          // border: 2px solid transparent;
-          // border-radius: 50%;
-          // background: #fff;
-          width: 60px;
-          height: 60px;
-          padding: 4.5px;
-          border: 1px solid gray;
-          border-radius: 25%;
+          border: 1px solid #E6E6E6;
+          padding: 0.25em;
+          border-radius: 0.65em;
           background: #fff;
           cursor: pointer;
           transition: border-color 0.15s, transform 0.15s;
         }
         .pl-color-btn:hover {
-          transform: scale(1.05);
+          border: 1px solid #871b1b;
         }
         .pl-color-btn.active {
-          border-color: #212529;
+          border-color: #871b1b;
         }
         .pl-color-swatch {
           display: block;
-          // width: 34px;
-          // height: 34px;
-          // border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          border-radius: 25%;
+          width: 37.4px;
+          height: 37.4px;
+          border-radius: 0.35em;
           object-fit: cover;
-        }
-        .pl-color-check {
-          position: absolute;
-          right: -3px;
-          bottom: -3px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 17px;
-          height: 17px;
-          border: 1px solid #fff;
-          border-radius: 50%;
-          background: #212529;
-          color: #fff;
-          font-size: 10px;
         }
         .pl-filter-message {
           margin: 10px 0 0;
@@ -1039,20 +1013,6 @@ export default function ProductList() {
           }
         }
       `}</style>
-
-      {/* ── BREADCRUMB ── */}
-      <div className="pl-breadcrumb-wrap">
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb mb-0">
-            <li className="breadcrumb-item">
-              <Link to="/">Trang chủ</Link>
-            </li>
-            <li className="breadcrumb-item active" aria-current="page">
-              Thời Trang Nữ
-            </li>
-          </ol>
-        </nav>
-      </div>
 
       {/* ── LAYOUT: SIDEBAR + MAIN ── */}
       <div className="pl-layout">
@@ -1275,11 +1235,6 @@ export default function ProductList() {
   alt={color.label}
   loading="lazy"
 />
-                        {isSelected && (
-                          <span className="pl-color-check">
-                            <i className="bi bi-check-lg" />
-                          </span>
-                        )}
                       </button>
                     );
                   })}
@@ -1295,7 +1250,7 @@ export default function ProductList() {
         <main className="pl-main">
           <div className="pl-main-top">
             <h1 className="pl-main-heading">
-              {searchQuery ? "Kết quả tìm kiếm" : "Thời Trang Nữ"}
+              {searchQuery ? "Kết quả tìm kiếm" : "Sản phẩm"}
             </h1>
 
             <div className="pl-sort-wrap">

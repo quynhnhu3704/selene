@@ -422,7 +422,7 @@ export default function Header() {
             </Link>
           </li>
           <li>
-            <Link to="/san-pham">THỜI TRANG NỮ</Link>
+            <Link to="/san-pham">SẢN PHẨM</Link>
           </li>
           <li>
             <Link to="/">BỘ SƯU TẬP</Link>

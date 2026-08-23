@@ -126,7 +126,7 @@ export default function ProductDetail() {
       <Breadcrumb
         items={[
           { label: "Trang chủ", path: "/" },
-          { label: "Thời trang nữ", path: "/san-pham" },
+          { label: "Sản phẩm", path: "/san-pham" },
           { label: PRODUCT.name },
         ]}
       />
