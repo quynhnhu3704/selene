@@ -475,7 +475,7 @@ export default function InfoPanel({ profile, setProfile }) {
                 setEditing(true);
               }}
             >
-              <i className="bi bi-pencil me-1" /> Chỉnh sửa thông tin
+              <i className="bi bi-pencil-square me-1" /> Chỉnh sửa thông tin
             </button>
           )}
         </div>

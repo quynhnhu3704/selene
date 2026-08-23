@@ -670,7 +670,7 @@ export default function AdminProducts() {
                           className="adm-action-btn"
                           title="Chỉnh sửa"
                         >
-                          <i className="bi bi-pencil" />
+                          <i className="bi bi-pencil-square" />
                         </Link>
 
                         {/* Khoá / Mở khoá */}
