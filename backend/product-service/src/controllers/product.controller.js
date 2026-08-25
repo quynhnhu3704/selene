@@ -1,5 +1,6 @@
 // backend\product-service\src\controllers\category.controller.js
 import * as productService from "../services/product.service.js";
+import { generateProductsExcelBuffer } from "../services/export.service.js";
 
 // lấy tất cả sản phẩm cho customer
 export const handleGetAllProducts = async (req, res) => {
@@ -317,6 +318,33 @@ export const handleGetProductDetailForAdmin = async (req, res) => {
     return res.status(500).json({
       status: 500,
       message: error.message || "Internal Server Error!",
+    });
+  }
+};
+
+// Xuất danh sách sản phẩm ra Excel
+export const handleExportProductsToExcel = async (req, res) => {
+  try {
+    const buffer = await generateProductsExcelBuffer();
+
+    const dateStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const filename = `products_export_${dateStr}.xlsx`;
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${filename}`
+    );
+
+    return res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Lỗi tại handleExportProductsToExcel Controller:", error.message);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || "Lỗi máy chủ khi xuất dữ liệu Excel!",
     });
   }
 };

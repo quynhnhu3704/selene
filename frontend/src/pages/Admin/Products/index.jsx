@@ -6,6 +6,7 @@ import {
   getAdminProductCategories,
   getAdminProducts,
   updateAdminProductStatus,
+  exportProductsToExcel,
 } from "../../../services/product.service";
 import Pagination from "../../../components/common/Pagination";
 import { Helmet } from "react-helmet-async";
@@ -50,6 +51,7 @@ export default function AdminProducts() {
   const [priceOpen, setPriceOpen] = useState(false);
   const [updatingProductId, setUpdatingProductId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const [searchValue, setSearchValue] = useState(q);
   const categoryRef = useRef(null);
@@ -227,6 +229,40 @@ export default function AdminProducts() {
     }
   };
 
+  /* ── export excel ── */
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      toast.info("Đang chuẩn bị xuất dữ liệu, vui lòng đợi...");
+
+      const blob = await exportProductsToExcel();
+
+      const dateStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const filename = `products_export_${dateStr}.xlsx`;
+
+      // Tạo đường dẫn tải xuống cho trình duyệt
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+
+      // Dọn dẹp bộ nhớ
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Xuất dữ liệu Excel thành công!");
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.message || "Lỗi khi tải file hoặc xuất dữ liệu Excel!"
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleResetFilters = () => {
     setSearchValue("");
 
@@ -362,12 +398,21 @@ export default function AdminProducts() {
         </div>
         <div className="d-flex gap-3">
           <button
-            className="form-btn btn btn-outline-dark btn-export fw-semibold px-4"
-            onClick={() =>
-              toast.info("Tính năng xuất dữ liệu đang được phát triển")
-            }
+            className="form-btn btn btn-outline-dark btn-export fw-semibold px-4 d-flex align-items-center justify-content-center"
+            disabled={exporting}
+            onClick={handleExportExcel}
+            style={{ minWidth: "140px" }}
           >
-            <i className="bi bi-download me-1" /> Xuất dữ liệu
+            {exporting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                Đang xuất...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-download me-1" /> Xuất dữ liệu
+              </>
+            )}
           </button>
           <Link
             to="/admin/san-pham/them-moi"

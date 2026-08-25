@@ -109,6 +109,12 @@ router.put(
   productController.handleUpdateVariantStatus,
 );
 router.get(
+  "/manage/products/export",
+  verifyToken,
+  verifyPermission("product:view"),
+  productController.handleExportProductsToExcel,
+);
+router.get(
   "/manage/products",
   verifyToken,
   verifyPermission("product:view"),
