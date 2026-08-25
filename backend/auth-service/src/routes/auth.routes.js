@@ -20,6 +20,7 @@ import {
   handleUpdateProfileAll,
   handleUpdateStaffProfile,
   handleGetStaffProfile,
+  handleToggleAccountStatus,
 } from "../controllers/user.controller.js";
 import {
   verifyToken,
@@ -152,6 +153,12 @@ router.put(
   verifyToken,
   verifyPermission("user:update"),
   handleUpdateAccount,
+);
+router.put(
+  "/manage/account/change-status/:accountId",
+  verifyToken,
+  verifyPermission("user:update"),
+  handleToggleAccountStatus,
 );
 router.get(
   "/manage/accounts",
