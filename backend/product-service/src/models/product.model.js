@@ -122,6 +122,7 @@ export const ProductModel = {
         original_price,
         discount_price,
         description,
+        status,
         brands:brand_id ( name )
       `,
       )
@@ -358,6 +359,21 @@ export const ProductModel = {
     return data[0];
   },
 
+  // Cập nhật trạng thái cho tất cả các biến thể của một sản phẩm
+  updateVariantsStatusByProductId: async (productId, status, updatedAt) => {
+    const { data, error } = await supabase
+      .from("product_variants")
+      .update({
+        status,
+        updated_at: updatedAt,
+      })
+      .eq("product_id", productId)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Cập nhật trạng thái của tất cả sản phẩm thuộc một category
   updateProductsStatusByCategory: async (categoryId, status, updatedAt) => {
     const { data, error } = await supabase
@@ -454,9 +470,9 @@ export const ProductModel = {
       query = query.lt("price", filters.price.max);
     }
 
-    if (filters.status === "archived") {
+    if (filters.status === "inactive" || filters.status === "archived") {
       // Hỗ trợ cả dữ liệu cũ dùng `inactive` và dữ liệu mới dùng `archived`
-      query = query.in("status", ["archived", "inactive"]);
+      query = query.in("status", ["inactive", "archived"]);
     }
 
     if (filters.status === "active") {

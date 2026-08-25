@@ -226,10 +226,7 @@ export const handleUpdateProductStatus = async (req, res) => {
 
     return res.status(200).json({
       status: 200,
-      message:
-        status === "active"
-          ? "Mở khóa sản phẩm thành công!"
-          : "Khóa sản phẩm thành công!",
+      message: "Cập nhật trạng thái sản phẩm thành công!",
       data: result,
     });
   } catch (error) {

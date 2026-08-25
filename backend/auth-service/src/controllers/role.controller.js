@@ -17,7 +17,7 @@ export const handleToggleRoleStatus = async (req, res) => {
 
     return res.status(200).json({
       status: 200,
-      message: `Cập nhật trạng thái vai trò thành công! Trạng thái hiện tại: ${result.status}`,
+      message: "Cập nhật trạng thái vai trò thành công!",
       data: result,
     });
   } catch (error) {
