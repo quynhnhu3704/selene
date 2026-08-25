@@ -118,6 +118,28 @@ export const AccountModel = {
     if (error) throw error;
   },
 
+  // Tìm các tài khoản theo vai trò (role_id)
+  findAccountsByRoleId: async (roleId) => {
+    const { data, error } = await supabase
+      .from("accounts")
+      .select("account_id")
+      .eq("role_id", roleId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Cập nhật trạng thái của các tài khoản theo vai trò (role_id)
+  updateAccountsStatusByRoleId: async (roleId, status) => {
+    const { error } = await supabase
+      .from("accounts")
+      .update({
+        status,
+        updated_at: new Date(),
+      })
+      .eq("role_id", roleId);
+    if (error) throw error;
+  },
+
   // Xóa tài khoản (dùng để rollback nếu bị lỗi giữa chừng)
   deleteAccountById: async (accountId) => {
     const { error } = await supabase

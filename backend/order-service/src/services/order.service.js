@@ -13,8 +13,12 @@ const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+const generateId2 = (prefix) => {
+  return `${prefix}${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
+};
+
 const generateOrderCode = () => {
-  return generateId("HD");
+  return generateId2("HD");
 };
 
 const paymentMethods = new Set(["cod", "bank", "sepay"]);

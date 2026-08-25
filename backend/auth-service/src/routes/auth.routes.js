@@ -32,6 +32,9 @@ import {
   handleGetPermissionsByAccountId,
   handleUpdatePermission,
 } from "../controllers/permission.controller.js";
+import {
+  handleToggleRoleStatus,
+} from "../controllers/role.controller.js";
 
 const router = express.Router();
 
@@ -108,7 +111,7 @@ router.put(
   handleUpdateProfileAll,
 );
 
-// quyền
+// quyền (permission)
 router.get(
   "/manage/permissions",
   verifyToken,
@@ -126,6 +129,14 @@ router.put(
   verifyToken,
   verifyPermission("permission:update"),
   handleUpdatePermission,
+);
+
+// vai trò (role)
+router.put(
+  "/manage/role/change-status/:roleId",
+  verifyToken,
+  verifyPermission("role:update"),
+  handleToggleRoleStatus,
 );
 
 // account
