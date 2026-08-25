@@ -3,8 +3,11 @@ import { supabase } from "../configs/supabase.js";
 
 export const ProductModel = {
   // Lấy tất cả sản phẩm cho customer (Có phân trang)
-  getProductsWithPagination: async (from, to) => {
-    const { data, error, count } = await supabase
+  getProductsWithPagination: async (filters, from, to) => {
+    const hasVariantFilter =
+      filters.sizes.length > 0 || filters.colors.length > 0;
+
+    let query = supabase
       .from("products")
       .select(
         `
@@ -13,15 +16,92 @@ export const ProductModel = {
         image_urls,
         original_price,
         discount_price
+        ${
+          hasVariantFilter
+            ? `,
+        product_variants!inner (
+          variant_id
+        )`
+            : ""
+        }
       `,
         { count: "exact" },
-      ) // Đếm tổng số bản ghi thực tế trong DB
-      .eq("status", "active") // Chỉ hiển thị các sản phẩm đang mở bán công khai
-      .order("created_at", { ascending: false }) // Sản phẩm mới nhất xếp lên đầu
+      )
+      .eq("status", "active"); // Chỉ hiển thị các sản phẩm đang mở bán công khai
+
+    if (filters.q) {
+      query = query.or(
+        `product_name.ilike.%${filters.q}%,product_id.ilike.%${filters.q}%`,
+      );
+    }
+
+    if (filters.categoryIds.length > 0) {
+      query = query.in("category_id", filters.categoryIds);
+    }
+
+    if (filters.minPrice !== undefined) {
+      query = query.gte("discount_price", filters.minPrice);
+    }
+
+    if (filters.maxPrice !== undefined) {
+      query = query.lte("discount_price", filters.maxPrice);
+    }
+
+    if (hasVariantFilter) {
+      query = query
+        .eq("product_variants.status", "active")
+        .gt("product_variants.stock_quantity", 0);
+
+      if (filters.sizes.length > 0) {
+        query = query.in("product_variants.size", filters.sizes);
+      }
+
+      if (filters.colors.length > 0) {
+        query = query.in("product_variants.color", filters.colors);
+      }
+    }
+
+    if (filters.sort === "az") {
+      query = query.order("product_name", { ascending: true });
+    } else if (filters.sort === "za") {
+      query = query.order("product_name", { ascending: false });
+    } else if (filters.sort === "price_asc") {
+      query = query.order("discount_price", { ascending: true });
+    } else if (filters.sort === "price_desc") {
+      query = query.order("discount_price", { ascending: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    const { data, error, count } = await query
+      .order("product_id", { ascending: true })
       .range(from, to); // Cắt dữ liệu theo trang
 
     if (error) throw error;
     return { data, count };
+  },
+
+  // Lấy chi tiết sản phẩm cho customer, chỉ chấp nhận sản phẩm đang mở bán
+  getPublicProductById: async (productId) => {
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select(
+        `
+        product_id,
+        product_name,
+        image_urls,
+        original_price,
+        discount_price,
+        description,
+        brands:brand_id ( name )
+      `,
+      )
+      .eq("product_id", productId)
+      .eq("status", "active")
+      .single();
+
+    if (productError) throw productError;
+    return product;
   },
 
   // Lấy thông tin chi tiết sản phẩm & tên thương hiệu
@@ -57,6 +137,57 @@ export const ProductModel = {
     return variants;
   },
 
+  // Lấy các biến thể còn hàng để dựng dữ liệu sidebar filter cho customer
+  getAvailableVariantsForFilter: async (from, to) => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        `
+        image_urls,
+        product_variants!inner (
+          size,
+          color
+        )
+      `,
+      )
+      .eq("status", "active")
+      .eq("product_variants.status", "active")
+      .gt("product_variants.stock_quantity", 0)
+      .order("product_id", { ascending: true })
+      .range(from, to);
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Lấy giá thấp nhất / cao nhất từ sản phẩm public thực tế
+  getCustomerPriceBounds: async () => {
+    const [minResult, maxResult] = await Promise.all([
+      supabase
+        .from("products")
+        .select("discount_price")
+        .eq("status", "active")
+        .not("discount_price", "is", null)
+        .order("discount_price", { ascending: true })
+        .limit(1),
+      supabase
+        .from("products")
+        .select("discount_price")
+        .eq("status", "active")
+        .not("discount_price", "is", null)
+        .order("discount_price", { ascending: false })
+        .limit(1),
+    ]);
+
+    if (minResult.error) throw minResult.error;
+    if (maxResult.error) throw maxResult.error;
+
+    return {
+      min: minResult.data?.[0]?.discount_price ?? 0,
+      max: maxResult.data?.[0]?.discount_price ?? 0,
+    };
+  },
+
   // Tìm kiếm sản phẩm theo tên sử dụng ilike
   searchProductsByName: async (keyword, from, to) => {
     const { data, error, count } = await supabase
@@ -72,7 +203,7 @@ export const ProductModel = {
         { count: "exact" },
       )
       .eq("status", "active")
-      .ilike("product_name", `%${keyword}%`)
+      .or(`product_name.ilike.%${keyword}%,product_id.ilike.%${keyword}%`)
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -199,6 +330,23 @@ export const ProductModel = {
     return data[0];
   },
 
+  // Cập nhật riêng trạng thái hiển thị của sản phẩm
+  updateProductStatus: async (productId, status, updatedAt) => {
+    const { data, error } = await supabase
+      .from("products")
+      .update({
+        status,
+        updated_at: updatedAt,
+      })
+      .eq("product_id", productId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0)
+      throw new Error("Không tìm thấy sản phẩm để cập nhật!");
+    return data[0];
+  },
+
   // Chỉ cần duy nhất hàm này để vừa Update vừa Insert biến thể
   upsertVariants: async (variantsArray) => {
     const { data, error } = await supabase
@@ -212,27 +360,59 @@ export const ProductModel = {
     return data;
   },
 
-  // lấy tất cả sản phẩm cho admin
-  getAllProductsWithPagination: async (from, to) => {
-    const { data, error, count } = await supabase
-      .from("products")
-      .select(
-        `
+  // lấy tất cả sản phẩm cho admin kèm các điều kiện lọc
+  getAllProductsWithPagination: async (filters, from, to) => {
+    let query = supabase.from("products").select(
+      `
         product_id,
         product_name,
         image_urls,
         price,
         original_price,
         discount_price,
-        categories: category_id (name),
+        category_id,
+        categories: category_id (
+          category_id,
+          name
+        ),
         product_variants (
           stock_quantity
         ),
         status
       `,
-        { count: "exact" },
-      ) // Đếm tổng số bản ghi thực tế trong DB
+      { count: "exact" },
+    ); // Đếm tổng số bản ghi thực tế trong DB
+
+    if (filters.q) {
+      query = query.or(
+        `product_name.ilike.%${filters.q}%,product_id.ilike.%${filters.q}%`,
+      );
+    }
+
+    if (filters.category) {
+      query = query.eq("category_id", filters.category);
+    }
+
+    if (filters.price?.min !== undefined) {
+      query = query.gte("price", filters.price.min);
+    }
+
+    if (filters.price?.max !== undefined) {
+      query = query.lt("price", filters.price.max);
+    }
+
+    if (filters.status === "archived") {
+      // Hỗ trợ cả dữ liệu cũ dùng `inactive` và dữ liệu mới dùng `archived`
+      query = query.in("status", ["archived", "inactive"]);
+    }
+
+    if (filters.status === "active") {
+      query = query.eq("status", "active");
+    }
+
+    const { data, error, count } = await query
       .order("created_at", { ascending: false }) // Sản phẩm mới nhất xếp lên đầu
+      .order("product_id", { ascending: true }) // Nếu cùng ngày tạo thì sắp xếp theo product_id tăng dần
       .range(from, to); // Cắt dữ liệu theo trang
 
     if (error) throw error;

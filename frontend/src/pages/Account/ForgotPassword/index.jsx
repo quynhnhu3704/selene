@@ -66,7 +66,7 @@ export default function ForgotPassword() {
   return (
     <>
       <Helmet>
-        <title>Quên Mật Khẩu | Selene</title>
+        <title>Quên mật khẩu | Selene</title>
       </Helmet>
 
       <Breadcrumb

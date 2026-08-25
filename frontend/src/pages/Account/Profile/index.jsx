@@ -14,18 +14,18 @@ export default function Profile() {
   const breadcrumbItems = {
     "/tai-khoan": [
       { label: "Trang chủ", path: "/" },
-      { label: "Tài khoản của tôi" },
+      { label: "Thông tin tài khoản" },
     ],
 
     "/tai-khoan/don-hang": [
       { label: "Trang chủ", path: "/" },
-      { label: "Tài khoản của tôi", path: "/tai-khoan" },
+      { label: "Thông tin tài khoản", path: "/tai-khoan" },
       { label: "Đơn hàng của bạn" },
     ],
 
     "/tai-khoan/doi-mat-khau": [
       { label: "Trang chủ", path: "/" },
-      { label: "Tài khoản của tôi", path: "/tai-khoan" },
+      { label: "Thông tin tài khoản", path: "/tai-khoan" },
       { label: "Đổi mật khẩu" },
     ],
   };
@@ -48,7 +48,7 @@ export default function Profile() {
   return (
     <>
       <Helmet>
-        <title>Tài Khoản Của Tôi | Selene</title>
+        <title>Thông tin tài khoản | Selene</title>
       </Helmet>
 
       <Breadcrumb

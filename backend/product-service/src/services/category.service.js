@@ -121,3 +121,16 @@ export const getAllCategories = async (options = {}) => {
     );
   }
 };
+
+// lấy danh mục cho bộ lọc sản phẩm Admin
+export const getCategoriesForProductFilter = async () => {
+  try {
+    return await CategoryModel.getCategoriesForProductFilter();
+  } catch (error) {
+    console.error(
+      "Lỗi tại getCategoriesForProductFilter Service:",
+      error.message,
+    );
+    throw new Error("Không thể lấy danh sách danh mục cho bộ lọc sản phẩm!");
+  }
+};

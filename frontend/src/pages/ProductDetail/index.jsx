@@ -120,13 +120,13 @@ export default function ProductDetail() {
   return (
     <>
       <Helmet>
-        <title>{PRODUCT.name} | Rubies</title>
+        <title>{PRODUCT.name ? `${PRODUCT.name} | Selene` : "Selene"}</title>
       </Helmet>
 
       <Breadcrumb
         items={[
           { label: "Trang chủ", path: "/" },
-          { label: "Thời trang nữ", path: "/san-pham" },
+          { label: "Sản phẩm", path: "/san-pham" },
           { label: PRODUCT.name },
         ]}
       />

@@ -7,6 +7,7 @@ import {
   sendUpdateProductStock,
   sendOrderNotificationEvent,
 } from "../configs/rabbitmq.js";
+import { config } from "../configs/index.js";
 
 const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -14,6 +15,37 @@ const generateId = (prefix) => {
 
 const generateOrderCode = () => {
   return generateId("HD");
+};
+
+const paymentMethods = new Set(["cod", "bank", "sepay"]);
+
+const getBankTransferDetails = (order) => {
+  const transferNote = order.order_code;
+  const qrParams = new URLSearchParams({
+    acc: config.sepayAccountNumber,
+    bank: config.sepayBankCode,
+    amount: String(Math.round(Number(order.final_amount || 0))),
+    des: transferNote,
+    template: "",
+    showinfo: "false",
+    fullacc: "true",
+    holder: config.sepayAccountName,
+    store: "SELENE",
+  });
+
+  return {
+    transfer_note: transferNote,
+    bank: {
+      code: config.sepayBankCode,
+      name: config.sepayBankName,
+      account_number: config.sepayAccountNumber,
+      account_name: config.sepayAccountName,
+    },
+    qr_url:
+      order.payment_method === "sepay"
+        ? `https://vietqr.app/img?${qrParams.toString()}`
+        : null,
+  };
 };
 
 export const createOrder = async (accountId, orderData) => {
@@ -24,15 +56,31 @@ export const createOrder = async (accountId, orderData) => {
       recipient_address,
       payment_method,
       voucher_code,
+      cart_item_ids,
     } = orderData;
 
+    const recipientName = String(recipient_name || "").trim();
+    const recipientPhone = String(recipient_phone || "").trim();
+    const recipientAddress = String(recipient_address || "").trim();
+    const normalizedPaymentMethod = String(payment_method || "")
+      .trim()
+      .toLowerCase();
+
     if (
-      !recipient_name ||
-      !recipient_phone ||
-      !recipient_address ||
-      !payment_method
+      !recipientName ||
+      !recipientPhone ||
+      !recipientAddress ||
+      !normalizedPaymentMethod
     ) {
       throw new Error("Thiếu thông tin giao hàng hoặc phương thức thanh toán!");
+    }
+
+    if (!paymentMethods.has(normalizedPaymentMethod)) {
+      throw new Error("Phương thức thanh toán không hợp lệ!");
+    }
+
+    if (!Array.isArray(cart_item_ids) || cart_item_ids.length === 0) {
+      throw new Error("Vui lòng chọn ít nhất một sản phẩm để đặt hàng!");
     }
 
     // 1. Lấy giỏ hàng của user
@@ -46,8 +94,22 @@ export const createOrder = async (accountId, orderData) => {
       throw new Error("Giỏ hàng trống!");
     }
 
+    const selectedCartItemIds = [
+      ...new Set(cart_item_ids.map((cartItemId) => String(cartItemId))),
+    ];
+    const selectedCartItemIdSet = new Set(selectedCartItemIds);
+    const selectedCartItems = cartItems.filter((item) =>
+      selectedCartItemIdSet.has(String(item.cart_item_id)),
+    );
+
+    if (selectedCartItems.length !== selectedCartItemIds.length) {
+      throw new Error(
+        "Một hoặc nhiều sản phẩm đã chọn không còn trong giỏ hàng!",
+      );
+    }
+
     // 2. Lấy thông tin chi tiết sản phẩm qua RabbitMQ RPC để check giá và tồn kho
-    const variantIds = cartItems.map((item) => item.variant_id);
+    const variantIds = selectedCartItems.map((item) => item.variant_id);
     let productDetails = [];
     try {
       productDetails = await requestProductDetails(variantIds);
@@ -62,7 +124,7 @@ export const createOrder = async (accountId, orderData) => {
     const finalOrderItems = [];
 
     // 3. Kiểm tra tồn kho và tính tổng tiền
-    for (const item of cartItems) {
+    for (const item of selectedCartItems) {
       const detail = productDetails.find(
         (p) => p.variant_id === item.variant_id,
       );
@@ -169,14 +231,14 @@ export const createOrder = async (accountId, orderData) => {
       account_id: accountId,
       order_code: generateOrderCode(),
       voucher_id: appliedVoucher ? appliedVoucher.voucher_id : null,
-      recipient_name,
-      recipient_phone,
-      recipient_address,
+      recipient_name: recipientName,
+      recipient_phone: recipientPhone,
+      recipient_address: recipientAddress,
       total_original_price,
       total_discount_price,
       shipping_fee,
       final_amount,
-      payment_method,
+      payment_method: normalizedPaymentMethod,
       payment_status: "pending",
       status: "pending",
     };
@@ -206,9 +268,12 @@ export const createOrder = async (accountId, orderData) => {
       });
     }
 
-    // 9. Xóa sản phẩm khỏi giỏ hàng và xóa luôn giỏ hàng
-    await CartModel.clearCartItems(cart.cart_id);
-    await CartModel.deleteCart(cart.cart_id);
+    // 9. Chỉ xóa các sản phẩm vừa đặt; các sản phẩm không chọn vẫn ở lại giỏ.
+    await CartModel.removeCartItems(cart.cart_id, selectedCartItemIds);
+
+    if (selectedCartItems.length === cartItems.length) {
+      await CartModel.deleteCart(cart.cart_id);
+    }
 
     // 10. Trừ số lượng tồn kho của sản phẩm
     try {
@@ -239,7 +304,10 @@ export const createOrder = async (accountId, orderData) => {
       console.error("Lỗi khi gửi sự kiện thông báo email:", notifyErr.message);
     }
 
-    return createdOrder;
+    return {
+      ...createdOrder,
+      payment: getBankTransferDetails(createdOrder),
+    };
   } catch (error) {
     console.error("Lỗi tại placeOrder Service:", error.message);
     throw new Error(error.message || "Không thể đặt hàng!");
@@ -298,4 +366,44 @@ export const getOrdersByAccountId = async (accountId) => {
     console.error("Lỗi tại getOrdersByAccountId Service:", error.message);
     throw new Error("Không thể lấy danh sách đơn hàng!");
   }
+};
+
+export const getOrderById = async (accountId, orderId) => {
+  try {
+    const order = await OrderModel.findByIdAndAccountId(orderId, accountId);
+
+    if (!order) {
+      throw new Error("Không tìm thấy đơn hàng!");
+    }
+
+    return {
+      ...order,
+      payment: getBankTransferDetails(order),
+    };
+  } catch (error) {
+    console.error("Lỗi tại getOrderById Service:", error.message);
+    throw new Error(error.message || "Không thể lấy thông tin đơn hàng!");
+  }
+};
+
+export const confirmSePayPayment = async ({ orderCode, transferAmount }) => {
+  const order = await OrderModel.findByOrderCode(orderCode);
+
+  // Trả về null để webhook vẫn phản hồi thành công cho các giao dịch không thuộc đơn SePay.
+  if (!order || order.payment_method !== "sepay") {
+    return null;
+  }
+
+  if (order.payment_status === "paid" || order.status === "confirmed") {
+    return order;
+  }
+
+  const receivedAmount = Number(transferAmount);
+  const expectedAmount = Number(order.final_amount);
+
+  if (!Number.isFinite(receivedAmount) || receivedAmount < expectedAmount) {
+    return null;
+  }
+
+  return OrderModel.markSePayPaymentAsPaid(order.order_id);
 };

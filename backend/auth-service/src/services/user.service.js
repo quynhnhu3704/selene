@@ -1,4 +1,4 @@
-// backend\auth-service\src\services\permission.service.js
+// backend\auth-service\src\services\user.service.js
 import { config } from "../configs/index.js";
 import bcrypt from "bcrypt";
 import { UserProfileModel } from "../models/userProfile.model.js";
@@ -116,6 +116,7 @@ export const getCustomerProfile = async (accountId) => {
       avatar_url: profile.avatar_url,
       gender: profile.gender,
       dob: profile.dob,
+      role_id: account.role_id,
     },
   };
 };
@@ -143,6 +144,7 @@ export const getStaffProfile = async (accountId) => {
       dob: profile.dob,
       address: profile.address,
       status: profile.status,
+      role_id: account.role_id,
     },
   };
 };

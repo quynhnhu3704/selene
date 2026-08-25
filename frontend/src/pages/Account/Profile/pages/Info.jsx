@@ -9,7 +9,7 @@ export default function Info() {
   return (
     <>
       <Helmet>
-        <title>Tài khoản của tôi | Selene</title>
+        <title>Thông tin tài khoản | Selene</title>
       </Helmet>
 
       <InfoPanel profile={profile} setProfile={setProfile} />

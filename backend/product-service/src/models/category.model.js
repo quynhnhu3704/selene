@@ -85,4 +85,27 @@ export const CategoryModel = {
     if (error) throw error;
     return { data, count };
   },
+
+  // Lấy danh mục tối giản để dùng cho bộ lọc sản phẩm Admin
+  getCategoriesForProductFilter: async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("category_id, name")
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Lấy danh mục đang hoạt động cho bộ lọc phía customer
+  getActiveCategoriesForProductFilter: async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("category_id, name")
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
 };

@@ -1,3 +1,4 @@
+// backend\order-service\src\models\order.model.js
 import { supabase } from "../configs/supabase.js";
 
 export const OrderModel = {
@@ -33,6 +34,48 @@ export const OrderModel = {
       .single();
 
     if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
+
+  // Tìm đơn hàng của đúng chủ sở hữu để phục vụ trang thanh toán.
+  findByIdAndAccountId: async (orderId, accountId) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("order_id", orderId)
+      .eq("account_id", accountId)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
+
+  // SePay gửi lại mã đơn trong nội dung/mã thanh toán.
+  findByOrderCode: async (orderCode) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .ilike("order_code", orderCode)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
+
+  // Chỉ đánh dấu thanh toán khi đơn còn pending để webhook retry/đến đồng thời vẫn idempotent.
+  markSePayPaymentAsPaid: async (orderId) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        payment_status: "paid",
+        status: "confirmed",
+      })
+      .eq("order_id", orderId)
+      .eq("payment_status", "pending")
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
     return data;
   },
 

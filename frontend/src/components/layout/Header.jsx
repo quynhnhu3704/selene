@@ -1,6 +1,6 @@
 // frontend\src\components\layout\Header.jsx
 import { useState, useEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
@@ -8,15 +8,29 @@ import Swal from "sweetalert2";
 import { useCart } from "../../context/CartContext";
 
 export default function Header() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [wl] = useState(0);
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLogin, setIsLogin] = useState(isLoggedIn());
   const [admin, setAdmin] = useState(isAdmin());
 
   const navClass = ({ isActive }) =>
     isActive ? "rb-navlink rb-active" : "rb-navlink";
+
+  const handleProductSearch = (event) => {
+    event.preventDefault();
+
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    const params = new URLSearchParams({ q: query });
+    navigate(`/san-pham?${params.toString()}`);
+    setSearchOpen(false);
+  };
 
   // Lúc nào login thành công Header sẽ tự đổi
   useEffect(() => {
@@ -31,6 +45,12 @@ export default function Header() {
       window.removeEventListener("login-success", syncLogin);
     };
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/san-pham") return;
+
+    setSearchQuery(new URLSearchParams(location.search).get("q") || "");
+  }, [location.pathname, location.search]);
 
   // Tự động đóng search khi resize về desktop
   useEffect(() => {
@@ -129,14 +149,20 @@ export default function Header() {
               </span>
             </div>
 
-            <div className="rb-search mx-5">
+            <form className="rb-search mx-5" onSubmit={handleProductSearch}>
               <div className="input-group">
-                <input className="form-control" placeholder="Tìm sản phẩm..." />
-                <button className="input-group-text">
+                <input
+                  className="form-control"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Tìm tên hoặc mã sản phẩm..."
+                  aria-label="Tìm tên hoặc mã sản phẩm"
+                />
+                <button className="input-group-text" type="submit">
                   <i className="bi bi-search" />
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
           {/* HÀNG 2: NAV LINKS */}
@@ -145,20 +171,20 @@ export default function Header() {
               TRANG CHỦ
             </NavLink>
             <NavLink to="/san-pham" className={navClass}>
-              SẢN PHẨM<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              SẢN PHẨM<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/bo-suu-tap" className={navClass}>
-              BỘ SƯU TẬP<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              BỘ SƯU TẬP<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/tin-tuc" className={navClass}>
-              TIN TỨC<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              TIN TỨC<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/ve-chung-toi" className={navClass}>
-              VỀ SELENE<i className="bi bi-chevron-down ms-1 icon-down"></i>
-              <i className="bi bi-chevron-up ms-1 icon-up"></i>
+              VỀ SELENE<i className="bi bi-caret-down ms-2 icon-down"></i>
+              <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink
               to="/khuyen-mai"
@@ -221,9 +247,14 @@ export default function Header() {
                   {admin && (
                     <>
                       <li>
-                        <Link className="dropdown-item" to="/admin">
-                          <i className="bi bi-speedometer2 me-1"></i>Trang quản
-                          trị
+                        <Link
+                          className="dropdown-item"
+                          to="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i className="bi bi-speedometer2 me-1"></i>
+                          Trang quản trị
                         </Link>
                       </li>
                     </>
@@ -322,9 +353,14 @@ export default function Header() {
                   {admin && (
                     <>
                       <li>
-                        <Link className="dropdown-item" to="/admin">
-                          <i className="bi bi-speedometer2 me-1"></i>Trang quản
-                          trị
+                        <Link
+                          className="dropdown-item"
+                          to="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i className="bi bi-speedometer2 me-1"></i>
+                          Trang quản trị
                         </Link>
                       </li>
                     </>
@@ -349,16 +385,19 @@ export default function Header() {
       {/* Mobile search bar dropdown */}
       {searchOpen && (
         <div className="rb-mob-search-bar">
-          <div className="input-group">
+          <form className="input-group" onSubmit={handleProductSearch}>
             <input
               className="form-control"
-              placeholder="Tìm sản phẩm..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Tìm tên hoặc mã sản phẩm..."
+              aria-label="Tìm tên hoặc mã sản phẩm"
               autoFocus
             />
-            <button className="input-group-text">
+            <button className="input-group-text" type="submit">
               <i className="bi bi-search" />
             </button>
-          </div>
+          </form>
         </div>
       )}
 
@@ -383,7 +422,7 @@ export default function Header() {
             </Link>
           </li>
           <li>
-            <Link to="/san-pham">THỜI TRANG NỮ</Link>
+            <Link to="/san-pham">SẢN PHẨM</Link>
           </li>
           <li>
             <Link to="/">BỘ SƯU TẬP</Link>
