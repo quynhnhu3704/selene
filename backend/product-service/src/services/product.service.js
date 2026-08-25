@@ -847,6 +847,57 @@ export const updateProductStatus = async (productId, status) => {
   }
 };
 
+// khóa hoặc mở khóa biến thể sản phẩm (toggle hoặc set trạng thái active/inactive)
+export const updateVariantStatus = async (variantId, status) => {
+  try {
+    if (!variantId) {
+      throw new Error("Mã ID biến thể không được để trống!");
+    }
+
+    // 1. Lấy thông tin biến thể hiện tại để kiểm tra sự tồn tại và xác định trạng thái cũ
+    const variant = await ProductModel.getVariantById(variantId);
+    if (!variant) {
+      throw new Error("Không tìm thấy biến thể yêu cầu!");
+    }
+
+    // 2. Xác định trạng thái mới dựa trên đầu vào (hoặc toggle nếu không truyền)
+    let databaseStatus;
+    if (status !== undefined && status !== null && status !== "") {
+      if (status === "active") {
+        databaseStatus = "active";
+      } else if (status === "inactive" || status === "archived") {
+        databaseStatus = "inactive";
+      } else {
+        throw new Error("Trạng thái biến thể không hợp lệ!");
+      }
+    } else {
+      // Toggle trạng thái nếu không truyền status cụ thể
+      databaseStatus = variant.status === "active" ? "inactive" : "active";
+    }
+
+    const updatedAt = new Date().toISOString();
+
+    // 3. Cập nhật trạng thái của biến thể
+    const updatedVariant = await ProductModel.updateVariantStatus(
+      variantId,
+      databaseStatus,
+      updatedAt,
+    );
+
+    return {
+      variant_id: updatedVariant.variant_id,
+      product_id: updatedVariant.product_id,
+      size: updatedVariant.size,
+      color: updatedVariant.color,
+      status: databaseStatus === "active" ? "active" : "inactive",
+      updated_at: updatedVariant.updated_at,
+    };
+  } catch (error) {
+    console.error("Lỗi tại updateVariantStatus Service:", error.message);
+    throw error;
+  }
+};
+
 // / Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
 export const getProductDetailForAdmin = async (productId) => {
   try {

@@ -138,7 +138,8 @@ export const ProductModel = {
     const { data: variants, error: variantError } = await supabase
       .from("product_variants")
       .select("variant_id, size, color, stock_quantity, status")
-      .eq("product_id", productId);
+      .eq("product_id", productId)
+      .eq("status", "active");
 
     if (variantError) throw variantError;
     return variants;
@@ -372,6 +373,38 @@ export const ProductModel = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Lấy thông tin 1 biến thể sản phẩm theo ID
+  getVariantById: async (variantId) => {
+    const { data: variant, error } = await supabase
+      .from("product_variants")
+      .select("variant_id, product_id, size, color, stock_quantity, status, updated_at")
+      .eq("variant_id", variantId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
+    }
+    return variant;
+  },
+
+  // Cập nhật trạng thái của 1 biến thể sản phẩm
+  updateVariantStatus: async (variantId, status, updatedAt) => {
+    const { data, error } = await supabase
+      .from("product_variants")
+      .update({
+        status,
+        updated_at: updatedAt,
+      })
+      .eq("variant_id", variantId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0)
+      throw new Error("Không tìm thấy biến thể sản phẩm để cập nhật!");
+    return data[0];
   },
 
   // Cập nhật trạng thái của tất cả sản phẩm thuộc một category

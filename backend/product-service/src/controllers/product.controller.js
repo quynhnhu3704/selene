@@ -253,6 +253,43 @@ export const handleUpdateProductStatus = async (req, res) => {
   }
 };
 
+// khóa hoặc mở khóa biến thể sản phẩm
+export const handleUpdateVariantStatus = async (req, res) => {
+  try {
+    const { variantId } = req.params;
+    const { status } = req.body;
+
+    const result = await productService.updateVariantStatus(variantId, status);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Cập nhật trạng thái biến thể thành công!",
+      data: result,
+    });
+  } catch (error) {
+    console.error(
+      "Lỗi tại handleUpdateVariantStatus Controller:",
+      error.message,
+    );
+
+    if (error.message.includes("Không tìm thấy")) {
+      return res.status(404).json({
+        status: 404,
+        message: error.message,
+      });
+    }
+
+    const isClientError =
+      error.message.includes("không hợp lệ") ||
+      error.message.includes("không được để trống");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};
+
 // / Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
 export const handleGetProductDetailForAdmin = async (req, res) => {
   try {

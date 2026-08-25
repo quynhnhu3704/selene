@@ -102,6 +102,12 @@ router.put(
   verifyPermission("product:update"),
   productController.handleUpdateProductStatus,
 );
+router.put(
+  "/manage/variant/change-status/:variantId",
+  verifyToken,
+  verifyPermission("product:update"),
+  productController.handleUpdateVariantStatus,
+);
 router.get(
   "/manage/products",
   verifyToken,
