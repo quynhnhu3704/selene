@@ -35,13 +35,20 @@ export const AccountModel = {
     return data;
   },
 
-  // Lấy danh sách quyền hạn dựa theo role_id
+  // Lấy danh sách quyền hạn dựa theo role_id (chỉ lấy quyền active)
   getPermissionsByRoleId: async (roleId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("role_permissions")
-      .select("permissions(name)")
-      .eq("role_id", roleId);
-    return data ? data.map((p) => p.permissions?.name).filter(Boolean) : [];
+      .select(`
+        permissions!inner (
+          name,
+          status
+        )
+      `)
+      .eq("role_id", roleId)
+      .eq("permissions.status", "active");
+    if (error) throw error;
+    return data ? data.map((rp) => rp.permissions?.name).filter(Boolean) : [];
   },
 
   // Thêm mới tài khoản

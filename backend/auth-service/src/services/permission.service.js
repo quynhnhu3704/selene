@@ -128,3 +128,24 @@ export const updatePermission = async (permissionId, body) => {
 
   return updatedPermission;
 };
+
+// chuyển đổi trạng thái (toggle active <-> inactive) của permission
+export const togglePermissionStatus = async (permissionId) => {
+  // 1. Kiểm tra quyền có tồn tại hay không
+  const permission = await PermissionModel.getPermissionById(permissionId);
+  if (!permission) {
+    throw { status: 404, message: "Không tìm thấy quyền hạn cần cập nhật!" };
+  }
+
+  // 2. Chuyển đổi trạng thái (active <-> inactive)
+  const currentStatus = permission.status || "active";
+  const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+  // 3. Tiến hành gọi Model cập nhật database
+  const updatedPermission = await PermissionModel.updatePermissionStatus(
+    permissionId,
+    newStatus,
+  );
+
+  return updatedPermission;
+};

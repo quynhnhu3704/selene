@@ -87,7 +87,20 @@ export const PermissionModel = {
         name: updateData.name,
         description: updateData.description,
         status: updateData.status,
-        // Không cập nhật created_at
+      })
+      .eq("permission_id", permissionId)
+      .select(); // Trả về bản ghi sau khi cập nhật thành công
+
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Cập nhật trạng thái của permission
+  updatePermissionStatus: async (permissionId, status) => {
+    const { data, error } = await supabase
+      .from("permissions")
+      .update({
+        status,
       })
       .eq("permission_id", permissionId)
       .select(); // Trả về bản ghi sau khi cập nhật thành công

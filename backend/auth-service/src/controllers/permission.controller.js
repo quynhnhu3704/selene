@@ -118,3 +118,38 @@ export const handleUpdatePermission = async (req, res) => {
     });
   }
 };
+
+// chuyển đổi trạng thái của Permission (Toggle active <-> inactive)
+export const handleTogglePermissionStatus = async (req, res) => {
+  try {
+    const { permissionId } = req.params;
+
+    if (!permissionId) {
+      return res.status(400).json({
+        status: 400,
+        message: "Vui lòng cung cấp mã quyền hạn (permissionId)!",
+      });
+    }
+
+    const result = await permissionService.togglePermissionStatus(permissionId);
+
+    return res.status(200).json({
+      status: 200,
+      message: `Cập nhật trạng thái quyền hạn thành công! Trạng thái hiện tại: ${result.status}`,
+      data: result,
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
+
+    console.error("Error at handleTogglePermissionStatus: ", error);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};

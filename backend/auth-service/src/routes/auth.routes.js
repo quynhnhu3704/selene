@@ -31,6 +31,7 @@ import {
   handleGetAllPermissions,
   handleGetPermissionsByAccountId,
   handleUpdatePermission,
+  handleTogglePermissionStatus,
 } from "../controllers/permission.controller.js";
 import {
   handleToggleRoleStatus,
@@ -129,6 +130,12 @@ router.put(
   verifyToken,
   verifyPermission("permission:update"),
   handleUpdatePermission,
+);
+router.put(
+  "/manage/permission/change-status/:permissionId",
+  verifyToken,
+  verifyPermission("permission:update"),
+  handleTogglePermissionStatus,
 );
 
 // vai trò (role)
