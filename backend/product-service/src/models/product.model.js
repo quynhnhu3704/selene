@@ -15,7 +15,10 @@ export const ProductModel = {
         product_name,
         image_urls,
         original_price,
-        discount_price
+        discount_price,
+        categories!inner (
+          status
+        )
         ${
           hasVariantFilter
             ? `,
@@ -27,7 +30,8 @@ export const ProductModel = {
       `,
         { count: "exact" },
       )
-      .eq("status", "active"); // Chỉ hiển thị các sản phẩm đang mở bán công khai
+      .eq("status", "active")
+      .eq("categories.status", "active"); // Chỉ hiển thị các sản phẩm đang mở bán công khai và thuộc danh mục đang hoạt động
 
     if (filters.q) {
       query = query.or(
@@ -93,11 +97,13 @@ export const ProductModel = {
         original_price,
         discount_price,
         description,
-        brands:brand_id ( name )
+        brands:brand_id ( name ),
+        categories!inner ( status )
       `,
       )
       .eq("product_id", productId)
       .eq("status", "active")
+      .eq("categories.status", "active")
       .single();
 
     if (productError) throw productError;
@@ -144,6 +150,7 @@ export const ProductModel = {
       .select(
         `
         image_urls,
+        categories!inner ( status ),
         product_variants!inner (
           size,
           color
@@ -151,6 +158,7 @@ export const ProductModel = {
       `,
       )
       .eq("status", "active")
+      .eq("categories.status", "active")
       .eq("product_variants.status", "active")
       .gt("product_variants.stock_quantity", 0)
       .order("product_id", { ascending: true })
@@ -165,15 +173,17 @@ export const ProductModel = {
     const [minResult, maxResult] = await Promise.all([
       supabase
         .from("products")
-        .select("discount_price")
+        .select("discount_price, categories!inner ( status )")
         .eq("status", "active")
+        .eq("categories.status", "active")
         .not("discount_price", "is", null)
         .order("discount_price", { ascending: true })
         .limit(1),
       supabase
         .from("products")
-        .select("discount_price")
+        .select("discount_price, categories!inner ( status )")
         .eq("status", "active")
+        .eq("categories.status", "active")
         .not("discount_price", "is", null)
         .order("discount_price", { ascending: false })
         .limit(1),
@@ -198,11 +208,13 @@ export const ProductModel = {
         product_name,
         image_urls,
         original_price,
-        discount_price
+        discount_price,
+        categories!inner ( status )
       `,
         { count: "exact" },
       )
       .eq("status", "active")
+      .eq("categories.status", "active")
       .or(`product_name.ilike.%${keyword}%,product_id.ilike.%${keyword}%`)
       .order("created_at", { ascending: false })
       .range(from, to);
@@ -222,19 +234,18 @@ export const ProductModel = {
         image_urls,
         original_price,
         discount_price,
-        categories${categoryName ? "!inner" : ""} (
+        categories!inner (
           name,
           status
         )
       `,
         { count: "exact" },
       )
-      .eq("status", "active");
+      .eq("status", "active")
+      .eq("categories.status", "active");
 
     if (categoryName) {
-      query = query
-        .eq("categories.status", "active")
-        .ilike("categories.name", `%${categoryName}%`);
+      query = query.ilike("categories.name", `%${categoryName}%`);
     }
 
     const { data, error, count } = await query
@@ -345,6 +356,48 @@ export const ProductModel = {
     if (!data || data.length === 0)
       throw new Error("Không tìm thấy sản phẩm để cập nhật!");
     return data[0];
+  },
+
+  // Cập nhật trạng thái của tất cả sản phẩm thuộc một category
+  updateProductsStatusByCategory: async (categoryId, status, updatedAt) => {
+    const { data, error } = await supabase
+      .from("products")
+      .update({
+        status,
+        updated_at: updatedAt,
+      })
+      .eq("category_id", categoryId)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật trạng thái cho tất cả các biến thể của tất cả các sản phẩm thuộc một category
+  updateVariantsStatusByCategory: async (categoryId, status, updatedAt) => {
+    // 1. Lấy danh sách product_id thuộc category
+    const { data: products, error: prodError } = await supabase
+      .from("products")
+      .select("product_id")
+      .eq("category_id", categoryId);
+
+    if (prodError) throw prodError;
+    if (!products || products.length === 0) return [];
+
+    const productIds = products.map((p) => p.product_id);
+
+    // 2. Cập nhật trạng thái của tất cả các biến thể có product_id nằm trong danh sách
+    const { data, error } = await supabase
+      .from("product_variants")
+      .update({
+        status,
+        updated_at: updatedAt,
+      })
+      .in("product_id", productIds)
+      .select();
+
+    if (error) throw error;
+    return data;
   },
 
   // Chỉ cần duy nhất hàm này để vừa Update vừa Insert biến thể
