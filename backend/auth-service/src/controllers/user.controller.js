@@ -465,3 +465,38 @@ export const handleChangePassword = async (req, res) => {
     });
   }
 };
+
+// Đổi trạng thái hoạt động của tài khoản (Toggle active <-> inactive)
+export const handleToggleAccountStatus = async (req, res) => {
+  try {
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: "Vui lòng cung cấp ID tài khoản (accountId)!",
+      });
+    }
+
+    const result = await userService.toggleAccountStatus(accountId);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Cập nhật trạng thái tài khoản thành công!",
+      data: result,
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
+
+    console.error("Lỗi Controller Đổi Trạng thái Tài khoản:", error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};

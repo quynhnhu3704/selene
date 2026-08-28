@@ -179,4 +179,16 @@ export const UserProfileModel = {
 
     if (error) throw error;
   },
+
+  // Cập nhật trạng thái của các user_profiles theo danh sách account_ids
+  updateUserProfilesStatusByAccountIds: async (accountIds, status) => {
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({
+        status,
+        updated_at: new Date(),
+      })
+      .in("account_id", accountIds);
+    if (error) throw error;
+  },
 };

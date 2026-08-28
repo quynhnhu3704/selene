@@ -542,3 +542,33 @@ export const changePassword = async (accountId, oldPassword, newPassword) => {
 
   return { message: "Đổi mật khẩu mới thành công!" };
 };
+
+// Thay đổi trạng thái tài khoản (Toggle active <-> inactive)
+export const toggleAccountStatus = async (accountId) => {
+  // 1. Kiểm tra tài khoản có tồn tại hay không
+  const account = await AccountModel.findById(accountId);
+  if (!account) {
+    throw { status: 404, message: "Tài khoản không tồn tại trên hệ thống!" };
+  }
+
+  // 2. Chuyển đổi trạng thái (active <-> inactive)
+  const currentStatus = account.status || "active";
+  const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+  // 3. Cập nhật đồng bộ trạng thái mới sang cả bảng accounts và user_profiles
+  const updatePromises = [
+    AccountModel.updateAccountById(accountId, { status: newStatus }),
+    UserProfileModel.updateProfileByAccountId(accountId, { status: newStatus }),
+  ];
+
+  await Promise.all(updatePromises);
+
+  // 4. Lấy lại dữ liệu mới nhất kèm thông tin trạng thái mới để phản hồi
+  const updatedAccount = await UserProfileModel.getAccountById(accountId);
+
+  return {
+    account_id: accountId,
+    status: newStatus,
+    account: updatedAccount
+  };
+};

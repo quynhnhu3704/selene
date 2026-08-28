@@ -82,15 +82,15 @@ export default function Payment() {
   ].filter((item) => item.value);
   const paymentSteps = isSePay
     ? [
-        "Mở ứng dụng ngân hàng và chọn quét mã QR.",
-        "Kiểm tra số tiền cùng nội dung chuyển khoản đã được điền sẵn.",
-        "Xác nhận giao dịch; trang này sẽ tự cập nhật khi SePay xác nhận.",
-      ]
+      "Mở ứng dụng ngân hàng và chọn quét mã QR.",
+      "Kiểm tra số tiền cùng nội dung chuyển khoản đã được điền sẵn.",
+      "Xác nhận giao dịch; trang này sẽ tự cập nhật khi SePay xác nhận.",
+    ]
     : [
-        "Mở ứng dụng ngân hàng của bạn.",
-        "Nhập đúng số tài khoản, tên chủ tài khoản và số tiền ở trên.",
-        "Ghi mã tham chiếu đơn hàng để cửa hàng kiểm tra giao dịch nhanh hơn.",
-      ];
+      "Mở ứng dụng ngân hàng của bạn.",
+      "Nhập đúng số tài khoản, tên chủ tài khoản và số tiền ở trên.",
+      "Ghi mã tham chiếu đơn hàng để cửa hàng kiểm tra giao dịch nhanh hơn.",
+    ];
 
   useEffect(() => {
     if (payment || !orderIdFromUrl) {
@@ -620,9 +620,9 @@ export default function Payment() {
                       style={
                         item.highlight
                           ? {
-                              color: "#871B1B",
-                              fontSize: 16,
-                            }
+                            color: "#871B1B",
+                            fontSize: 16,
+                          }
                           : undefined
                       }
                     >
@@ -631,9 +631,8 @@ export default function Payment() {
                   </div>
 
                   <button
-                    className={`copy-btn ${
-                      copied === item.key ? "copied" : ""
-                    }`}
+                    className={`copy-btn ${copied === item.key ? "copied" : ""
+                      }`}
                     type="button"
                     onClick={() => copyToClipboard(item.copyValue, item.key)}
                   >

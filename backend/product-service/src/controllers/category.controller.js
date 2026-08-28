@@ -112,3 +112,30 @@ export const handleGetCategoriesForProductFilter = async (req, res) => {
     });
   }
 };
+
+// cập nhật trạng thái của danh mục
+export const handleUpdateCategoryStatus = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Gọi service xử lý
+    const result = await categoryService.updateCategoryStatus(categoryId);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Cập nhật trạng thái danh mục thành công!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Lỗi tại handleUpdateCategoryStatus Controller:", error.message);
+
+    const isClientError =
+      error.message.includes("không được để trống") ||
+      error.message.includes("Không tìm thấy");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};

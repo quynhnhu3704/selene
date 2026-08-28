@@ -13,8 +13,12 @@ const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+const generateId2 = (prefix) => {
+  return `${prefix}${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
+};
+
 const generateOrderCode = () => {
-  return generateId("HD");
+  return generateId2("HD");
 };
 
 const paymentMethods = new Set(["cod", "bank", "sepay"]);
@@ -226,6 +230,21 @@ export const createOrder = async (accountId, orderData) => {
 
     // 6. Tạo đơn hàng
     const orderId = generateId("order");
+
+    let initialPaymentStatus = "unpaid";
+    let initialStatus = "pending";
+
+    if (
+      normalizedPaymentMethod === "bank" ||
+      normalizedPaymentMethod === "sepay"
+    ) {
+      initialPaymentStatus = "unpaid";
+      initialStatus = "unpaid";
+    } else if (normalizedPaymentMethod === "cod") {
+      initialPaymentStatus = "unpaid";
+      initialStatus = "pending";
+    }
+
     const newOrderData = {
       order_id: orderId,
       account_id: accountId,
@@ -239,8 +258,8 @@ export const createOrder = async (accountId, orderData) => {
       shipping_fee,
       final_amount,
       payment_method: normalizedPaymentMethod,
-      payment_status: "pending",
-      status: "pending",
+      payment_status: initialPaymentStatus,
+      status: initialStatus,
     };
 
     const createdOrder = await OrderModel.createOrder(newOrderData);
@@ -376,6 +395,41 @@ export const getOrderById = async (accountId, orderId) => {
       throw new Error("Không tìm thấy đơn hàng!");
     }
 
+    // Lấy hình ảnh sản phẩm từ Product Service qua RabbitMQ RPC nếu có variant
+    if (Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const variantIds = [
+        ...new Set(
+          order.order_items
+            .map((item) => item.variant_id)
+            .filter(Boolean),
+        ),
+      ];
+
+      if (variantIds.length > 0) {
+        try {
+          const productDetails = await requestProductDetails(variantIds);
+
+          const productMap = {};
+          productDetails.forEach((p) => {
+            productMap[p.variant_id] = p;
+          });
+
+          order.order_items.forEach((item) => {
+            if (productMap[item.variant_id]) {
+              item.image_url = productMap[item.variant_id].image_url;
+            } else {
+              item.image_url = null;
+            }
+          });
+        } catch (err) {
+          console.error(
+            "Lỗi khi lấy hình ảnh sản phẩm từ RabbitMQ:",
+            err.message,
+          );
+        }
+      }
+    }
+
     return {
       ...order,
       payment: getBankTransferDetails(order),
@@ -389,12 +443,15 @@ export const getOrderById = async (accountId, orderId) => {
 export const confirmSePayPayment = async ({ orderCode, transferAmount }) => {
   const order = await OrderModel.findByOrderCode(orderCode);
 
-  // Trả về null để webhook vẫn phản hồi thành công cho các giao dịch không thuộc đơn SePay.
-  if (!order || order.payment_method !== "sepay") {
+  // Trả về null để webhook vẫn phản hồi thành công cho các giao dịch không thuộc đơn SePay/Bank.
+  if (
+    !order ||
+    (order.payment_method !== "sepay" && order.payment_method !== "bank")
+  ) {
     return null;
   }
 
-  if (order.payment_status === "paid" || order.status === "confirmed") {
+  if (order.payment_status === "paid" && order.status === "pending") {
     return order;
   }
 
@@ -407,3 +464,169 @@ export const confirmSePayPayment = async ({ orderCode, transferAmount }) => {
 
   return OrderModel.markSePayPaymentAsPaid(order.order_id);
 };
+
+export const markOrderAsPaid = async (orderId) => {
+  const order = await OrderModel.findById(orderId);
+  if (!order) {
+    throw new Error("Không tìm thấy đơn hàng!");
+  }
+  return OrderModel.markPaymentAsPaid(orderId);
+};
+
+export const getAllOrdersForAdmin = async () => {
+  try {
+    const orders = await OrderModel.findAllForAdmin();
+    return orders;
+  } catch (error) {
+    console.error("Lỗi tại getAllOrdersForAdmin Service:", error.message);
+    throw new Error("Không thể lấy danh sách đơn hàng cho admin!");
+  }
+};
+
+export const getOrderByIdForAdmin = async (orderId) => {
+  try {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+      throw new Error("Không tìm thấy đơn hàng!");
+    }
+
+    if (Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const variantIds = [
+        ...new Set(
+          order.order_items
+            .map((item) => item.variant_id)
+            .filter(Boolean),
+        ),
+      ];
+
+      if (variantIds.length > 0) {
+        try {
+          const productDetails = await requestProductDetails(variantIds);
+
+          const productMap = {};
+          productDetails.forEach((p) => {
+            productMap[p.variant_id] = p;
+          });
+
+          order.order_items.forEach((item) => {
+            if (productMap[item.variant_id]) {
+              item.image_url = productMap[item.variant_id].image_url;
+            } else {
+              item.image_url = null;
+            }
+          });
+        } catch (err) {
+          console.error(
+            "Lỗi khi lấy hình ảnh sản phẩm từ RabbitMQ:",
+            err.message,
+          );
+        }
+      }
+    }
+
+    return {
+      ...order,
+      payment: getBankTransferDetails(order),
+    };
+  } catch (error) {
+    console.error("Lỗi tại getOrderByIdForAdmin Service:", error.message);
+    throw new Error(error.message || "Không thể lấy thông tin chi tiết đơn hàng!");
+  }
+};
+
+export const confirmAllPendingOrders = async (status = "confirmed") => {
+  try {
+    const updatedOrders = await OrderModel.confirmAllPendingOrders(status);
+    return {
+      updatedCount: updatedOrders ? updatedOrders.length : 0,
+      updatedOrders: updatedOrders || [],
+    };
+  } catch (error) {
+    console.error("Lỗi tại confirmAllPendingOrders Service:", error.message);
+    throw new Error(error.message || "Không thể duyệt tất cả đơn hàng!");
+  }
+};
+
+export const confirmOrdersBulk = async (
+  orderIds,
+  status = "confirmed",
+  fromStatus = "pending",
+) => {
+  try {
+    const ids = Array.isArray(orderIds)
+      ? orderIds.map((id) => String(id).trim()).filter(Boolean)
+      : [String(orderIds).trim()].filter(Boolean);
+
+    if (ids.length === 0) {
+      throw new Error("Danh sách đơn hàng cần duyệt không được để trống!");
+    }
+
+    const updatedOrders = await OrderModel.updateStatusBulk(
+      ids,
+      status,
+      fromStatus,
+    );
+
+    return {
+      updatedCount: updatedOrders ? updatedOrders.length : 0,
+      updatedOrders: updatedOrders || [],
+    };
+  } catch (error) {
+    console.error("Lỗi tại confirmOrdersBulk Service:", error.message);
+    throw new Error(error.message || "Không thể duyệt đơn hàng!");
+  }
+};
+
+export const cancelOrder = async (accountId, orderId) => {
+  try {
+    const order = await OrderModel.findByIdAndAccountId(orderId, accountId);
+
+    if (!order) {
+      throw new Error("Không tìm thấy đơn hàng!");
+    }
+
+    const paymentMethod = String(order.payment_method || "").toLowerCase();
+
+    if (paymentMethod === "bank" || paymentMethod === "sepay") {
+      throw new Error(
+        "Đơn hàng thanh toán qua Ngân hàng hoặc SePay không được phép hủy!",
+      );
+    }
+
+    if (paymentMethod !== "cod") {
+      throw new Error("Phương thức thanh toán này không hỗ trợ hủy đơn hàng!");
+    }
+
+    const status = String(order.status || "").toLowerCase();
+
+    if (status !== "pending") {
+      throw new Error(
+        "Đơn hàng chỉ có thể hủy khi ở trạng thái Chờ xác nhận (pending)!",
+      );
+    }
+
+    const updatedOrder = await OrderModel.cancelOrder(orderId, accountId);
+
+    // Trả lại tồn kho cho các sản phẩm trong đơn hàng
+    if (Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const restoreItems = order.order_items.map((item) => ({
+        variant_id: item.variant_id,
+        quantity: -item.quantity, // Số lượng âm để cộng trả lại tồn kho trong product-service
+      }));
+
+      try {
+        await sendUpdateProductStock(restoreItems);
+      } catch (stockErr) {
+        console.error("Lỗi khi gửi sự kiện hoàn tồn kho:", stockErr.message);
+      }
+    }
+
+    return updatedOrder;
+  } catch (error) {
+    console.error("Lỗi tại cancelOrder Service:", error.message);
+    throw new Error(error.message || "Không thể hủy đơn hàng!");
+  }
+};
+
+

@@ -35,13 +35,20 @@ export const AccountModel = {
     return data;
   },
 
-  // Lấy danh sách quyền hạn dựa theo role_id
+  // Lấy danh sách quyền hạn dựa theo role_id (chỉ lấy quyền active)
   getPermissionsByRoleId: async (roleId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("role_permissions")
-      .select("permissions(name)")
-      .eq("role_id", roleId);
-    return data ? data.map((p) => p.permissions?.name).filter(Boolean) : [];
+      .select(`
+        permissions!inner (
+          name,
+          status
+        )
+      `)
+      .eq("role_id", roleId)
+      .eq("permissions.status", "active");
+    if (error) throw error;
+    return data ? data.map((rp) => rp.permissions?.name).filter(Boolean) : [];
   },
 
   // Thêm mới tài khoản
@@ -115,6 +122,28 @@ export const AccountModel = {
       .update(dataWithTime)
       .eq("account_id", accountId);
 
+    if (error) throw error;
+  },
+
+  // Tìm các tài khoản theo vai trò (role_id)
+  findAccountsByRoleId: async (roleId) => {
+    const { data, error } = await supabase
+      .from("accounts")
+      .select("account_id")
+      .eq("role_id", roleId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Cập nhật trạng thái của các tài khoản theo vai trò (role_id)
+  updateAccountsStatusByRoleId: async (roleId, status) => {
+    const { error } = await supabase
+      .from("accounts")
+      .update({
+        status,
+        updated_at: new Date(),
+      })
+      .eq("role_id", roleId);
     if (error) throw error;
   },
 

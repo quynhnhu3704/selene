@@ -90,3 +90,12 @@ export const updateAdminProductStatus = async (productId, status) => {
 
   return res.data;
 };
+
+// Xuất danh sách sản phẩm ra Excel (trả về Blob)
+export const exportProductsToExcel = async () => {
+  const res = await http.get("/products/manage/products/export", {
+    responseType: "blob",
+  });
+
+  return res.data;
+};

@@ -97,6 +97,18 @@ export const CategoryModel = {
     return data;
   },
 
+  // Lấy chi tiết danh mục theo ID
+  getCategoryById: async (category_id) => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("category_id", category_id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Lấy danh mục đang hoạt động cho bộ lọc phía customer
   getActiveCategoriesForProductFilter: async () => {
     const { data, error } = await supabase

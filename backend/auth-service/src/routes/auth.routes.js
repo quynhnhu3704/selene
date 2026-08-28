@@ -20,6 +20,7 @@ import {
   handleUpdateProfileAll,
   handleUpdateStaffProfile,
   handleGetStaffProfile,
+  handleToggleAccountStatus,
 } from "../controllers/user.controller.js";
 import {
   verifyToken,
@@ -31,7 +32,11 @@ import {
   handleGetAllPermissions,
   handleGetPermissionsByAccountId,
   handleUpdatePermission,
+  handleTogglePermissionStatus,
 } from "../controllers/permission.controller.js";
+import {
+  handleToggleRoleStatus,
+} from "../controllers/role.controller.js";
 
 const router = express.Router();
 
@@ -108,7 +113,7 @@ router.put(
   handleUpdateProfileAll,
 );
 
-// quyền
+// quyền (permission)
 router.get(
   "/manage/permissions",
   verifyToken,
@@ -127,6 +132,20 @@ router.put(
   verifyPermission("permission:update"),
   handleUpdatePermission,
 );
+router.put(
+  "/manage/permission/change-status/:permissionId",
+  verifyToken,
+  verifyPermission("permission:update"),
+  handleTogglePermissionStatus,
+);
+
+// vai trò (role)
+router.put(
+  "/manage/role/change-status/:roleId",
+  verifyToken,
+  verifyPermission("role:update"),
+  handleToggleRoleStatus,
+);
 
 // account
 router.put(
@@ -134,6 +153,12 @@ router.put(
   verifyToken,
   verifyPermission("user:update"),
   handleUpdateAccount,
+);
+router.put(
+  "/manage/account/change-status/:accountId",
+  verifyToken,
+  verifyPermission("user:update"),
+  handleToggleAccountStatus,
 );
 router.get(
   "/manage/accounts",

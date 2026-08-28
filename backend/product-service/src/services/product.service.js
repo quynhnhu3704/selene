@@ -14,7 +14,7 @@ const ADMIN_PRODUCT_PRICE_RANGES = {
   "over-1m": { min: 1000000 },
 };
 
-const ADMIN_PRODUCT_STATUSES = ["active", "archived"];
+const ADMIN_PRODUCT_STATUSES = ["active", "inactive"];
 
 const CUSTOMER_PRODUCT_SORT_OPTIONS = [
   "",
@@ -769,7 +769,7 @@ export const getAllProductsAdmin = async (options = {}) => {
         price: Number(product.price) || 0,
         original_price: Number(product.original_price) || 0,
         discount_price: Number(product.discount_price) || 0,
-        status: product.status === "active" ? "active" : "archived",
+        status: product.status === "active" ? "active" : "inactive",
         category_id: product.category_id,
         category_name: product.categories ? product.categories.name : null,
         stock_quantity: totalStock,
@@ -798,25 +798,102 @@ export const updateProductStatus = async (productId, status) => {
       throw new Error("Mã ID sản phẩm không được để trống!");
     }
 
-    if (!ADMIN_PRODUCT_STATUSES.includes(status)) {
-      throw new Error("Trạng thái sản phẩm không hợp lệ!");
+    // 1. Lấy thông tin sản phẩm hiện tại để kiểm tra sự tồn tại và xác định trạng thái cũ
+    const product = await ProductModel.getProductById(productId);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm yêu cầu!");
     }
 
-    // URL/API dùng `archived` theo nghĩa nghiệp vụ, DB cũ vẫn lưu là `inactive`
-    const databaseStatus = status === "archived" ? "inactive" : "active";
+    // 2. Xác định trạng thái mới dựa trên đầu vào (hoặc toggle nếu không truyền)
+    let databaseStatus;
+    if (status !== undefined && status !== null && status !== "") {
+      if (status === "active") {
+        databaseStatus = "active";
+      } else if (status === "inactive" || status === "archived") {
+        databaseStatus = "inactive";
+      } else {
+        throw new Error("Trạng thái sản phẩm không hợp lệ!");
+      }
+    } else {
+      // Toggle trạng thái nếu không truyền status cụ thể
+      databaseStatus = product.status === "active" ? "inactive" : "active";
+    }
+
     const updatedAt = new Date().toISOString();
+
+    // 3. Cập nhật trạng thái của sản phẩm chính
     const updatedProduct = await ProductModel.updateProductStatus(
       productId,
       databaseStatus,
       updatedAt,
     );
 
+    // 4. Đồng thời cập nhật trạng thái và updated_at của tất cả các biến thể thuộc sản phẩm này
+    await ProductModel.updateVariantsStatusByProductId(
+      productId,
+      databaseStatus,
+      updatedAt,
+    );
+
     return {
-      ...updatedProduct,
-      status,
+      product_id: updatedProduct.product_id,
+      product_name: updatedProduct.product_name,
+      status: databaseStatus === "active" ? "active" : "inactive",
+      updated_at: updatedProduct.updated_at,
     };
   } catch (error) {
     console.error("Lỗi tại updateProductStatus Service:", error.message);
+    throw error;
+  }
+};
+
+// khóa hoặc mở khóa biến thể sản phẩm (toggle hoặc set trạng thái active/inactive)
+export const updateVariantStatus = async (variantId, status) => {
+  try {
+    if (!variantId) {
+      throw new Error("Mã ID biến thể không được để trống!");
+    }
+
+    // 1. Lấy thông tin biến thể hiện tại để kiểm tra sự tồn tại và xác định trạng thái cũ
+    const variant = await ProductModel.getVariantById(variantId);
+    if (!variant) {
+      throw new Error("Không tìm thấy biến thể yêu cầu!");
+    }
+
+    // 2. Xác định trạng thái mới dựa trên đầu vào (hoặc toggle nếu không truyền)
+    let databaseStatus;
+    if (status !== undefined && status !== null && status !== "") {
+      if (status === "active") {
+        databaseStatus = "active";
+      } else if (status === "inactive" || status === "archived") {
+        databaseStatus = "inactive";
+      } else {
+        throw new Error("Trạng thái biến thể không hợp lệ!");
+      }
+    } else {
+      // Toggle trạng thái nếu không truyền status cụ thể
+      databaseStatus = variant.status === "active" ? "inactive" : "active";
+    }
+
+    const updatedAt = new Date().toISOString();
+
+    // 3. Cập nhật trạng thái của biến thể
+    const updatedVariant = await ProductModel.updateVariantStatus(
+      variantId,
+      databaseStatus,
+      updatedAt,
+    );
+
+    return {
+      variant_id: updatedVariant.variant_id,
+      product_id: updatedVariant.product_id,
+      size: updatedVariant.size,
+      color: updatedVariant.color,
+      status: databaseStatus === "active" ? "active" : "inactive",
+      updated_at: updatedVariant.updated_at,
+    };
+  } catch (error) {
+    console.error("Lỗi tại updateVariantStatus Service:", error.message);
     throw error;
   }
 };

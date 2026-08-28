@@ -1,5 +1,6 @@
 // backend\product-service\src\services\category.service.js
 import { CategoryModel } from "../models/category.model.js";
+import { ProductModel } from "../models/product.model.js";
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -132,5 +133,51 @@ export const getCategoriesForProductFilter = async () => {
       error.message,
     );
     throw new Error("Không thể lấy danh sách danh mục cho bộ lọc sản phẩm!");
+  }
+};
+
+// cập nhật trạng thái category (toggle active/inactive) và các sản phẩm thuộc category đó
+export const updateCategoryStatus = async (category_id) => {
+  try {
+    if (!category_id) {
+      throw new Error("Mã danh mục không được để trống!");
+    }
+
+    // 1. Lấy thông tin danh mục hiện tại để kiểm tra sự tồn tại và xác định trạng thái cũ
+    const category = await CategoryModel.getCategoryById(category_id);
+    if (!category) {
+      throw new Error("Không tìm thấy danh mục yêu cầu!");
+    }
+
+    // 2. Chuyển đổi trạng thái từ active -> inactive và ngược lại
+    const newStatus = category.status === "active" ? "inactive" : "active";
+    const currentTime = new Date().toISOString();
+
+    // 3. Cập nhật trạng thái của danh mục
+    const updatedCategory = await CategoryModel.update(category_id, {
+      name: category.name,
+      description: category.description,
+      status: newStatus,
+      updated_at: currentTime,
+    });
+
+    // 4. Đồng thời cập nhật trạng thái và updated_at của tất cả sản phẩm thuộc danh mục này
+    await ProductModel.updateProductsStatusByCategory(
+      category_id,
+      newStatus,
+      currentTime,
+    );
+
+    // 5. Cập nhật trạng thái và updated_at của tất cả các biến thể thuộc sản phẩm của danh mục này
+    await ProductModel.updateVariantsStatusByCategory(
+      category_id,
+      newStatus,
+      currentTime,
+    );
+
+    return updatedCategory;
+  } catch (error) {
+    console.error("Lỗi tại updateCategoryStatus Service:", error.message);
+    throw error;
   }
 };

@@ -42,6 +42,12 @@ router.put(
   verifyPermission("category:update"),
   categoryController.handleUpdateCategory,
 );
+router.put(
+  "/manage/category/change-status/:categoryId",
+  verifyToken,
+  verifyPermission("category:update"),
+  categoryController.handleUpdateCategoryStatus,
+);
 router.get(
   "/manage/categories",
   verifyToken,
@@ -90,11 +96,23 @@ router.put(
   upload.array("images", 10),
   productController.handleUpdateProduct,
 );
-router.patch(
-  "/manage/product/status/:productId",
+router.put(
+  "/manage/product/change-status/:productId",
   verifyToken,
   verifyPermission("product:update"),
   productController.handleUpdateProductStatus,
+);
+router.put(
+  "/manage/variant/change-status/:variantId",
+  verifyToken,
+  verifyPermission("product:update"),
+  productController.handleUpdateVariantStatus,
+);
+router.get(
+  "/manage/products/export",
+  verifyToken,
+  verifyPermission("product:view"),
+  productController.handleExportProductsToExcel,
 );
 router.get(
   "/manage/products",

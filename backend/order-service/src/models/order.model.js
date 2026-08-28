@@ -29,7 +29,7 @@ export const OrderModel = {
   findById: async (orderId) => {
     const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select("*, order_items(*)")
       .eq("order_id", orderId)
       .single();
 
@@ -41,7 +41,7 @@ export const OrderModel = {
   findByIdAndAccountId: async (orderId, accountId) => {
     const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select("*, order_items(*)")
       .eq("order_id", orderId)
       .eq("account_id", accountId)
       .single();
@@ -52,28 +52,47 @@ export const OrderModel = {
 
   // SePay gửi lại mã đơn trong nội dung/mã thanh toán.
   findByOrderCode: async (orderCode) => {
+    const cleanCode = String(orderCode || "").replace(/-/g, "").trim();
     const { data, error } = await supabase
       .from("orders")
       .select("*")
-      .ilike("order_code", orderCode)
-      .single();
+      .or(`order_code.ilike.${orderCode},order_code.ilike.${cleanCode}`)
+      .maybeSingle();
 
     if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
-  // Chỉ đánh dấu thanh toán khi đơn còn pending để webhook retry/đến đồng thời vẫn idempotent.
-  markSePayPaymentAsPaid: async (orderId) => {
+  // Đánh dấu thanh toán thành công cho đơn hàng: payment_status = "paid", status = "pending"
+  markPaymentAsPaid: async (orderId) => {
     const { data, error } = await supabase
       .from("orders")
       .update({
         payment_status: "paid",
-        status: "confirmed",
+        status: "pending",
+        updated_at: new Date().toISOString(),
       })
       .eq("order_id", orderId)
-      .eq("payment_status", "pending")
+      .neq("payment_status", "paid")
       .select()
       .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  markSePayPaymentAsPaid: async (orderId) => {
+    return OrderModel.markPaymentAsPaid(orderId);
+  },
+
+  // Lấy danh sách đơn hàng cho Admin với các trường cụ thể
+  findAllForAdmin: async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at, updated_at",
+      )
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data;
@@ -90,4 +109,59 @@ export const OrderModel = {
     if (error) throw error;
     return data;
   },
+
+  // Cập nhật tất cả các đơn hàng đang ở trạng thái pending sang confirmed (kèm theo updated_at)
+  confirmAllPendingOrders: async (status = "confirmed") => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("status", "pending")
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật hàng loạt trạng thái đơn hàng (kèm theo updated_at)
+  updateStatusBulk: async (
+    orderIds,
+    status = "confirmed",
+    fromStatus = "pending",
+  ) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .in("order_id", orderIds)
+      .eq("status", fromStatus)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Hủy đơn hàng của khách hàng (status = "cancelled")
+  cancelOrder: async (orderId, accountId) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status: "cancelled",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("order_id", orderId)
+      .eq("account_id", accountId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
 };
+
+
+

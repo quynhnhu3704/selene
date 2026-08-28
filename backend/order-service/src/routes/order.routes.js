@@ -11,6 +11,33 @@ import {
 const router = express.Router();
 
 // ================= ADMIN =================
+router.get(
+  "/manage/orders",
+  verifyToken,
+  verifyPermission("order:view"),
+  orderController.handleGetAllOrdersForAdmin,
+);
+router.get(
+  "/manage/orders/:orderId",
+  verifyToken,
+  verifyPermission("order:view"),
+  orderController.handleGetOrderByIdForAdmin,
+);
+router.put(
+  "/manage/orders/:orderId/confirm",
+  verifyToken,
+  verifyPermission("order:update"),
+  orderController.handleConfirmSingleOrder,
+);
+router.put(
+  "/manage/orders/confirm",
+  verifyToken,
+  verifyPermission("order:update"),
+  orderController.handleConfirmOrdersBulk,
+);
+
+
+
 
 // ================= VOUCHER =================
 router.post(
@@ -73,6 +100,16 @@ router.get(
   verifyToken,
   verifyPermission("order:view"),
   orderController.handleGetOrderById,
+);
+router.put(
+  "/order/:orderId/pay",
+  verifyToken,
+  orderController.handleConfirmPayment,
+);
+router.put(
+  "/order/:orderId/cancel",
+  verifyToken,
+  orderController.handleCancelOrder,
 );
 
 // ================= CART (CUSTOMER) =================
