@@ -534,3 +534,48 @@ export const getOrderByIdForAdmin = async (orderId) => {
     throw new Error(error.message || "Không thể lấy thông tin chi tiết đơn hàng!");
   }
 };
+
+export const confirmAllPendingOrders = async (status = "confirmed") => {
+  try {
+    const updatedOrders = await OrderModel.confirmAllPendingOrders(status);
+    return {
+      updatedCount: updatedOrders ? updatedOrders.length : 0,
+      updatedOrders: updatedOrders || [],
+    };
+  } catch (error) {
+    console.error("Lỗi tại confirmAllPendingOrders Service:", error.message);
+    throw new Error(error.message || "Không thể duyệt tất cả đơn hàng!");
+  }
+};
+
+export const confirmOrdersBulk = async (
+  orderIds,
+  status = "confirmed",
+  fromStatus = "pending",
+) => {
+  try {
+    const ids = Array.isArray(orderIds)
+      ? orderIds.map((id) => String(id).trim()).filter(Boolean)
+      : [String(orderIds).trim()].filter(Boolean);
+
+    if (ids.length === 0) {
+      throw new Error("Danh sách đơn hàng cần duyệt không được để trống!");
+    }
+
+    const updatedOrders = await OrderModel.updateStatusBulk(
+      ids,
+      status,
+      fromStatus,
+    );
+
+    return {
+      updatedCount: updatedOrders ? updatedOrders.length : 0,
+      updatedOrders: updatedOrders || [],
+    };
+  } catch (error) {
+    console.error("Lỗi tại confirmOrdersBulk Service:", error.message);
+    throw new Error(error.message || "Không thể duyệt đơn hàng!");
+  }
+};
+
+

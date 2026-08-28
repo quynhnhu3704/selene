@@ -193,3 +193,68 @@ export const handleConfirmPayment = async (req, res) => {
     });
   }
 };
+
+export const handleConfirmSingleOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status = "confirmed" } = req.body || {};
+
+    const result = await orderService.confirmOrdersBulk(
+      [orderId],
+      status,
+      "pending",
+    );
+
+    if (result.updatedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Không thể duyệt đơn hàng! Đơn hàng không tồn tại hoặc trạng thái hiện tại không phải 'Chờ xác nhận' (pending).",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Duyệt đơn hàng thành công!",
+      data: result.updatedOrders[0],
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const handleConfirmOrdersBulk = async (req, res) => {
+  try {
+    const { orderIds, status = "confirmed" } = req.body || {};
+
+    let result;
+    // Nếu truyền danh sách orderIds cụ thể -> Cập nhật cho các đơn đó (với điều kiện đang ở trạng thái pending)
+    if (Array.isArray(orderIds) && orderIds.length > 0) {
+      result = await orderService.confirmOrdersBulk(
+        orderIds,
+        status,
+        "pending",
+      );
+    } else {
+      // Nếu KHÔNG truyền orderIds -> Cập nhật TẤT CẢ các đơn hàng hiện đang ở trạng thái pending sang confirmed
+      result = await orderService.confirmAllPendingOrders(status);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Đã duyệt thành công ${result.updatedCount} đơn hàng ở trạng thái Chờ xác nhận (pending)!`,
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+

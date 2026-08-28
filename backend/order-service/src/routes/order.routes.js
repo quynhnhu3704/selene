@@ -23,6 +23,21 @@ router.get(
   verifyPermission("order:view"),
   orderController.handleGetOrderByIdForAdmin,
 );
+router.put(
+  "/manage/orders/:orderId/confirm",
+  verifyToken,
+  verifyPermission("order:update"),
+  orderController.handleConfirmSingleOrder,
+);
+router.put(
+  "/manage/orders/confirm",
+  verifyToken,
+  verifyPermission("order:update"),
+  orderController.handleConfirmOrdersBulk,
+);
+
+
+
 
 // ================= VOUCHER =================
 router.post(

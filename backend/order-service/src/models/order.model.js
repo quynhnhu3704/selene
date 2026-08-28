@@ -70,6 +70,7 @@ export const OrderModel = {
       .update({
         payment_status: "paid",
         status: "pending",
+        updated_at: new Date().toISOString(),
       })
       .eq("order_id", orderId)
       .neq("payment_status", "paid")
@@ -89,7 +90,7 @@ export const OrderModel = {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at",
+        "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at, updated_at",
       )
       .order("created_at", { ascending: false });
 
@@ -108,4 +109,42 @@ export const OrderModel = {
     if (error) throw error;
     return data;
   },
+
+  // Cập nhật tất cả các đơn hàng đang ở trạng thái pending sang confirmed (kèm theo updated_at)
+  confirmAllPendingOrders: async (status = "confirmed") => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("status", "pending")
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật hàng loạt trạng thái đơn hàng (kèm theo updated_at)
+  updateStatusBulk: async (
+    orderIds,
+    status = "confirmed",
+    fromStatus = "pending",
+  ) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .in("order_id", orderIds)
+      .eq("status", fromStatus)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
 };
+
+
+
