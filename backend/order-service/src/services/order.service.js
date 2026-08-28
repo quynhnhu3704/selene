@@ -395,6 +395,41 @@ export const getOrderById = async (accountId, orderId) => {
       throw new Error("Không tìm thấy đơn hàng!");
     }
 
+    // Lấy hình ảnh sản phẩm từ Product Service qua RabbitMQ RPC nếu có variant
+    if (Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const variantIds = [
+        ...new Set(
+          order.order_items
+            .map((item) => item.variant_id)
+            .filter(Boolean),
+        ),
+      ];
+
+      if (variantIds.length > 0) {
+        try {
+          const productDetails = await requestProductDetails(variantIds);
+
+          const productMap = {};
+          productDetails.forEach((p) => {
+            productMap[p.variant_id] = p;
+          });
+
+          order.order_items.forEach((item) => {
+            if (productMap[item.variant_id]) {
+              item.image_url = productMap[item.variant_id].image_url;
+            } else {
+              item.image_url = null;
+            }
+          });
+        } catch (err) {
+          console.error(
+            "Lỗi khi lấy hình ảnh sản phẩm từ RabbitMQ:",
+            err.message,
+          );
+        }
+      }
+    }
+
     return {
       ...order,
       payment: getBankTransferDetails(order),

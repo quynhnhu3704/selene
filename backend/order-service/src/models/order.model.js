@@ -29,7 +29,7 @@ export const OrderModel = {
   findById: async (orderId) => {
     const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select("*, order_items(*)")
       .eq("order_id", orderId)
       .single();
 
@@ -41,7 +41,7 @@ export const OrderModel = {
   findByIdAndAccountId: async (orderId, accountId) => {
     const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select("*, order_items(*)")
       .eq("order_id", orderId)
       .eq("account_id", accountId)
       .single();
