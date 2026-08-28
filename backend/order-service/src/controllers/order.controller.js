@@ -42,6 +42,43 @@ export const handleGetOrders = async (req, res) => {
   }
 };
 
+export const handleGetAllOrdersForAdmin = async (req, res) => {
+  try {
+    const orders = await orderService.getAllOrdersForAdmin();
+
+    res.status(200).json({
+      success: true,
+      message: "Lấy danh sách đơn hàng cho admin thành công!",
+      data: orders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const handleGetOrderByIdForAdmin = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.getOrderByIdForAdmin(orderId);
+
+    res.status(200).json({
+      success: true,
+      message: "Lấy chi tiết đơn hàng cho admin thành công!",
+      data: order,
+    });
+  } catch (error) {
+    const status = error.message === "Không tìm thấy đơn hàng!" ? 404 : 500;
+
+    res.status(status).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const handleGetOrderById = async (req, res) => {
   try {
     const order = await orderService.getOrderById(

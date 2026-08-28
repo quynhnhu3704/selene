@@ -472,3 +472,65 @@ export const markOrderAsPaid = async (orderId) => {
   }
   return OrderModel.markPaymentAsPaid(orderId);
 };
+
+export const getAllOrdersForAdmin = async () => {
+  try {
+    const orders = await OrderModel.findAllForAdmin();
+    return orders;
+  } catch (error) {
+    console.error("Lỗi tại getAllOrdersForAdmin Service:", error.message);
+    throw new Error("Không thể lấy danh sách đơn hàng cho admin!");
+  }
+};
+
+export const getOrderByIdForAdmin = async (orderId) => {
+  try {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+      throw new Error("Không tìm thấy đơn hàng!");
+    }
+
+    if (Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const variantIds = [
+        ...new Set(
+          order.order_items
+            .map((item) => item.variant_id)
+            .filter(Boolean),
+        ),
+      ];
+
+      if (variantIds.length > 0) {
+        try {
+          const productDetails = await requestProductDetails(variantIds);
+
+          const productMap = {};
+          productDetails.forEach((p) => {
+            productMap[p.variant_id] = p;
+          });
+
+          order.order_items.forEach((item) => {
+            if (productMap[item.variant_id]) {
+              item.image_url = productMap[item.variant_id].image_url;
+            } else {
+              item.image_url = null;
+            }
+          });
+        } catch (err) {
+          console.error(
+            "Lỗi khi lấy hình ảnh sản phẩm từ RabbitMQ:",
+            err.message,
+          );
+        }
+      }
+    }
+
+    return {
+      ...order,
+      payment: getBankTransferDetails(order),
+    };
+  } catch (error) {
+    console.error("Lỗi tại getOrderByIdForAdmin Service:", error.message);
+    throw new Error(error.message || "Không thể lấy thông tin chi tiết đơn hàng!");
+  }
+};

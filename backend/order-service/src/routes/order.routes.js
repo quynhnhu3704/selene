@@ -11,6 +11,18 @@ import {
 const router = express.Router();
 
 // ================= ADMIN =================
+router.get(
+  "/manage/orders",
+  verifyToken,
+  verifyPermission("order:view"),
+  orderController.handleGetAllOrdersForAdmin,
+);
+router.get(
+  "/manage/orders/:orderId",
+  verifyToken,
+  verifyPermission("order:view"),
+  orderController.handleGetOrderByIdForAdmin,
+);
 
 // ================= VOUCHER =================
 router.post(

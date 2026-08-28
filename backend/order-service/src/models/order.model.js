@@ -84,6 +84,19 @@ export const OrderModel = {
     return OrderModel.markPaymentAsPaid(orderId);
   },
 
+  // Lấy danh sách đơn hàng cho Admin với các trường cụ thể
+  findAllForAdmin: async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at",
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
   // Lấy danh sách đơn hàng theo accountId
   findByAccountId: async (accountId) => {
     const { data, error } = await supabase
