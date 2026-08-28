@@ -230,6 +230,21 @@ export const createOrder = async (accountId, orderData) => {
 
     // 6. Tạo đơn hàng
     const orderId = generateId("order");
+
+    let initialPaymentStatus = "unpaid";
+    let initialStatus = "pending";
+
+    if (
+      normalizedPaymentMethod === "bank" ||
+      normalizedPaymentMethod === "sepay"
+    ) {
+      initialPaymentStatus = "unpaid";
+      initialStatus = "unpaid";
+    } else if (normalizedPaymentMethod === "cod") {
+      initialPaymentStatus = "unpaid";
+      initialStatus = "pending";
+    }
+
     const newOrderData = {
       order_id: orderId,
       account_id: accountId,
@@ -243,8 +258,8 @@ export const createOrder = async (accountId, orderData) => {
       shipping_fee,
       final_amount,
       payment_method: normalizedPaymentMethod,
-      payment_status: "pending",
-      status: "pending",
+      payment_status: initialPaymentStatus,
+      status: initialStatus,
     };
 
     const createdOrder = await OrderModel.createOrder(newOrderData);
@@ -393,12 +408,15 @@ export const getOrderById = async (accountId, orderId) => {
 export const confirmSePayPayment = async ({ orderCode, transferAmount }) => {
   const order = await OrderModel.findByOrderCode(orderCode);
 
-  // Trả về null để webhook vẫn phản hồi thành công cho các giao dịch không thuộc đơn SePay.
-  if (!order || order.payment_method !== "sepay") {
+  // Trả về null để webhook vẫn phản hồi thành công cho các giao dịch không thuộc đơn SePay/Bank.
+  if (
+    !order ||
+    (order.payment_method !== "sepay" && order.payment_method !== "bank")
+  ) {
     return null;
   }
 
-  if (order.payment_status === "paid" || order.status === "confirmed") {
+  if (order.payment_status === "paid" && order.status === "pending") {
     return order;
   }
 
@@ -410,4 +428,12 @@ export const confirmSePayPayment = async ({ orderCode, transferAmount }) => {
   }
 
   return OrderModel.markSePayPaymentAsPaid(order.order_id);
+};
+
+export const markOrderAsPaid = async (orderId) => {
+  const order = await OrderModel.findById(orderId);
+  if (!order) {
+    throw new Error("Không tìm thấy đơn hàng!");
+  }
+  return OrderModel.markPaymentAsPaid(orderId);
 };

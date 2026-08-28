@@ -74,6 +74,11 @@ router.get(
   verifyPermission("order:view"),
   orderController.handleGetOrderById,
 );
+router.put(
+  "/order/:orderId/pay",
+  verifyToken,
+  orderController.handleConfirmPayment,
+);
 
 // ================= CART (CUSTOMER) =================
 router.post("/cart/add", verifyToken, cartController.handleAddItemToCart);

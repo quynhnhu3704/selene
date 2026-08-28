@@ -17,6 +17,7 @@ const getStatusMeta = (status) => {
   const normalizedStatus = String(status || "pending").toLowerCase();
 
   const statuses = {
+    unpaid: { label: "Chưa thanh toán", className: "text-bg-warning" },
     pending: { label: "Chờ xác nhận", className: "text-bg-secondary" },
     confirmed: { label: "Đã xác nhận", className: "text-bg-primary" },
     processing: { label: "Đang xử lý", className: "text-bg-primary" },

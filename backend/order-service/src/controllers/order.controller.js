@@ -64,33 +64,54 @@ export const handleGetOrderById = async (req, res) => {
 };
 
 const extractOrderCode = (payload) => {
-  const content = String(payload?.content || "");
-  const codeFromContent = content.match(/HD-\d+-[a-z0-9]+/i)?.[0];
+  const textToSearch = [
+    payload?.content,
+    payload?.description,
+    payload?.code,
+    payload?.referenceCode,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  if (codeFromContent) return codeFromContent;
-
-  // Một số ngân hàng có thể bỏ dấu gạch nối trong nội dung chuyển khoản.
-  const compactCode = content.match(/HD(\d{13})([a-z0-9]{6})/i);
-  if (compactCode) {
-    return `HD-${compactCode[1]}-${compactCode[2]}`;
+  // 1. Khớp mã đơn dạng liền: HD1740751234567abc123
+  const matchCompact = textToSearch.match(/HD\d{13}[a-z0-9]{6}/i);
+  if (matchCompact) {
+    return matchCompact[0];
   }
 
-  // `code` của SePay thường là mã giao dịch của ngân hàng, không phải mã đơn.
-  // Chỉ dùng nó khi nó đúng định dạng mã đơn của Selene.
-  const code = String(payload?.code || "").trim();
-  return /^HD-\d+-[a-z0-9]+$/i.test(code) ? code : null;
+  // 2. Khớp mã đơn có gạch nối: HD-1740751234567-abc123
+  const matchHyphen = textToSearch.match(/HD-\d+-[a-z0-9]+/i);
+  if (matchHyphen) {
+    return matchHyphen[0];
+  }
+
+  // 3. Khớp bất kỳ mã đơn nào bắt đầu bằng HD
+  const matchGeneric = textToSearch.match(/HD[a-z0-9-]+/i);
+  if (matchGeneric) {
+    return matchGeneric[0];
+  }
+
+  return null;
 };
 
 const isValidWebhookAuthorization = (authorization) => {
   const apiKey = config.sepayWebhookApiKey;
-  const expected = apiKey ? `Apikey ${apiKey}` : "";
-  const received = authorization || "";
 
-  if (!expected || expected.length !== received.length) {
-    return false;
+  // Nếu môi trường dev / chưa cấu hình SEPAY_WEBHOOK_API_KEY trong env, chấp nhận webhook
+  if (!apiKey) {
+    return true;
   }
 
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(received));
+  const received = String(authorization || "").trim();
+  const expectedPattern1 = `Apikey ${apiKey}`;
+  const expectedPattern2 = apiKey;
+  const expectedPattern3 = `Bearer ${apiKey}`;
+
+  return (
+    received === expectedPattern1 ||
+    received === expectedPattern2 ||
+    received === expectedPattern3
+  );
 };
 
 export const handleSePayWebhook = async (req, res) => {
@@ -117,5 +138,21 @@ export const handleSePayWebhook = async (req, res) => {
   } catch (error) {
     console.error("Lỗi tại SePay webhook:", error.message);
     return res.status(500).json({ success: false });
+  }
+};
+
+export const handleConfirmPayment = async (req, res) => {
+  try {
+    const updatedOrder = await orderService.markOrderAsPaid(req.params.orderId);
+    res.status(200).json({
+      success: true,
+      message: "Cập nhật thanh toán thành công!",
+      data: updatedOrder,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

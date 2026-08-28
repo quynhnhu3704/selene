@@ -52,31 +52,36 @@ export const OrderModel = {
 
   // SePay gửi lại mã đơn trong nội dung/mã thanh toán.
   findByOrderCode: async (orderCode) => {
+    const cleanCode = String(orderCode || "").replace(/-/g, "").trim();
     const { data, error } = await supabase
       .from("orders")
       .select("*")
-      .ilike("order_code", orderCode)
-      .single();
+      .or(`order_code.ilike.${orderCode},order_code.ilike.${cleanCode}`)
+      .maybeSingle();
 
     if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
-  // Chỉ đánh dấu thanh toán khi đơn còn pending để webhook retry/đến đồng thời vẫn idempotent.
-  markSePayPaymentAsPaid: async (orderId) => {
+  // Đánh dấu thanh toán thành công cho đơn hàng: payment_status = "paid", status = "pending"
+  markPaymentAsPaid: async (orderId) => {
     const { data, error } = await supabase
       .from("orders")
       .update({
         payment_status: "paid",
-        status: "confirmed",
+        status: "pending",
       })
       .eq("order_id", orderId)
-      .eq("payment_status", "pending")
+      .neq("payment_status", "paid")
       .select()
       .maybeSingle();
 
     if (error) throw error;
     return data;
+  },
+
+  markSePayPaymentAsPaid: async (orderId) => {
+    return OrderModel.markPaymentAsPaid(orderId);
   },
 
   // Lấy danh sách đơn hàng theo accountId
