@@ -106,6 +106,11 @@ router.put(
   verifyToken,
   orderController.handleConfirmPayment,
 );
+router.put(
+  "/order/:orderId/cancel",
+  verifyToken,
+  orderController.handleCancelOrder,
+);
 
 // ================= CART (CUSTOMER) =================
 router.post("/cart/add", verifyToken, cartController.handleAddItemToCart);

@@ -256,5 +256,25 @@ export const handleConfirmOrdersBulk = async (req, res) => {
   }
 };
 
+export const handleCancelOrder = async (req, res) => {
+  try {
+    const accountId = req.user.accountId;
+    const { orderId } = req.params;
+
+    const updatedOrder = await orderService.cancelOrder(accountId, orderId);
+
+    res.status(200).json({
+      success: true,
+      message: "Hủy đơn hàng thành công!",
+      data: updatedOrder,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
 

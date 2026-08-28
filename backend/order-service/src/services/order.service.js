@@ -578,4 +578,55 @@ export const confirmOrdersBulk = async (
   }
 };
 
+export const cancelOrder = async (accountId, orderId) => {
+  try {
+    const order = await OrderModel.findByIdAndAccountId(orderId, accountId);
+
+    if (!order) {
+      throw new Error("Không tìm thấy đơn hàng!");
+    }
+
+    const paymentMethod = String(order.payment_method || "").toLowerCase();
+
+    if (paymentMethod === "bank" || paymentMethod === "sepay") {
+      throw new Error(
+        "Đơn hàng thanh toán qua Ngân hàng hoặc SePay không được phép hủy!",
+      );
+    }
+
+    if (paymentMethod !== "cod") {
+      throw new Error("Phương thức thanh toán này không hỗ trợ hủy đơn hàng!");
+    }
+
+    const status = String(order.status || "").toLowerCase();
+
+    if (status !== "pending") {
+      throw new Error(
+        "Đơn hàng chỉ có thể hủy khi ở trạng thái Chờ xác nhận (pending)!",
+      );
+    }
+
+    const updatedOrder = await OrderModel.cancelOrder(orderId, accountId);
+
+    // Trả lại tồn kho cho các sản phẩm trong đơn hàng
+    if (Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const restoreItems = order.order_items.map((item) => ({
+        variant_id: item.variant_id,
+        quantity: -item.quantity, // Số lượng âm để cộng trả lại tồn kho trong product-service
+      }));
+
+      try {
+        await sendUpdateProductStock(restoreItems);
+      } catch (stockErr) {
+        console.error("Lỗi khi gửi sự kiện hoàn tồn kho:", stockErr.message);
+      }
+    }
+
+    return updatedOrder;
+  } catch (error) {
+    console.error("Lỗi tại cancelOrder Service:", error.message);
+    throw new Error(error.message || "Không thể hủy đơn hàng!");
+  }
+};
+
 

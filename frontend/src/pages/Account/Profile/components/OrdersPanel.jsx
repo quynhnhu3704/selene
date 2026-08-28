@@ -58,7 +58,7 @@ export default function OrdersPanel() {
       console.error("Không thể tải danh sách đơn hàng:", requestError);
       setError(
         requestError.response?.data?.message ||
-          "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
+        "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
       );
     } finally {
       setLoading(false);
@@ -177,7 +177,7 @@ export default function OrdersPanel() {
                     </td>
                     <td className="px-3 py-3 text-end">
                       {order.payment_method !== "cod" &&
-                      order.payment_status !== "paid" ? (
+                        order.payment_status !== "paid" ? (
                         <Link
                           to={`/thanh-toan/qr?orderId=${encodeURIComponent(
                             order.order_id,

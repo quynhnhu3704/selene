@@ -144,6 +144,23 @@ export const OrderModel = {
     if (error) throw error;
     return data;
   },
+
+  // Hủy đơn hàng của khách hàng (status = "cancelled")
+  cancelOrder: async (orderId, accountId) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status: "cancelled",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("order_id", orderId)
+      .eq("account_id", accountId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
 };
 
 
