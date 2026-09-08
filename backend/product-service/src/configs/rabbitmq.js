@@ -140,10 +140,10 @@ export const listenForStockUpdate = async () => {
       console.log(`[.] Received stock update event for variants:`, items);
 
       for (const item of items) {
-        // Lấy số lượng tồn kho hiện tại
+        // Lấy số lượng tồn kho và trạng thái hiện tại
         const { data: variant, error: fetchErr } = await supabase
           .from("product_variants")
-          .select("stock_quantity")
+          .select("stock_quantity, status")
           .eq("variant_id", item.variant_id)
           .single();
 
@@ -156,11 +156,18 @@ export const listenForStockUpdate = async () => {
         }
 
         const newStock = Math.max(0, variant.stock_quantity - item.quantity);
+        const updatePayload = { stock_quantity: newStock };
 
-        // Cập nhật tồn kho mới
+        if (newStock === 0) {
+          updatePayload.status = "out_of_stock";
+        } else if (newStock > 0 && variant.status === "out_of_stock") {
+          updatePayload.status = "active";
+        }
+
+        // Cập nhật tồn kho và trạng thái mới
         const { error: updateErr } = await supabase
           .from("product_variants")
-          .update({ stock_quantity: newStock })
+          .update(updatePayload)
           .eq("variant_id", item.variant_id);
 
         if (updateErr) {
@@ -170,7 +177,7 @@ export const listenForStockUpdate = async () => {
           );
         } else {
           console.log(
-            `[+] Cập nhật thành công tồn kho cho variant ${item.variant_id}: ${variant.stock_quantity} -> ${newStock}`,
+            `[+] Cập nhật thành công tồn kho cho variant ${item.variant_id}: ${variant.stock_quantity} -> ${newStock} (status: ${updatePayload.status || variant.status})`,
           );
         }
       }

@@ -127,9 +127,12 @@ export const ProductModel = {
       `,
       )
       .eq("product_id", productId)
-      .single(); // Chỉ lấy 1 bản ghi duy nhất
+      .single();
 
-    if (productError) throw productError;
+    if (productError) {
+      if (productError.code === "PGRST116") return null;
+      throw productError;
+    }
     return product;
   },
 
