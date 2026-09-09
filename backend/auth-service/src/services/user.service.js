@@ -569,6 +569,6 @@ export const toggleAccountStatus = async (accountId) => {
   return {
     account_id: accountId,
     status: newStatus,
-    account: updatedAccount
+    account: updatedAccount,
   };
 };

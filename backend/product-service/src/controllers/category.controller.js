@@ -127,7 +127,10 @@ export const handleUpdateCategoryStatus = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Lỗi tại handleUpdateCategoryStatus Controller:", error.message);
+    console.error(
+      "Lỗi tại handleUpdateCategoryStatus Controller:",
+      error.message,
+    );
 
     const isClientError =
       error.message.includes("không được để trống") ||

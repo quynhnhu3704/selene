@@ -26,7 +26,10 @@ export const toggleRoleStatus = async (roleId) => {
     await AccountModel.updateAccountsStatusByRoleId(roleId, newStatus);
 
     // Cập nhật trạng thái user_profiles tương ứng
-    await UserProfileModel.updateUserProfilesStatusByAccountIds(accountIds, newStatus);
+    await UserProfileModel.updateUserProfilesStatusByAccountIds(
+      accountIds,
+      newStatus,
+    );
   }
 
   return updatedRole;

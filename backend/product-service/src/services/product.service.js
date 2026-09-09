@@ -898,7 +898,7 @@ export const updateVariantStatus = async (variantId, status) => {
   }
 };
 
-// / Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
+// Lấy chi tiết 1 sản phẩm kèm toàn bộ biến thể của nó
 export const getProductDetailForAdmin = async (productId) => {
   try {
     if (!productId) {

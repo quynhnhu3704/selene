@@ -9,6 +9,7 @@ import {
   exportProductsToExcel,
 } from "../../../services/product.service";
 import Pagination from "../../../components/common/Pagination";
+import Loading from "../../../components/common/Loading";
 import { Helmet } from "react-helmet-async";
 
 const fmtVND = (n) => (n || 0).toLocaleString("vi-VN") + "đ";
@@ -17,7 +18,7 @@ const PRODUCTS_PER_PAGE = 12;
 const TABS = [
   { key: "", label: "Tất cả" },
   { key: "active", label: "Hoạt động" },
-  { key: "archived", label: "Đã khóa" },
+  { key: "inactive", label: "Đã khóa" },
 ];
 
 const PRICE_RANGES = [
@@ -183,8 +184,10 @@ export default function AdminProducts() {
 
   /* ── lock / unlock ── */
   const handleLock = async (product) => {
-    const isLocked = product.status === "archived";
-    const nextStatus = isLocked ? "active" : "archived";
+    // Bao quát cả hai trường hợp "inactive" hoặc "archived" là đã bị khóa
+    const isLocked =
+      product.status === "inactive" || product.status === "archived";
+    const nextStatus = isLocked ? "active" : "inactive";
 
     try {
       setUpdatingProductId(product.product_id);
@@ -256,7 +259,8 @@ export default function AdminProducts() {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.message || "Lỗi khi tải file hoặc xuất dữ liệu Excel!"
+        err.response?.data?.message ||
+          "Lỗi khi tải file hoặc xuất dữ liệu Excel!",
       );
     } finally {
       setExporting(false);
@@ -284,15 +288,6 @@ export default function AdminProducts() {
   return (
     <>
       <style>{`
-
-
-        /* ── TABLE ── */
-        // .adm-table-wrap { border-top: 1px solid #F0EFF5; }
-        // .adm-table th { font-size: 12.5px; font-weight: 700; color: #9CA0AC; border-bottom: 1px solid #F0EFF5 !important; padding: 13px 14px; white-space: nowrap; }
-        // .adm-table td { font-size: 13.5px; color: #17151F; border-color: #F5F4F9 !important; padding: 12px 14px; vertical-align: middle; }
-        // .adm-table tbody tr { transition: background 0.12s; }
-        // .adm-table tbody tr:hover { background: #FAFAFC; }
-
 /* ── TABLE ── */
 .adm-table-wrap {
   border: 1px solid #F0EFF5;
@@ -405,7 +400,11 @@ export default function AdminProducts() {
           >
             {exporting ? (
               <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
                 Đang xuất...
               </>
             ) : (
@@ -567,31 +566,29 @@ export default function AdminProducts() {
         <table className="table adm-table mb-0">
           <thead>
             <tr>
-              <th style={{ width: 48 }}>#</th>
+              <th className="text-center" style={{ width: 48 }}>
+                #
+              </th>
               <th>Sản phẩm</th>
-              <th>Danh mục</th>
-              <th>Giá bán</th>
-              <th>Tồn kho</th>
-              <th>Trạng thái</th>
+              <th className="text-center">Danh mục</th>
+              <th className="text-center">Giá bán</th>
+              <th className="text-center">Tồn kho</th>
+              <th className="text-center">Trạng thái</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="text-center text-muted py-5"
-                  style={{ fontSize: 14 }}
-                >
-                  Đang tải danh sách sản phẩm...
+                <td colSpan={7}>
+                  <Loading />
                 </td>
               </tr>
             ) : error ? (
               <tr>
                 <td
                   colSpan={7}
-                  className="text-center text-danger py-5"
+                  className="text-center text-danger fw-semibold py-5"
                   style={{ fontSize: 14 }}
                 >
                   {error}
@@ -601,24 +598,20 @@ export default function AdminProducts() {
               <tr>
                 <td
                   colSpan={7}
-                  className="text-center text-muted py-5"
+                  className="fw-semibold text-secondary page-empty py-5"
                   style={{ fontSize: 14 }}
                 >
                   <i
-                    className="bi bi-inbox"
-                    style={{
-                      fontSize: 32,
-                      display: "block",
-                      marginBottom: 8,
-                      opacity: 0.3,
-                    }}
+                    className="bi bi-inbox page-empty-icon"
+                    style={{ display: "block" }}
                   />
                   Không tìm thấy sản phẩm
                 </td>
               </tr>
             ) : (
               products.map((p, idx) => {
-                const isLocked = p.status === "archived";
+                const isLocked =
+                  p.status === "inactive" || p.status === "archived";
                 const isUpdating = updatingProductId === p.product_id;
                 const effectiveStatus = p.status;
 
@@ -627,7 +620,7 @@ export default function AdminProducts() {
                 return (
                   <tr key={p.product_id}>
                     {/* STT */}
-                    <td>
+                    <td className="text-center">
                       <span className="adm-stt">{stt}</span>
                     </td>
 
@@ -662,13 +655,13 @@ export default function AdminProducts() {
                       </div>
                     </td>
 
-                    {/* ID */}
-                    <td>
+                    {/* Danh mục */}
+                    <td className="text-center">
                       <div>{p.category_name || "—"}</div>
                     </td>
 
                     {/* Giá bán */}
-                    <td>
+                    <td className="text-end">
                       <div className="fw-bold">{fmtVND(p.price)}</div>
 
                       {p.original_price ? (
@@ -679,7 +672,7 @@ export default function AdminProducts() {
                     </td>
 
                     {/* Stock */}
-                    <td>
+                    <td className="text-center">
                       <span
                         className={`adm-stock rounded-pill ${
                           (p.stock_quantity || 0) >= 200
@@ -694,7 +687,7 @@ export default function AdminProducts() {
                     </td>
 
                     {/* Status */}
-                    <td>
+                    <td className="text-center">
                       <span
                         className={`adm-status rounded-pill ${
                           effectiveStatus === "active"
@@ -707,7 +700,7 @@ export default function AdminProducts() {
                     </td>
 
                     {/* Thao tác */}
-                    <td>
+                    <td className="text-center">
                       <div className="d-flex gap-1">
                         {/* Sửa */}
                         <Link

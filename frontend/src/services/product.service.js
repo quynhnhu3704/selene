@@ -84,9 +84,12 @@ export const getAdminProductCategories = async () => {
 
 // Khóa hoặc mở khóa sản phẩm
 export const updateAdminProductStatus = async (productId, status) => {
-  const res = await http.patch(`/products/manage/product/status/${productId}`, {
-    status,
-  });
+  const res = await http.put(
+    `/products/manage/product/change-status/${productId}`,
+    {
+      status,
+    },
+  );
 
   return res.data;
 };
@@ -96,6 +99,22 @@ export const exportProductsToExcel = async () => {
   const res = await http.get("/products/manage/products/export", {
     responseType: "blob",
   });
+
+  return res.data;
+};
+
+// Lấy chi tiết sản phẩm cho Admin
+export const getAdminProductDetail = async (productId) => {
+  const res = await http.get(`/products/manage/product-detail/${productId}`);
+  return res.data;
+};
+
+// Cập nhật sản phẩm cho Admin (Hỗ trợ gửi FormData chứa cả ảnh và biến thể)
+export const updateAdminProduct = async (productId, formData) => {
+  const res = await http.put(
+    `/products/manage/product/update/${productId}`,
+    formData,
+  );
 
   return res.data;
 };

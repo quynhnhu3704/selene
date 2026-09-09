@@ -332,16 +332,16 @@ export const handleExportProductsToExcel = async (req, res) => {
 
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${filename}`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
 
     return res.status(200).send(buffer);
   } catch (error) {
-    console.error("Lỗi tại handleExportProductsToExcel Controller:", error.message);
+    console.error(
+      "Lỗi tại handleExportProductsToExcel Controller:",
+      error.message,
+    );
     return res.status(500).json({
       status: 500,
       message: error.message || "Lỗi máy chủ khi xuất dữ liệu Excel!",

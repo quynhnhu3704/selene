@@ -36,9 +36,6 @@ router.put(
   orderController.handleConfirmOrdersBulk,
 );
 
-
-
-
 // ================= VOUCHER =================
 router.post(
   "/manage/vouchers/add",

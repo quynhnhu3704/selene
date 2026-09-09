@@ -19,7 +19,7 @@ export const RoleModel = {
       .from("roles")
       .update({
         status,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .eq("role_id", roleId)
       .select()

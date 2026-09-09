@@ -89,14 +89,14 @@
 }
 
 .spinner-loading {
-  min-height: 70vh;
+  /* min-height: 40vh; */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 .spinner-loading .spinner-border {
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   color: #871b1b;
 }
 
@@ -1553,47 +1553,6 @@
   font-weight: 700;
   white-space: nowrap;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* TEST MẪU CHO TRANG HOME */
 .pl-home-products {

@@ -399,9 +399,7 @@ export const getOrderById = async (accountId, orderId) => {
     if (Array.isArray(order.order_items) && order.order_items.length > 0) {
       const variantIds = [
         ...new Set(
-          order.order_items
-            .map((item) => item.variant_id)
-            .filter(Boolean),
+          order.order_items.map((item) => item.variant_id).filter(Boolean),
         ),
       ];
 
@@ -494,9 +492,7 @@ export const getOrderByIdForAdmin = async (orderId) => {
     if (Array.isArray(order.order_items) && order.order_items.length > 0) {
       const variantIds = [
         ...new Set(
-          order.order_items
-            .map((item) => item.variant_id)
-            .filter(Boolean),
+          order.order_items.map((item) => item.variant_id).filter(Boolean),
         ),
       ];
 
@@ -531,7 +527,9 @@ export const getOrderByIdForAdmin = async (orderId) => {
     };
   } catch (error) {
     console.error("Lỗi tại getOrderByIdForAdmin Service:", error.message);
-    throw new Error(error.message || "Không thể lấy thông tin chi tiết đơn hàng!");
+    throw new Error(
+      error.message || "Không thể lấy thông tin chi tiết đơn hàng!",
+    );
   }
 };
 
@@ -628,5 +626,3 @@ export const cancelOrder = async (accountId, orderId) => {
     throw new Error(error.message || "Không thể hủy đơn hàng!");
   }
 };
-
-

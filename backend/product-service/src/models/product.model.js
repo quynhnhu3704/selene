@@ -379,7 +379,9 @@ export const ProductModel = {
   getVariantById: async (variantId) => {
     const { data: variant, error } = await supabase
       .from("product_variants")
-      .select("variant_id, product_id, size, color, stock_quantity, status, updated_at")
+      .select(
+        "variant_id, product_id, size, color, stock_quantity, status, updated_at",
+      )
       .eq("variant_id", variantId)
       .single();
 

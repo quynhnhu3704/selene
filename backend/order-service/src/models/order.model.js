@@ -52,7 +52,9 @@ export const OrderModel = {
 
   // SePay gửi lại mã đơn trong nội dung/mã thanh toán.
   findByOrderCode: async (orderCode) => {
-    const cleanCode = String(orderCode || "").replace(/-/g, "").trim();
+    const cleanCode = String(orderCode || "")
+      .replace(/-/g, "")
+      .trim();
     const { data, error } = await supabase
       .from("orders")
       .select("*")
@@ -162,6 +164,3 @@ export const OrderModel = {
     return data;
   },
 };
-
-
-

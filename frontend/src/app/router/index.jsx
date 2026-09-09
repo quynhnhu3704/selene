@@ -27,6 +27,9 @@ import AdminOrders from "../../pages/Admin/Orders";
 import AdminUsers from "../../pages/Admin/Users";
 import AdminCategories from "../../pages/Admin/Categories";
 
+import CreateProduct from "../../pages/Admin/Products/pages/Create";
+import EditProduct from "../../pages/Admin/Products/pages/Edit";
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -66,7 +69,11 @@ export default function AppRouter() {
       {/* Layout Admin */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
+
         <Route path="san-pham" element={<AdminProducts />} />
+        <Route path="san-pham/them-moi" element={<CreateProduct />} />
+        <Route path="san-pham/:productId/sua" element={<EditProduct />} />
+
         <Route path="don-hang" element={<AdminOrders />} />
         <Route path="nguoi-dung" element={<AdminUsers />} />
         <Route path="danh-muc" element={<AdminCategories />} />

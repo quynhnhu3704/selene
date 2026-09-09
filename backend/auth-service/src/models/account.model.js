@@ -39,12 +39,14 @@ export const AccountModel = {
   getPermissionsByRoleId: async (roleId) => {
     const { data, error } = await supabase
       .from("role_permissions")
-      .select(`
+      .select(
+        `
         permissions!inner (
           name,
           status
         )
-      `)
+      `,
+      )
       .eq("role_id", roleId)
       .eq("permissions.status", "active");
     if (error) throw error;

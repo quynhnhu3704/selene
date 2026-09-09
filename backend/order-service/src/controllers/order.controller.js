@@ -275,6 +275,3 @@ export const handleCancelOrder = async (req, res) => {
     });
   }
 };
-
-
-

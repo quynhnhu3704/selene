@@ -34,9 +34,7 @@ import {
   handleUpdatePermission,
   handleTogglePermissionStatus,
 } from "../controllers/permission.controller.js";
-import {
-  handleToggleRoleStatus,
-} from "../controllers/role.controller.js";
+import { handleToggleRoleStatus } from "../controllers/role.controller.js";
 
 const router = express.Router();
 
