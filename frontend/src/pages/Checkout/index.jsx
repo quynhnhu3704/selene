@@ -251,7 +251,7 @@ export default function Checkout() {
           border-radius: 8px;
           padding: 0 13px;
           font-size: 14px;
-          font-family: 'Nunito', sans-serif;
+          font-family: 'Manrope', sans-serif;
           outline: none;
           margin-bottom: 16px;
         }
@@ -279,7 +279,7 @@ export default function Checkout() {
           border-radius: 8px;
           padding: 12px 13px;
           font-size: 14px;
-          font-family: 'Nunito', sans-serif;
+          font-family: 'Manrope', sans-serif;
           outline: none;
           resize: vertical;
         }
@@ -392,7 +392,7 @@ export default function Checkout() {
           color: #fff;
           font-size: 15px;
           font-weight: 800;
-          font-family: 'Nunito', sans-serif;
+          font-family: 'Manrope', sans-serif;
           cursor: pointer;
           transition: background 0.18s;
         }

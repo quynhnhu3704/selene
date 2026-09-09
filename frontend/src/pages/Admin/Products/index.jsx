@@ -288,98 +288,9 @@ export default function AdminProducts() {
   return (
     <>
       <style>{`
-/* ── TABLE ── */
-.adm-table-wrap {
-  border: 1px solid #F0EFF5;
-  border-radius: 12px;
-  overflow: hidden;
-}
 
-.adm-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid #F0EFF5 !important;
-  margin: 0;
-}
+      
 
-/* Header */
-.adm-table th {
-  font-size: 15px;
-  font-weight: 700;
-  color: #9CA0AC;
-  background: #FAFAFC;
-  padding: 13px 14px;
-  white-space: nowrap;
-}
-
-/* Body */
-.adm-table td {
-  font-size: 13.5px;
-  color: #212529;
-  padding: 12px 14px;
-  vertical-align: middle;
-}
-
-/* Striped rows */
-.adm-table tbody tr:nth-child(odd) {
-  background: #FFFFFF;
-}
-
-.adm-table tbody tr:nth-child(even) {
-  background: #FAFAFC;
-}
-
-/* Hover */
-.adm-table tbody tr {
-  transition: background 0.12s;
-}
-
-.adm-table tbody tr:hover {
-  background: #F3F4F6;
-}
-
-
-        .adm-stt { font-size: 13px; font-weight: 700; color: #9CA0AC; }
-
-        .adm-cell { display: flex; align-items: center; gap: 12px; }
-        .adm-thumb { width: 42px; height: 42px; border-radius: 10px; object-fit: cover; background: #F0EFF5; flex-shrink: 0; }
-        .adm-pname { font-weight: 800; color: #17151F; }
-        .adm-psub { font-size: 12px; color: #9CA0AC; font-weight: 600; }
-        .adm-sub-line { font-size: 12px; color: #9CA0AC; font-weight: 600; }
-
-
-
-        /* ── ACTION BUTTONS ── */
-        .adm-action-btn {
-          width: 32px; height: 32px; border-radius: 8px; border: none; background: none;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s; color: #9CA0AC;
-        }
-        .adm-action-btn:hover { background: #F0EFF5; color: #17151F; }
-        .adm-action-btn.lock:hover { background: #FFF0F0; color: #DC2626; }
-        .adm-action-btn.unlock:hover { background: #F0FDF4; color: #16A34A; }
-
-.adm-product-link {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.adm-product-link:hover .adm-pname {
-  color: #871b1b;
-}
-
-.adm-cell > .adm-product-link:hover .adm-thumb {
-  opacity: 0.85;
-}
-
-.adm-original-price {
-  font-size: 12px;
-  color: #9CA0AC;
-  font-weight: 600;
-  text-decoration: line-through;
-  margin-top: 2px;
-}
       `}</style>
 
       <Helmet>
@@ -409,7 +320,7 @@ export default function AdminProducts() {
               </>
             ) : (
               <>
-                <i className="bi bi-download me-1" /> Xuất dữ liệu
+                <i className="bi bi-download me-2" /> Xuất dữ liệu
               </>
             )}
           </button>
@@ -566,12 +477,12 @@ export default function AdminProducts() {
         <table className="table adm-table mb-0">
           <thead>
             <tr>
-              <th className="text-center" style={{ width: 48 }}>
+              <th className="text-center" style={{ width: "5%" }}>
                 #
               </th>
-              <th>Sản phẩm</th>
+              <th style={{ width: "32%" }}>Sản phẩm</th>
               <th className="text-center">Danh mục</th>
-              <th className="text-center">Giá bán</th>
+              <th className="text-end">Giá bán</th>
               <th className="text-center">Tồn kho</th>
               <th className="text-center">Trạng thái</th>
               <th></th>
@@ -631,7 +542,7 @@ export default function AdminProducts() {
                           to={`/san-pham/${p.product_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="adm-product-link"
+                          className="adm-link"
                         >
                           <img
                             src={p.image_url}
@@ -645,12 +556,12 @@ export default function AdminProducts() {
                             to={`/san-pham/${p.product_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="adm-product-link"
+                            className="adm-link"
                           >
-                            <div className="adm-pname">{p.product_name}</div>
+                            <div className="adm-name">{p.product_name}</div>
                           </Link>
 
-                          <div className="adm-psub">{p.product_id}</div>
+                          <div className="adm-sub">{p.product_id}</div>
                         </div>
                       </div>
                     </td>
@@ -662,13 +573,15 @@ export default function AdminProducts() {
 
                     {/* Giá bán */}
                     <td className="text-end">
-                      <div className="fw-bold">{fmtVND(p.price)}</div>
+                      <div className="adm-price-cell">
+                        <div className="fw-semibold">{fmtVND(p.price)}</div>
 
-                      {p.original_price ? (
-                        <div className="adm-original-price">
-                          {fmtVND(p.original_price)}
-                        </div>
-                      ) : null}
+                        {p.original_price ? (
+                          <div className="adm-original-price">
+                            {fmtVND(p.original_price)}
+                          </div>
+                        ) : null}
+                      </div>
                     </td>
 
                     {/* Stock */}
@@ -701,7 +614,7 @@ export default function AdminProducts() {
 
                     {/* Thao tác */}
                     <td className="text-center">
-                      <div className="d-flex gap-1">
+                      <div className="d-flex gap-1 justify-content-center">
                         {/* Sửa */}
                         <Link
                           to={`/admin/san-pham/${p.product_id}/sua`}

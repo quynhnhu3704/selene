@@ -250,7 +250,7 @@ export default function ProductDetail() {
         .pd-size-btn {
           min-width: 46px; height: 40px; border-radius: 50%;
           border: 1.5px solid #d0d0d0; background: #fff;
-          font-size: 14px; font-weight: 600; font-family: 'Nunito', sans-serif;
+          font-size: 14px; font-weight: 600; font-family: 'Manrope', sans-serif;
           color: #333; cursor: pointer; padding: 0 10px; transition: all 0.15s;
         }
         .pd-size-btn.active { border-color: #212529; background: #fff; color: #212529; }
@@ -272,7 +272,7 @@ export default function ProductDetail() {
         .pd-qty-val { min-width: 36px; text-align: center; font-size: 16px; font-weight: 700; color: #212529; }
         .pd-btn-cart {
           flex: 1; height: 48px; background: #f5c518; border: none; border-radius: 50px;
-          font-size: 16px; font-weight: 700; font-family: 'Nunito', sans-serif;
+          font-size: 16px; font-weight: 700; font-family: 'Manrope', sans-serif;
           color: #111; cursor: pointer;
           display: flex; align-items: center; justify-content: center; gap: 8px;
           transition: background 0.18s, transform 0.1s;
@@ -324,7 +324,7 @@ export default function ProductDetail() {
         .pd-showmore-btn {
           background: #fff; border: 1.5px solid #212529; border-radius: 50px;
           padding: 6px 20px; font-size: 13.5px; font-weight: 700;
-          font-family: 'Nunito', sans-serif; color: #212529;
+          font-family: 'Manrope', sans-serif; color: #212529;
           cursor: pointer; margin-top: 10px; transition: background 0.15s;
           display: block;
         }

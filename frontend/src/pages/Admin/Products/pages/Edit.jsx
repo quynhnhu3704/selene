@@ -221,7 +221,7 @@ export default function EditProduct() {
         .cp-card-title { font-size: 15px; font-weight: 800; color: #17151F; margin-bottom: 20px; letter-spacing: 0.1px; }
         .cp-label { font-size: 13.5px; font-weight: 700; color: #17151F; margin-bottom: 7px; display: block; }
         .cp-sublabel { font-size: 12px; font-weight: 600; color: #9CA0AC; margin-bottom: 10px; display: block; margin-top: -4px; }
-        .cp-input, .cp-textarea, .cp-select { width: 100%; border-radius: 10px; border: 1.5px solid #ECEBF2; background: #F8F7FC; color: #17151F; font-size: 14px; font-family: 'Nunito', sans-serif; outline: none; transition: border-color 0.15s; }
+        .cp-input, .cp-textarea, .cp-select { width: 100%; border-radius: 10px; border: 1.5px solid #ECEBF2; background: #F8F7FC; color: #17151F; font-size: 14px; font-family: 'Manrope', sans-serif; outline: none; transition: border-color 0.15s; }
         .cp-input { height: 44px; padding: 0 14px; }
         .cp-textarea { padding: 12px 14px; resize: none; height: 130px; line-height: 1.6; }
         .cp-select { height: 44px; padding: 0 36px 0 14px; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%239CA0AC' d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
@@ -249,7 +249,7 @@ export default function EditProduct() {
         .cp-cat-select-wrap { position: relative; }
         .cp-cat-select-wrap .cp-select { padding-right: 36px; }
         .cp-cat-dropdown-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; background: #17151F; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; pointer-events: none; }
-        .cp-add-cat-btn { width: 100%; height: 44px; border-radius: 10px; background: #22C55E; border: none; color: #fff; font-size: 14px; font-weight: 800; font-family: 'Nunito', sans-serif; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .cp-add-cat-btn { width: 100%; height: 44px; border-radius: 10px; background: #22C55E; border: none; color: #fff; font-size: 14px; font-weight: 800; font-family: 'Manrope', sans-serif; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
         .cp-add-cat-btn:hover { opacity: 0.88; }
         .cp-page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
         .cp-page-title { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #17151F; }

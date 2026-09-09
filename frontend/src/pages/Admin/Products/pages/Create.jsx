@@ -141,7 +141,7 @@ export default function CreateProduct() {
         .cp-input, .cp-textarea, .cp-select {
           width: 100%; border-radius: 10px; border: 1.5px solid #ECEBF2;
           background: #F8F7FC; color: #17151F;
-          font-size: 14px; font-family: 'Nunito', sans-serif;
+          font-size: 14px; font-family: 'Manrope', sans-serif;
           outline: none; transition: border-color 0.15s;
         }
         .cp-input    { height: 44px; padding: 0 14px; }
@@ -226,7 +226,7 @@ export default function CreateProduct() {
         .cp-add-cat-btn {
           width: 100%; height: 44px; border-radius: 10px;
           background: #22C55E; border: none; color: #fff;
-          font-size: 14px; font-weight: 800; font-family: 'Nunito', sans-serif;
+          font-size: 14px; font-weight: 800; font-family: 'Manrope', sans-serif;
           cursor: pointer; transition: opacity 0.15s;
           display: flex; align-items: center; justify-content: center; gap: 7px;
         }

@@ -255,7 +255,7 @@ export default function Cart() {
         .cart-check-all input { width: 17px; height: 17px; accent-color: #212529; cursor: pointer; flex-shrink: 0; }
         .cart-del-sel {
           background: none; border: none; cursor: pointer;
-          font-size: 13px; color: #adb5bd; font-family: 'Nunito', sans-serif;
+          font-size: 13px; color: #adb5bd; font-family: 'Manrope', sans-serif;
           font-weight: 600; padding: 0; transition: color 0.15s;
         }
         .cart-del-sel:hover { color: #871B1B; }
@@ -283,7 +283,7 @@ export default function Cart() {
         .cart-checkout-btn {
           width: 100%; height: 50px; background: #212529; border: none;
           border-radius: 50px; color: #fff;
-          font-size: 15px; font-weight: 800; font-family: 'Nunito', sans-serif;
+          font-size: 15px; font-weight: 800; font-family: 'Manrope', sans-serif;
           letter-spacing: 0.5px; cursor: pointer;
           transition: background 0.18s, transform 0.1s;
           display: flex; align-items: center; justify-content: center; gap: 8px;
