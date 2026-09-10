@@ -466,6 +466,7 @@ export const ProductModel = {
 
   // lấy tất cả sản phẩm cho admin kèm các điều kiện lọc
   getAllProductsWithPagination: async (filters, from, to) => {
+    // Lấy tồn kho của các biến thể để tính tổng tồn kho từng sản phẩm.
     let query = supabase.from("products").select(
       `
         product_id,
@@ -514,10 +515,59 @@ export const ProductModel = {
       query = query.eq("status", "active");
     }
 
-    const { data, error, count } = await query
-      .order("created_at", { ascending: false }) // Sản phẩm mới nhất xếp lên đầu
-      .order("product_id", { ascending: true }) // Nếu cùng ngày tạo thì sắp xếp theo product_id tăng dần
-      .range(from, to); // Cắt dữ liệu theo trang
+    if (filters.sort === "stock_asc" || filters.sort === "stock_desc") {
+      // Order trên quan hệ chỉ sắp xếp biến thể, không sắp xếp sản phẩm.
+      // Đọc đủ các trang trước khi sắp xếp tổng tồn và cắt trang kết quả.
+      const products = [];
+      const batchSize = 500;
+      let count = 0;
+      query = query.order("product_id", { ascending: true });
+
+      do {
+        const {
+          data,
+          error,
+          count: total,
+        } = await query.range(products.length, products.length + batchSize - 1);
+        if (error) throw error;
+        count = total ?? 0;
+        if (!data?.length) break;
+        products.push(...data);
+      } while (products.length < count);
+
+      const direction = filters.sort === "stock_asc" ? 1 : -1;
+      const rankedProducts = products.map((product) => ({
+        product,
+        stock: (product.product_variants || []).reduce(
+          (total, variant) => total + (Number(variant.stock_quantity) || 0),
+          0,
+        ),
+      }));
+      // Giữ thứ tự product_id khi tổng tồn bằng nhau để phân trang ổn định.
+      rankedProducts.sort((a, b) => direction * (a.stock - b.stock));
+
+      return {
+        data: rankedProducts.slice(from, to + 1).map(({ product }) => product),
+        count,
+      };
+    }
+
+    // Xử lý các tiêu chí sắp xếp còn lại.
+    if (filters.sort === "az") {
+      query = query.order("product_name", { ascending: true });
+    } else if (filters.sort === "za") {
+      query = query.order("product_name", { ascending: false });
+    } else if (filters.sort === "price_asc") {
+      query = query.order("price", { ascending: true });
+    } else if (filters.sort === "price_desc") {
+      query = query.order("price", { ascending: false });
+    } else {
+      query = query
+        .order("created_at", { ascending: false })
+        .order("product_id", { ascending: true });
+    }
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) throw error;
     return { data, count };

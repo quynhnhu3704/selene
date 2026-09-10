@@ -187,12 +187,13 @@ export const handleUpdateProduct = async (req, res) => {
 // lấy tất cả sản phẩm cho admin
 export const handleGetAllProductsForAdmin = async (req, res) => {
   try {
-    const { q, category, price, status, page, limit } = req.query;
+    const { q, category, price, sort, status, page, limit } = req.query;
 
     const result = await productService.getAllProductsAdmin({
       q,
       category,
       price,
+      sort,
       status,
       page,
       limit,

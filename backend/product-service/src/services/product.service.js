@@ -25,6 +25,17 @@ const CUSTOMER_PRODUCT_SORT_OPTIONS = [
   "price_desc",
 ];
 
+const ADMIN_PRODUCT_SORT_OPTIONS = [
+  "",
+  "default",
+  "az",
+  "za",
+  "price_asc",
+  "price_desc",
+  "stock_asc",
+  "stock_desc",
+];
+
 const AO_CHILD_CATEGORY_NAMES = [
   "Áo cổ",
   "Áo công sở",
@@ -194,6 +205,7 @@ const getAdminProductFilters = (options) => {
   const category = getQueryValue(options.category);
   const priceKey = getQueryValue(options.price);
   const status = getQueryValue(options.status);
+  const sort = getQueryValue(options.sort);
 
   if (priceKey && !ADMIN_PRODUCT_PRICE_RANGES[priceKey]) {
     throw new Error("Khoảng giá lọc không hợp lệ!");
@@ -203,11 +215,16 @@ const getAdminProductFilters = (options) => {
     throw new Error("Trạng thái lọc không hợp lệ!");
   }
 
+  if (!ADMIN_PRODUCT_SORT_OPTIONS.includes(sort)) {
+    throw new Error("Kiểu sắp xếp không hợp lệ!");
+  }
+
   return {
     q,
     category,
     price: priceKey ? ADMIN_PRODUCT_PRICE_RANGES[priceKey] : null,
     status,
+    sort: sort === "default" ? "" : sort,
   };
 };
 

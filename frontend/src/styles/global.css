@@ -1161,6 +1161,8 @@
 .page-empty-icon {
   font-size: 48px;
   color: #d0d0d0;
+  margin-bottom: 12px;
+  display: block;
 }
 
 /* Responsive */
@@ -1490,9 +1492,14 @@
 .adm-toolbar-search {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 150px;
   max-width: 320px;
 }
+
+/* .adm-toolbar .dropdown {
+  flex: 0 0 12.25rem;
+} */
+
 .adm-toolbar-search i {
   position: absolute;
   left: 14px;
@@ -1620,7 +1627,7 @@
 }
 .adm-sub {
   font-size: 12px;
-  color: #9ca0ac;
+  color: #6c757d;
 }
 
 .adm-cell > div:last-child {
@@ -1656,8 +1663,10 @@
 
 .adm-original-price {
   font-size: 12px;
-  color: #9ca0ac;
+  color: #6c757d;
   text-decoration: line-through;
+  text-decoration-color: #6c757d;
+  /* text-decoration-color: #9ca0ac; */
 }
 
 /* ── ACTION BUTTONS ── */

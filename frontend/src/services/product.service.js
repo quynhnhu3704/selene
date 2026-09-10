@@ -59,13 +59,14 @@ export const getProductById = async (id) => {
 
 // Lấy danh sách sản phẩm cho Admin
 export const getAdminProducts = async (filters = {}) => {
-  const { q, category, price, status, page = 1, limit = 10 } = filters;
+  const { q, category, price, status, sort, page = 1, limit = 10 } = filters;
   const params = { limit };
 
   if (q) params.q = q;
   if (category) params.category = category;
   if (price) params.price = price;
   if (status) params.status = status;
+  if (sort && sort !== "default") params.sort = sort;
   if (Number(page) > 1) params.page = page;
 
   const res = await http.get("/products/manage/products", {

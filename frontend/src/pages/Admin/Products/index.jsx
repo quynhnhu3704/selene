@@ -21,12 +21,14 @@ const TABS = [
   { key: "inactive", label: "Đã khóa" },
 ];
 
-const PRICE_RANGES = [
-  { key: "", label: "Tất cả mức giá" },
-  { key: "under-200k", label: "Dưới 200.000đ" },
-  { key: "200k-500k", label: "200.000đ – 500.000đ" },
-  { key: "500k-1m", label: "500.000đ – 1.000.000đ" },
-  { key: "over-1m", label: "Trên 1.000.000đ" },
+const SORT_OPTIONS = [
+  { key: "default", label: "Mặc định" },
+  { key: "az", label: "Tên: A → Z" },
+  { key: "za", label: "Tên: Z → A" },
+  { key: "price_asc", label: "Giá: Thấp → Cao" },
+  { key: "price_desc", label: "Giá: Cao → Thấp" },
+  { key: "stock_asc", label: "Tồn kho: Ít → Nhiều" },
+  { key: "stock_desc", label: "Tồn kho: Nhiều → Ít" },
 ];
 
 export default function AdminProducts() {
@@ -34,14 +36,14 @@ export default function AdminProducts() {
 
   const q = searchParams.get("q") || "";
   const category = searchParams.get("category") || "";
-  const selectedPrice = searchParams.get("price") || "";
+  const selectedSort = searchParams.get("sort") || "default";
   const selectedStatus = searchParams.get("status") || "";
   const pageParam = Number(searchParams.get("page"));
   const page = Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1;
 
-  const price = PRICE_RANGES.some((range) => range.key === selectedPrice)
-    ? selectedPrice
-    : "";
+  const sort = SORT_OPTIONS.some((item) => item.key === selectedSort)
+    ? selectedSort
+    : "default";
   const status = TABS.some((tab) => tab.key === selectedStatus)
     ? selectedStatus
     : "";
@@ -49,14 +51,14 @@ export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [priceOpen, setPriceOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [updatingProductId, setUpdatingProductId] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const [searchValue, setSearchValue] = useState(q);
   const categoryRef = useRef(null);
-  const priceRef = useRef(null);
+  const sortRef = useRef(null);
   const isComposing = useRef(false);
 
   const [pagination, setPagination] = useState({
@@ -69,7 +71,7 @@ export default function AdminProducts() {
   const updateProductQuery = (changes, options = {}) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      const shouldResetPage = ["q", "category", "price", "status"].some(
+      const shouldResetPage = ["q", "category", "sort", "status"].some(
         (key) => key in changes,
       );
 
@@ -105,7 +107,7 @@ export default function AdminProducts() {
         const res = await getAdminProducts({
           q,
           category,
-          price,
+          sort,
           status,
           page,
           limit: PRODUCTS_PER_PAGE,
@@ -139,7 +141,7 @@ export default function AdminProducts() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [q, category, price, status, page]);
+  }, [q, category, sort, status, page]);
 
   useEffect(() => {
     setSearchValue(q);
@@ -170,8 +172,8 @@ export default function AdminProducts() {
         setCategoryOpen(false);
       }
 
-      if (priceRef.current && !priceRef.current.contains(e.target)) {
-        setPriceOpen(false);
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setSortOpen(false);
       }
     };
 
@@ -198,7 +200,7 @@ export default function AdminProducts() {
       const res = await getAdminProducts({
         q,
         category,
-        price,
+        sort,
         status,
         page,
         limit: PRODUCTS_PER_PAGE,
@@ -273,7 +275,7 @@ export default function AdminProducts() {
     updateProductQuery({
       q: "",
       category: "",
-      price: "",
+      sort: "",
       status: "",
       page: 1,
     });
@@ -282,8 +284,6 @@ export default function AdminProducts() {
   const selectedCategory = categories.find(
     (item) => item.category_id === category,
   );
-  const selectedPriceRange =
-    PRICE_RANGES.find((range) => range.key === price) || PRICE_RANGES[0];
 
   return (
     <>
@@ -412,37 +412,37 @@ export default function AdminProducts() {
           )}
         </div>
 
-        {/* Filter: Giá */}
+        {/* Filter: Sắp xếp */}
         <div
           className="dropdown"
-          ref={priceRef}
+          ref={sortRef}
           style={{ width: "17.5%", minWidth: 190 }}
         >
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"
-            onClick={() => setPriceOpen((prev) => !prev)}
+            onClick={() => setSortOpen((prev) => !prev)}
           >
-            <span>{selectedPriceRange.label}</span>
-
-            <i
-              className={`bi ${priceOpen ? "bi-caret-up" : "bi-caret-down"}`}
-            />
+            <span>
+              {SORT_OPTIONS.find((s) => s.key === sort)?.label ||
+                "Sắp xếp mặc định"}
+            </span>
+            <i className={`bi ${sortOpen ? "bi-caret-up" : "bi-caret-down"}`} />
           </button>
 
-          {priceOpen && (
+          {sortOpen && (
             <ul className="dropdown-menu show w-100 mt-1 shadow-sm">
-              {PRICE_RANGES.map((r) => (
-                <li key={r.key}>
+              {SORT_OPTIONS.map((s) => (
+                <li key={s.key}>
                   <button
                     type="button"
                     className="dropdown-item fw-normal"
                     onClick={() => {
-                      updateProductQuery({ price: r.key });
-                      setPriceOpen(false);
+                      updateProductQuery({ sort: s.key });
+                      setSortOpen(false);
                     }}
                   >
-                    {r.label}
+                    {s.label}
                   </button>
                 </li>
               ))}
@@ -480,7 +480,7 @@ export default function AdminProducts() {
               <th className="text-center" style={{ width: "5%" }}>
                 #
               </th>
-              <th style={{ width: "32%" }}>Sản phẩm</th>
+              <th style={{ width: "38%" }}>Sản phẩm</th>
               <th className="text-center">Danh mục</th>
               <th className="text-end">Giá bán</th>
               <th className="text-center">Tồn kho</th>
@@ -507,16 +507,17 @@ export default function AdminProducts() {
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="fw-semibold text-secondary page-empty py-5"
-                  style={{ fontSize: 14 }}
-                >
-                  <i
-                    className="bi bi-inbox page-empty-icon"
-                    style={{ display: "block" }}
-                  />
-                  Không tìm thấy sản phẩm
+                <td colSpan={7} className="page-empty py-5">
+                  <i className="bi bi-inbox page-empty-icon" />
+                  <p
+                    className="mt-3 mb-1 fw-semibold text-secondary"
+                    style={{ fontSize: 16 }}
+                  >
+                    Không tìm thấy sản phẩm
+                  </p>
+                  <p className="text-muted mb-0" style={{ fontSize: 14 }}>
+                    Thử lại với từ khóa hoặc bộ lọc khác!
+                  </p>
                 </td>
               </tr>
             ) : (
