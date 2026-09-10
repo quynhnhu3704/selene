@@ -1,6 +1,6 @@
 // frontend/src/pages/Admin/Products/pages/Edit.jsx
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Helmet } from "react-helmet-async";
 import {
@@ -25,6 +25,9 @@ const DISCOUNT_TYPES = [
 export default function EditProduct() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnUrl =
+    new URLSearchParams(location.search).get("returnUrl") || "/admin/san-pham";
   const mainImgRef = useRef(null);
   const moreImgRef = useRef(null);
 
@@ -273,10 +276,7 @@ export default function EditProduct() {
           Edit Product
         </div>
         <div className="cp-head-actions">
-          <button
-            className="cp-btn-ghost"
-            onClick={() => navigate("/admin/san-pham")}
-          >
+          <button className="cp-btn-ghost" onClick={() => navigate(returnUrl)}>
             <i className="bi bi-arrow-left" /> Back
           </button>
           <button

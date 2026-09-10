@@ -170,7 +170,7 @@ export default function AdminLayout() {
   position: sticky;
   top: 0;
   z-index: 100;
-
+  // border-bottom: 1px solid #efefed;
   border-radius: 1em 1em 0 0;
 }
 

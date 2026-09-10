@@ -2,8 +2,6 @@
 import Header from "./Header";
 import Footer from "./Footer";
 import { Outlet } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 export default function MainLayout() {
   return (
@@ -15,13 +13,6 @@ export default function MainLayout() {
       </main>
 
       <Footer />
-
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        newestOnTop
-        closeOnClick
-      />
 
       {/* Scroll to top button */}
       <button

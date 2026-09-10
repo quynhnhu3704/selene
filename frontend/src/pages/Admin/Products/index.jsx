@@ -33,6 +33,9 @@ const SORT_OPTIONS = [
 ];
 
 export default function AdminProducts() {
+  const saveScrollPosition = () => {
+    sessionStorage.setItem("admin-products-scroll", String(window.scrollY));
+  };
   const [searchParams, setSearchParams] = useSearchParams();
 
   const q = searchParams.get("q") || "";
@@ -143,6 +146,18 @@ export default function AdminProducts() {
       isCurrentRequest = false;
     };
   }, [q, category, sort, status, page]);
+
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem("admin-products-scroll");
+
+    if (savedScroll !== null) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, Number(savedScroll));
+      });
+
+      sessionStorage.removeItem("admin-products-scroll");
+    }
+  }, []);
 
   useEffect(() => {
     setSearchValue(q);
@@ -288,12 +303,6 @@ export default function AdminProducts() {
 
   return (
     <>
-      <style>{`
-
-      
-
-      `}</style>
-
       <Helmet>
         <title>Quản lý sản phẩm | Selene</title>
       </Helmet>
@@ -373,7 +382,10 @@ export default function AdminProducts() {
             className="form-control text-start d-flex justify-content-between align-items-center"
             onClick={() => setCategoryOpen((prev) => !prev)}
           >
-            <span>{selectedCategory?.name || "Tất cả danh mục"}</span>
+            <span>
+              <i className="bi bi-funnel me-2" />
+              {selectedCategory?.name || "Tất cả danh mục"}
+            </span>
 
             <i
               className={`bi ${categoryOpen ? "bi-caret-up" : "bi-caret-down"}`}
@@ -425,6 +437,7 @@ export default function AdminProducts() {
             onClick={() => setSortOpen((prev) => !prev)}
           >
             <span>
+              <i className="bi bi-sort-down me-2" />
               {SORT_OPTIONS.find((s) => s.key === sort)?.label ||
                 "Sắp xếp mặc định"}
             </span>
@@ -478,9 +491,7 @@ export default function AdminProducts() {
         <table className="table adm-table mb-0">
           <thead>
             <tr>
-              <th className="text-center" style={{ width: "5%" }}>
-                #
-              </th>
+              <th className="text-center" style={{ width: "5%" }}></th>
               <th style={{ width: "38%" }}>Sản phẩm</th>
               <th className="text-center">Danh mục</th>
               <th className="text-end">Giá bán</th>
@@ -516,7 +527,7 @@ export default function AdminProducts() {
                   >
                     Không tìm thấy sản phẩm
                   </p>
-                  <p className="text-muted mb-0" style={{ fontSize: 14 }}>
+                  <p className="text-muted mb-3" style={{ fontSize: 14 }}>
                     Thử lại với từ khóa hoặc bộ lọc khác!
                   </p>
                 </td>
@@ -623,9 +634,12 @@ export default function AdminProducts() {
                       <div className="d-flex gap-1 justify-content-center">
                         {/* Sửa */}
                         <Link
-                          to={`/admin/san-pham/${p.product_id}/sua`}
+                          to={`/admin/san-pham/${p.product_id}/sua?returnUrl=${encodeURIComponent(
+                            window.location.pathname + window.location.search,
+                          )}`}
                           className="adm-action-btn"
                           title="Chỉnh sửa"
+                          onClick={saveScrollPosition}
                         >
                           <i className="bi bi-pencil-square" />
                         </Link>
