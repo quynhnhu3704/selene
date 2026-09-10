@@ -10,6 +10,7 @@ import {
 } from "../../../services/product.service";
 import Pagination from "../../../components/common/Pagination";
 import Loading from "../../../components/common/Loading";
+import defaultImage from "../../../assets/images/default-product.png";
 import { Helmet } from "react-helmet-async";
 
 const fmtVND = (n) => (n || 0).toLocaleString("vi-VN") + "đ";
@@ -491,8 +492,8 @@ export default function AdminProducts() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7}>
-                  <Loading />
+                <td colSpan={7} className="py-5">
+                  <Loading text="Đang tải sản phẩm..." />
                 </td>
               </tr>
             ) : error ? (
@@ -547,8 +548,12 @@ export default function AdminProducts() {
                         >
                           <img
                             src={p.image_url}
-                            alt={p.product_name}
+                            // alt={p.product_name}
                             className="adm-thumb"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = defaultImage;
+                            }}
                           />
                         </Link>
 

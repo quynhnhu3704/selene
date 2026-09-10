@@ -68,7 +68,8 @@ export default function Header() {
         24, // Chừa tối thiểu 12px ở mỗi bên, không sửa khoảng cách trong cụm.
       );
       const nextCompact =
-        compactHeader.matches || requiredWidth > header.getBoundingClientRect().width;
+        compactHeader.matches ||
+        requiredWidth > header.getBoundingClientRect().width;
       setCompact(nextCompact);
       if (!nextCompact) {
         setSearchOpen(false);

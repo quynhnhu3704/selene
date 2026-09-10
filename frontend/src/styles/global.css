@@ -97,7 +97,7 @@
 .spinner-loading .spinner-border {
   width: 1.75rem;
   height: 1.75rem;
-  color: #871b1b;
+  /* color: #212529; */
 }
 
 .breadcrumb-item + .breadcrumb-item::before {
@@ -1633,6 +1633,7 @@
   border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
+  display: block; /* Đảm bảo ảnh là block để căn chỉnh chính xác */
 }
 .adm-name {
   font-weight: 700;
@@ -1653,6 +1654,7 @@
 .adm-link {
   text-decoration: none;
   cursor: pointer;
+  align-self: center; /* Đẩy riêng thẻ chứa ảnh (hoặc thẻ img) ra giữa theo chiều dọc */
 }
 
 .adm-link:hover .adm-name {
