@@ -1,5 +1,5 @@
 // frontend\src\components\layout\Header.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
@@ -7,7 +7,13 @@ import { logout } from "../../services/auth.service";
 import Swal from "sweetalert2";
 import { useCart } from "../../context/CartContext";
 
+// Mobile/tablet luôn dùng menu thu gọn; desktop còn kiểm tra chỗ trống thực tế.
+const COMPACT_HEADER_QUERY =
+  "(max-width: 1024px), (max-width: 1366px) and (hover: none) and (pointer: coarse)";
+
 export default function Header() {
+  const desktopHeaderRef = useRef(null);
+  const [compact, setCompact] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const [wl] = useState(0);
@@ -52,21 +58,38 @@ export default function Header() {
     setSearchQuery(new URLSearchParams(location.search).get("q") || "");
   }, [location.pathname, location.search]);
 
-  // Tự động đóng search khi resize về desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 1520) {
+  // Đo cả khi đang thu gọn để có thể trở lại desktop khi đủ chỗ.
+  useLayoutEffect(() => {
+    const header = desktopHeaderRef.current;
+    const compactHeader = window.matchMedia(COMPACT_HEADER_QUERY);
+    const syncHeader = () => {
+      const requiredWidth = Array.from(header.children).reduce(
+        (total, group) => total + group.getBoundingClientRect().width,
+        24, // Chừa tối thiểu 12px ở mỗi bên, không sửa khoảng cách trong cụm.
+      );
+      const nextCompact =
+        compactHeader.matches || requiredWidth > header.getBoundingClientRect().width;
+      setCompact(nextCompact);
+      if (!nextCompact) {
         setSearchOpen(false);
         setMenuOpen(false); // cũng đóng menu luôn cho sạch
       }
     };
 
-    window.addEventListener("resize", handleResize);
+    compactHeader.addEventListener("change", syncHeader);
+    window.addEventListener("resize", syncHeader);
+    const observer = new ResizeObserver(syncHeader);
+    observer.observe(header);
+    Array.from(header.children).forEach((group) => observer.observe(group));
 
     // Kiểm tra ngay khi component mount
-    handleResize();
+    syncHeader();
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      compactHeader.removeEventListener("change", syncHeader);
+      window.removeEventListener("resize", syncHeader);
+      observer.disconnect();
+    };
   }, []);
 
   // Thêm đoạn này
@@ -115,7 +138,12 @@ export default function Header() {
       {/* ══════════════════════════════════
           DESKTOP HEADER
       ══════════════════════════════════ */}
-      <div className="rb-desktop-header">
+      <div
+        ref={desktopHeaderRef}
+        className={`rb-desktop-header${compact ? " is-compact" : ""}`}
+        aria-hidden={compact}
+        inert={compact}
+      >
         {/* CỘT 1: LOGO */}
         <div className="rb-col-logo">
           <Link to="/">
@@ -124,7 +152,7 @@ export default function Header() {
         </div>
 
         {/* CỘT 2: TOPBAR + NAV */}
-        <div className="rb-col-center me-5">
+        <div className="rb-col-center">
           {/* HÀNG 1: HOTLINE + SEARCH */}
           <div className="rb-topbar">
             <div className="rb-topbar-left">

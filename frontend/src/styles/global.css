@@ -120,12 +120,16 @@
 }
 
 /* ════════════════════════════════
-    DESKTOP HEADER (>= 1520)
+    DESKTOP HEADER
 ════════════════════════════════ */
 .rb-desktop-header {
-  display: flex;
+  display: grid;
+  /* Chỉ các cột trống (lề và khoảng cách giữa ba cụm) được co giãn. */
+  grid-template-columns:
+    /* minmax(0, 75px) 165px minmax(0, 1fr) max-content */
+    minmax(0, 75px) 165px minmax(0, 1fr) 975px
+    minmax(0, 1fr) max-content minmax(0, 75px);
   align-items: center;
-  padding: 0 75px 0 75px;
   background: white;
   position: sticky;
   top: 0;
@@ -135,6 +139,7 @@
 
 /* CỘT 1: LOGO */
 .rb-col-logo {
+  grid-column: 2;
   flex: 0 0 165px;
   display: flex;
   align-items: center;
@@ -143,7 +148,7 @@
 
 /* CỘT 2: TOPBAR + NAV */
 .rb-col-center {
-  flex: 1 1 0;
+  grid-column: 4;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -278,6 +283,7 @@
 
 /* CỘT 3: ICONS */
 .rb-topicons {
+  grid-column: 6;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -334,7 +340,7 @@
 }
 
 /* ════════════════════════════════
-    MOBILE HEADER (< 1521)
+    MOBILE / TABLET HEADER
 ════════════════════════════════ */
 .rb-mobile-header {
   display: none;
@@ -512,24 +518,31 @@
 }
 
 /* ── BREAKPOINTS ── */
-@media (max-width: 1520px) {
-  .rb-desktop-header {
-    display: none !important;
-  }
-  .rb-mobile-header {
-    display: flex !important;
-  }
+.rb-mob-drawer,
+.rb-mob-overlay.open,
+.rb-mob-search-bar {
+  display: none;
 }
-@media (min-width: 1521px) {
-  .rb-mobile-header {
-    display: none !important;
-  }
-  .rb-mob-drawer {
-    display: none !important;
-  }
-  .rb-mob-overlay {
-    display: none !important;
-  }
+
+/* Giữ layout ẩn để đo ba cụm, nhưng không cho phần đo gây tràn trang. */
+.rb-desktop-header.is-compact {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: clip;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.rb-desktop-header.is-compact ~ .rb-mobile-header,
+.rb-desktop-header.is-compact ~ .rb-mob-drawer {
+  display: flex;
+}
+
+.rb-desktop-header.is-compact ~ .rb-mob-overlay.open,
+.rb-desktop-header.is-compact ~ .rb-mob-search-bar {
+  display: block;
 }
 
 /* ── HERO ── */
