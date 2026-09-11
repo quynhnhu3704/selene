@@ -290,19 +290,7 @@ export default function AdminLayout() {
 
         .adm-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 22px; }
 
-        .adm-store-link {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 13px; font-weight: 700; color: #6B7280;
-          text-decoration: none; padding: 8px 12px; border-radius: 10px;
-          border: 1px solid #ECEBF2; transition: all 0.15s;
-        }
-        .adm-store-link:hover { color: #5B4FE0; border-color: #C9C3F8; background: #F8F7FC; }
 
-        .adm-admin-badge { display: flex; align-items: center; gap: 10px; }
-        .adm-admin-ava { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #ECEBF2; }
-        .adm-admin-info { line-height: 1.25; }
-        .adm-admin-name { font-size: 13.5px; font-weight: 800; color: #17151F; }
-        .adm-admin-role { font-size: 12px; color: #9CA0AC; font-weight: 600; }
 
         // .adm-content { flex: 1; padding: 28px 32px 40px; background: #fff; border-radius: 0 0 1em 1em; margin: 0 1em 1em 0; }
         
@@ -345,9 +333,9 @@ export default function AdminLayout() {
                 to="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="adm-store-link"
+                className="form-btn btn btn-outline-danger fw-semibold px-4"
               >
-                <i className="bi bi-shop" /> Về cửa hàng
+                <i className="bi bi-shop me-1" /> Về cửa hàng
               </Link>
 
               <div className="adm-admin-badge">
