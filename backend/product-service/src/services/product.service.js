@@ -283,6 +283,7 @@ export const getAllProduct = async (options = {}) => {
       product_id: product.product_id,
       product_name: product.product_name,
       image_url: getFirstImage(product.image_urls),
+      category_name: product.categories?.name || null,
       discount_price: product.discount_price,
       original_price: product.original_price,
     }));

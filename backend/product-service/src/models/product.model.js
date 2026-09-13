@@ -17,6 +17,7 @@ export const ProductModel = {
         original_price,
         discount_price,
         categories!inner (
+          name,
           status
         )
         ${

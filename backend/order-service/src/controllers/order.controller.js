@@ -161,7 +161,10 @@ export const handleSePayWebhook = async (req, res) => {
 
   try {
     const { transferType, transferAmount } = req.body || {};
-    if (String(req.body?.accountNumber || "") !== String(config.sepayAccountNumber)) {
+    if (
+      String(req.body?.accountNumber || "") !==
+      String(config.sepayAccountNumber)
+    ) {
       return res.status(200).json({ success: true });
     }
     const orderCode = extractOrderCode(req.body);

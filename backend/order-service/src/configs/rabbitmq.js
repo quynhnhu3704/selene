@@ -51,7 +51,10 @@ export const connectRabbitMQ = async () => {
 };
 
 // Hàm gửi danh sách variantIds sang Product Service để lấy thông tin chi tiết sản phẩm
-export const requestProductDetails = async (variantIds, queueName = "rpc_product_queue") => {
+export const requestProductDetails = async (
+  variantIds,
+  queueName = "rpc_product_queue",
+) => {
   // Kiểm tra xem channel đã được khởi tạo qua hàm connectRabbitMQ chưa, nếu chưa thì báo lỗi ứng dụng
   if (!channel) {
     throw new Error("RabbitMQ channel not initialized");

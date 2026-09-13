@@ -206,6 +206,217 @@
   box-shadow: none !important;
   outline: none !important;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Dropdown tìm kiếm dùng chung cho desktop và mobile. */
+.rb-search-wrap {
+  position: relative;
+}
+.rb-search-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 440px;
+  max-width: calc(100vw - 36px);
+  max-height: min(640px, calc(100dvh - 150px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid #eee7df;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(43, 34, 24, 0.16);
+  color: #292520;
+  text-align: left;
+  scrollbar-width: thin;
+  z-index: 10;
+}
+.rb-search-heading {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #85715a;
+}
+.rb-search-history {
+  padding: 16px;
+  border-bottom: 1px solid #f0ece7;
+}
+.rb-search-dropdown button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+}
+.rb-search-dropdown .rb-search-clear {
+  padding: 4px 0 4px 12px;
+  color: #81786d;
+  font-size: 11px;
+}
+.rb-search-history-row {
+  border-radius: 6px;
+}
+.rb-search-dropdown .rb-search-history-term {
+  min-width: 0;
+  padding: 8px;
+  font-size: 13px;
+}
+.rb-search-dropdown .rb-search-remove {
+  padding: 6px 10px;
+  font-size: 18px;
+  color: #92867a;
+}
+.rb-search-product {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0ece7;
+  color: inherit;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+.rb-search-product:hover,
+.rb-search-history-row:hover {
+  background: #faf7f2;
+  color: #292520;
+}
+.rb-search-product img {
+  width: 66px;
+  height: 88px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #f5f3ef;
+}
+.rb-search-product-info {
+  flex: 1;
+  min-width: 0;
+}
+.rb-search-category {
+  display: block;
+  font-size: 11px;
+  color: #8b7861;
+  margin-bottom: 4px;
+}
+.rb-search-product-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.rb-search-price {
+  font-size: 14px;
+  font-weight: 800;
+}
+.rb-search-original {
+  color: #99918a;
+  font-size: 12px;
+}
+.rb-search-product-arrow {
+  font-size: 13px;
+  color: #a69580;
+}
+.rb-search-state {
+  padding: 28px 18px;
+  text-align: center;
+  font-size: 13px;
+  color: #81786d;
+}
+.rb-search-dropdown .rb-search-all {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #786044;
+  background: #faf7f2;
+}
+.rb-search-dropdown button:hover {
+  color: #3c2d1d;
+}
+.rb-search-dropdown :is(a, button):focus-visible {
+  outline: 2px solid #a68b69;
+  outline-offset: -2px;
+  background: #faf7f2;
+}
+.rb-mob-search-bar .rb-search-dropdown {
+  width: 100%;
+  max-height: calc(100dvh - 140px);
+}
+@media (max-width: 375px) {
+  .rb-search-product {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .rb-search-product-arrow {
+    display: none;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .rb-toplink {
   text-decoration: none;
   color: #212529;
@@ -1002,6 +1213,18 @@
   border-color: #212529;
   background-color: whitesmoke;
 }
+.form-btn[type="reset"],
+.form-btn-google,
+.form-btn.btn-export,
+.form-btn-cancel {
+  --bs-btn-hover-color: #212529;
+  --bs-btn-hover-bg: whitesmoke;
+  --bs-btn-hover-border-color: #212529;
+  --bs-btn-active-color: #212529;
+  --bs-btn-active-bg: whitesmoke;
+  --bs-btn-active-border-color: #212529;
+  --bs-btn-focus-shadow-rgb: 0, 0, 0;
+}
 .form-btn-cancel:hover,
 .form-btn-cancel:focus,
 .form-btn-cancel:active,
@@ -1519,12 +1742,20 @@
   border-color: #871b1b;
   margin-bottom: 0;
   margin-right: 1.5rem;
-}
 
+  --bs-btn-hover-color: #871b1b;
+  --bs-btn-hover-bg: whitesmoke;
+  --bs-btn-hover-border-color: #871b1b;
+  --bs-btn-active-color: #871b1b;
+  --bs-btn-active-bg: whitesmoke;
+  --bs-btn-active-border-color: #871b1b;
+  --bs-btn-focus-shadow-rgb: 0, 0, 0;
+}
 .btn-outline-danger:hover {
   color: #871b1b;
   border-color: #871b1b;
   background-color: whitesmoke;
+  box-shadow: none !important;
 }
 
 /* ADMIN */

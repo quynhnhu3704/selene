@@ -33,18 +33,29 @@ export default function Checkout() {
   const selected = location.state?.selected || [];
   useEffect(() => {
     let active = true;
-    getProfile().then(response => {
-      if (!active) return;
-      const profile = response.data.profile;
-      setShippingInfo(current => ({
-        ...current,
-        recipient_name: editedFields.current.has("recipient_name") ? current.recipient_name : profile?.full_name || current.recipient_name,
-        recipient_phone: editedFields.current.has("recipient_phone") ? current.recipient_phone : profile?.phone_number || current.recipient_phone,
-      }));
-    }).catch(() => {
-      if (active) toast.error("Không thể tải hồ sơ. Bạn có thể nhập thông tin nhận hàng.");
-    });
-    return () => { active = false; };
+    getProfile()
+      .then((response) => {
+        if (!active) return;
+        const profile = response.data.profile;
+        setShippingInfo((current) => ({
+          ...current,
+          recipient_name: editedFields.current.has("recipient_name")
+            ? current.recipient_name
+            : profile?.full_name || current.recipient_name,
+          recipient_phone: editedFields.current.has("recipient_phone")
+            ? current.recipient_phone
+            : profile?.phone_number || current.recipient_phone,
+        }));
+      })
+      .catch(() => {
+        if (active)
+          toast.error(
+            "Không thể tải hồ sơ. Bạn có thể nhập thông tin nhận hàng.",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, []);
   const cartItems = cart?.items || [];
 
@@ -71,7 +82,9 @@ export default function Checkout() {
     if (!shippingInfo.recipient_address.trim()) {
       errors.recipient_address = "Vui lòng nhập địa chỉ nhận hàng.";
     }
-    if (!addressArea) errors.recipient_address = "Vui lòng chọn tỉnh / thành phố và phường / xã, rồi nhập số nhà, tên đường.";
+    if (!addressArea)
+      errors.recipient_address =
+        "Vui lòng chọn tỉnh / thành phố và phường / xã, rồi nhập số nhà, tên đường.";
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;

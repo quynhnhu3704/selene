@@ -151,10 +151,7 @@ export default function Payment() {
         const response = await getOrderById(payment.orderId);
         const order = response.data;
 
-        if (
-          active &&
-          order.payment_status === "paid"
-        ) {
+        if (active && order.payment_status === "paid") {
           setPaid(true);
         }
       } catch (error) {

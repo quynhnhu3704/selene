@@ -27,19 +27,24 @@ export const connectRabbitMQ = async () => {
 async function listenForStockRequests() {
   const queue = "rpc_stock_queue";
   await channel.assertQueue(queue, { durable: false });
-  await channel.consume(queue, async msg => {
+  await channel.consume(queue, async (msg) => {
     if (!msg) return;
     let response;
     try {
       const { action, items } = JSON.parse(msg.content.toString());
-      if (!Array.isArray(items) || !["reserve", "restore"].includes(action)) throw new Error("Yêu cầu tồn kho không hợp lệ.");
+      if (!Array.isArray(items) || !["reserve", "restore"].includes(action))
+        throw new Error("Yêu cầu tồn kho không hợp lệ.");
       if (action === "reserve") await reserveStock(items);
       else await restoreStock(items);
       response = { success: true };
     } catch (error) {
       response = { success: false, message: error.message };
     }
-    channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify(response)), { correlationId: msg.properties.correlationId });
+    channel.sendToQueue(
+      msg.properties.replyTo,
+      Buffer.from(JSON.stringify(response)),
+      { correlationId: msg.properties.correlationId },
+    );
     channel.ack(msg);
   });
 }
