@@ -2,6 +2,12 @@
 import { supabase } from "../configs/supabase.js";
 
 export const OrderModel = {
+  deleteIncompleteOrder: async (orderId) => {
+    const items = await supabase.from("order_items").delete().eq("order_id", orderId);
+    if (items.error) throw items.error;
+    const order = await supabase.from("orders").delete().eq("order_id", orderId);
+    if (order.error) throw order.error;
+  },
   // Tạo đơn hàng mới
   createOrder: async (orderData) => {
     const { data, error } = await supabase

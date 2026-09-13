@@ -1,5 +1,5 @@
 // frontend\src\pages\Checkout\index.jsx
-import { useContext, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
@@ -7,6 +7,8 @@ import { CartContext } from "../../context/CartContext";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import { placeOrder } from "../../services/order.service";
 import { getUser } from "../../utils/auth";
+import { getProfile } from "../../services/user.service";
+import Address from "../../components/common/Address";
 
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
@@ -14,6 +16,8 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [addressArea, setAddressArea] = useState(null);
+  const editedFields = useRef(new Set());
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -27,9 +31,25 @@ export default function Checkout() {
   });
 
   const selected = location.state?.selected || [];
+  useEffect(() => {
+    let active = true;
+    getProfile().then(response => {
+      if (!active) return;
+      const profile = response.data.profile;
+      setShippingInfo(current => ({
+        ...current,
+        recipient_name: editedFields.current.has("recipient_name") ? current.recipient_name : profile?.full_name || current.recipient_name,
+        recipient_phone: editedFields.current.has("recipient_phone") ? current.recipient_phone : profile?.phone_number || current.recipient_phone,
+      }));
+    }).catch(() => {
+      if (active) toast.error("Không thể tải hồ sơ. Bạn có thể nhập thông tin nhận hàng.");
+    });
+    return () => { active = false; };
+  }, []);
   const cartItems = cart?.items || [];
 
   const updateShippingInfo = (field, value) => {
+    editedFields.current.add(field);
     setShippingInfo((current) => ({ ...current, [field]: value }));
     setFormErrors((current) => ({ ...current, [field]: "" }));
   };
@@ -51,6 +71,7 @@ export default function Checkout() {
     if (!shippingInfo.recipient_address.trim()) {
       errors.recipient_address = "Vui lòng nhập địa chỉ nhận hàng.";
     }
+    if (!addressArea) errors.recipient_address = "Vui lòng chọn tỉnh / thành phố và phường / xã, rồi nhập số nhà, tên đường.";
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -69,7 +90,7 @@ export default function Checkout() {
         payment_method: paymentMethod,
         recipient_name: shippingInfo.recipient_name.trim(),
         recipient_phone: shippingInfo.recipient_phone.trim(),
-        recipient_address: shippingInfo.recipient_address.trim(),
+        recipient_address: `${shippingInfo.recipient_address.trim()}, ${addressArea}`,
         note: shippingInfo.note.trim(),
       };
 
@@ -509,12 +530,13 @@ export default function Checkout() {
 
               <label className="checkout-label">Địa chỉ nhận hàng</label>
 
+              <Address onChange={setAddressArea} />
               <input
                 type="text"
                 className={`checkout-input ${
                   formErrors.recipient_address ? "input-error" : ""
                 }`}
-                placeholder="Nhập địa chỉ nhận hàng"
+                placeholder="Nhập số nhà, tên đường, thôn / ấp"
                 value={shippingInfo.recipient_address}
                 onChange={(event) =>
                   updateShippingInfo("recipient_address", event.target.value)

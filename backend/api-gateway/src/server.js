@@ -6,6 +6,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import axios from "axios";
 import cookieParser from "cookie-parser";
+import { createAuthProxy } from "./auth-proxy.js";
 
 dotenv.config();
 
@@ -38,24 +39,9 @@ if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
 // Routes - API Gateway
 app.use(
   "/api/auth",
-  createProxyMiddleware({
+  createAuthProxy({
     target: AUTH_SERVICE_URL,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/auth": "",
-    },
-    onProxyReq: (proxyReq, req, res) => {
-      // Nếu client gửi cookie lên Gateway, đảm bảo header Cookie được giữ nguyên sang Auth Service
-      if (req.headers.cookie) {
-        proxyReq.setHeader("Cookie", req.headers.cookie);
-      }
-    },
-    onError: (err, req, res) => {
-      console.error("Proxy Error (Auth):", err);
-      res
-        .status(502)
-        .json({ success: false, message: "Auth Service Unavailable" });
-    },
+    frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
   }),
 );
 

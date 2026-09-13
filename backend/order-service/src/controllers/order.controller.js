@@ -134,9 +134,9 @@ const extractOrderCode = (payload) => {
 const isValidWebhookAuthorization = (authorization) => {
   const apiKey = config.sepayWebhookApiKey;
 
-  // Nếu môi trường dev / chưa cấu hình SEPAY_WEBHOOK_API_KEY trong env, chấp nhận webhook
+  // Webhook công khai phải được xác thực trước khi cập nhật thanh toán.
   if (!apiKey) {
-    return true;
+    return false;
   }
 
   const received = String(authorization || "").trim();
@@ -152,12 +152,18 @@ const isValidWebhookAuthorization = (authorization) => {
 };
 
 export const handleSePayWebhook = async (req, res) => {
+  if (!config.sepayWebhookApiKey) {
+    return res.status(503).json({ success: false });
+  }
   if (!isValidWebhookAuthorization(req.get("authorization"))) {
     return res.status(401).json({ success: false });
   }
 
   try {
     const { transferType, transferAmount } = req.body || {};
+    if (String(req.body?.accountNumber || "") !== String(config.sepayAccountNumber)) {
+      return res.status(200).json({ success: true });
+    }
     const orderCode = extractOrderCode(req.body);
 
     // SePay có thể gửi giao dịch ra, giao dịch không khớp, hoặc retry cùng payload.

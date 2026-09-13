@@ -153,7 +153,7 @@ export default function Payment() {
 
         if (
           active &&
-          (order.payment_status === "paid" || order.status === "confirmed")
+          order.payment_status === "paid"
         ) {
           setPaid(true);
         }

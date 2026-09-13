@@ -51,7 +51,7 @@ export const connectRabbitMQ = async () => {
 };
 
 // Hàm gửi danh sách variantIds sang Product Service để lấy thông tin chi tiết sản phẩm
-export const requestProductDetails = async (variantIds) => {
+export const requestProductDetails = async (variantIds, queueName = "rpc_product_queue") => {
   // Kiểm tra xem channel đã được khởi tạo qua hàm connectRabbitMQ chưa, nếu chưa thì báo lỗi ứng dụng
   if (!channel) {
     throw new Error("RabbitMQ channel not initialized");
@@ -79,7 +79,6 @@ export const requestProductDetails = async (variantIds) => {
     });
 
     // Tên queue mà Product Service (RPC Server) đang đứng đợi lắng nghe dữ liệu đầu vào
-    const queueName = "rpc_product_queue";
 
     // Chuyển mảng variantIds thành chuỗi JSON, ép kiểu sang Buffer rồi gửi vào queue
     channel.sendToQueue(queueName, Buffer.from(JSON.stringify(variantIds)), {

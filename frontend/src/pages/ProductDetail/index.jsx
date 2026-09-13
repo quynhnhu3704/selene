@@ -5,6 +5,7 @@ import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import { getProductById } from "../../services/product.service";
 import { CartContext } from "../../context/CartContext";
+import { toast } from "react-toastify";
 
 /* ── DỮ LIỆU MẪU ── */
 // const PRODUCT = {
@@ -587,7 +588,16 @@ export default function ProductDetail() {
                 className="pd-btn-cart"
                 onClick={async () => {
                   if (!selectedVariant) {
-                    alert("Sản phẩm với màu và kích thước này không tồn tại");
+                    toast.error("Sản phẩm với màu và kích thước này không có hàng.");
+                    return;
+                  }
+
+                  if (Number(selectedVariant.stock_quantity || 0) <= 0) {
+                    toast.error("Sản phẩm với màu và kích thước đã chọn đã hết hàng.");
+                    return;
+                  }
+                  if (qty > Number(selectedVariant.stock_quantity)) {
+                    toast.error(`Chỉ còn ${selectedVariant.stock_quantity} sản phẩm với màu và kích thước đã chọn.`);
                     return;
                   }
 
@@ -598,8 +608,9 @@ export default function ProductDetail() {
                       qty,
                     );
 
-                    alert("Đã thêm sản phẩm vào giỏ hàng!");
+                    toast.success("Đã thêm sản phẩm vào giỏ hàng!");
                   } catch (error) {
+                    toast.error(error.response?.data?.message || "Không thể thêm vào giỏ hàng. Vui lòng thử lại.");
                     console.error(
                       "Lỗi thêm giỏ hàng:",
                       error.response?.data || error,

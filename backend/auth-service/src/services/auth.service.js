@@ -411,6 +411,14 @@ export const refreshAccessToken = async (refreshToken) => {
     return { accessToken: newAccessToken };
   } catch (err) {
     console.error("Lỗi chi tiết tại tầng Service:", err.message);
+    // A database/network outage must not invalidate a valid browser session.
+    const invalidSession = err.name === "TokenExpiredError" || err.name === "JsonWebTokenError" ||
+      /Phiên đăng nhập|Phiên|phiên đăng nhập|phiên làm việc|cấu hình phiên|Tài khoản/.test(err.message || "");
+    if (!invalidSession) {
+      const unavailable = new Error("Không thể làm mới phiên lúc này. Vui lòng thử lại.");
+      unavailable.status = 503;
+      throw unavailable;
+    }
 
     // Nếu là lỗi do chính chúng ta chủ động throw ở trên, giữ nguyên thông báo lỗi để FE hiển thị rõ ràng
     if (err.message && !err.name) {

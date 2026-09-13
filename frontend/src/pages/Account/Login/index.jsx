@@ -2,7 +2,7 @@
 import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { Helmet } from "react-helmet-async";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { saveLogin } from "../../../utils/auth";
 import { toast } from "react-toastify";
 import { login } from "../../../services/auth.service";
@@ -14,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleReset = () => {
     setEmail("");
@@ -103,6 +104,11 @@ export default function Login() {
       <Helmet>
         <title>Đăng nhập | Selene</title>
       </Helmet>
+      {searchParams.get("error") && (
+        <div className="alert alert-danger mx-auto my-3" role="alert" style={{ maxWidth: 600 }}>
+          {searchParams.get("error")}
+        </div>
+      )}
 
       <Breadcrumb
         items={[{ label: "Trang chủ", path: "/" }, { label: "Đăng nhập" }]}

@@ -4,10 +4,10 @@ import { CartModel } from "../models/cart.model.js";
 import { VoucherModel } from "../models/voucher.model.js";
 import {
   requestProductDetails,
-  sendUpdateProductStock,
   sendOrderNotificationEvent,
 } from "../configs/rabbitmq.js";
 import { config } from "../configs/index.js";
+import { reserveStock, restoreStock } from "./stock.service.js";
 
 const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -262,14 +262,22 @@ export const createOrder = async (accountId, orderData) => {
       status: initialStatus,
     };
 
-    const createdOrder = await OrderModel.createOrder(newOrderData);
+    await reserveStock(finalOrderItems);
+    let createdOrder;
 
     // 7. Tạo chi tiết đơn hàng
     const orderItemsToInsert = finalOrderItems.map((item) => ({
       ...item,
       order_id: orderId,
     }));
-    await OrderModel.createOrderItems(orderItemsToInsert);
+    try {
+      createdOrder = await OrderModel.createOrder(newOrderData);
+      await OrderModel.createOrderItems(orderItemsToInsert);
+    } catch (error) {
+      if (createdOrder) await OrderModel.deleteIncompleteOrder(orderId);
+      await restoreStock(finalOrderItems);
+      throw error;
+    }
 
     // 8. Lưu lịch sử dùng voucher (nếu có)
     if (appliedVoucher) {
@@ -294,13 +302,7 @@ export const createOrder = async (accountId, orderData) => {
       await CartModel.deleteCart(cart.cart_id);
     }
 
-    // 10. Trừ số lượng tồn kho của sản phẩm
-    try {
-      await sendUpdateProductStock(finalOrderItems);
-    } catch (stockErr) {
-      console.error("Lỗi khi gửi sự kiện cập nhật tồn kho:", stockErr.message);
-      // Có thể log lại hoặc xử lý bù trừ sau (retry), không nên fail cả đơn hàng vì lỗi rabbitmq nếu đơn đã lưu
-    }
+    // Tồn kho từng variant đã được giữ trước khi lưu đơn, không trừ lần hai qua queue.
 
     // 11. Gửi sự kiện thông báo qua email
     try {
@@ -449,7 +451,7 @@ export const confirmSePayPayment = async ({ orderCode, transferAmount }) => {
     return null;
   }
 
-  if (order.payment_status === "paid" && order.status === "pending") {
+  if (order.payment_status === "paid") {
     return order;
   }
 
