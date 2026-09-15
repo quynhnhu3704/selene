@@ -1,5 +1,6 @@
 // backend\auth-service\src\controllers\user.controller.js
 import * as userService from "../services/user.service.js";
+import { generateUsersExcelBuffer } from "../services/export.service.js";
 
 // ================== CUSTOMER =====================
 
@@ -179,6 +180,41 @@ export const handleUpdateStaffProfile = async (req, res) => {
 
 // ================== ADMIN =====================
 
+// Thêm khách hàng từ trang quản trị
+export const handleCreateCustomer = async (req, res) => {
+  try {
+    const { email, phone, full_name, identity_card, gender, dob, address } = req.body;
+    const result = await userService.createCustomer(
+      { email, phone, full_name, identity_card, gender, dob, address },
+      req.file,
+    );
+
+    return res.status(201).json({
+      status: 201,
+      message: "Thêm khách hàng thành công!",
+      data: result,
+    });
+  } catch (error) {
+    if (
+      error.status === 400 ||
+      error.message.includes("đã được sử dụng") ||
+      error.message.includes("đã tồn tại") ||
+      error.message.includes("chưa cấu hình")
+    ) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+      });
+    }
+
+    console.error("Lỗi Controller Thêm Khách Hàng:", error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};
+
 // thêm nhân viên
 export const handleCreateStaff = async (req, res) => {
   try {
@@ -216,6 +252,12 @@ export const handleCreateStaff = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    if (error.status === 400) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+      });
+    }
     if (
       error.message.includes("đã được sử dụng") ||
       error.message.includes("đã tồn tại") ||
@@ -340,6 +382,12 @@ export const handleUpdateProfileAll = async (req, res) => {
       profile: result.profile,
     });
   } catch (error) {
+    if (error.status === 400) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+      });
+    }
     if (
       error.message.includes("Không tìm thấy") ||
       error.message.includes("đã được sử dụng") ||
@@ -494,6 +542,70 @@ export const handleToggleAccountStatus = async (req, res) => {
     }
 
     console.error("Lỗi Controller Đổi Trạng thái Tài khoản:", error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};
+
+// Lấy danh sách người dùng dành cho admin
+export const handleGetAdminUsers = async (req, res) => {
+  try {
+    const result = await userService.getAdminUsers(
+      req.query,
+      false,
+      req.headers.authorization,
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: "Lấy danh sách người dùng thành công!",
+      data: result.users,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
+
+    console.error("Lỗi Controller Lấy Danh Sách Người Dùng:", error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};
+
+// Xuất danh sách người dùng ra file Excel
+export const handleExportAdminUsers = async (req, res) => {
+  try {
+    const buffer = await generateUsersExcelBuffer(
+      req.query,
+      req.headers.authorization,
+    );
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    const dateStr = new Date().toISOString().split("T")[0];
+    const prefix = req.query.role === "staff" ? "staffs" : "customers";
+    const filename = `${prefix}_export_${dateStr}.xlsx`;
+    res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+    return res.status(200).send(Buffer.from(buffer));
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
+
+    console.error("Lỗi Controller Xuất Danh Sách Người Dùng:", error.stack);
     return res.status(500).json({
       status: 500,
       message: "Internal Server Error!",

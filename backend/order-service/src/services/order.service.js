@@ -628,3 +628,15 @@ export const cancelOrder = async (accountId, orderId) => {
     throw new Error(error.message || "Không thể hủy đơn hàng!");
   }
 };
+
+// Thống kê số đơn hàng theo tài khoản
+export const getUserOrderCounts = async () => {
+  const orders = await OrderModel.getOrderAccounts();
+  const counts = {};
+
+  for (const order of orders) {
+    counts[order.account_id] = (counts[order.account_id] || 0) + 1;
+  }
+
+  return counts;
+};

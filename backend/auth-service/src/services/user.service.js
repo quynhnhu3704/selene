@@ -1,5 +1,5 @@
 // backend\auth-service\src\services\user.service.js
-import { config } from "../configs/index.js";
+import { getOrderCounts } from "./order-count.service.js";
 import bcrypt from "bcrypt";
 import { UserProfileModel } from "../models/userProfile.model.js";
 import { AccountModel } from "../models/account.model.js";
@@ -154,6 +154,7 @@ export const updateStaffProfile = async (
   accountId,
   profileData,
   avatarFile,
+  clearOptional = false,
 ) => {
   const {
     full_name,
@@ -208,7 +209,7 @@ export const updateStaffProfile = async (
   }
 
   if (avatarFile) {
-    avatarUrl = await uploadAvatar("_staff", accountId, avatarFile);
+    avatarUrl = await uploadAvatar(`_${existingAccount.role_name}`, accountId, avatarFile);
   }
 
   const updateData = {};
@@ -229,6 +230,12 @@ export const updateStaffProfile = async (
   updateData.updated_at = new Date();
 
   if (isValidValue(email)) accountUpdateData.email = email.trim();
+  if (isValidValue(phone_number)) accountUpdateData.phone = phone_number.trim();
+  if (clearOptional) {
+    for (const key of ["identity_card", "gender", "dob", "address"]) {
+      if (profileData[key] === "") updateData[key] = null;
+    }
+  }
 
   if (
     Object.keys(updateData).length > 1 ||
@@ -267,9 +274,20 @@ export const updateStaffProfile = async (
 // ================== ADMIN =====================
 
 // thêm nhân viên
-export const createStaff = async (staffData, avatarFile) => {
+export const createStaff = (staffData, avatarFile) => {
+  return createAdminAccount(staffData, avatarFile, "staff");
+};
+
+// Thêm khách hàng
+export const createCustomer = (customerData, avatarFile) => {
+  return createAdminAccount(customerData, avatarFile, "customer");
+};
+
+// Tạo tài khoản và hồ sơ với vai trò do endpoint quyết định.
+const createAdminAccount = async (profileData, avatarFile, roleName) => {
+  validateAdminProfile(profileData);
   const { email, phone, full_name, identity_card, gender, dob, address } =
-    staffData;
+    profileData;
   let avatarUrl = null;
 
   const now = new Date().toISOString();
@@ -304,15 +322,15 @@ export const createStaff = async (staffData, avatarFile) => {
 
   // Tải ảnh đại diện lên Supabase Storage nếu Admin có chọn file ảnh
   if (avatarFile) {
-    avatarUrl = await uploadAvatar("_staff", Date.now(), avatarFile);
+    avatarUrl = await uploadAvatar(`_${roleName}`, Date.now(), avatarFile);
   }
 
-  // 2. Tìm Role 'staff' động từ DB để lấy đúng role_id
+  // 2. Tìm vai trò từ DB để lấy đúng role_id
   let roleData;
   try {
-    roleData = await UserProfileModel.findRoleByName("staff");
+    roleData = await UserProfileModel.findRoleByName(roleName);
   } catch (roleError) {
-    throw new Error('Hệ thống chưa cấu hình vai trò "staff" (nhân viên)!');
+    throw new Error(`Hệ thống chưa cấu hình vai trò "${roleName}"!`);
   }
 
   // 3. Tạo mật khẩu mặc định bằng chính số điện thoại và mã hóa Bcrypt
@@ -334,7 +352,7 @@ export const createStaff = async (staffData, avatarFile) => {
     });
   } catch (accError) {
     console.error("Lỗi insert accounts:", accError.message);
-    throw new Error(`Lỗi khi tạo tài khoản nhân viên: ${accError.message}`);
+    throw new Error(`Lỗi khi tạo tài khoản: ${accError.message}`);
   }
 
   // 5. BƯỚC 2: Tạo hồ sơ thông tin chi tiết trong bảng user_profiles
@@ -429,13 +447,14 @@ export const getProfileDetail = async (profileId) => {
 
   const formattedDetail = {
     profile_id: profile.profile_id,
+    account_id: profile.account_id,
     full_name: profile.full_name,
     identity_card: profile.identity_card,
     avatar_url: profile.avatar_url,
     gender: profile.gender,
     dob: profile.dob,
     address: profile.address,
-    status: profile.status,
+    status: profile.accounts?.status || profile.status,
 
     email: profile.accounts ? profile.accounts.email : null,
     phone: profile.phone_number,
@@ -571,4 +590,166 @@ export const toggleAccountStatus = async (accountId) => {
     status: newStatus,
     account: updatedAccount,
   };
+};
+
+// Lọc và sắp xếp người dùng trước khi phân trang
+export const getAdminUsers = async (
+  { role, q = "", status = "", sort = "newest", page = 1, limit = 12 },
+  exportAll = false,
+  authorization,
+) => {
+  if (!["customer", "staff"].includes(role)) {
+    const error = new Error("Vai trò không hợp lệ!");
+    error.status = 400;
+    throw error;
+  }
+  if (!["", "active", "inactive"].includes(status)) {
+    const error = new Error("Trạng thái không hợp lệ!");
+    error.status = 400;
+    throw error;
+  }
+  const allowedSorts = [
+    "newest",
+    "oldest",
+    "az",
+    "za",
+    ...(role === "customer" ? ["orders_asc", "orders_desc"] : []),
+  ];
+  if (!allowedSorts.includes(sort)) {
+    const error = new Error("Sắp xếp không hợp lệ!");
+    error.status = 400;
+    throw error;
+  }
+  page = Number(page);
+  limit = Number(limit);
+  if (
+    !Number.isInteger(page) ||
+    page < 1 ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 100
+  ) {
+    const error = new Error("Phân trang không hợp lệ!");
+    error.status = 400;
+    throw error;
+  }
+  const [profiles, counts] = await Promise.all([
+    UserProfileModel.getAdminProfiles(role),
+    role === "customer" ? getOrderCounts(authorization) : {},
+  ]);
+  const query = normalizeSearchValue(q).trim();
+  const phoneQuery = query.replace(/\D/g, "");
+  const users = profiles
+    .map(({ accounts, ...profile }) => ({
+      ...profile,
+      ...accounts,
+      order_count: counts[profile.account_id] || 0,
+    }))
+    .filter(
+      (user) =>
+        (!status || user.status === status) &&
+        (!query ||
+          [user.full_name, user.email, user.phone_number].some((value) =>
+            normalizeSearchValue(value).includes(query),
+          ) ||
+          (phoneQuery.length >= 3 &&
+            String(user.phone_number || "").includes(phoneQuery))),
+    );
+  sortAdminUsers(users, sort);
+
+  const total_items = users.length;
+  const total_pages = Math.ceil(total_items / limit);
+  page = Math.min(page, total_pages || 1);
+  return {
+    users: exportAll ? users : users.slice((page - 1) * limit, page * limit),
+    pagination: { page, limit, total_items, total_pages },
+  };
+};
+
+// Cập nhật hồ sơ khách hàng hoặc nhân viên từ trang quản trị
+export const updateProfileAll = async (accountId, data, avatarFile) => {
+  validateAdminProfile(data);
+  const account = await AccountModel.findById(accountId);
+  if (!account || !["customer", "staff"].includes(account.role_name)) {
+    throw new Error("Không tìm thấy người dùng hợp lệ!");
+  }
+
+  return updateStaffProfile(
+    accountId,
+    { ...data, phone_number: data.phone },
+    avatarFile,
+    true,
+  );
+};
+
+// Kiểm tra thông tin hồ sơ trước khi lưu
+const validateAdminProfile = (data) => {
+  const invalid = (message) => {
+    const error = new Error(message);
+    error.status = 400;
+    throw error;
+  };
+  if (!String(data.full_name || "").trim()) invalid("Vui lòng nhập họ tên!");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email || "").trim())) {
+    invalid("Email không hợp lệ!");
+  }
+  if (!/^0[0-9]{9}$/.test(String(data.phone || "").trim())) {
+    invalid("Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0!");
+  }
+  if (data.identity_card && !/^[0-9]{12}$/.test(data.identity_card.trim())) {
+    invalid("CCCD phải gồm 12 chữ số!");
+  }
+  if (data.gender && !["Nam", "Nữ", "Khác"].includes(data.gender)) {
+    invalid("Giới tính không hợp lệ!");
+  }
+  if (
+    data.dob &&
+    (!/^\d{4}-\d{2}-\d{2}$/.test(data.dob) ||
+      !Number.isFinite(Date.parse(data.dob)) ||
+      new Date(data.dob).toISOString().slice(0, 10) !== data.dob ||
+      Date.parse(data.dob) > Date.now())
+  ) {
+    invalid("Ngày sinh không hợp lệ!");
+  }
+};
+
+// Chuẩn hóa từ khóa tìm kiếm tiếng Việt
+const normalizeSearchValue = (value) => {
+  return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+    .toLowerCase();
+};
+
+// Sắp xếp tên tiếng Việt, ngày tham gia hoặc tổng đơn hàng
+const sortAdminUsers = (users, sort) => {
+  const collator = new Intl.Collator("vi", { sensitivity: "base" });
+  const getGivenName = (fullName) => {
+    return String(fullName || "").trim().split(/\s+/).at(-1);
+  };
+
+  users.sort((firstUser, secondUser) => {
+    let result;
+
+    if (sort === "az" || sort === "za") {
+      result =
+        collator.compare(
+          getGivenName(firstUser.full_name),
+          getGivenName(secondUser.full_name),
+        ) ||
+        collator.compare(firstUser.full_name || "", secondUser.full_name || "");
+      if (sort === "za") result *= -1;
+    } else if (sort === "orders_asc" || sort === "orders_desc") {
+      result = (firstUser.order_count - secondUser.order_count) *
+        (sort === "orders_desc" ? -1 : 1);
+    } else {
+      result =
+        (new Date(firstUser.created_at || 0) - new Date(secondUser.created_at || 0)) *
+        (sort === "newest" ? -1 : 1);
+    }
+
+    return result || firstUser.profile_id.localeCompare(secondUser.profile_id);
+  });
 };

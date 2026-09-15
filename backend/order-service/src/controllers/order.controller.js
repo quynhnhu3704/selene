@@ -284,3 +284,28 @@ export const handleCancelOrder = async (req, res) => {
     });
   }
 };
+
+// Lấy số đơn hàng của từng tài khoản
+export const handleGetUserOrderCounts = async (req, res) => {
+  try {
+    const counts = await orderService.getUserOrderCounts();
+    return res.status(200).json({
+      status: 200,
+      message: "Thống kê đơn hàng thành công!",
+      data: counts,
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
+
+    console.error("Lỗi Controller Thống Kê Đơn Hàng:", error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};

@@ -35,6 +35,13 @@ const MENU_ITEMS = [
     enabled: true,
   },
   {
+    key: "staffs",
+    label: "Nhân viên",
+    icon: "bi-person-badge",
+    path: "/admin/nhan-vien",
+    enabled: true,
+  },
+  {
     key: "discounts",
     label: "Danh mục",
     icon: "bi-percent",

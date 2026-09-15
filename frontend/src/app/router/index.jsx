@@ -24,6 +24,12 @@ import AdminLayout from "../../pages/Admin";
 import AdminDashboard from "../../pages/Admin/Dashboard";
 import AdminProducts from "../../pages/Admin/Products";
 import AdminOrders from "../../pages/Admin/Orders";
+import AdminStaffs from "../../pages/Admin/Staffs";
+import CreateStaff from "../../pages/Admin/Staffs/pages/Create";
+import EditStaff from "../../pages/Admin/Staffs/pages/Edit";
+import CreateUser from "../../pages/Admin/Users/pages/Create";
+import EditUser from "../../pages/Admin/Users/pages/Edit";
+import ProfilePage from "../../pages/Admin/components/ProfilePage";
 import AdminUsers from "../../pages/Admin/Users";
 import AdminCategories from "../../pages/Admin/Categories";
 
@@ -76,6 +82,19 @@ export default function AppRouter() {
 
         <Route path="don-hang" element={<AdminOrders />} />
         <Route path="nguoi-dung" element={<AdminUsers />} />
+        <Route path="nguoi-dung/them-moi" element={<CreateUser />} />
+        <Route path="nguoi-dung/:profileId/sua" element={<EditUser />} />
+        <Route
+          path="nguoi-dung/:profileId"
+          element={<ProfilePage role="customer" readOnly />}
+        />
+        <Route path="nhan-vien" element={<AdminStaffs />} />
+        <Route path="nhan-vien/them-moi" element={<CreateStaff />} />
+        <Route path="nhan-vien/:profileId/sua" element={<EditStaff />} />
+        <Route
+          path="nhan-vien/:profileId"
+          element={<ProfilePage role="staff" readOnly />}
+        />
         <Route path="danh-muc" element={<AdminCategories />} />
       </Route>
 

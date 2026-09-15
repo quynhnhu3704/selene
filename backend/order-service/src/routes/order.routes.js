@@ -12,6 +12,12 @@ const router = express.Router();
 
 // ================= ADMIN =================
 router.get(
+  "/manage/user-order-counts",
+  verifyToken,
+  verifyPermission("profile:view"),
+  orderController.handleGetUserOrderCounts,
+);
+router.get(
   "/manage/orders",
   verifyToken,
   verifyPermission("order:view"),

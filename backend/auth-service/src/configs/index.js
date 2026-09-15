@@ -24,6 +24,7 @@ if (!process.env.SUPABASE_KEY) {
 
 export const config = {
   port: process.env.PORT || 8001,
+  orderServiceUrl: process.env.ORDER_SERVICE_URL || "http://localhost:8003",
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET,
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   supabaseUrl: process.env.SUPABASE_URL,

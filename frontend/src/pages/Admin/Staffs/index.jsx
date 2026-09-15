@@ -1,10 +1,10 @@
-// frontend/src/pages/Admin/Users/index.jsx
+// frontend/src/pages/Admin/Staffs/index.jsx
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import confirmLock from "../../../utils/confirmLock";
 import {
-  getAdminCustomers,
+  getAdminStaffs,
   exportAdminUsers,
   toggleAdminUserStatus,
 } from "../../../services/user.service";
@@ -12,20 +12,13 @@ import {
 import UserList from "../components/UserList";
 
 const USERS_PER_PAGE = 12;
-const role = "customer";
-const basePath = "/admin/nguoi-dung";
+const role = "staff";
+const basePath = "/admin/nhan-vien";
 
-export default function AdminUsers() {
+export default function AdminStaffs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") || "";
-  const allowedSorts = [
-    "newest",
-    "oldest",
-    "az",
-    "za",
-    "orders_asc",
-    "orders_desc",
-  ];
+  const allowedSorts = ["newest", "oldest", "az", "za"];
   const sort = allowedSorts.includes(searchParams.get("sort"))
     ? searchParams.get("sort")
     : "newest";
@@ -75,7 +68,7 @@ export default function AdminUsers() {
     setError("");
     const timer = setTimeout(async () => {
       try {
-        const { data } = await getAdminCustomers({
+        const { data } = await getAdminStaffs({
           q,
           sort,
           status,
@@ -136,7 +129,7 @@ export default function AdminUsers() {
       const link = document.createElement("a");
       link.href = url;
       const dateStr = new Date().toISOString().split("T")[0];
-      link.download = `customers_export_${dateStr}.xlsx`;
+      link.download = `staffs_export_${dateStr}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -163,10 +156,9 @@ export default function AdminUsers() {
 
   return (
     <UserList
-      title="Khách hàng"
+      title="Nhân viên"
       showCreateButton
-      createPath="/admin/nguoi-dung/them-moi"
-      showOrders
+      createPath="/admin/nhan-vien/them-moi"
       users={users}
       pagination={pagination}
       search={searchValue}

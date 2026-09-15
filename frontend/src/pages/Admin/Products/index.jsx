@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import confirmLock from "../../../utils/confirmLock";
 import {
   getAdminProductCategories,
   getAdminProducts,
@@ -202,6 +203,7 @@ export default function AdminProducts() {
 
   /* ── lock / unlock ── */
   const handleLock = async (product) => {
+    if (updatingProductId) return;
     // Bao quát cả hai trường hợp "inactive" hoặc "archived" là đã bị khóa
     const isLocked =
       product.status === "inactive" || product.status === "archived";
@@ -209,6 +211,14 @@ export default function AdminProducts() {
 
     try {
       setUpdatingProductId(product.product_id);
+      if (
+        !isLocked &&
+        !(await confirmLock(
+          "Khóa sản phẩm",
+          `Khóa sản phẩm "${product.product_name}"?`,
+        ))
+      )
+        return;
 
       await updateAdminProductStatus(product.product_id, nextStatus);
 

@@ -9,8 +9,11 @@ import {
   handleLogout,
 } from "../controllers/auth.controller.js";
 import {
+  handleGetAdminUsers,
+  handleExportAdminUsers,
   handleChangePassword,
   handleCreateStaff,
+  handleCreateCustomer,
   handleGetAccounts,
   handleGetCustomerProfile,
   handleGetProfileDetail,
@@ -82,7 +85,29 @@ router.put(
   handleUpdateStaffProfile,
 );
 
+router.get(
+  "/manage/users",
+  verifyToken,
+  verifyPermission("profile:view"),
+  handleGetAdminUsers,
+);
+router.get(
+  "/manage/users/export",
+  verifyToken,
+  verifyPermission("profile:view"),
+  handleExportAdminUsers,
+);
+
 // user - admin
+// khách hàng
+router.post(
+  "/manage/customer/add",
+  verifyToken,
+  verifyPermission("user:create"),
+  upload.single("avatar_url"),
+  handleCreateCustomer,
+);
+
 // nhân viên
 router.post(
   "/manage/staff/add",

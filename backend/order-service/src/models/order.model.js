@@ -2,6 +2,29 @@
 import { supabase } from "../configs/supabase.js";
 
 export const OrderModel = {
+  // Lấy tài khoản của các đơn hàng để thống kê
+  getOrderAccounts: async () => {
+    const orders = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error, count } = await supabase
+        .from("orders")
+        .select("order_id, account_id", { count: "exact" })
+        .order("order_id", { ascending: true })
+        .range(from, from + 499);
+
+      if (error) throw error;
+      if (!data?.length) break;
+
+      orders.push(...data);
+      from += data.length;
+      if (count !== null && from >= count) break;
+    }
+
+    return orders;
+  },
+
   deleteIncompleteOrder: async (orderId) => {
     const items = await supabase
       .from("order_items")
