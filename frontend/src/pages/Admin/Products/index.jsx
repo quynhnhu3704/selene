@@ -507,7 +507,7 @@ export default function AdminProducts() {
               <th className="text-end">Giá bán</th>
               <th className="text-center">Tồn kho</th>
               <th className="text-center">Trạng thái</th>
-              <th></th>
+              <th className="text-center"></th>
             </tr>
           </thead>
           <tbody>

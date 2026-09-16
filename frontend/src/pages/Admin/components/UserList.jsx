@@ -8,8 +8,15 @@ import fallbackAvatar from "../../../assets/images/default-avatar.png";
 
 const formatPhone = (phone) =>
   String(phone || "").replace(/^(\d{4})(\d{3})(\d{3})$/, "$1.$2.$3") || "—";
+// Hiển thị ngày sinh và ngày tham gia theo DD/MM/YYYY.
 const formatDate = (value) =>
-  value ? new Date(value).toLocaleDateString("vi-VN") : "—";
+  value
+    ? new Date(value).toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "—";
 
 export default function UserList({
   title,
@@ -166,14 +173,14 @@ export default function UserList({
         <table className="table adm-table mb-0">
           <thead>
             <tr>
-              <th className="text-center">STT</th>
+              <th className="text-center" style={{ width: "5%" }}></th>
               <th style={{ width: "30%" }}>Người dùng</th>
               <th className="text-center">Số điện thoại</th>
               {showOrders && <th className="text-center">Đơn hàng</th>}
               <th className="text-center">Ngày sinh</th>
-              <th className="text-center">Ngày tham gia</th>
+              <th className="text-center">Ngày tạo</th>
               <th className="text-center">Trạng thái</th>
-              <th className="text-center">Thao tác</th>
+              <th className="text-center"></th>
             </tr>
           </thead>
           <tbody>
@@ -222,7 +229,11 @@ export default function UserList({
                         />
                       </Link>
                       <div>
-                        <Link to={detailPath(user)} className="adm-link">
+                        {/* Căn trái họ tên cho cả nhân viên và khách hàng. */}
+                        <Link
+                          to={detailPath(user)}
+                          className="adm-link align-self-start text-start"
+                        >
                           <div className="adm-name">
                             {user.full_name || "Chưa cập nhật"}
                           </div>
@@ -236,7 +247,18 @@ export default function UserList({
                   </td>
                   {showOrders && (
                     <td className="text-center">
-                      {user.order_count.toLocaleString("vi-VN")}
+                      {/* Màu số đơn dùng cùng class với cột tồn kho. */}
+                      <span
+                        className={`adm-stock rounded-pill ${
+                          (user.order_count || 0) >= 7
+                            ? "text-success bg-success-subtle"
+                            : (user.order_count || 0) >= 3
+                              ? "text-warning bg-warning-subtle"
+                              : "text-danger bg-danger-subtle"
+                        }`}
+                      >
+                        {(user.order_count || 0).toLocaleString("vi-VN")}
+                      </span>
                     </td>
                   )}
                   <td className="text-center text-nowrap">

@@ -171,6 +171,10 @@ export default function InfoPanel({ profile, setProfile }) {
     return `${year}-${month}-${day}`;
   };
 
+  // Hiển thị SĐT theo XXXX.XXX.XXX, giữ nguyên giá trị nhập.
+  const displayPhone = (phone) =>
+    String(phone || "").replace(/^(\d{4})(\d{3})(\d{3})$/, "$1.$2.$3");
+
   const displayDate = (date) => {
     if (!date) return "";
     const d = new Date(date);
@@ -344,7 +348,7 @@ export default function InfoPanel({ profile, setProfile }) {
                   )}
                 </>
               ) : (
-                <span>{form.phone_number || <Empty />}</span>
+                <span>{displayPhone(form.phone_number) || <Empty />}</span>
               )}
             </div>
           </div>

@@ -1519,8 +1519,8 @@
 .info-field-val {
   font-size: 15px;
   min-height: 24px;
-  color: #6c757d;
-  font-weight: 500;
+  color: #444;
+  /* font-weight: 500; */
 }
 
 /* ── ACTIONS ── */
