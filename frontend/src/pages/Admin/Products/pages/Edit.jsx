@@ -8,19 +8,86 @@ import {
   getAdminProductCategories,
   updateAdminProduct,
 } from "../../../../services/product.service";
+import http from "../../../../services/http";
 import Loading from "../../../../components/common/Loading";
 
-const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-const ALL_GENDERS = ["Men", "Woman", "Unisex"];
-
 const DISCOUNT_TYPES = [
-  "No Discount",
-  "Seasonal Sale",
-  "Flash Sale",
-  "Chinese New Year Discount",
-  "Year-end Clearance",
-  "Member Discount",
+  "Không giảm giá",
+  "Giảm giá theo mùa",
+  "Giảm giá chớp nhoáng",
+  "Giảm giá Tết Nguyên đán",
+  "Xả hàng cuối năm",
+  "Giảm giá thành viên",
 ];
+
+// Dùng dropdown Bootstrap chung, đóng khi bấm ngoài hoặc nhấn Escape.
+function ProductDropdown({ id, value, options, placeholder, onChange, disabled }) {
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    if (!open) return;
+
+    // Đóng danh sách và trả focus về nút khi nhấn Escape.
+    const handleClose = (e) => {
+      if (e.type === "keydown") {
+        if (e.key !== "Escape") return;
+        setOpen(false);
+        buttonRef.current?.focus();
+      } else if (!dropdownRef.current?.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClose);
+    document.addEventListener("focusin", handleClose);
+    document.addEventListener("keydown", handleClose);
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      document.removeEventListener("focusin", handleClose);
+      document.removeEventListener("keydown", handleClose);
+    };
+  }, [open]);
+
+  return (
+    <div className="dropdown" ref={dropdownRef}>
+      <button
+        id={id}
+        ref={buttonRef}
+        type="button"
+        className="form-control text-start d-flex justify-content-between align-items-center gap-2"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-controls={`${id}-options`}
+        disabled={disabled}
+      >
+        <span>{selected?.label || placeholder}</span>
+        <i className={`bi ${open ? "bi-caret-up" : "bi-caret-down"}`} />
+      </button>
+      {open && !disabled && (
+        <ul id={`${id}-options`} className="dropdown-menu show w-100 mt-1 shadow-sm">
+          {options.map((option) => (
+            <li key={option.value}>
+              <button
+                type="button"
+                className="dropdown-item fw-normal text-wrap"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                  buttonRef.current?.focus();
+                }}
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function EditProduct() {
   const { productId } = useParams();
@@ -33,42 +100,55 @@ export default function EditProduct() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [readingImages, setReadingImages] = useState(false);
   const [categories, setCategories] = useState([]);
 
   /* ── form state ── */
   const [form, setForm] = useState({
     name: "",
     description: "",
-    sizes: ["S"],
-    genders: ["Woman"],
     basePrice: "",
-    stock: "",
     discount: "",
-    discountType: "No Discount",
+    discountType: "Không giảm giá",
   });
 
   /* ── image state ── */
   const [mainImg, setMainImg] = useState("");
   const [thumbs, setThumbs] = useState([]); // Chứa cả URL chuỗi hoặc File mới
-  const [originalImageUrls, setOriginalImageUrls] = useState([]);
+  const [variants, setVariants] = useState([]);
+  const [product, setProduct] = useState(null);
+  const [brandId, setBrandId] = useState("");
 
   /* ── category ── */
   const [category, setCategory] = useState("");
-  const [customCat, setCustomCat] = useState("");
-  const [showCatInput, setShowCatInput] = useState(false);
-
   const set = (key, val) => setForm((p) => ({ ...p, [key]: val }));
 
-  const toggleArr = (key, val) =>
-    setForm((p) => ({
-      ...p,
-      [key]: p[key].includes(val)
-        ? p[key].filter((x) => x !== val)
-        : [...p[key], val],
-    }));
+  // Cập nhật riêng từng biến thể, giữ nguyên ID để BE upsert đúng hàng cũ.
+  const setVariant = (index, key, val) => {
+    setVariants((prev) =>
+      prev.map((variant, i) =>
+        i === index ? { ...variant, [key]: val } : variant,
+      ),
+    );
+  };
+
+  // Thêm cặp size/màu mới; BE tự tạo ID khi lưu.
+  const addVariant = () => {
+    setVariants((prev) => [
+      ...prev,
+      { size: "", color: "", stock_quantity: 0, status: "active" },
+    ]);
+  };
+
+  // Tổng tồn kho lấy từ các biến thể, giống danh sách sản phẩm của BE.
+  const totalStock = variants.reduce(
+    (total, variant) => total + (Number(variant.stock_quantity) || 0),
+    0,
+  );
 
   useEffect(() => {
     let isCurrent = true;
+    // Tải sản phẩm và đối chiếu ID danh mục, thương hiệu khi cập nhật.
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -82,32 +162,49 @@ export default function EditProduct() {
         const p = productRes.data;
         const cats = catRes.data || [];
         setCategories(cats);
+        setProduct(p);
+        setVariants(p.variants || []);
+
+        // API chi tiết chỉ trả tên thương hiệu; tìm ID thật để giữ thương hiệu cũ.
+        let matchedBrandId = p.brand_id || "";
+        if (!matchedBrandId && p.brand_name) {
+          let page = 1;
+          let totalPages = 1;
+          do {
+            const res = await http.get("/products/manage/brands", {
+              params: { page, limit: 100 },
+            });
+            if (!isCurrent) return;
+            const matches = (res.data.data || []).filter(
+              (brand) => brand.name === p.brand_name,
+            );
+            if (matches.length === 1) matchedBrandId = matches[0].brand_id;
+            totalPages = res.data.pagination?.totalPages || 1;
+            page += 1;
+          } while (!matchedBrandId && page <= totalPages);
+        }
+        setBrandId(matchedBrandId);
 
         setForm({
           name: p.product_name || "",
           description: p.description || "",
-          sizes: p.variants?.map((v) => v.size) || ["S"],
-          genders: ["Woman"],
-          basePrice: p.price || "",
-          stock:
-            p.variants?.reduce((acc, v) => acc + (v.stock_quantity || 0), 0) ||
-            "",
+          basePrice: p.price ?? "",
           discount: p.discount_price ? String(p.discount_price) : "",
-          discountType: "No Discount",
+          discountType: "Không giảm giá",
         });
 
         const imgs = p.image_urls || [];
-        setOriginalImageUrls(imgs);
         if (imgs.length > 0) {
           setMainImg(imgs[0]);
           setThumbs(imgs.slice(1));
         }
 
-        if (p.category_id) {
-          setCategory(p.category_id);
-        } else if (cats.length > 0) {
-          setCategory(cats[0].category_id);
-        }
+        // API chi tiết trả tên danh mục, đối chiếu danh sách để lấy ID tương ứng.
+        setCategory(
+          p.category_id ||
+            cats.find((c) => c.name === p.category_name)?.category_id ||
+            "",
+        );
       } catch (err) {
         console.error(err);
         toast.error("Không thể tải thông tin sản phẩm!");
@@ -123,36 +220,78 @@ export default function EditProduct() {
     };
   }, [productId, navigate]);
 
-  const handleMainImg = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setMainImg(ev.target.result);
-      setThumbs((prev) => [mainImg, ...prev].filter(Boolean));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleMoreImgs = (e) => {
-    const files = Array.from(e.target.files).slice(0, 4 - thumbs.length);
-    files.forEach((file) => {
+  // Đọc ảnh xem trước, giới hạn dung lượng theo API upload của BE.
+  const readImage = (file) => {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+        reject(new Error("Vui lòng chọn ảnh không quá 5 MB"));
+        return;
+      }
       const reader = new FileReader();
-      reader.onload = (ev) =>
-        setThumbs((prev) => [...prev, ev.target.result].slice(0, 4));
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Không thể đọc ảnh đã chọn"));
       reader.readAsDataURL(file);
     });
   };
 
-  const addCategory = () => {
-    const val = customCat.trim();
-    if (!val) return;
-    setCategory(val);
-    setShowCatInput(false);
-    setCustomCat("");
+  // Thay ảnh chính bằng ảnh vừa tải lên.
+  const handleMainImg = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setReadingImages(true);
+      setMainImg(await readImage(file));
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setReadingImages(false);
+    }
   };
 
+  // Thêm ảnh phụ theo đúng thứ tự chọn, tối đa 10 ảnh mỗi sản phẩm.
+  const handleMoreImgs = async (e) => {
+    const files = Array.from(e.target.files);
+    e.target.value = "";
+    if (!files.length) return;
+    if (files.length + thumbs.length + (mainImg ? 1 : 0) > 10) {
+      toast.error("Sản phẩm được có tối đa 10 ảnh");
+      return;
+    }
+    try {
+      setReadingImages(true);
+      const images = await Promise.all(files.map(readImage));
+      if (!mainImg) {
+        setMainImg(images[0]);
+        setThumbs((prev) => [...prev, ...images.slice(1)]);
+      } else {
+        setThumbs((prev) => [...prev, ...images]);
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setReadingImages(false);
+    }
+  };
+
+  // Xóa ảnh chính và đưa ảnh phụ đầu tiên lên thay thế.
+  const removeMainImg = () => {
+    setMainImg(thumbs[0] || "");
+    setThumbs((prev) => prev.slice(1));
+  };
+
+  // Xóa ảnh phụ khỏi danh sách ảnh giữ lại khi lưu.
+  const removeThumb = (index) => {
+    setThumbs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Kiểm tra từng cặp size/màu và gửi nguyên ID, tồn kho, trạng thái cho BE.
   const handleSubmit = async () => {
+    if (submitting || readingImages) return;
+    if (!mainImg && thumbs.length === 0) {
+      toast.error("Sản phẩm phải có ít nhất một hình ảnh");
+      return;
+    }
     if (!form.name.trim()) {
       toast.error("Vui lòng nhập tên sản phẩm");
       return;
@@ -161,9 +300,50 @@ export default function EditProduct() {
       toast.error("Vui lòng nhập giá sản phẩm");
       return;
     }
-    if (!form.stock) {
-      toast.error("Vui lòng nhập số lượng tồn kho");
+    if (!brandId || !category) {
+      toast.error("Không xác định được thương hiệu hoặc danh mục sản phẩm");
       return;
+    }
+    if (variants.length === 0) {
+      toast.error("Sản phẩm phải có ít nhất một biến thể");
+      return;
+    }
+
+    const variantKeys = new Set();
+    for (const variant of variants) {
+      if (!variant.size.trim() || !variant.color.trim()) {
+        toast.error("Vui lòng nhập kích thước và màu cho từng biến thể");
+        return;
+      }
+      const quantity = Number(variant.stock_quantity);
+      if (
+        String(variant.stock_quantity).trim() === "" ||
+        !Number.isSafeInteger(quantity) ||
+        quantity < 0
+      ) {
+        toast.error("Tồn kho từng biến thể phải là số nguyên không âm");
+        return;
+      }
+      // Chuẩn hóa theo cách BE tạo ID để tránh trùng biến thể mới.
+      const key = `${variant.size.trim()}-${variant.color.trim().toUpperCase()}`
+        .replace(/\s+/g, "");
+      if (variantKeys.has(key)) {
+        toast.error("Không được trùng cặp kích thước và màu giữa các biến thể");
+        return;
+      }
+      // Tránh ID tự sinh ghi đè hàng cũ đã đổi size hoặc màu.
+      if (!variant.variant_id) {
+        const generatedId =
+          `${product.brand_name.trim().toUpperCase()}-${productId}-${key}`.replace(
+            /\s+/g,
+            "",
+          );
+        if (variants.some((item) => item.variant_id === generatedId)) {
+          toast.error("Kích thước và màu này đã có mã biến thể cũ, vui lòng sửa dòng cũ");
+          return;
+        }
+      }
+      variantKeys.add(key);
     }
 
     try {
@@ -172,32 +352,33 @@ export default function EditProduct() {
       formData.append("product_name", form.name);
       formData.append("description", form.description);
       formData.append("price", form.basePrice);
-      formData.append("original_price", form.basePrice);
+      formData.append("original_price", product.original_price ?? form.basePrice);
+      formData.append("status", product.status);
       formData.append("discount_price", form.discount || 0);
       formData.append("category_id", category);
-      formData.append("brand_id", "BR-DEFAULT"); // Hoặc lấy từ state nếu có
+      formData.append("brand_id", brandId);
 
-      const variantsPayload = form.sizes.map((sz) => ({
-        size: sz,
-        color: "Mặc định",
-        stock_quantity: Math.floor(Number(form.stock) / form.sizes.length) || 0,
-        status: "active",
+      const variantsPayload = variants.map((variant) => ({
+        ...(variant.variant_id ? { variant_id: variant.variant_id } : {}),
+        size: variant.size.trim(),
+        color: variant.color.trim(),
+        stock_quantity: Number(variant.stock_quantity),
+        status: variant.status,
       }));
       formData.append("variants", JSON.stringify(variantsPayload));
 
-      const allImagesToKeep = [mainImg, ...thumbs].filter(
-        (img) => typeof img === "string" && img.startsWith("http"),
-      );
-      formData.append("old_image_urls", JSON.stringify(allImagesToKeep));
+      // BE ghép ảnh cũ trước ảnh tải lên; tải lại phần sau ảnh mới để giữ đúng thứ tự.
+      const images = [mainImg, ...thumbs].filter(Boolean);
+      const firstNewImage = images.findIndex((img) => img.startsWith("data:"));
+      const oldImages = firstNewImage === -1 ? images : images.slice(0, firstNewImage);
+      const uploadImages = firstNewImage === -1 ? [] : images.slice(firstNewImage);
+      formData.append("old_image_urls", JSON.stringify(oldImages));
 
-      const newFiles = [mainImg, ...thumbs].filter(
-        (img) => typeof img === "string" && img.startsWith("data:"),
-      );
-
-      for (const dataUrl of newFiles) {
-        const res = await fetch(dataUrl);
+      for (const [index, imageUrl] of uploadImages.entries()) {
+        const res = await fetch(imageUrl);
+        if (!res.ok) throw new Error("Không thể đọc ảnh để lưu sản phẩm");
         const blob = await res.blob();
-        formData.append("images", blob, `product_${Date.now()}.jpg`);
+        formData.append("images", blob, `product_${Date.now()}_${index}.jpg`);
       }
 
       await updateAdminProduct(productId, formData);
@@ -206,7 +387,7 @@ export default function EditProduct() {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.message || "Không thể cập nhật sản phẩm!",
+        err.response?.data?.message || err.message || "Không thể cập nhật sản phẩm!",
       );
     } finally {
       setSubmitting(false);
@@ -219,77 +400,31 @@ export default function EditProduct() {
 
   return (
     <>
-      <style>{`
-        .cp-card { background: #fff; border-radius: 16px; border: 1px solid #F0EFF5; padding: 28px 28px 24px; margin-bottom: 20px; }
-        .cp-card-title { font-size: 15px; font-weight: 800; color: #17151F; margin-bottom: 20px; letter-spacing: 0.1px; }
-        .cp-label { font-size: 13.5px; font-weight: 700; color: #17151F; margin-bottom: 7px; display: block; }
-        .cp-sublabel { font-size: 12px; font-weight: 600; color: #9CA0AC; margin-bottom: 10px; display: block; margin-top: -4px; }
-        .cp-input, .cp-textarea, .cp-select { width: 100%; border-radius: 10px; border: 1.5px solid #ECEBF2; background: #F8F7FC; color: #17151F; font-size: 14px; font-family: 'Manrope', sans-serif; outline: none; transition: border-color 0.15s; }
-        .cp-input { height: 44px; padding: 0 14px; }
-        .cp-textarea { padding: 12px 14px; resize: none; height: 130px; line-height: 1.6; }
-        .cp-select { height: 44px; padding: 0 36px 0 14px; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%239CA0AC' d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-        .cp-input:focus, .cp-textarea:focus, .cp-select:focus { border-color: #22C55E; background: #fff; }
-        .cp-pill-wrap { display: flex; gap: 8px; flex-wrap: wrap; }
-        .cp-pill { min-width: 44px; height: 38px; border-radius: 10px; border: 1.5px solid #ECEBF2; background: #fff; font-size: 13.5px; font-weight: 700; color: #9CA0AC; cursor: pointer; padding: 0 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-        .cp-pill.active { background: #22C55E; border-color: #22C55E; color: #fff; }
-        .cp-pill:hover:not(.active) { border-color: #22C55E; color: #22C55E; }
-        .cp-gender-wrap { display: flex; gap: 20px; flex-wrap: wrap; }
-        .cp-gender-label { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; color: #17151F; cursor: pointer; }
-        .cp-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ECEBF2; cursor: pointer; flex-shrink: 0; appearance: none; background: #fff; transition: all 0.15s; position: relative; }
-        .cp-radio:checked { border-color: #22C55E; background: #22C55E; }
-        .cp-radio:checked::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: #fff; }
-        .cp-main-img-box { width: 100%; aspect-ratio: 4/3; border-radius: 14px; border: 2px dashed #ECEBF2; background: #F8F7FC; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: border-color 0.15s; }
-        .cp-main-img-box:hover { border-color: #22C55E; }
-        .cp-main-img-box img { width: 100%; height: 100%; object-fit: cover; }
-        .cp-main-img-placeholder { text-align: center; color: #B4B2C0; }
-        .cp-main-img-placeholder i { font-size: 32px; display: block; margin-bottom: 8px; }
-        .cp-main-img-placeholder span { font-size: 13px; font-weight: 600; }
-        .cp-thumb-strip { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-        .cp-thumb { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; border: 2px solid #ECEBF2; cursor: pointer; }
-        .cp-thumb.active { border-color: #22C55E; }
-        .cp-thumb-add { width: 72px; height: 72px; border-radius: 12px; border: 2px dashed #ECEBF2; background: #F8F7FC; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 22px; color: #B4B2C0; transition: border-color 0.15s, color 0.15s; }
-        .cp-thumb-add:hover { border-color: #22C55E; color: #22C55E; }
-        .cp-cat-select-wrap { position: relative; }
-        .cp-cat-select-wrap .cp-select { padding-right: 36px; }
-        .cp-cat-dropdown-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; background: #17151F; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; pointer-events: none; }
-        .cp-add-cat-btn { width: 100%; height: 44px; border-radius: 10px; background: #22C55E; border: none; color: #fff; font-size: 14px; font-weight: 800; font-family: 'Manrope', sans-serif; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
-        .cp-add-cat-btn:hover { opacity: 0.88; }
-        .cp-page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-        .cp-page-title { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #17151F; }
-        .cp-page-title i { font-size: 20px; }
-        .cp-head-actions { display: flex; gap: 10px; }
-        .cp-btn-ghost { display: flex; align-items: center; gap: 7px; background: #fff; border: 1.5px solid #ECEBF2; color: #17151F; font-size: 13.5px; font-weight: 700; padding: 10px 18px; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
-        .cp-btn-ghost:hover { border-color: #C9C3F8; background: #F8F7FC; }
-        .cp-btn-green { display: flex; align-items: center; gap: 7px; background: #22C55E; border: none; color: #fff; font-size: 13.5px; font-weight: 800; padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: opacity 0.15s; }
-        .cp-btn-green:hover { opacity: 0.88; }
-        .cp-file-hidden { display: none; }
-      `}</style>
-
       <Helmet>
         <title>Chỉnh sửa sản phẩm | Selene</title>
       </Helmet>
 
       {/* ── PAGE HEADER ── */}
-      <div className="cp-page-head">
-        <div className="cp-page-title">
+      <div className="adm-page-head">
+        <div className="adm-page-title">
           <i className="bi bi-pencil-square" />
-          Edit Product
+          Chỉnh sửa sản phẩm
         </div>
-        <div className="cp-head-actions">
-          <button className="cp-btn-ghost" onClick={() => navigate(returnUrl)}>
-            <i className="bi bi-arrow-left" /> Back
+        <div className="d-flex gap-2">
+          <button className="form-btn btn btn-outline-dark btn-export mb-0" onClick={() => navigate(returnUrl)}>
+            <i className="bi bi-arrow-left" /> Quay lại
           </button>
           <button
-            className="cp-btn-green"
+            className="form-btn btn btn-dark mb-0"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || readingImages}
           >
             {submitting ? (
               <span className="spinner-border spinner-border-sm me-1" />
             ) : (
               <i className="bi bi-check-lg" />
             )}
-            Save Changes
+            Lưu thay đổi
           </button>
         </div>
       </div>
@@ -299,15 +434,15 @@ export default function EditProduct() {
         {/* ════════ LEFT COL ════════ */}
         <div className="col-12 col-xl-7">
           {/* GENERAL INFORMATION */}
-          <div className="cp-card">
-            <div className="cp-card-title">General Information</div>
+          <div className="border rounded-4 bg-white p-4 mb-4">
+            <div className="fw-bold mb-3">Thông tin chung</div>
 
             {/* Name */}
             <div className="mb-3">
-              <label className="cp-label">Name Product</label>
+              <label className="form-label">Tên sản phẩm</label>
               <input
-                className="cp-input"
-                placeholder="e.g. Puffer Jacket With Pocket Detail"
+                className="form-control"
+                placeholder="Ví dụ: Áo khoác có túi"
                 value={form.name}
                 onChange={(e) => set("name", e.target.value)}
                 maxLength={120}
@@ -316,70 +451,131 @@ export default function EditProduct() {
 
             {/* Description */}
             <div className="mb-4">
-              <label className="cp-label">Description Product</label>
+              <label className="form-label">Mô tả sản phẩm</label>
               <textarea
-                className="cp-textarea"
-                placeholder="Describe your product in detail..."
+                className="form-control"
+                rows={5}
+                placeholder="Nhập mô tả chi tiết sản phẩm..."
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
               />
             </div>
+          </div>
 
-            {/* Size + Gender side by side */}
-            <div className="row g-4">
-              {/* Size */}
-              <div className="col-12 col-md-6">
-                <label className="cp-label">Size</label>
-                <span className="cp-sublabel">Pick Available Size</span>
-                <div className="cp-pill-wrap">
-                  {ALL_SIZES.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={`cp-pill${
-                        form.sizes.includes(s) ? " active" : ""
-                      }`}
-                      onClick={() => toggleArr("sizes", s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Gender */}
-              <div className="col-12 col-md-6">
-                <label className="cp-label">Gender</label>
-                <span className="cp-sublabel">Pick Available Gender</span>
-                <div className="cp-gender-wrap">
-                  {ALL_GENDERS.map((g) => (
-                    <label key={g} className="cp-gender-label">
-                      <input
-                        type="radio"
-                        className="cp-radio"
-                        name="gender"
-                        checked={form.genders.includes(g)}
-                        onChange={() => set("genders", [g])}
-                      />
-                      {g}
-                    </label>
-                  ))}
-                </div>
-              </div>
+          {/* // Quản lý tồn kho theo từng cặp size/màu, khóa hàng cũ thay vì xóa. */}
+          <div className="border rounded-4 bg-white p-4 mb-4">
+            <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+              <div className="fw-bold">Biến thể</div>
+              <button
+                type="button"
+                className="form-btn btn btn-outline-dark mb-0"
+                onClick={addVariant}
+                disabled={submitting}
+              >
+                <i className="bi bi-plus-lg me-2" /> Thêm biến thể
+              </button>
             </div>
+            {variants.map((variant, index) => (
+              <div
+                key={variant.variant_id || index}
+                className="row g-3 border-bottom pb-3 mb-3"
+              >
+                <div className="col-6">
+                  <label
+                    className="form-label"
+                    htmlFor={`variant-size-${index}`}
+                  >
+                    Kích thước
+                  </label>
+                  <input
+                    id={`variant-size-${index}`}
+                    className="form-control"
+                    value={variant.size}
+                    onChange={(e) => setVariant(index, "size", e.target.value)}
+                  />
+                </div>
+                <div className="col-6">
+                  <label
+                    className="form-label"
+                    htmlFor={`variant-color-${index}`}
+                  >
+                    Màu sắc
+                  </label>
+                  <input
+                    id={`variant-color-${index}`}
+                    className="form-control"
+                    value={variant.color}
+                    onChange={(e) => setVariant(index, "color", e.target.value)}
+                  />
+                </div>
+                <div className="col-6">
+                  <label
+                    className="form-label"
+                    htmlFor={`variant-stock-${index}`}
+                  >
+                    Tồn kho
+                  </label>
+                  <input
+                    id={`variant-stock-${index}`}
+                    className="form-control"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={variant.stock_quantity}
+                    onChange={(e) =>
+                      setVariant(index, "stock_quantity", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-6">
+                  <label
+                    className="form-label"
+                    htmlFor={`variant-status-${index}`}
+                  >
+                    Trạng thái
+                  </label>
+                  <ProductDropdown
+                    id={`variant-status-${index}`}
+                    value={variant.status}
+                    options={[
+                      { value: "active", label: "Đang hoạt động" },
+                      { value: "inactive", label: "Ngừng hoạt động" },
+                    ]}
+                    placeholder="Trạng thái khác"
+                    onChange={(value) => setVariant(index, "status", value)}
+                    disabled={submitting}
+                  />
+                </div>
+                {!variant.variant_id && (
+                  <div className="col-12">
+                    {/* // Chỉ bỏ dòng mới chưa lưu; biến thể cũ dùng trạng thái Inactive. */}
+                    <button
+                      type="button"
+                      className="form-btn btn btn-outline-dark mb-0"
+                      onClick={() =>
+                        setVariants((prev) => prev.filter((_, i) => i !== index))
+                      }
+                      disabled={submitting}
+                    >
+                      Xóa dòng
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* PRICING AND STOCK */}
-          <div className="cp-card">
-            <div className="cp-card-title">Pricing And Stock</div>
+          <div className="border rounded-4 bg-white p-4 mb-4">
+            <div className="fw-bold mb-3">Giá và tồn kho</div>
 
             <div className="row g-3">
-              {/* Base Pricing */}
+              {/* Giá sản phẩm */}
               <div className="col-12 col-md-6">
-                <label className="cp-label">Base Pricing</label>
+                <label className="form-label">Giá sản phẩm</label>
                 <input
-                  className="cp-input"
-                  placeholder="e.g. 450000"
+                  className="form-control"
+                  placeholder="Ví dụ: 450000"
                   value={form.basePrice}
                   onChange={(e) => set("basePrice", e.target.value)}
                 />
@@ -387,50 +583,39 @@ export default function EditProduct() {
 
               {/* Stock */}
               <div className="col-12 col-md-6">
-                <label className="cp-label">Stock</label>
+                <label className="form-label">Tổng tồn kho</label>
                 <input
-                  className="cp-input"
+                  className="form-control"
                   type="number"
                   min={0}
-                  placeholder="e.g. 77"
-                  value={form.stock}
-                  onChange={(e) => set("stock", e.target.value)}
+                  placeholder="Ví dụ: 77"
+                  value={totalStock}
+                  readOnly
                 />
               </div>
 
               {/* Discount */}
               <div className="col-12 col-md-6">
-                <label className="cp-label">Discount Price</label>
+                <label className="form-label">Giá khuyến mãi</label>
                 <input
-                  className="cp-input"
-                  placeholder="e.g. 400000"
+                  className="form-control"
+                  placeholder="Ví dụ: 400000"
                   value={form.discount}
                   onChange={(e) => set("discount", e.target.value)}
                 />
               </div>
 
-              {/* Discount Type */}
+              {/* Loại giảm giá */}
               <div className="col-12 col-md-6">
-                <label className="cp-label">Discount Type</label>
-                <div className="cp-cat-select-wrap">
-                  <select
-                    className="cp-select"
-                    value={form.discountType}
-                    onChange={(e) => set("discountType", e.target.value)}
-                  >
-                    {DISCOUNT_TYPES.map((dt) => (
-                      <option key={dt} value={dt}>
-                        {dt}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="cp-cat-dropdown-icon">
-                    <i
-                      className="bi bi-chevron-down"
-                      style={{ fontSize: 10 }}
-                    />
-                  </div>
-                </div>
+                <label className="form-label" htmlFor="discount-type">Loại giảm giá</label>
+                <ProductDropdown
+                  id="discount-type"
+                  value={form.discountType}
+                  options={DISCOUNT_TYPES.map((type) => ({ value: type, label: type }))}
+                  placeholder="Chọn loại giảm giá"
+                  onChange={(value) => set("discountType", value)}
+                  disabled={submitting}
+                />
               </div>
             </div>
           </div>
@@ -439,86 +624,104 @@ export default function EditProduct() {
         {/* ════════ RIGHT COL ════════ */}
         <div className="col-12 col-xl-5">
           {/* UPLOAD IMAGE */}
-          <div className="cp-card">
-            <div className="cp-card-title">Upload Img</div>
+          <div className="border rounded-4 bg-white p-4 mb-4">
+            <div className="fw-bold mb-3">Hình ảnh sản phẩm</div>
 
-            {/* Main image */}
-            <div
-              className="cp-main-img-box"
-              onClick={() => mainImgRef.current.click()}
-            >
-              {mainImg ? (
-                <img src={mainImg} alt="main" />
-              ) : (
-                <div className="cp-main-img-placeholder">
-                  <i className="bi bi-cloud-arrow-up" />
-                  <span>Click to upload main image</span>
-                </div>
+            {/* // Xem trước và tải lên, xóa từng ảnh bằng nút riêng. */}
+            {mainImg ? (
+              <img src={mainImg} alt="Ảnh chính sản phẩm" className="img-fluid w-100 rounded-3" />
+            ) : (
+              <div className="text-center text-secondary border rounded-3 p-5">
+                <i className="bi bi-cloud-arrow-up fs-2 d-block mb-2" />
+                Chưa có ảnh sản phẩm
+              </div>
+            )}
+            <div className="d-flex gap-2 flex-wrap mt-3">
+              <button
+                type="button"
+                className="form-btn btn btn-dark mb-0"
+                onClick={() => mainImgRef.current.click()}
+                disabled={submitting || readingImages}
+              >
+                <i className="bi bi-upload me-2" />
+                {mainImg ? "Thay ảnh chính" : "Tải ảnh chính lên"}
+              </button>
+              {mainImg && (
+                <button
+                  type="button"
+                  className="form-btn btn btn-outline-dark btn-export mb-0"
+                  onClick={removeMainImg}
+                  disabled={submitting || readingImages}
+                >
+                  <i className="bi bi-trash me-2" /> Xóa ảnh chính
+                </button>
               )}
             </div>
             <input
               ref={mainImgRef}
               type="file"
               accept="image/*"
-              className="cp-file-hidden"
+              className="d-none"
               onChange={handleMainImg}
+              disabled={submitting || readingImages}
             />
-
-            {/* Thumb strip */}
-            <div className="cp-thumb-strip">
+            <div className="row g-3 mt-2">
               {thumbs.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={`thumb-${i}`}
-                  className="cp-thumb"
-                />
-              ))}
-
-              {/* Add more button */}
-              {thumbs.length < 4 && (
-                <div
-                  className="cp-thumb-add"
-                  onClick={() => moreImgRef.current.click()}
-                  title="Thêm ảnh"
-                >
-                  <i className="bi bi-plus-circle" />
+                <div key={i} className="col-6 col-md-4">
+                  <img
+                    src={src}
+                    alt={`Ảnh phụ ${i + 1}`}
+                    className="img-fluid w-100 rounded-3"
+                  />
+                  <button
+                    type="button"
+                    className="form-btn btn btn-outline-dark btn-export w-100 mt-2 mb-0"
+                    onClick={() => removeThumb(i)}
+                    disabled={submitting || readingImages}
+                    aria-label={`Xóa ảnh phụ ${i + 1}`}
+                  >
+                    <i className="bi bi-trash me-2" /> Xóa ảnh
+                  </button>
                 </div>
-              )}
+              ))}
             </div>
+            <button
+              type="button"
+              className="form-btn btn btn-outline-dark btn-export mt-3 mb-0"
+              onClick={() => moreImgRef.current.click()}
+              disabled={submitting || readingImages || thumbs.length + (mainImg ? 1 : 0) >= 10}
+            >
+              <i className="bi bi-images me-2" /> Tải thêm ảnh lên
+            </button>
+            <p className="small text-muted mt-2 mb-0">
+              {readingImages ? "Đang đọc ảnh..." : "Tối đa 10 ảnh, mỗi ảnh không quá 5 MB. Thay đổi ảnh được lưu khi bấm Lưu thay đổi."}
+            </p>
             <input
               ref={moreImgRef}
               type="file"
               accept="image/*"
               multiple
-              className="cp-file-hidden"
+              className="d-none"
               onChange={handleMoreImgs}
+              disabled={submitting || readingImages}
             />
           </div>
 
           {/* CATEGORY */}
-          <div className="cp-card">
-            <div className="cp-card-title">Category</div>
+          <div className="border rounded-4 bg-white p-4 mb-4">
+            <div className="fw-bold mb-3">Danh mục</div>
 
-            <label className="cp-label">Product Category</label>
+            <label className="form-label" htmlFor="product-category">Danh mục sản phẩm</label>
 
             {/* Select */}
-            <div className="cp-cat-select-wrap mb-3">
-              <select
-                className="cp-select"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c.category_id} value={c.category_id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <div className="cp-cat-dropdown-icon">
-                <i className="bi bi-chevron-down" style={{ fontSize: 10 }} />
-              </div>
-            </div>
+            <ProductDropdown
+              id="product-category"
+              value={category}
+              options={categories.map((c) => ({ value: c.category_id, label: c.name }))}
+              placeholder="Chọn danh mục"
+              onChange={setCategory}
+              disabled={submitting}
+            />
           </div>
         </div>
       </div>
