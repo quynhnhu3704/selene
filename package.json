@@ -30,6 +30,7 @@
     "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1"
+    "@eslint/js": "^10.0.1",
+    "globals": "^17.12.0"
   }
 }

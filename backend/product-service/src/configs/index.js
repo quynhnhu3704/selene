@@ -29,4 +29,7 @@ export const config = {
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseKey: process.env.SUPABASE_KEY,
   rabbitMqUrl: process.env.RABBITMQ_URL,
+  // Cấu hình AI chỉ dùng tại backend; thiếu key vẫn tìm được sản phẩm.
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
 };

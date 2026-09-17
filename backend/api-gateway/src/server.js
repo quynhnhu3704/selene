@@ -59,6 +59,27 @@ app.use(
   }),
 );
 
+// Chuyển chatbot đến product-service, có thể đổi target sang agent-service sau này.
+app.use(
+  "/api/chatbot",
+  createProxyMiddleware({
+    target: PRODUCT_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: (path) => `/chatbot${path === "/" ? "" : path}`,
+    proxyTimeout: 30000,
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Chatbot):", err.message);
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          status: 502,
+          message: "Trợ lý ảo Selene đang tạm thời không hoạt động.",
+        }));
+      },
+    },
+  }),
+);
+
 app.use(
   "/api/orders",
   createProxyMiddleware({
