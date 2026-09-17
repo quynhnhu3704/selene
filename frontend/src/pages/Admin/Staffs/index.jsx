@@ -59,7 +59,7 @@ const loadStaffs = async ({ q, sort, status }) => {
   users.sort((a, b) => {
     const result = ["az", "za"].includes(sort)
       ? (collator.compare(String(a.full_name || "").trim().split(/\s+/).at(-1), String(b.full_name || "").trim().split(/\s+/).at(-1)) || collator.compare(a.full_name || "", b.full_name || "")) * (sort === "za" ? -1 : 1)
-      : (new Date(a.created_at || 0) - new Date(b.created_at || 0)) * (sort === "newest" ? -1 : 1);
+      : (new Date(a.created_at || 0) - new Date(b.created_at || 0)) * (sort === "oldest" ? 1 : -1);
     return result || a.profile_id.localeCompare(b.profile_id);
   });
   return users;
@@ -69,10 +69,10 @@ const basePath = "/admin/nhan-vien";
 export default function AdminStaffs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") || "";
-  const allowedSorts = ["newest", "oldest", "az", "za"];
+  const allowedSorts = ["default", "newest", "oldest", "az", "za"];
   const sort = allowedSorts.includes(searchParams.get("sort"))
     ? searchParams.get("sort")
-    : "newest";
+    : "default";
   const status = ["active", "inactive"].includes(searchParams.get("status"))
     ? searchParams.get("status")
     : "";

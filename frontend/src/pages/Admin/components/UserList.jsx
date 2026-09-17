@@ -46,6 +46,7 @@ export default function UserList({
   const sortRef = useRef(null);
   const composing = useRef(false);
   const sortOptions = [
+    { key: "default", label: "Mặc định" },
     { key: "newest", label: "Ngày tham gia: Mới nhất" },
     { key: "oldest", label: "Ngày tham gia: Cũ nhất" },
     { key: "az", label: "Tên: A → Z" },

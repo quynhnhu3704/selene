@@ -19,6 +19,7 @@ export default function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") || "";
   const allowedSorts = [
+    "default",
     "newest",
     "oldest",
     "az",
@@ -28,7 +29,7 @@ export default function AdminUsers() {
   ];
   const sort = allowedSorts.includes(searchParams.get("sort"))
     ? searchParams.get("sort")
-    : "newest";
+    : "default";
   const status = ["active", "inactive"].includes(searchParams.get("status"))
     ? searchParams.get("status")
     : "";
@@ -77,7 +78,7 @@ export default function AdminUsers() {
       try {
         const { data } = await getAdminCustomers({
           q,
-          sort,
+          sort: sort === "default" ? "newest" : sort,
           status,
           page,
           limit: USERS_PER_PAGE,
@@ -137,7 +138,7 @@ export default function AdminUsers() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const { data } = await exportAdminUsers({ role, q, sort, status });
+      const { data } = await exportAdminUsers({ role, q, sort: sort === "default" ? "newest" : sort, status });
       const url = URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;
