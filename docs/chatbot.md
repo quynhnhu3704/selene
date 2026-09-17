@@ -56,8 +56,7 @@ Khi triển khai Qdrant: đồng bộ dữ liệu catalog thành embedding với
 ## Kiểm tra
 
 ```sh
-node --test backend/product-service/src/services/chatbot.test.js
 npm run build --prefix frontend
 ```
 
-Test dùng dữ liệu và Gemini giả lập, không phát sinh truy vấn thật hoặc chi phí AI. Kiểm tra thủ công khi có môi trường thật: mở/đóng chat, gửi bằng Enter, hỏi “Bạn có áo sơ mi không?”, xem giá và mở thẻ sản phẩm; kiểm tra thêm lúc tắt product-service và lúc thiếu/sai key Gemini.
+Kiểm tra thủ công khi có môi trường thật: mở/đóng chat, gửi bằng Enter, hỏi “Bạn có áo sơ mi không?”, xem giá và mở thẻ sản phẩm; kiểm tra thêm lúc tắt product-service và lúc thiếu/sai key Gemini.
