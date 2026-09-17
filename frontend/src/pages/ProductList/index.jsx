@@ -418,7 +418,7 @@ export default function ProductList() {
       : ((selectedMaxPrice - priceMin) / (priceMax - priceMin)) * 100;
 
   return (
-    <>
+    <div className="pl-page">
       <Helmet>
         <title>
           {searchQuery
@@ -433,11 +433,16 @@ export default function ProductList() {
 
       <style>{`
         /* ── LAYOUT ── */
+        /* Giữ layout và breadcrumb cùng chiều rộng, lề hai bên khi thu phóng. */
+        .pl-page > .container {
+          width: calc(100% - 150px);
+          margin: 0 75px;
+        }
         .pl-layout {
           display: flex;
           align-items: flex-start;
           gap: 0;
-          padding: 0 75px 60px;
+          padding: 0 0 60px;
           background: #fff;
           min-height: 80vh;
         }
@@ -757,7 +762,7 @@ export default function ProductList() {
 
         /* ── RESPONSIVE ── */
         @media (max-width: 1100px) {
-          .pl-layout { padding: 0 24px 48px; }
+          .pl-layout { padding-bottom: 48px; }
           .pl-sidebar { flex: 0 0 230px; width: 230px; }
         }
         @media (max-width: 900px) {
@@ -765,7 +770,7 @@ export default function ProductList() {
         }
         @media (max-width: 1520px) {
           .pl-breadcrumb-wrap { padding: 13px 24px; }
-          .pl-layout { padding: 0 16px 48px; }
+          .pl-layout { padding-bottom: 48px; }
           .pl-sidebar { flex: 0 0 220px; width: 220px; }
           .pl-main { padding-left: 20px; }
         }
@@ -991,7 +996,7 @@ export default function ProductList() {
         @media (max-width: 640px) {
           .pl-layout {
             display: block;
-            padding: 0 16px 42px;
+            padding-bottom: 42px;
           }
           .pl-sidebar {
             display: block;
@@ -1011,7 +1016,7 @@ export default function ProductList() {
       `}</style>
 
       {/* ── LAYOUT: SIDEBAR + MAIN ── */}
-      <div className="pl-layout">
+      <div className="container pl-layout">
         {/* ══════════ SIDEBAR ══════════ */}
         <aside className="pl-sidebar" aria-label="Bộ lọc sản phẩm">
           <div className="pl-sidebar-section">
@@ -1355,6 +1360,6 @@ export default function ProductList() {
           onClick={() => setSortOpen(false)}
         />
       )}
-    </>
+    </div>
   );
 }
