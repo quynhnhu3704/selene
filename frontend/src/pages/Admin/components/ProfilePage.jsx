@@ -25,7 +25,7 @@ export default function ProfilePage({
   const { profileId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const base = role === "staff" ? "/admin/nhan-vien" : "/admin/nguoi-dung";
+  const base = role === "staff" ? "/admin/nhan-vien" : "/admin/khach-hang";
   const requestedReturn = params.get("returnUrl");
   const back =
     requestedReturn === base || requestedReturn?.startsWith(base + "?")

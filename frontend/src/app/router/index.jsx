@@ -81,11 +81,11 @@ export default function AppRouter() {
         <Route path="san-pham/:productId/sua" element={<EditProduct />} />
 
         <Route path="don-hang" element={<AdminOrders />} />
-        <Route path="nguoi-dung" element={<AdminUsers />} />
-        <Route path="nguoi-dung/them-moi" element={<CreateUser />} />
-        <Route path="nguoi-dung/:profileId/sua" element={<EditUser />} />
+        <Route path="khach-hang" element={<AdminUsers />} />
+        <Route path="khach-hang/them-moi" element={<CreateUser />} />
+        <Route path="khach-hang/:profileId/sua" element={<EditUser />} />
         <Route
-          path="nguoi-dung/:profileId"
+          path="khach-hang/:profileId"
           element={<ProfilePage role="customer" readOnly />}
         />
         <Route path="nhan-vien" element={<AdminStaffs />} />

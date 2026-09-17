@@ -31,7 +31,7 @@ const MENU_ITEMS = [
     key: "customers",
     label: "Khách hàng",
     icon: "bi-people",
-    path: "/admin/nguoi-dung",
+    path: "/admin/khach-hang",
     enabled: true,
   },
   {

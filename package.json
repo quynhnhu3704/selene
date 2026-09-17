@@ -28,5 +28,8 @@
     "react-datepicker": "^9.1.0",
     "react-toastify": "^11.1.0",
     "sweetalert2": "^11.26.25"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1"
   }
 }

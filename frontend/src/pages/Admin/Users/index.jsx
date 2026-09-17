@@ -13,7 +13,7 @@ import UserList from "../components/UserList";
 
 const USERS_PER_PAGE = 12;
 const role = "customer";
-const basePath = "/admin/nguoi-dung";
+const basePath = "/admin/khach-hang";
 
 export default function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -102,7 +102,7 @@ export default function AdminUsers() {
     };
   }, [q, sort, status, page, revision]);
 
-  // Khóa / mở khóa tài khoản
+  // Khóa / mở khóa tài khoản và cập nhật tại chỗ trong danh sách
   const handleLock = async (user) => {
     if (updatingId) return;
     const isLocking = user.status === "active";
@@ -115,9 +115,15 @@ export default function AdminUsers() {
       )
         return;
 
-      await toggleAdminUserStatus(user.account_id);
+      const { data } = await toggleAdminUserStatus(user.account_id);
+      setUsers((previous) =>
+        previous.map((item) =>
+          item.account_id === user.account_id
+            ? { ...item, status: data.data.status }
+            : item,
+        ),
+      );
       toast.success(`Đã ${isLocking ? "khóa" : "mở khóa"} tài khoản ${name}`);
-      setRevision((value) => value + 1);
     } catch (err) {
       toast.error(
         err.response?.data?.message || "Không thể cập nhật trạng thái!",
@@ -165,7 +171,7 @@ export default function AdminUsers() {
     <UserList
       title="Khách hàng"
       showCreateButton
-      createPath="/admin/nguoi-dung/them-moi"
+      createPath="/admin/khach-hang/them-moi"
       showOrders
       users={users}
       pagination={pagination}
