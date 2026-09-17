@@ -240,7 +240,7 @@ export default function AdminLayout() {
         
         .adm-nav-item {
           display: flex; align-items: center; gap: 11px;
-          padding: ${collapsed ? "10px 0" : "9px 12px"};
+          padding: ${collapsed ? "9px 0" : "9px 12px"};
           justify-content: ${collapsed ? "center" : "flex-start"};
           font-size: 13.5px; font-weight: 600; color: #444;
           text-decoration: none; cursor: pointer;
