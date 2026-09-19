@@ -44,7 +44,7 @@ export const handleGetOrders = async (req, res) => {
 
 export const handleGetAllOrdersForAdmin = async (req, res) => {
   try {
-    const orders = await orderService.getAllOrdersForAdmin();
+    const orders = await orderService.getAllOrdersForAdmin(req.query);
 
     res.status(200).json({
       success: true,
@@ -73,6 +73,26 @@ export const handleGetOrderByIdForAdmin = async (req, res) => {
     const status = error.message === "Không tìm thấy đơn hàng!" ? 404 : 500;
 
     res.status(status).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const handleUpdateOrderForAdmin = async (req, res) => {
+  try {
+    const order = await orderService.updateOrderForAdmin(
+      req.params.orderId,
+      req.body,
+      req.user.role,
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật đơn hàng thành công!",
+      data: order,
+    });
+  } catch (error) {
+    return res.status(error.status || 400).json({
       success: false,
       message: error.message,
     });
@@ -307,5 +327,55 @@ export const handleGetUserOrderCounts = async (req, res) => {
       status: 500,
       message: "Internal Server Error!",
     });
+  }
+};
+
+export const handleCreateOrderForAdmin = async (req, res) => {
+  try {
+    const data = await orderService.createOrderForAdmin(
+      req.body,
+      req.headers.authorization,
+    );
+    res
+      .status(201)
+      .json({ success: true, message: "Tạo đơn hàng thành công!", data });
+  } catch (error) {
+    res
+      .status(error.status || 400)
+      .json({ success: false, message: error.message });
+  }
+};
+
+export const handleExportOrders = async (req, res) => {
+  try {
+    const { orders } = await orderService.getAllOrdersForAdmin(req.query, true);
+    const columns = [
+      ["order_code", "Mã đơn"],
+      ["recipient_name", "Khách hàng"],
+      ["recipient_phone", "Số điện thoại"],
+      ["recipient_address", "Địa chỉ"],
+      ["total_quantity", "Số lượng"],
+      ["final_amount", "Tổng tiền"],
+      ["payment_method", "Phương thức thanh toán"],
+      ["payment_status", "Thanh toán"],
+      ["status", "Trạng thái"],
+      ["created_at", "Ngày đặt"],
+    ];
+    const cell = (value) => {
+      let text = String(value ?? "");
+      if (/^[=+@\-\t\r\n]/.test(text)) text = "'" + text;
+      return '"' + text.replaceAll('"', '""') + '"';
+    };
+    const csv = [
+      columns.map(([, label]) => cell(label)).join(","),
+      ...orders.map((order) =>
+        columns.map(([key]) => cell(order[key])).join(","),
+      ),
+    ].join("\r\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="orders.csv"');
+    res.send("\uFEFF" + csv);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

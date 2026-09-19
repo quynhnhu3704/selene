@@ -1,295 +1,362 @@
-// frontend\src\pages\Admin\Orders\index.jsx
-import { useState } from "react";
+// frontend/src/pages/Admin/Orders/index.jsx
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import Loading from "../../../components/common/Loading";
+import Pagination from "../../../components/common/Pagination";
+import { toast } from "react-toastify";
+import {
+  getAdminOrders,
+  exportAdminOrders,
+} from "../../../services/order.service";
+import { getUser } from "../../../utils/auth";
+import {
+  ORDER_STATUSES,
+  SORT_OPTIONS,
+  getOrderStatus,
+  fmtVND,
+  formatDate,
+} from "./constants";
 
-const INIT = [
-  {
-    id: "#ORD-1024",
-    customer: "Nguyễn Thị Mai",
-    email: "mai@gmail.com",
-    total: 620000,
-    items: 2,
-    status: "Đang giao",
-    date: "22/07/2026",
-  },
-  {
-    id: "#ORD-1023",
-    customer: "Trần Văn Bình",
-    email: "binh@gmail.com",
-    total: 1240000,
-    items: 4,
-    status: "Đã giao",
-    date: "21/07/2026",
-  },
-  {
-    id: "#ORD-1022",
-    customer: "Lê Hoàng Anh",
-    email: "anh@gmail.com",
-    total: 480000,
-    items: 1,
-    status: "Chờ xác nhận",
-    date: "21/07/2026",
-  },
-  {
-    id: "#ORD-1021",
-    customer: "Phạm Thị Lan",
-    email: "lan@gmail.com",
-    total: 850000,
-    items: 3,
-    status: "Đã giao",
-    date: "20/07/2026",
-  },
-  {
-    id: "#ORD-1020",
-    customer: "Võ Minh Khoa",
-    email: "khoa@gmail.com",
-    total: 390000,
-    items: 1,
-    status: "Đã huỷ",
-    date: "20/07/2026",
-  },
-  {
-    id: "#ORD-1019",
-    customer: "Ngô Thị Hương",
-    email: "huong@gmail.com",
-    total: 710000,
-    items: 2,
-    status: "Đang giao",
-    date: "19/07/2026",
-  },
-];
-
-const STATUS_OPTIONS = [
-  "Tất cả",
-  "Chờ xác nhận",
-  "Đang giao",
-  "Đã giao",
-  "Đã huỷ",
-];
-
-const STATUS_COLOR = {
-  "Chờ xác nhận": { bg: "secondary", label: "Chờ xác nhận" },
-  "Đang giao": { bg: "warning", label: "Đang giao" },
-  "Đã giao": { bg: "success", label: "Đã giao" },
-  "Đã huỷ": { bg: "danger", label: "Đã huỷ" },
-};
-
-const fmtVND = (n) => n.toLocaleString("vi-VN") + "đ";
+const ORDERS_PER_PAGE = 12;
+const TABS = [{ key: "", label: "Tất cả" }, ...ORDER_STATUSES];
 
 export default function AdminOrders() {
-  const [orders, setOrders] = useState(INIT);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFS] = useState("Tất cả");
-  const [editId, setEditId] = useState(null);
-  const [editStatus, setES] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = searchParams.get("q") || "";
+  const sort = SORT_OPTIONS.some(
+    (item) => item.key === searchParams.get("sort"),
+  )
+    ? searchParams.get("sort")
+    : "default";
+  const status = TABS.some((item) => item.key === searchParams.get("status"))
+    ? searchParams.get("status")
+    : "";
+  const pageParam = Number(searchParams.get("page"));
+  const page = Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1;
+  const [searchValue, setSearchValue] = useState(q);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [revision, setRevision] = useState(0);
 
-  const filtered = orders.filter((o) => {
-    const matchS =
-      o.customer.toLowerCase().includes(search.toLowerCase()) ||
-      o.id.toLowerCase().includes(search.toLowerCase());
-    const matchF = filterStatus === "Tất cả" || o.status === filterStatus;
-    return matchS && matchF;
+  const composing = useRef(false);
+  const user = getUser();
+  const canEdit =
+    ["admin", "staff"].includes(user?.role) &&
+    user?.permissions?.includes("order:update");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: ORDERS_PER_PAGE,
+    total_items: 0,
+    total_pages: 0,
   });
 
-  const saveStatus = (id) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: editStatus } : o)),
+  const updateOrderQuery = (changes) => {
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (!("page" in changes)) next.delete("page");
+        Object.entries(changes).forEach(([key, value]) => {
+          const normalized = key === "q" ? value.trim() : value;
+          if (
+            !normalized ||
+            (key === "page" && Number(normalized) === 1) ||
+            (key === "sort" && normalized === "default")
+          ) {
+            next.delete(key);
+          } else next.set(key, String(normalized));
+        });
+        return next;
+      },
+      { replace: "q" in changes },
     );
-    setEditId(null);
   };
+
+  useEffect(() => {
+    let isCurrentRequest = true;
+    const fetchOrders = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await getAdminOrders({
+          q,
+          sort,
+          status,
+          page,
+          limit: ORDERS_PER_PAGE,
+        });
+        if (!isCurrentRequest) return;
+        setOrders(res.data.orders);
+        setPagination(res.data.pagination);
+      } catch (err) {
+        if (isCurrentRequest)
+          setError(
+            err.response?.data?.message || "Không thể tải danh sách đơn hàng!",
+          );
+      } finally {
+        if (isCurrentRequest) setLoading(false);
+      }
+    };
+    fetchOrders();
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [q, sort, status, page, revision]);
+
+  useEffect(() => {
+    setSearchValue(q);
+  }, [q]);
+
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const blob = await exportAdminOrders({ q, status, sort });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `don-hang-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Xuất dữ liệu đơn hàng thành công!");
+    } catch (err) {
+      let message = "Không thể xuất dữ liệu đơn hàng!";
+      try {
+        message = JSON.parse(await err.response.data.text()).message || message;
+      } catch {
+        /* Use fallback. */
+      }
+      toast.error(message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const returnUrl = encodeURIComponent(
+    `/admin/don-hang${searchParams.size ? `?${searchParams}` : ""}`,
+  );
 
   return (
     <>
-      <style>{`
-        .adm-table-card { background: #fff; border-radius: 14px; border: 1px solid #f0f0f0; overflow: hidden; }
-        .adm-table-head { padding: 18px 22px; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .adm-page-title { font-size: 15px; font-weight: 800; color: #212529; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
-        .adm-table th  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #adb5bd; border-bottom: 1px solid #f0f0f0 !important; padding: 12px 16px; white-space: nowrap; }
-        .adm-table td  { font-size: 14px; color: #212529; border-color: #f8f8f8 !important; padding: 13px 16px; vertical-align: middle; }
-        .adm-table tbody tr:hover { background: #fafafa; }
-        .adm-action-btn { background: none; border: none; padding: 5px 8px; border-radius: 7px; cursor: pointer; font-size: 15px; transition: background 0.15s; }
-        .adm-action-btn:hover { background: #f0f0f0; }
-        .adm-cust-email { font-size: 12px; color: #adb5bd; font-weight: 500; }
-      `}</style>
-
-      <div className="adm-page-title">Quản lý đơn hàng</div>
-
-      <div className="adm-table-card">
-        {/* toolbar */}
-        <div className="adm-table-head">
-          <div className="input-group" style={{ maxWidth: 280 }}>
-            <span className="input-group-text bg-white border-end-0">
-              <i className="bi bi-search text-muted" style={{ fontSize: 14 }} />
-            </span>
-            <input
-              className="form-control border-start-0 ps-0"
-              placeholder="Tìm mã đơn, tên KH..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ fontSize: 14 }}
-            />
-          </div>
-
-          <div className="d-flex gap-2 flex-wrap">
-            {STATUS_OPTIONS.map((s) => (
-              <button
-                key={s}
-                className={`btn btn-sm fw-semibold ${filterStatus === s ? "btn-dark" : "btn-outline-secondary"}`}
-                style={{ fontSize: 13, borderRadius: 8 }}
-                onClick={() => setFS(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="table-responsive">
-          <table className="table adm-table mb-0">
-            <thead>
-              <tr>
-                <th>Mã đơn</th>
-                <th>Khách hàng</th>
-                <th>Sản phẩm</th>
-                <th>Tổng tiền</th>
-                <th>Ngày đặt</th>
-                <th>Trạng thái</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="text-center text-muted py-5"
-                    style={{ fontSize: 14 }}
-                  >
-                    <i
-                      className="bi bi-inbox"
-                      style={{
-                        fontSize: 32,
-                        display: "block",
-                        marginBottom: 8,
-                        opacity: 0.3,
-                      }}
-                    />
-                    Không có đơn hàng nào
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((o) => {
-                  const s = STATUS_COLOR[o.status];
-                  return (
-                    <tr key={o.id}>
-                      <td className="fw-semibold" style={{ fontSize: 13 }}>
-                        {o.id}
-                      </td>
-                      <td>
-                        <div className="fw-semibold">{o.customer}</div>
-                        <div className="adm-cust-email">{o.email}</div>
-                      </td>
-                      <td className="text-muted">{o.items} sản phẩm</td>
-                      <td className="fw-bold">{fmtVND(o.total)}</td>
-                      <td className="text-muted" style={{ fontSize: 13 }}>
-                        {o.date}
-                      </td>
-                      <td>
-                        {editId === o.id ? (
-                          <div className="d-flex gap-1 align-items-center">
-                            <select
-                              className="form-select form-select-sm"
-                              style={{
-                                fontSize: 13,
-                                width: 150,
-                                borderRadius: 8,
-                              }}
-                              value={editStatus}
-                              onChange={(e) => setES(e.target.value)}
-                            >
-                              {[
-                                "Chờ xác nhận",
-                                "Đang giao",
-                                "Đã giao",
-                                "Đã huỷ",
-                              ].map((opt) => (
-                                <option key={opt}>{opt}</option>
-                              ))}
-                            </select>
-                            <button
-                              className="btn btn-dark btn-sm"
-                              style={{ borderRadius: 7, fontSize: 12 }}
-                              onClick={() => saveStatus(o.id)}
-                            >
-                              ✓
-                            </button>
-                            <button
-                              className="btn btn-outline-secondary btn-sm"
-                              style={{ borderRadius: 7, fontSize: 12 }}
-                              onClick={() => setEditId(null)}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <span
-                            className={`badge bg-${s.bg} bg-opacity-10 text-${s.bg} fw-semibold`}
-                            style={{
-                              fontSize: 12,
-                              padding: "5px 10px",
-                              borderRadius: 8,
-                            }}
-                          >
-                            {s.label}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="d-flex gap-1">
-                          <button
-                            className="adm-action-btn text-muted"
-                            title="Xem chi tiết"
-                          >
-                            <i className="bi bi-eye" />
-                          </button>
-                          <button
-                            className="adm-action-btn text-muted"
-                            title="Đổi trạng thái"
-                            onClick={() => {
-                              setEditId(o.id);
-                              setES(o.status);
-                            }}
-                          >
-                            <i className="bi bi-pencil" />
-                          </button>
-                          <button
-                            className="adm-action-btn text-danger"
-                            title="Xoá"
-                            onClick={() =>
-                              window.confirm("Xoá đơn hàng?") &&
-                              setOrders((prev) =>
-                                prev.filter((x) => x.id !== o.id),
-                              )
-                            }
-                          >
-                            <i className="bi bi-trash3" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div
-          className="px-4 py-3 border-top"
-          style={{ fontSize: 13, color: "#adb5bd" }}
-        >
-          Hiển thị {filtered.length} / {orders.length} đơn hàng
+      <Helmet>
+        <title>Quản lý đơn hàng | Selene</title>
+      </Helmet>
+      <div className="adm-page-head">
+        <div className="adm-page-title">Đơn hàng</div>
+        <div className="d-flex gap-2 flex-wrap">
+          <button
+            type="button"
+            className="form-btn btn btn-export btn-outline-dark fw-semibold px-4"
+            disabled={exporting}
+            onClick={handleExport}
+          >
+            <i className="bi bi-download me-2" />
+            {exporting ? "Đang xuất..." : "Xuất dữ liệu"}
+          </button>
+          {user?.permissions?.includes("order:create") && (
+            <Link
+              className="form-btn btn btn-dark fw-semibold px-4"
+              to="/admin/don-hang/them"
+            >
+              <i className="bi bi-plus-lg me-2" />
+              Thêm đơn hàng
+            </Link>
+          )}
         </div>
       </div>
+      <div className="adm-toolbar">
+        <div className="adm-toolbar-search">
+          <i className="bi bi-search" />
+          <input
+            className="form-control"
+            aria-label="Tìm theo mã đơn hoặc tên khách hàng"
+            placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
+            value={searchValue}
+            onCompositionStart={() => {
+              composing.current = true;
+            }}
+            onCompositionEnd={(e) => {
+              composing.current = false;
+              updateOrderQuery({ q: e.target.value });
+            }}
+            onChange={(e) => {
+              setSearchValue(e.target.value);
+              if (!composing.current) updateOrderQuery({ q: e.target.value });
+            }}
+          />
+        </div>
+        <select
+          className="form-select form-control"
+          style={{ width: "17.5%", minWidth: 190 }}
+          aria-label="Lọc trạng thái đơn hàng"
+          value={status}
+          onChange={(e) => updateOrderQuery({ status: e.target.value })}
+        >
+          <option value="">Tất cả trạng thái</option>
+          {ORDER_STATUSES.map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className="form-select form-control"
+          style={{ width: "17.5%", minWidth: 190 }}
+          aria-label="Sắp xếp đơn hàng"
+          value={sort}
+          onChange={(e) => updateOrderQuery({ sort: e.target.value })}
+        >
+          {SORT_OPTIONS.map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="reset"
+          className="form-btn btn btn-outline-dark fw-semibold mb-0 px-4"
+          onClick={() => {
+            setSearchValue("");
+            updateOrderQuery({ q: "", sort: "", status: "", page: 1 });
+          }}
+        >
+          <i className="bi bi-arrow-counterclockwise me-1" />
+          Đặt lại
+        </button>
+      </div>
+      <div className="adm-table-wrap table-responsive">
+        <table className="table adm-table mb-0">
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Khách hàng</th>
+              <th className="text-center">Sản phẩm</th>
+              <th className="text-end">Tổng tiền</th>
+              <th className="text-center">Ngày đặt</th>
+              <th className="text-center">Trạng thái</th>
+              <th className="text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading || error || !orders.length ? (
+              <tr>
+                <td colSpan={7} className="page-empty py-5">
+                  {loading ? (
+                    <Loading text="Đang tải đơn hàng..." />
+                  ) : error ? (
+                    <>
+                      <p className="text-danger">{error}</p>
+                      <button
+                        className="btn btn-outline-dark form-btn"
+                        onClick={() => setRevision((value) => value + 1)}
+                      >
+                        Thử lại
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-inbox page-empty-icon" />
+                      <p className="mt-3 mb-1 fw-semibold text-secondary">
+                        Không tìm thấy đơn hàng
+                      </p>
+                      <p className="text-muted">
+                        Thử lại với từ khóa hoặc bộ lọc khác!
+                      </p>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ) : (
+              orders.map((order) => {
+                const state = getOrderStatus(order.status);
+                const quantity = Number(order.total_quantity || 0);
+                // Ít: đỏ, vừa: vàng, nhiều: xanh, dùng badge sẵn có của trang quản lý.
+                const color =
+                  quantity >= 5
+                    ? "success"
+                    : quantity >= 3
+                      ? "warning"
+                      : "danger";
+                const detail = `/admin/don-hang/${encodeURIComponent(order.order_id)}`;
+                return (
+                  <tr key={order.order_id}>
+                    <td>
+                      <Link
+                        className="adm-link fw-semibold text-break"
+                        to={`${detail}?returnUrl=${returnUrl}`}
+                      >
+                        {order.order_code}
+                      </Link>
+                    </td>
+                    <td>
+                      <div className="adm-name">{order.recipient_name}</div>
+                      <div className="adm-sub">
+                        {order.recipient_phone || "—"}
+                      </div>
+                    </td>
+                    <td className="text-center">
+                      <span
+                        className={`adm-stock rounded-pill text-${color} bg-${color}-subtle`}
+                      >
+                        {quantity.toLocaleString("vi-VN")}
+                      </span>
+                    </td>
+                    <td className="text-end fw-semibold">
+                      {fmtVND(order.final_amount)}
+                    </td>
+                    <td className="text-center">
+                      {formatDate(order.created_at)}
+                    </td>
+                    <td className="text-center">
+                      <span
+                        className={`adm-status rounded-pill w-auto text-${state.color} bg-${state.color}-subtle`}
+                      >
+                        {state.label}
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      <div className="d-flex gap-1 justify-content-center">
+                        <Link
+                          className="adm-action-btn"
+                          title="Xem chi tiết"
+                          aria-label={`Xem đơn ${order.order_code}`}
+                          to={`${detail}?returnUrl=${returnUrl}`}
+                        >
+                          <i className="bi bi-eye" />
+                        </Link>
+                        {canEdit && (
+                          <Link
+                            className="adm-action-btn"
+                            title="Chỉnh sửa"
+                            aria-label={`Sửa đơn ${order.order_code}`}
+                            to={`${detail}/sua?returnUrl=${returnUrl}`}
+                          >
+                            <i className="bi bi-pencil-square" />
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      {!loading && !error && (
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.total_pages}
+          totalItems={pagination.total_items}
+          displayedCount={orders.length}
+          label="đơn hàng"
+          onPageChange={(nextPage) => updateOrderQuery({ page: nextPage })}
+        />
+      )}
     </>
   );
 }

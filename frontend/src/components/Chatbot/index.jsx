@@ -218,7 +218,7 @@ const CHATBOT_STYLES = `
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #871b1b, #b54747);
+  background: #871b1b;
   color: white;
   border: none;
   font-size: 28px;

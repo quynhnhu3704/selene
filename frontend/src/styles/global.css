@@ -16,7 +16,7 @@
 .se-swal-title {
   font-size: 23px !important;
   font-weight: 700;
-  color: #444;
+  color: #343A40;
   padding: 0 !important;
   margin-bottom: 8px !important;
 }
@@ -1146,8 +1146,10 @@
   margin-bottom: 7px;
 }
 .form-label {
-  font-size: 16px;
-  font-weight: 500;
+  /* font-size: 16px;
+  font-weight: 500; */
+  font-size: 13px;
+  font-weight: 600;
   color: #212529;
 }
 .form-link-sm {
@@ -1511,15 +1513,19 @@
   border-right: none;
 }
 .info-field-label {
+  /* font-size: 16px; */
+  /* font-weight: 500; */
+  font-size: 14px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   margin-bottom: 6px;
-  font-weight: 500;
+  color: #212529;
 }
 .info-field-val {
   font-size: 15px;
   min-height: 24px;
-  color: #444;
+  color: #343A40;
   /* font-weight: 500; */
 }
 
@@ -1818,7 +1824,7 @@
   padding: 0.5em 1em;
   font-size: 13px;
   font-weight: 600;
-  color: #444;
+  color: #343A40;
   border-radius: 0.5em;
   cursor: pointer;
   transition: all 0.15s;
@@ -1872,7 +1878,7 @@
 .adm-table th {
   font-size: 13.5px;
   font-weight: 600;
-  color: #444;
+  color: #343A40;
   background: #efefed;
   padding: 10px 14px;
   white-space: nowrap;

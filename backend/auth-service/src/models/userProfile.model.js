@@ -3,7 +3,7 @@ import { supabase } from "../configs/supabase.js";
 
 export const UserProfileModel = {
   // Lấy danh sách hồ sơ người dùng theo vai trò
-  getAdminProfiles: async (roleName) => {
+  getAdminProfiles: async (roleId) => {
     const profiles = [];
     let from = 0;
 
@@ -20,14 +20,14 @@ export const UserProfileModel = {
         dob,
         accounts!inner (
           email,
-          role_name,
+          role_id,
           status,
           created_at
         )
       `,
           { count: "exact" },
         )
-        .eq("accounts.role_name", roleName)
+        .eq("accounts.role_id", roleId)
         .order("profile_id", { ascending: true })
         .range(from, from + 499);
       if (error) throw error;
@@ -67,7 +67,7 @@ export const UserProfileModel = {
   getAccountById: async (accountId) => {
     const { data } = await supabase
       .from("accounts")
-      .select("email, status, role_name")
+      .select("email, status, role_id")
       .eq("account_id", accountId)
       .single();
     return data;
@@ -151,7 +151,7 @@ export const UserProfileModel = {
         identity_card,
         accounts (
           email,
-          role_name,
+          role_id,
           status
         )
       `,
@@ -180,7 +180,7 @@ export const UserProfileModel = {
         status,
         accounts (
           email,
-          role_name,
+          role_id,
           status
         )
       `,

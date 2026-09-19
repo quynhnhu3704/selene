@@ -473,14 +473,295 @@ export const markOrderAsPaid = async (orderId) => {
   return OrderModel.markPaymentAsPaid(orderId);
 };
 
-export const getAllOrdersForAdmin = async () => {
+export const getAllOrdersForAdmin = async (query = {}, exportAll = false) => {
   try {
     const orders = await OrderModel.findAllForAdmin();
-    return orders;
+    const normalize = (value) =>
+      String(value || "")
+        .trim()
+        .toLocaleLowerCase("vi-VN");
+    const q = normalize(query.q);
+    const status = normalize(query.status);
+    const filtered = orders
+      .map(({ order_items, ...order }) => ({
+        ...order,
+        total_quantity: (order_items || []).reduce(
+          (total, item) => total + Number(item.quantity || 0),
+          0,
+        ),
+      }))
+      .filter(
+        (order) =>
+          (!q ||
+            normalize(order.order_code).includes(q) ||
+            normalize(order.recipient_name).includes(q)) &&
+          (!status ||
+            order.status === status ||
+            (status === "cancelled" && order.status === "cancel")),
+      );
+    const sorts = {
+      quantity_asc: (a, b) => a.total_quantity - b.total_quantity,
+      quantity_desc: (a, b) => b.total_quantity - a.total_quantity,
+      total_asc: (a, b) => Number(a.final_amount) - Number(b.final_amount),
+      total_desc: (a, b) => Number(b.final_amount) - Number(a.final_amount),
+      az: (a, b) =>
+        String(a.recipient_name || "").localeCompare(
+          String(b.recipient_name || ""),
+          "vi",
+        ),
+      za: (a, b) =>
+        String(b.recipient_name || "").localeCompare(
+          String(a.recipient_name || ""),
+          "vi",
+        ),
+    };
+    if (sorts[query.sort]) filtered.sort(sorts[query.sort]);
+    const requestedLimit = Number(query.limit);
+    const limit =
+      Number.isInteger(requestedLimit) && requestedLimit > 0
+        ? Math.min(requestedLimit, 100)
+        : 12;
+    const totalPages = Math.ceil(filtered.length / limit);
+    const requestedPage = Number(query.page);
+    const page = Math.min(
+      Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+      totalPages || 1,
+    );
+    return {
+      orders: exportAll
+        ? filtered
+        : filtered.slice((page - 1) * limit, page * limit),
+      pagination: {
+        page,
+        limit,
+        total_items: filtered.length,
+        total_pages: totalPages,
+      },
+    };
   } catch (error) {
     console.error("Lỗi tại getAllOrdersForAdmin Service:", error.message);
     throw new Error("Không thể lấy danh sách đơn hàng cho admin!");
   }
+};
+
+export const updateOrderForAdmin = async (orderId, data, role) => {
+  if (!["admin", "staff"].includes(role)) {
+    const error = new Error("Bạn không có quyền quản lý đơn hàng!");
+    error.status = 403;
+    throw error;
+  }
+  const fields = [
+    "status",
+    "recipient_name",
+    "recipient_phone",
+    "recipient_address",
+    "payment_method",
+    "payment_status",
+    "total_discount_price",
+    "shipping_fee",
+  ];
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Thông tin đơn hàng không hợp lệ!");
+  }
+  if (
+    role !== "admin" &&
+    Object.keys(data).some((key) => !["status", "updated_at"].includes(key))
+  ) {
+    const error = new Error(
+      "Nhân viên chỉ được chỉnh sửa trạng thái đơn hàng!",
+    );
+    error.status = 403;
+    throw error;
+  }
+  if (
+    Object.keys(data).some(
+      (key) => ![...fields, "updated_at", "order_items"].includes(key),
+    )
+  ) {
+    throw new Error("Thông tin cập nhật đơn hàng không hợp lệ!");
+  }
+  const order = await OrderModel.findById(orderId);
+  if (!order) {
+    const error = new Error("Không tìm thấy đơn hàng!");
+    error.status = 404;
+    throw error;
+  }
+  if (data.updated_at !== order.updated_at) {
+    const error = new Error(
+      "Đơn hàng đã thay đổi. Vui lòng tải lại trước khi sửa!",
+    );
+    error.status = 409;
+    throw error;
+  }
+  const changes = {};
+  for (const key of fields) {
+    if (Object.hasOwn(data, key)) changes[key] = data[key];
+  }
+  const statuses = [
+    "unpaid",
+    "pending",
+    "confirmed",
+    "processing",
+    "shipping",
+    "delivered",
+    "completed",
+    "cancelled",
+  ];
+  if (changes.status === "cancel") changes.status = "cancelled";
+  if (Object.hasOwn(changes, "status") && !statuses.includes(changes.status))
+    throw new Error("Trạng thái đơn hàng không hợp lệ!");
+  for (const key of [
+    "recipient_name",
+    "recipient_phone",
+    "recipient_address",
+  ]) {
+    if (!Object.hasOwn(changes, key)) continue;
+    if (typeof changes[key] !== "string" || !changes[key].trim()) {
+      throw new Error("Vui lòng nhập đầy đủ thông tin người nhận!");
+    }
+    changes[key] = changes[key].trim();
+  }
+  if (changes.recipient_phone && !/^0\d{9}$/.test(changes.recipient_phone)) {
+    throw new Error("Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0!");
+  }
+  if (
+    Object.hasOwn(changes, "payment_method") &&
+    !paymentMethods.has(changes.payment_method)
+  ) {
+    throw new Error("Phương thức thanh toán không hợp lệ!");
+  }
+  if (
+    Object.hasOwn(changes, "payment_status") &&
+    !["unpaid", "paid", "refunded"].includes(changes.payment_status)
+  ) {
+    throw new Error("Trạng thái thanh toán không hợp lệ!");
+  }
+  for (const key of ["total_discount_price", "shipping_fee"]) {
+    if (!Object.hasOwn(changes, key)) continue;
+    if (
+      changes[key] === "" ||
+      changes[key] === null ||
+      !Number.isSafeInteger(Number(changes[key])) ||
+      Number(changes[key]) < 0
+    ) {
+      throw new Error("Số tiền phải là số nguyên không âm!");
+    }
+    changes[key] = Number(changes[key]);
+  }
+  const originalItems = order.order_items || [];
+  let nextItems = originalItems;
+  let itemsChanged = false;
+  if (Object.hasOwn(data, "order_items")) {
+    if (
+      !Array.isArray(data.order_items) ||
+      !data.order_items.length ||
+      data.order_items.length !== originalItems.length
+    ) {
+      throw new Error("Danh sách sản phẩm trong đơn hàng không hợp lệ!");
+    }
+    const ids = new Set();
+    nextItems = data.order_items.map((item) => {
+      const original = originalItems.find(
+        (row) => row.order_item_id === item?.order_item_id,
+      );
+      if (!original || ids.has(item.order_item_id))
+        throw new Error("Sản phẩm không thuộc đơn hàng hoặc bị trùng!");
+      ids.add(item.order_item_id);
+      const quantity = Number(item.quantity);
+      const price = Number(item.unit_price);
+      if (
+        !Number.isSafeInteger(quantity) ||
+        quantity <= 0 ||
+        quantity > 2147483647 ||
+        item.unit_price === "" ||
+        item.unit_price === null ||
+        !Number.isSafeInteger(price) ||
+        price < 0 ||
+        !Number.isSafeInteger(quantity * price)
+      ) {
+        throw new Error(
+          "Số lượng phải là số nguyên dương, đơn giá phải là số nguyên không âm!",
+        );
+      }
+      if (
+        quantity !== Number(original.quantity) ||
+        price !== Number(original.unit_price)
+      )
+        itemsChanged = true;
+      return { ...original, quantity, unit_price: price };
+    });
+  }
+  if (role === "admin") {
+    const discount =
+      changes.total_discount_price ?? Number(order.total_discount_price || 0);
+    const shipping = changes.shipping_fee ?? Number(order.shipping_fee || 0);
+    const subtotal = itemsChanged
+      ? nextItems.reduce(
+          (total, item) => total + item.quantity * item.unit_price,
+          0,
+        )
+      : Number(order.total_original_price || 0);
+    if (
+      !Number.isSafeInteger(subtotal) ||
+      !Number.isSafeInteger(subtotal - discount + shipping)
+    ) {
+      throw new Error("Tổng tiền đơn hàng không hợp lệ!");
+    }
+    if (discount > subtotal)
+      throw new Error("Tiền giảm giá không được lớn hơn tiền hàng!");
+    changes.final_amount = subtotal - discount + shipping;
+    if (itemsChanged) changes.total_original_price = subtotal;
+  }
+
+  // Chênh lệch tồn kho theo số lượng mới và việc chuyển vào/ra trạng thái đã hủy.
+  const wasCancelled = ["cancel", "cancelled"].includes(order.status);
+  const isCancelled = ["cancel", "cancelled"].includes(
+    changes.status ?? order.status,
+  );
+  const differences = new Map();
+  for (const item of originalItems) {
+    differences.set(
+      item.variant_id,
+      (differences.get(item.variant_id) || 0) -
+        (wasCancelled ? 0 : Number(item.quantity)),
+    );
+  }
+  for (const item of nextItems) {
+    differences.set(
+      item.variant_id,
+      (differences.get(item.variant_id) || 0) +
+        (isCancelled ? 0 : Number(item.quantity)),
+    );
+  }
+  const reserveItems = [];
+  const restoreItems = [];
+  for (const [variant_id, quantity] of differences) {
+    if (quantity > 0) reserveItems.push({ variant_id, quantity });
+    if (quantity < 0) restoreItems.push({ variant_id, quantity: -quantity });
+  }
+  const updated = await OrderModel.updateForAdmin(order, changes);
+  let reserved = false;
+  let itemsUpdated = false;
+  try {
+    if (reserveItems.length) {
+      await reserveStock(reserveItems);
+      reserved = true;
+    }
+    if (itemsChanged) {
+      await OrderModel.updateItemsForAdmin(nextItems);
+      itemsUpdated = true;
+    }
+    if (restoreItems.length) await restoreStock(restoreItems);
+  } catch (error) {
+    if (itemsUpdated) await OrderModel.updateItemsForAdmin(originalItems);
+    if (reserved) await restoreStock(reserveItems);
+    const previous = Object.fromEntries(
+      Object.keys(changes).map((key) => [key, order[key]]),
+    );
+    await OrderModel.updateForAdmin(updated, previous);
+    throw error;
+  }
+  return updated;
 };
 
 export const getOrderByIdForAdmin = async (orderId) => {
@@ -639,4 +920,132 @@ export const getUserOrderCounts = async () => {
   }
 
   return counts;
+};
+
+// Admin creates an order directly, without changing a customer's cart.
+export const createOrderForAdmin = async (data, authorization) => {
+  if (!data || typeof data !== "object" || Array.isArray(data))
+    throw new Error("Thông tin đơn hàng không hợp lệ!");
+  const recipient = {};
+  for (const key of [
+    "recipient_name",
+    "recipient_phone",
+    "recipient_address",
+  ]) {
+    if (typeof data[key] !== "string" || !data[key].trim())
+      throw new Error("Vui lòng nhập đầy đủ thông tin người nhận!");
+    recipient[key] = data[key].trim();
+  }
+  if (!/^0\d{9}$/.test(recipient.recipient_phone))
+    throw new Error("Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0!");
+  if (!paymentMethods.has(data.payment_method))
+    throw new Error("Phương thức thanh toán không hợp lệ!");
+  if (
+    typeof data.account_id !== "string" ||
+    typeof data.profile_id !== "string" ||
+    !data.profile_id
+  )
+    throw new Error("Vui lòng chọn tài khoản khách hàng!");
+  const customerResponse = await fetch(
+    `${config.authServiceUrl.replace(/\/$/, "")}/manage/profiles/${encodeURIComponent(data.profile_id)}`,
+    {
+      headers: { Authorization: authorization || "" },
+      signal: AbortSignal.timeout(8000),
+    },
+  );
+  if (!customerResponse.ok)
+    throw new Error(
+      "Không thể xác minh khách hàng. Kiểm tra quyền xem khách hàng và thử lại!",
+    );
+  const { data: customer } = await customerResponse.json();
+  if (
+    customer?.account_id !== data.account_id ||
+    customer?.role_name !== "customer" ||
+    customer?.status !== "active"
+  )
+    throw new Error("Vui lòng chọn tài khoản khách hàng đang hoạt động!");
+  if (
+    !Array.isArray(data.order_items) ||
+    !data.order_items.length ||
+    data.order_items.length > 100
+  )
+    throw new Error("Vui lòng chọn từ 1 đến 100 sản phẩm!");
+  const ids = new Set();
+  for (const item of data.order_items) {
+    if (
+      !item ||
+      typeof item.variant_id !== "string" ||
+      !item.variant_id ||
+      ids.has(item.variant_id) ||
+      !Number.isSafeInteger(item.quantity) ||
+      item.quantity < 1 ||
+      item.quantity > 2147483647
+    )
+      throw new Error("Sản phẩm bị trùng hoặc số lượng không hợp lệ!");
+    ids.add(item.variant_id);
+  }
+  const details = await requestProductDetails([...ids]);
+  const orderId = generateId("order");
+  const items = data.order_items.map((item) => {
+    const detail = details.find((row) => row.variant_id === item.variant_id);
+    if (!detail || Number(detail.stock_quantity) < item.quantity)
+      throw new Error("Sản phẩm không tồn tại hoặc không đủ tồn kho!");
+    const price = Number(detail.discount_price || detail.original_price || 0);
+    if (!Number.isSafeInteger(price) || price < 0)
+      throw new Error("Giá sản phẩm không hợp lệ!");
+    return {
+      order_item_id: generateId("oi"),
+      order_id: orderId,
+      product_id: detail.product_id,
+      variant_id: detail.variant_id,
+      product_name: detail.product_name,
+      size: detail.size,
+      color: detail.color,
+      unit_price: price,
+      quantity: item.quantity,
+    };
+  });
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.unit_price * item.quantity,
+    0,
+  );
+  const money = {};
+  for (const key of ["shipping_fee", "total_discount_price"]) {
+    const value = data[key] ?? 0;
+    if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)
+      throw new Error("Số tiền phải là số nguyên không âm!");
+    money[key] = value;
+  }
+  const total = subtotal - money.total_discount_price + money.shipping_fee;
+  if (
+    !Number.isSafeInteger(subtotal) ||
+    !Number.isSafeInteger(total) ||
+    money.total_discount_price > subtotal
+  )
+    throw new Error("Tổng tiền hoặc giảm giá không hợp lệ!");
+  await reserveStock(items);
+  let order;
+  try {
+    order = await OrderModel.createOrder({
+      order_id: orderId,
+      order_code: generateOrderCode(),
+      account_id: data.account_id,
+      ...recipient,
+      ...money,
+      total_original_price: subtotal,
+      final_amount: total,
+      payment_method: data.payment_method,
+      payment_status: "unpaid",
+      status: data.payment_method === "cod" ? "pending" : "unpaid",
+    });
+    await OrderModel.createOrderItems(items);
+  } catch (error) {
+    try {
+      if (order) await OrderModel.deleteIncompleteOrder(orderId);
+    } finally {
+      await restoreStock(items);
+    }
+    throw error;
+  }
+  return { ...order, order_items: items };
 };

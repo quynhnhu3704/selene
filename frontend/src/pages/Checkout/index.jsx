@@ -17,6 +17,7 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [addressArea, setAddressArea] = useState(null);
+  const [addressDetail, setAddressDetail] = useState("");
   const editedFields = useRef(new Set());
   const location = useLocation();
   const navigate = useNavigate();
@@ -79,7 +80,7 @@ export default function Checkout() {
       errors.recipient_phone = "Số điện thoại chưa hợp lệ.";
     }
 
-    if (!shippingInfo.recipient_address.trim()) {
+    if (!addressDetail.trim()) {
       errors.recipient_address = "Vui lòng nhập địa chỉ nhận hàng.";
     }
     if (!addressArea)
@@ -103,7 +104,7 @@ export default function Checkout() {
         payment_method: paymentMethod,
         recipient_name: shippingInfo.recipient_name.trim(),
         recipient_phone: shippingInfo.recipient_phone.trim(),
-        recipient_address: `${shippingInfo.recipient_address.trim()}, ${addressArea}`,
+        recipient_address: shippingInfo.recipient_address,
         note: shippingInfo.note.trim(),
       };
 
@@ -543,18 +544,16 @@ export default function Checkout() {
 
               <label className="checkout-label">Địa chỉ nhận hàng</label>
 
-              <Address onChange={setAddressArea} />
-              <input
-                type="text"
-                className={`checkout-input ${
+              <Address
+                onChange={(address, area, detail) => {
+                  setAddressArea(area);
+                  setAddressDetail(detail);
+                  updateShippingInfo("recipient_address", address);
+                }}
+                inputClassName={`checkout-input ${
                   formErrors.recipient_address ? "input-error" : ""
                 }`}
-                placeholder="Nhập số nhà, tên đường, thôn / ấp"
-                value={shippingInfo.recipient_address}
-                onChange={(event) =>
-                  updateShippingInfo("recipient_address", event.target.value)
-                }
-                aria-invalid={Boolean(formErrors.recipient_address)}
+                invalid={Boolean(formErrors.recipient_address)}
               />
 
               {formErrors.recipient_address && (

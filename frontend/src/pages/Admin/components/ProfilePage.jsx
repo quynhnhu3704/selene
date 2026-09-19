@@ -53,7 +53,11 @@ export default function ProfilePage({
     getAdminUserDetail(profileId)
       .then(({ data }) => {
         if (!isCurrentRequest) return;
-        if (data.data.role_name !== role) {
+        if (
+          role === "staff"
+            ? ![1, 2].includes(Number(data.data.role_id))
+            : Number(data.data.role_id) !== 3
+        ) {
           setError("Người dùng không thuộc danh sách này.");
           return;
         }

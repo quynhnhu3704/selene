@@ -100,7 +100,7 @@ export const AccountModel = {
         `
       account_id,
       email,
-      role_name,
+      role_id,
       status,
       created_at
     `,

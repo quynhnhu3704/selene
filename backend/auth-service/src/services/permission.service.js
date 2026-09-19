@@ -1,6 +1,7 @@
 // backend\auth-service\src\services\permission.service.js
 import { PermissionModel } from "../models/permission.model.js";
 import { AccountModel } from "../models/account.model.js";
+import { getRoleName } from "../configs/roles.js";
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -31,7 +32,7 @@ export const getPermissionsByAccountId = async (accountId) => {
   // 3. Trả kết quả đã xử lý về cho Controller
   return {
     account_id: accountId,
-    role_name: account.role_name,
+    role_name: getRoleName(account.role_id),
     permissions: permissions,
   };
 };

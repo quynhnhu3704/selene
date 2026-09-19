@@ -24,6 +24,8 @@ import AdminLayout from "../../pages/Admin";
 import AdminDashboard from "../../pages/Admin/Dashboard";
 import AdminProducts from "../../pages/Admin/Products";
 import AdminOrders from "../../pages/Admin/Orders";
+import CreateOrder from "../../pages/Admin/Orders/pages/Create";
+import OrderDetail from "../../pages/Admin/Orders/pages/Detail";
 import AdminStaffs from "../../pages/Admin/Staffs";
 import CreateStaff from "../../pages/Admin/Staffs/pages/Create";
 import EditStaff from "../../pages/Admin/Staffs/pages/Edit";
@@ -81,6 +83,9 @@ export default function AppRouter() {
         <Route path="san-pham/:productId/sua" element={<EditProduct />} />
 
         <Route path="don-hang" element={<AdminOrders />} />
+        <Route path="don-hang/them" element={<CreateOrder />} />
+        <Route path="don-hang/:orderId" element={<OrderDetail readOnly />} />
+        <Route path="don-hang/:orderId/sua" element={<OrderDetail />} />
         <Route path="khach-hang" element={<AdminUsers />} />
         <Route path="khach-hang/them-moi" element={<CreateUser />} />
         <Route path="khach-hang/:profileId/sua" element={<EditUser />} />

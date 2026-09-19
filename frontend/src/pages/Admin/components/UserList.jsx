@@ -235,8 +235,13 @@ export default function UserList({
                           to={detailPath(user)}
                           className="adm-link align-self-start text-start"
                         >
-                          <div className="adm-name">
+                          <div className="adm-name d-flex align-items-center">
                             {user.full_name || "Chưa cập nhật"}
+                            {user.is_self && (
+                              <span className="badge text-primary bg-primary-subtle ms-2">
+                                Bạn
+                              </span>
+                            )}
                           </div>
                         </Link>
                         <div className="adm-sub">{user.email || "—"}</div>
@@ -286,9 +291,11 @@ export default function UserList({
                       </Link>
                       <button
                         className={`adm-action-btn ${user.status === "active" ? "lock" : "unlock"}`}
-                        disabled={updatingId === user.account_id}
+                        disabled={user.is_self || updatingId === user.account_id}
                         title={
-                          user.status === "active"
+                          user.is_self
+                            ? "Không thể khóa tài khoản của chính mình"
+                            : user.status === "active"
                             ? "Khóa tài khoản"
                             : "Mở khóa tài khoản"
                         }

@@ -16,12 +16,12 @@ export const handleUpdateCustomerProfile = async (req, res) => {
       });
     }
 
-    const { full_name, phone_number, gender, dob } = req.body;
+    const { full_name, phone_number, gender, dob, identity_card, address } = req.body;
     const avatarFile = req.file;
 
     const result = await userService.updateCustomerProfile(
       accountId,
-      { full_name, phone_number, gender, dob },
+      { full_name, phone_number, gender, dob, identity_card, address },
       avatarFile,
     );
 
@@ -32,6 +32,8 @@ export const handleUpdateCustomerProfile = async (req, res) => {
     });
   } catch (error) {
     if (
+      error.status === 400 ||
+      error.message.includes("đã được sử dụng") ||
       error.message.includes("Không tìm thấy") ||
       error.message.includes("Thông tin mới") ||
       error.message.includes("tải ảnh đại diện")
@@ -159,6 +161,7 @@ export const handleUpdateStaffProfile = async (req, res) => {
     });
   } catch (error) {
     if (
+      error.status === 400 ||
       error.message.includes("Không tìm thấy") ||
       error.message.includes("đã tồn tại") ||
       error.message.includes("đã được sử dụng") ||
@@ -374,6 +377,7 @@ export const handleUpdateProfileAll = async (req, res) => {
       accountId,
       { full_name, phone, email, identity_card, gender, dob, address, status },
       avatarFile,
+      req.user?.accountId,
     );
 
     return res.status(200).json({
@@ -422,6 +426,13 @@ export const handleUpdateAccount = async (req, res) => {
 
     // Nhận thêm email từ body
     const { email, password, phone, status } = req.body;
+
+    if (accountId === req.user?.accountId && status && status !== "active") {
+      return res.status(400).json({
+        status: 400,
+        message: "Không thể khóa tài khoản của chính mình!",
+      });
+    }
 
     // Truyền email vào Service xử lý
     const result = await userService.updateAccount(accountId, {
@@ -523,6 +534,13 @@ export const handleToggleAccountStatus = async (req, res) => {
       return res.status(400).json({
         status: 400,
         message: "Vui lòng cung cấp ID tài khoản (accountId)!",
+      });
+    }
+
+    if (accountId === req.user?.accountId) {
+      return res.status(400).json({
+        status: 400,
+        message: "Không thể thay đổi trạng thái tài khoản của chính mình!",
       });
     }
 

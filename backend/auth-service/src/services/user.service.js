@@ -1,6 +1,7 @@
 // backend\auth-service\src\services\user.service.js
 import { getOrderCounts } from "./order-count.service.js";
 import bcrypt from "bcrypt";
+import { ROLE_IDS, getRoleName } from "../configs/roles.js";
 import { UserProfileModel } from "../models/userProfile.model.js";
 import { AccountModel } from "../models/account.model.js";
 
@@ -44,6 +45,12 @@ export const updateCustomerProfile = async (
   profileData,
   avatarFile,
 ) => {
+  const account = await AccountModel.findById(accountId);
+  if ([ROLE_IDS.admin, ROLE_IDS.staff].includes(Number(account?.role_id))) {
+    const { email, ...personalData } = profileData;
+    return updateStaffProfile(accountId, personalData, avatarFile);
+  }
+
   const { full_name, phone_number, gender, dob } = profileData;
   let avatarUrl = null;
 
@@ -67,8 +74,8 @@ export const updateCustomerProfile = async (
 
   if (isValidValue(full_name)) updateData.full_name = full_name.trim();
   if (isValidValue(phone_number)) updateData.phone_number = phone_number.trim();
-  if (isValidValue(gender)) updateData.gender = gender;
-  if (isValidValue(dob)) updateData.dob = dob;
+  if (gender !== undefined) updateData.gender = isValidValue(gender) ? gender : null;
+  if (dob !== undefined) updateData.dob = isValidValue(dob) ? dob : null;
   if (avatarUrl) updateData.avatar_url = avatarUrl;
   updateData.updated_at = new Date();
 
@@ -84,8 +91,8 @@ export const updateCustomerProfile = async (
   const responseData = {
     full_name: updateData.full_name || existingProfile.full_name,
     phone_number: updateData.phone_number || existingProfile.phone_number,
-    gender: updateData.gender || existingProfile.gender,
-    dob: updateData.dob || existingProfile.dob,
+    gender: updateData.gender !== undefined ? updateData.gender : existingProfile.gender,
+    dob: updateData.dob !== undefined ? updateData.dob : existingProfile.dob,
     avatar_url: avatarUrl || existingProfile.avatar_url,
   };
 
@@ -117,6 +124,9 @@ export const getCustomerProfile = async (accountId) => {
       gender: profile.gender,
       dob: profile.dob,
       role_id: account.role_id,
+      ...([ROLE_IDS.admin, ROLE_IDS.staff].includes(Number(account.role_id))
+        ? { identity_card: profile.identity_card, address: profile.address }
+        : {}),
     },
   };
 };
@@ -154,7 +164,7 @@ export const updateStaffProfile = async (
   accountId,
   profileData,
   avatarFile,
-  clearOptional = false,
+  clearOptional = true,
 ) => {
   const {
     full_name,
@@ -173,6 +183,12 @@ export const updateStaffProfile = async (
 
   if (!existingProfile || !existingAccount) {
     throw new Error("Không tìm thấy hồ sơ người dùng hợp lệ!");
+  }
+
+  if (identity_card && !/^[0-9]{12}$/.test(String(identity_card).trim())) {
+    const error = new Error("CCCD phải gồm 12 chữ số!");
+    error.status = 400;
+    throw error;
   }
 
   if (identity_card && identity_card.trim() !== existingProfile.identity_card) {
@@ -209,7 +225,7 @@ export const updateStaffProfile = async (
   }
 
   if (avatarFile) {
-    avatarUrl = await uploadAvatar(`_${existingAccount.role_name}`, accountId, avatarFile);
+    avatarUrl = await uploadAvatar(`_${getRoleName(existingAccount.role_id)}`, accountId, avatarFile);
   }
 
   const updateData = {};
@@ -233,7 +249,9 @@ export const updateStaffProfile = async (
   if (isValidValue(phone_number)) accountUpdateData.phone = phone_number.trim();
   if (clearOptional) {
     for (const key of ["identity_card", "gender", "dob", "address"]) {
-      if (profileData[key] === "") updateData[key] = null;
+      if (profileData[key] !== undefined && !isValidValue(profileData[key])) {
+        updateData[key] = null;
+      }
     }
   }
 
@@ -258,10 +276,10 @@ export const updateStaffProfile = async (
     full_name: updateData.full_name || existingProfile.full_name,
     email: accountUpdateData.email || existingAccount.email,
     phone_number: updateData.phone_number || existingProfile.phone_number,
-    identity_card: updateData.identity_card || existingProfile.identity_card,
-    gender: updateData.gender || existingProfile.gender,
-    dob: updateData.dob || existingProfile.dob,
-    address: updateData.address || existingProfile.address,
+    identity_card: updateData.identity_card !== undefined ? updateData.identity_card : existingProfile.identity_card,
+    gender: updateData.gender !== undefined ? updateData.gender : existingProfile.gender,
+    dob: updateData.dob !== undefined ? updateData.dob : existingProfile.dob,
+    address: updateData.address !== undefined ? updateData.address : existingProfile.address,
     avatar_url: avatarUrl || existingProfile.avatar_url,
   };
 
@@ -427,7 +445,8 @@ export const getProfileList = async (page, limit) => {
     identity_card: item.identity_card,
     email: item.accounts ? item.accounts.email : null,
     status: item.accounts ? item.accounts.status : null,
-    role_name: item.accounts ? item.accounts.role_name : null,
+    role_id: item.accounts ? item.accounts.role_id : null,
+    role_name: getRoleName(item.accounts?.role_id),
   }));
 
   return {
@@ -458,7 +477,8 @@ export const getProfileDetail = async (profileId) => {
 
     email: profile.accounts ? profile.accounts.email : null,
     phone: profile.phone_number,
-    role_name: profile.accounts ? profile.accounts.role_name : null,
+    role_id: profile.accounts ? profile.accounts.role_id : null,
+    role_name: getRoleName(profile.accounts?.role_id),
   };
 
   return formattedDetail;
@@ -522,7 +542,10 @@ export const getAccountList = async (page = 1, limit = 10) => {
   const totalPages = Math.ceil(totalItems / limitNum);
 
   return {
-    accounts,
+    accounts: accounts.map((account) => ({
+      ...account,
+      role_name: getRoleName(account.role_id),
+    })),
     pagination: {
       currentPage: pageNum,
       limit: limitNum,
@@ -634,7 +657,7 @@ export const getAdminUsers = async (
     throw error;
   }
   const [profiles, counts] = await Promise.all([
-    UserProfileModel.getAdminProfiles(role),
+    UserProfileModel.getAdminProfiles(ROLE_IDS[role]),
     role === "customer" ? getOrderCounts(authorization) : {},
   ]);
   const query = normalizeSearchValue(q).trim();
@@ -643,6 +666,7 @@ export const getAdminUsers = async (
     .map(({ accounts, ...profile }) => ({
       ...profile,
       ...accounts,
+      role_name: getRoleName(accounts.role_id),
       order_count: counts[profile.account_id] || 0,
     }))
     .filter(
@@ -667,10 +691,14 @@ export const getAdminUsers = async (
 };
 
 // Cập nhật hồ sơ khách hàng hoặc nhân viên từ trang quản trị
-export const updateProfileAll = async (accountId, data, avatarFile) => {
+export const updateProfileAll = async (accountId, data, avatarFile, currentAccountId) => {
   validateAdminProfile(data);
   const account = await AccountModel.findById(accountId);
-  if (!account || !["customer", "staff"].includes(account.role_name)) {
+  if (
+    !account ||
+    (![ROLE_IDS.customer, ROLE_IDS.staff].includes(Number(account.role_id)) &&
+      !(accountId === currentAccountId && Number(account.role_id) === ROLE_IDS.admin))
+  ) {
     throw new Error("Không tìm thấy người dùng hợp lệ!");
   }
 

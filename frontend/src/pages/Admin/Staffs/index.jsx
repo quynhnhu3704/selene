@@ -41,7 +41,7 @@ const loadStaffs = async ({ q, sort, status }) => {
   ]);
   const selfId = self.data.profile.profile_id;
   const managers = await Promise.all(profiles
-    .filter((user) => ["admin", "owner"].includes(user.role_name) && user.profile_id !== selfId)
+    .filter((user) => Number(user.role_id) === 1)
     .map(async (user) => {
       const { data } = await getAdminUserDetail(user.profile_id);
       return { ...data.data, phone_number: data.data.phone };
@@ -50,8 +50,7 @@ const loadStaffs = async ({ q, sort, status }) => {
   const query = normalize(q).trim();
   const phoneQuery = query.replace(/\D/g, "");
   const users = [...staffs, ...managers]
-    .filter((user) => user.profile_id !== selfId)
-    .map((user) => ({ ...user, created_at: accountMap.get(user.account_id)?.created_at || user.created_at }))
+    .map((user) => ({ ...user, is_self: user.profile_id === selfId, created_at: accountMap.get(user.account_id)?.created_at || user.created_at }))
     .filter((user) => (!status || user.status === status) &&
       (!query || [user.full_name, user.email, user.phone_number].some((value) => normalize(value).includes(query)) ||
         (phoneQuery.length >= 3 && String(user.phone_number || "").includes(phoneQuery))));
@@ -144,7 +143,7 @@ export default function AdminStaffs() {
 
   // Khóa / mở khóa tài khoản và cập nhật tại chỗ trong danh sách
   const handleLock = async (user) => {
-    if (updatingId) return;
+    if (updatingId || user.is_self) return;
     const isLocking = user.status === "active";
     const name = user.full_name || user.email;
     setUpdatingId(user.account_id);
