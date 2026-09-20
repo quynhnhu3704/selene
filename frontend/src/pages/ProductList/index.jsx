@@ -1,6 +1,6 @@
 // frontend\src\pages\ProductList.jsx
 import Loading from "../../components/common/Loading";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
@@ -32,15 +32,17 @@ function fmt(n) {
 }
 
 function getSliderStep(minPrice, maxPrice) {
-  return maxPrice - minPrice >= 1000000 ? 10000 : 1000;
+  const priceRange = maxPrice - minPrice;
+  const step = priceRange >= 1000000 ? 10000 : 1000;
+  return priceRange % step === 0 ? step : 1;
 }
 
 const SORT_OPTIONS = [
-  { value: "default", label: "Mặc định" },
-  { value: "az", label: "A → Z" },
-  { value: "za", label: "Z → A" },
-  { value: "price_asc", label: "Giá tăng dần" },
-  { value: "price_desc", label: "Giá giảm dần" },
+  { key: "default", label: "Mặc định" },
+  { key: "az", label: "Tên: A → Z" },
+  { key: "za", label: "Tên: Z → A" },
+  { key: "price_asc", label: "Giá: Thấp → Cao" },
+  { key: "price_desc", label: "Giá: Cao → Thấp" },
 ];
 
 const FILTER_QUERY_KEYS = [
@@ -93,7 +95,7 @@ function getProductListQueryState(searchParams) {
       colors: parseListParam(searchParams.get("colors")),
       minPrice: isValidPriceRange ? minPrice : null,
       maxPrice: isValidPriceRange ? maxPrice : null,
-      sort: SORT_OPTIONS.some((option) => option.value === requestedSort)
+      sort: SORT_OPTIONS.some((option) => option.key === requestedSort)
         ? requestedSort
         : "default",
     },
@@ -118,10 +120,32 @@ const COLOR_IMAGES = {
 };
 
 export default function ProductList() {
+  const sidebarRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    // Tall filters scroll with the page until their bottom reaches the viewport.
+    const updateStickyTop = () => {
+      const top = Math.min(80, window.innerHeight - sidebar.offsetHeight - 20);
+      sidebar.style.setProperty("--pl-sidebar-top", `${top}px`);
+    };
+    updateStickyTop();
+    const observer = new ResizeObserver(updateStickyTop);
+    observer.observe(sidebar);
+    window.addEventListener("resize", updateStickyTop);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateStickyTop);
+    };
+  }, []);
+
   const { isFavorite, toggleWishlist } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openCats, setOpenCats] = useState({});
   const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [productError, setProductError] = useState("");
@@ -157,10 +181,6 @@ export default function ProductList() {
   );
   const sliderStep = getSliderStep(priceMin, priceMax);
 
-  const sortLabel =
-    SORT_OPTIONS.find((option) => option.value === filters.sort)?.label ??
-    "Mặc định";
-
   const categoryNameById = useMemo(() => {
     const categoryMap = new Map();
 
@@ -195,7 +215,11 @@ export default function ProductList() {
     });
 
     filters.sizes.forEach((size) => {
-      selections.push({ type: "size", value: size, label: "Size " + size });
+      selections.push({
+        type: "size",
+        value: size,
+        label: "Size " + size.replace(/^size\s*/i, ""),
+      });
     });
 
     filters.colors.forEach((color) => {
@@ -317,13 +341,6 @@ export default function ProductList() {
     });
   };
 
-  const handleSort = (sort) => {
-    updateProductQuery({
-      sort,
-    });
-    setSortOpen(false);
-  };
-
   const handlePage = (nextPage) => {
     updateProductQuery({ page: nextPage }, { replace: false });
 
@@ -332,6 +349,20 @@ export default function ProductList() {
       behavior: "smooth",
     });
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setSortOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -457,57 +488,34 @@ export default function ProductList() {
           flex: 0 0 290px;
           width: 290px;
           padding: 28px 0 0;
-          border-right: 1px solid #ebebeb;
-          min-height: 100%;
+          position: sticky;
+          top: var(--pl-sidebar-top, 80px);
         }
 
         .pl-sidebar-section { margin-bottom: 28px; }
 
         .pl-sidebar-title {
-          font-size: 13px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.7px;
-          color: #111;
+          font-size: 15px;
+          font-weight: 600;
           margin-bottom: 12px;
         }
-
-        /* "Xem tất cả danh mục" dropdown */
-        .pl-cat-all-btn {
-          background: none;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          padding: 6px 12px;
-          font-size: 13px;
-          font-family: 'Montserrat', sans-serif;
-          font-weight: 500;
-          color: #333;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-bottom: 12px;
-        }
-        .pl-cat-all-btn:hover { border-color: #871B1B; color: #871B1B; }
 
         /* Danh mục list */
         .pl-cat-list { list-style: none; padding: 0; margin: 0; }
-        .pl-cat-item { border-bottom: 1px solid #f2f2f2; }
         .pl-cat-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 9px 4px 9px 0;
-          font-size: 13.5px;
-          font-weight: 500;
-          color: #333;
+          font-size: 14px;
           cursor: pointer;
           text-decoration: none;
         }
-        .pl-cat-row:hover { color: #871B1B; }
+        .pl-cat-row:hover, .pl-subcat-list .pl-check-label:hover { color: #871B1B; }
+
         .pl-cat-toggle {
           background: none;
-          border: 1px solid #ccc;
+          border: 1px solid #871B1B;
           border-radius: 3px;
           width: 20px;
           height: 20px;
@@ -515,7 +523,7 @@ export default function ProductList() {
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          color: #666;
+          color: #871B1B;
           font-size: 14px;
           line-height: 1;
           flex-shrink: 0;
@@ -537,18 +545,10 @@ export default function ProductList() {
         }
         .pl-subcat-list li a:hover { color: #871B1B; }
 
-        /* Sidebar scrollbar strip */
         .pl-sidebar-scroll {
-          max-height: 420px;
-          overflow-y: auto;
           padding-right: 4px;
-          scrollbar-width: thin;
-          scrollbar-color: #222 #f0f0f0;
           border-left: 3px solid transparent;
         }
-        .pl-sidebar-scroll::-webkit-scrollbar { width: 3px; }
-        .pl-sidebar-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-        .pl-sidebar-scroll::-webkit-scrollbar-track { background: #f0f0f0; }
 
         /* Checkbox filter */
         .pl-check-list { list-style: none; padding: 0; margin: 0; }
@@ -557,8 +557,7 @@ export default function ProductList() {
           align-items: center;
           gap: 9px;
           padding: 5px 0;
-          font-size: 13.5px;
-          color: #333;
+          font-size: 14px;
           cursor: pointer;
         }
         .pl-check-list li input[type="checkbox"] {
@@ -568,17 +567,6 @@ export default function ProductList() {
           flex-shrink: 0;
         }
         .pl-check-list li:hover { color: #871B1B; }
-
-        /* Price filter scrollbar strip */
-        .pl-price-scroll {
-          max-height: 180px;
-          overflow-y: auto;
-          padding-right: 4px;
-          scrollbar-width: thin;
-          scrollbar-color: #222 #f0f0f0;
-        }
-        .pl-price-scroll::-webkit-scrollbar { width: 3px; }
-        .pl-price-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
 
         /* Size */
         .pl-size-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -613,60 +601,6 @@ export default function ProductList() {
           flex-wrap: wrap;
           gap: 12px;
         }
-        .pl-main-heading {
-          font-size: 18px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #111;
-        }
-
-        /* Sort dropdown */
-        .pl-sort-wrap { position: relative; }
-        .pl-sort-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: none;
-          border: none;
-          font-size: 13.5px;
-          font-family: 'Montserrat', sans-serif;
-          color: #333;
-          cursor: pointer;
-          padding: 0;
-        }
-        .pl-sort-btn i { font-size: 15px; color: #555; }
-        .pl-sort-btn strong { color: #111; font-weight: 700; }
-        .pl-sort-btn .bi-chevron-down { font-size: 12px; }
-
-        .pl-sort-menu {
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          background: #fff;
-          border: 1px solid #e0e0e0;
-          border-radius: 4px;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-          z-index: 100;
-          min-width: 170px;
-          overflow: hidden;
-        }
-        .pl-sort-option {
-          display: block;
-          width: 100%;
-          padding: 10px 18px;
-          font-size: 13.5px;
-          font-family: 'Montserrat', sans-serif;
-          font-weight: 500;
-          color: #333;
-          background: none;
-          border: none;
-          text-align: left;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-        .pl-sort-option:hover { background: #f5f5f5; color: #111; }
-        .pl-sort-option.selected { background: #222; color: #fff; font-weight: 700; }
 
         /* ── PRODUCT GRID ── */
         .pl-grid {
@@ -798,27 +732,10 @@ export default function ProductList() {
           gap: 8px;
           margin-bottom: 10px;
         }
-        .pl-clear-all {
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          padding: 5px 9px;
-          background: #fff;
-          color: #333;
-          cursor: pointer;
-          font-family: "Montserrat", sans-serif;
-          font-size: 12px;
-          font-weight: 600;
+        .pl-selected-head .btn {
+          margin-right: 8px;
         }
-        .pl-clear-all:hover {
-          border-color: #871b1b;
-          color: #871b1b;
-        }
-        .pl-selected-empty {
-          margin: 0;
-          color: #8a8a8a;
-          font-size: 12.5px;
-          line-height: 1.5;
-        }
+
         .pl-selected-list {
           display: flex;
           flex-wrap: wrap;
@@ -829,11 +746,11 @@ export default function ProductList() {
           align-items: center;
           gap: 5px;
           max-width: 100%;
-          border: 1px solid #e2b8b8;
+          border: 1px solid #871b1b;
           border-radius: 999px;
           padding: 5px 8px 5px 10px;
           background: #fff7f7;
-          color: #6f1515;
+          color: #871b1b;
           cursor: pointer;
           font-size: 12px;
           text-align: left;
@@ -845,10 +762,6 @@ export default function ProductList() {
         }
         .pl-selected-chip i {
           font-size: 13px;
-        }
-        .pl-cat-all-btn:disabled {
-          cursor: default;
-          opacity: 0.5;
         }
         .pl-cat-label,
         .pl-check-label {
@@ -873,7 +786,7 @@ export default function ProductList() {
           padding: 4px 0;
         }
         .pl-subcat-list .pl-check-label {
-          font-size: 13px;
+          font-size: 14px;
         }
         .pl-price-range {
           padding: 4px 0 2px;
@@ -893,7 +806,7 @@ export default function ProductList() {
           );
           background-position: center;
           background-repeat: no-repeat;
-          background-size: 100% 4px;
+          background-size: calc(100% - 16px) 4px;
         }
         .pl-range-input {
           position: absolute;
@@ -902,11 +815,14 @@ export default function ProductList() {
           width: 100%;
           height: 22px;
           margin: 0;
+          padding: 0;
+          border: 0;
           appearance: none;
           background: transparent;
           pointer-events: none;
         }
         .pl-range-input::-webkit-slider-thumb {
+          box-sizing: border-box;
           width: 16px;
           height: 16px;
           border: 2px solid #871b1b;
@@ -917,8 +833,9 @@ export default function ProductList() {
           pointer-events: auto;
         }
         .pl-range-input::-moz-range-thumb {
-          width: 14px;
-          height: 14px;
+          box-sizing: border-box;
+          width: 16px;
+          height: 16px;
           border: 2px solid #871b1b;
           border-radius: 50%;
           background: #fff;
@@ -929,9 +846,7 @@ export default function ProductList() {
           display: flex;
           justify-content: space-between;
           gap: 8px;
-          color: #555;
-          font-size: 12px;
-          font-weight: 600;
+          font-size: 14px;
         }
         .pl-color-list {
           display: flex;
@@ -1007,6 +922,7 @@ export default function ProductList() {
           }
           .pl-sidebar {
             display: block;
+            position: static;
             width: 100%;
             padding-right: 0;
             border-right: 0;
@@ -1025,18 +941,19 @@ export default function ProductList() {
       {/* ── LAYOUT: SIDEBAR + MAIN ── */}
       <div className="container pl-layout">
         {/* ══════════ SIDEBAR ══════════ */}
-        <aside className="pl-sidebar" aria-label="Bộ lọc sản phẩm">
-          <div className="pl-sidebar-section">
-            <div className="pl-selected-head">
-              <div className="pl-sidebar-title mb-0">Bạn chọn</div>
-              {selectedFilters.length > 0 && (
-                <button className="pl-clear-all" onClick={clearAllFilters}>
-                  Bỏ hết
+        <aside ref={sidebarRef} className="pl-sidebar" aria-label="Bộ lọc sản phẩm" aria-busy={filterLoading}>
+          {selectedFilters.length > 0 && (
+            <div className="pl-sidebar-section">
+              <div className="pl-selected-head">
+                <div className="pl-sidebar-title mb-0">Đã chọn</div>
+                <button
+                  className="btn btn-outline-danger btn-sm fw-medium rounded-2" style={{ fontSize: "13px" }}
+                  onClick={clearAllFilters}
+                >
+                  Xóa tất cả
                 </button>
-              )}
-            </div>
+              </div>
 
-            {selectedFilters.length > 0 ? (
               <div className="pl-selected-list">
                 {selectedFilters.map((selection) => (
                   <button
@@ -1050,25 +967,13 @@ export default function ProductList() {
                   </button>
                 ))}
               </div>
-            ) : (
-              <p className="pl-selected-empty">Chưa có bộ lọc nào được chọn.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="pl-sidebar-section">
-            <div className="pl-sidebar-title">Danh Mục Sản Phẩm</div>
-            <button
-              className="pl-cat-all-btn"
-              onClick={() => updateProductQuery({ category: [] })}
-              disabled={filters.categories.length === 0}
-            >
-              Tất cả danh mục
-            </button>
-
+            <div className="pl-sidebar-title">Danh mục</div>
             <div className="pl-sidebar-scroll">
-              {filterLoading ? (
-                <div className="pl-filter-message"><Loading text="Đang tải danh mục..." /></div>
-              ) : (
+              {!filterLoading && (
                 <ul className="pl-cat-list">
                   {filterOptions.categories.map((category) => (
                     <li className="pl-cat-item" key={category.category_id}>
@@ -1140,11 +1045,9 @@ export default function ProductList() {
           </div>
 
           <div className="pl-sidebar-section">
-            <div className="pl-sidebar-title">Mức Giá</div>
+            <div className="pl-sidebar-title">Mức giá</div>
 
-            {filterLoading ? (
-              <div className="pl-filter-message"><Loading text="Đang tải khoảng giá..." /></div>
-            ) : priceMax > priceMin ? (
+            {filterLoading ? null : priceMax > priceMin ? (
               <div className="pl-price-range">
                 <div
                   className="pl-range-track"
@@ -1190,11 +1093,9 @@ export default function ProductList() {
           </div>
 
           <div className="pl-sidebar-section">
-            <div className="pl-sidebar-title">Kích Thước</div>
+            <div className="pl-sidebar-title">Kích thước</div>
 
-            {filterLoading ? (
-              <div className="pl-filter-message"><Loading text="Đang tải size..." /></div>
-            ) : (
+            {!filterLoading && (
               <ul className="pl-check-list">
                 {filterOptions.sizes.map((size) => (
                   <li key={size.value}>
@@ -1214,11 +1115,9 @@ export default function ProductList() {
           </div>
 
           <div className="pl-sidebar-section">
-            <div className="pl-sidebar-title">Màu Sắc</div>
+            <div className="pl-sidebar-title">Màu sắc</div>
 
-            {filterLoading ? (
-              <div className="pl-filter-message"><Loading text="Đang tải màu sắc..." /></div>
-            ) : (
+            {!filterLoading && (
               <>
                 <div className="pl-color-list">
                   {filterOptions.colors.map((color) => {
@@ -1255,37 +1154,45 @@ export default function ProductList() {
         {/* ══════════ MAIN ══════════ */}
         <main className="pl-main">
           <div className="pl-main-top">
-            <h1 className="pl-main-heading">
+            <h1 className="adm-page-title">
               {searchQuery ? "Kết quả tìm kiếm" : "Sản phẩm"}
             </h1>
 
-            <div className="pl-sort-wrap">
+            <div
+              className="dropdown"
+              ref={sortRef}
+              style={{ width: "17.5%", minWidth: 190 }}
+            >
               <button
-                className="pl-sort-btn"
-                onClick={() => setSortOpen((isOpen) => !isOpen)}
+                type="button"
+                className="form-control text-start d-flex justify-content-between align-items-center"
+                onClick={() => setSortOpen((prev) => !prev)}
               >
-                <i className="bi bi-sort-down-alt" />
                 <span>
-                  Sắp xếp: <strong>{sortLabel}</strong>
+                  <i className="bi bi-sort-down me-2" />
+                  {SORT_OPTIONS.find((s) => s.key === filters.sort)?.label ||
+                    "Sắp xếp mặc định"}
                 </span>
-                <i className="bi bi-chevron-down" />
+                <i className={`bi ${sortOpen ? "bi-caret-up" : "bi-caret-down"}`} />
               </button>
 
               {sortOpen && (
-                <div className="pl-sort-menu">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      className={
-                        "pl-sort-option" +
-                        (filters.sort === option.value ? " selected" : "")
-                      }
-                      onClick={() => handleSort(option.value)}
-                    >
-                      {option.label}
-                    </button>
+                <ul className="dropdown-menu show w-100 mt-1 shadow-sm">
+                  {SORT_OPTIONS.map((s) => (
+                    <li key={s.key}>
+                      <button
+                        type="button"
+                        className="dropdown-item fw-normal"
+                        onClick={() => {
+                          updateProductQuery({ sort: s.key });
+                          setSortOpen(false);
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>
@@ -1365,13 +1272,6 @@ export default function ProductList() {
         </main>
       </div>
 
-      {/* Đóng sort menu khi click ngoài */}
-      {sortOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 99 }}
-          onClick={() => setSortOpen(false)}
-        />
-      )}
     </div>
   );
 }

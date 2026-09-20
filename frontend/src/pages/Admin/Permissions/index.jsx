@@ -226,20 +226,6 @@ export default function AdminPermissions() {
           </button>
         </div>
       </div>
-      <div className="permission-note mb-4">
-        <i className="bi bi-shield-check" aria-hidden="true" />
-        <div>
-          <strong>Quản lý quyền theo vai trò</strong>
-          <p className="mb-1">
-            Đánh dấu để cấp quyền, bỏ dấu để thu hồi. Thay đổi áp dụng cho tất
-            cả tài khoản cùng vai trò.
-          </p>
-          <p className="mb-0 text-muted">
-            Quyền của chủ cửa hàng được bảo vệ. Phiên đang đăng nhập nhận quyền
-            mới khi đăng nhập lại hoặc khi phiên được làm mới (tối đa 15 phút).
-          </p>
-        </div>
-      </div>
       {loading ? (
         <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}><Loading text="Đang tải bảng phân quyền..." /></div>
       ) : error ? (
