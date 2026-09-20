@@ -2,12 +2,15 @@
 import { BrowserRouter } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { WishlistProvider } from "./context/WishlistContext";
 import AppRouter from "./app/router";
 
 function App() {
   return (
     <BrowserRouter>
-      <AppRouter />
+      <WishlistProvider>
+        <AppRouter />
+      </WishlistProvider>
 
       <ToastContainer
         position="top-right"

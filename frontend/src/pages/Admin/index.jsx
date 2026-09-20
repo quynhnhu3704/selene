@@ -1,11 +1,20 @@
 // frontend\src\pages\Admin\index.jsx
+import Loading from "../../components/common/Loading";
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import defaultAvatar from "../../assets/images/default-avatar.png";
 import { getProfile } from "../../services/user.service";
 import logoIcon from "../../assets/images/icon.png";
+import UnreadBadge from "../../components/SupportChat/UnreadBadge";
 
 const MENU_ITEMS = [
+  {
+    key: "support",
+    label: "Hỗ trợ khách hàng",
+    icon: "bi-chat-dots",
+    path: "/admin/ho-tro",
+    enabled: true,
+  },
   {
     key: "home",
     label: "Trang chủ",
@@ -62,18 +71,23 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isCurrentRequest = true;
     const fetchProfile = async () => {
       try {
         const res = await getProfile();
-        setProfile(res.data.profile);
+        if (isCurrentRequest) setProfile(res.data.profile);
       } catch (error) {
         console.error("Không thể lấy thông tin admin:", error);
+      } finally {
+        if (isCurrentRequest) setLoading(false);
       }
     };
 
     fetchProfile();
+    return () => { isCurrentRequest = false; };
   }, []);
 
   const isActive = (path) => {
@@ -90,6 +104,7 @@ export default function AdminLayout() {
         <i className={`bi ${item.icon}`} />
         <span className="adm-nav-label-txt">
           {item.realLabel || item.label}
+          {item.key === "support" && <UnreadBadge admin />}
         </span>
         {item.badge ? (
           <span className="adm-nav-badge">{item.badge}</span>
@@ -136,6 +151,20 @@ export default function AdminLayout() {
         return "Không xác định";
     }
   };
+
+  if (loading) {
+    return (
+      <div
+        className="d-flex align-items-center justify-content-center"
+        style={{ minHeight: "100vh" }}
+      >
+        <Loading text="Đang kiểm tra quyền truy cập..." />
+      </div>
+    );
+  }
+
+  if (!profile) return <Navigate to="/tai-khoan/dang-nhap" replace />;
+  if (![1, 2].includes(Number(profile.role_id))) return <Navigate to="/" replace />;
 
   return (
     <>

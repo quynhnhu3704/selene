@@ -1,4 +1,5 @@
 // frontend\src\pages\ProductList.jsx
+import Loading from "../../components/common/Loading";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -7,6 +8,7 @@ import {
   getProductFilterOptions,
   getProducts,
 } from "../../services/product.service";
+import { useWishlist } from "../../context/WishlistContext";
 import Pagination from "../../components/common/Pagination";
 
 import orangeColor from "../../assets/colors/orange.jpg";
@@ -116,6 +118,7 @@ const COLOR_IMAGES = {
 };
 
 export default function ProductList() {
+  const { isFavorite, toggleWishlist } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openCats, setOpenCats] = useState({});
   const [sortOpen, setSortOpen] = useState(false);
@@ -674,6 +677,10 @@ export default function ProductList() {
         }
 
         .pl-pcard { cursor: pointer; }
+        .pl-favorite { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid #eadada; border-radius: 50%; background: #fff; color: #871B1B; font-size: 18px; opacity: 0; transition: opacity 0.2s, background 0.2s; box-shadow: 0 2px 8px #0001; }
+        .pl-pcard:hover .pl-favorite, .pl-pcard:focus-within .pl-favorite, .pl-favorite.active { opacity: 1; }
+        .pl-favorite:hover { background: #fcf2f2; }
+        @media (hover: none), (pointer: coarse) { .pl-favorite { opacity: 1; } }
         .pl-pimg-wrap {
           position: relative;
           overflow: hidden;
@@ -1060,7 +1067,7 @@ export default function ProductList() {
 
             <div className="pl-sidebar-scroll">
               {filterLoading ? (
-                <p className="pl-filter-message">Đang tải danh mục...</p>
+                <div className="pl-filter-message"><Loading text="Đang tải danh mục..." /></div>
               ) : (
                 <ul className="pl-cat-list">
                   {filterOptions.categories.map((category) => (
@@ -1136,7 +1143,7 @@ export default function ProductList() {
             <div className="pl-sidebar-title">Mức Giá</div>
 
             {filterLoading ? (
-              <p className="pl-filter-message">Đang tải khoảng giá...</p>
+              <div className="pl-filter-message"><Loading text="Đang tải khoảng giá..." /></div>
             ) : priceMax > priceMin ? (
               <div className="pl-price-range">
                 <div
@@ -1186,7 +1193,7 @@ export default function ProductList() {
             <div className="pl-sidebar-title">Kích Thước</div>
 
             {filterLoading ? (
-              <p className="pl-filter-message">Đang tải size...</p>
+              <div className="pl-filter-message"><Loading text="Đang tải size..." /></div>
             ) : (
               <ul className="pl-check-list">
                 {filterOptions.sizes.map((size) => (
@@ -1210,7 +1217,7 @@ export default function ProductList() {
             <div className="pl-sidebar-title">Màu Sắc</div>
 
             {filterLoading ? (
-              <p className="pl-filter-message">Đang tải màu sắc...</p>
+              <div className="pl-filter-message"><Loading text="Đang tải màu sắc..." /></div>
             ) : (
               <>
                 <div className="pl-color-list">
@@ -1296,7 +1303,7 @@ export default function ProductList() {
           )}
 
           {loading ? (
-            <div className="pl-state">Đang tải sản phẩm...</div>
+            <div className="pl-state"><Loading text="Đang tải sản phẩm..." /></div>
           ) : productError ? (
             <div className="pl-state error">{productError}</div>
           ) : products.length === 0 ? (
@@ -1316,6 +1323,11 @@ export default function ProductList() {
                           loading="lazy"
                         />
                       </Link>
+                      <button type="button" className={`pl-favorite${isFavorite(product.product_id) ? " active" : ""}`}
+                        onClick={() => toggleWishlist(product)} aria-pressed={isFavorite(product.product_id)}
+                        aria-label={isFavorite(product.product_id) ? "Bỏ yêu thích " + product.product_name : "Yêu thích " + product.product_name}>
+                        <i className={`bi ${isFavorite(product.product_id) ? "bi-heart-fill" : "bi-heart"}`} />
+                      </button>
                     </div>
 
                     <div className="pl-pinfo">

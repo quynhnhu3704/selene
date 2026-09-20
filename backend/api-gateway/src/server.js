@@ -28,6 +28,28 @@ app.use(
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL;
+const CHAT_SERVICE_URL = process.env.CHAT_SERVICE_URL || "http://localhost:8004";
+
+// Giữ nguyên đường dẫn Socket.IO qua Gateway, kể cả WebSocket upgrade đầu tiên.
+const chatSocketProxy = createProxyMiddleware({
+  target: CHAT_SERVICE_URL,
+  changeOrigin: true,
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/chat/socket.io")) return chatSocketProxy(req, res, next);
+  next();
+});
+app.use("/api/chat", createProxyMiddleware({
+  target: CHAT_SERVICE_URL,
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error("Proxy Error (Chat):", err.message);
+      res.writeHead(502, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: 502, message: "Chat CSKH tạm thời không khả dụng." }));
+    },
+  },
+}));
 
 if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
   console.error(
@@ -132,9 +154,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Gateway Service running on port ${PORT}`);
   console.log(`Routing /api/auth to ${AUTH_SERVICE_URL}`);
   console.log(`Routing /api/products to ${PRODUCT_SERVICE_URL}`);
   console.log(`Routing /api/orders to ${ORDER_SERVICE_URL}`);
+});
+server.on("upgrade", (req, socket, head) => {
+  if (req.url.startsWith("/api/chat/socket.io")) chatSocketProxy.upgrade(req, socket, head);
+  else socket.destroy();
 });

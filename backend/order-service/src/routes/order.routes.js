@@ -4,12 +4,14 @@ import * as cartController from "../controllers/cart.controller.js";
 import * as voucherController from "../controllers/voucher.controller.js";
 import * as orderController from "../controllers/order.controller.js";
 import * as dashboardController from "../controllers/dashboard.controller.js";
+import { getSupportOrders } from "../controllers/support.controller.js";
 import {
   verifyToken,
   verifyPermission,
 } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
+router.get("/internal/support/orders", getSupportOrders);
 
 const verifyOrderManager = (req, res, next) => {
   if (!["admin", "staff"].includes(req.user?.role)) {

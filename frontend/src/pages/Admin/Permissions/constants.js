@@ -5,6 +5,7 @@ export const ROLE_LABELS = {
 };
 
 export const GROUP_LABELS = {
+  chat: "Chăm sóc khách hàng",
   user: "Tài khoản",
   profile: "Hồ sơ người dùng",
   role: "Vai trò",
@@ -24,6 +25,9 @@ export const GROUP_LABELS = {
 };
 
 export const ACTION_LABELS = {
+  reply: "Trả lời",
+  assign: "Nhận xử lý",
+  close: "Đóng",
   view: "Xem",
   read: "Xem",
   create: "Thêm mới",

@@ -101,6 +101,9 @@ function Chatbot() {
             </button>
           </div>
 
+          <Link to="/ho-tro" className="btn btn-light btn-sm rounded-0" onClick={() => setOpen(false)}>
+            <i className="bi bi-headset me-2" />Chat với nhân viên
+          </Link>
           <div
             className="chatbot-messages"
             role="log"

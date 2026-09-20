@@ -72,6 +72,7 @@
 //   );
 // }
 
+import Loading from "../../../components/common/Loading";
 import { useRef } from "react";
 import { Link } from "react-router-dom";
 
@@ -131,7 +132,7 @@ export default function ProductSection({
       </div>
 
       {loading ? (
-        <div className="pl-home-state">Đang tải sản phẩm...</div>
+        <div className="pl-home-state"><Loading text="Đang tải sản phẩm..." /></div>
       ) : products.length === 0 ? (
         <div className="pl-home-state">Chưa có sản phẩm.</div>
       ) : (

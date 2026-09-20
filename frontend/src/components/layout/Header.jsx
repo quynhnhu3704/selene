@@ -1,14 +1,17 @@
 // frontend\src\components\layout\Header.jsx
+import Loading from "../common/Loading";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
 import Swal from "sweetalert2";
+import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
 import { getUser } from "../../utils/auth";
 import { getProducts } from "../../services/product.service";
 import defaultImage from "../../assets/images/default-product.png";
+import UnreadBadge from "../SupportChat/UnreadBadge";
 
 const HISTORY_LIMIT = 8;
 const getHistoryKey = () => {
@@ -42,7 +45,8 @@ export default function Header() {
   const [compact, setCompact] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const [wl] = useState(0);
+  const { wishlist } = useWishlist();
+  const wl = wishlist.length;
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -376,8 +380,7 @@ export default function Header() {
                 >
                   {loading ? (
                     <div className="rb-search-state">
-                      <span className="spinner-border spinner-border-sm me-2" />
-                      Đang tìm sản phẩm...
+                      <Loading text="Đang tìm sản phẩm..." />
                     </div>
                   ) : searchResult.error ? (
                     <div className="rb-search-state">{searchResult.error}</div>
@@ -532,6 +535,9 @@ export default function Header() {
               VỀ SELENE<i className="bi bi-caret-down ms-2 icon-down"></i>
               <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
+            <NavLink to="/ho-tro" className={navClass}>
+              HỖ TRỢ<UnreadBadge />
+            </NavLink>
             <NavLink
               to="/khuyen-mai"
               className={({ isActive }) =>
@@ -547,13 +553,13 @@ export default function Header() {
 
         {/* CỘT 3: ICONS */}
         <div className="rb-topicons">
-          <div className="rb-icon-wrap">
+          <Link to="/yeu-thich" className="rb-icon-wrap text-decoration-none text-dark">
             <div className="rb-icon-rel">
               <i className="bi bi-heart fs-5" />
               <span className="rb-bdot">{wl}</span>
             </div>
             <strong className="rb-ilabel mt-1">Yêu Thích</strong>
-          </div>
+          </Link>
 
           <div className="dropdown-center">
             <div
@@ -659,10 +665,10 @@ export default function Header() {
 
         {/* PHẢI: icons */}
         <div className="rb-mob-right">
-          <div className="rb-mob-icon">
+          <Link to="/yeu-thich" className="rb-mob-icon text-decoration-none" aria-label="Yêu thích">
             <i className="bi bi-heart" />
             <span className="rb-mob-bdot">{wl}</span>
-          </div>
+          </Link>
 
           <div className="dropdown">
             <div
@@ -764,6 +770,9 @@ export default function Header() {
           </li>
           <li>
             <Link to="/ve-chung-toi">VỀ SELENE</Link>
+          </li>
+          <li>
+            <Link to="/ho-tro">HỖ TRỢ</Link>
           </li>
           <li>
             <Link to="/" className="promo">

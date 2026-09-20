@@ -395,7 +395,14 @@ export default function EditProduct() {
   };
 
   if (loading) {
-    return <Loading />;
+    return (
+      <div
+        className="d-flex align-items-center justify-content-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <Loading text="Đang tải sản phẩm..." />
+      </div>
+    );
   }
 
   return (

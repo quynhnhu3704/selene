@@ -241,7 +241,7 @@ export default function AdminPermissions() {
         </div>
       </div>
       {loading ? (
-        <Loading text="Đang tải bảng phân quyền..." />
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}><Loading text="Đang tải bảng phân quyền..." /></div>
       ) : error ? (
         <div className="page-empty py-5" role="alert">
           <p className="text-danger">{error}</p>

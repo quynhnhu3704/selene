@@ -1,4 +1,5 @@
 // frontend\src\pages\Account\GoogleSuccess\index.jsx
+import Loading from "../../../components/common/Loading";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -40,10 +41,8 @@ export default function GoogleSuccess() {
   }, []);
 
   return (
-    <div className="spinner-loading">
-      <div className="spinner-border" role="status">
-        <span className="visually-hidden">Loading...</span>
-      </div>
+    <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+      <Loading text="Đang đăng nhập..." />
     </div>
   );
 }

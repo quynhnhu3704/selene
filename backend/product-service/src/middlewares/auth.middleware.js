@@ -18,6 +18,18 @@ export const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, config.jwtAccessSecret);
     req.user = decoded;
+
+    // Khu vực quản trị chỉ dành cho chủ cửa hàng và nhân viên.
+    if (
+      /^\/manage(?:\/|$)/i.test(req.path) &&
+      (Number(decoded.role_id) === 3 || !["admin", "staff"].includes(decoded.role))
+    ) {
+      return res.status(403).json({
+        status: 403,
+        message: "Bạn không có quyền truy cập khu vực quản trị!",
+      });
+    }
+
     next();
   } catch (error) {
     // TRƯỜNG HỢP 2: Token gửi lên bị lỗi (Hết hạn hoặc không hợp lệ)

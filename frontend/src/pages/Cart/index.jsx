@@ -1,5 +1,6 @@
 // frontend\src\pages\Cart\index.jsx
 // frontend\src\pages\Cart\index.jsx
+import Loading from "../../components/common/Loading";
 import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../../context/CartContext";
@@ -9,28 +10,6 @@ import Swal from "sweetalert2";
 
 /* ── helpers ── */
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
-
-/* ── SKELETON ROW ── */
-function SkeletonRow() {
-  return (
-    <div className="cart-item placeholder-item">
-      <div
-        className="placeholder rounded"
-        style={{ width: 80, height: 100, flexShrink: 0 }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          className="placeholder col-8 rounded mb-2"
-          style={{ height: 16 }}
-        />
-        <div className="placeholder col-4 rounded" style={{ height: 13 }} />
-      </div>
-      <div className="placeholder rounded" style={{ width: 100, height: 36 }} />
-      <div className="placeholder rounded" style={{ width: 80, height: 16 }} />
-      <div className="placeholder rounded" style={{ width: 24, height: 24 }} />
-    </div>
-  );
-}
 
 export default function Cart() {
   const { cart, removeFromCart, increaseQuantity, decreaseQuantity } =
@@ -352,7 +331,7 @@ export default function Cart() {
             {/* items */}
             <div className="cart-list">
               {loading
-                ? [1, 2, 3].map((k) => <SkeletonRow key={k} />)
+                ? <div className="py-5"><Loading text="Đang tải giỏ hàng..." /></div>
                 : cartItems
                     .filter((i) => i.product)
                     .map((item) => (
@@ -471,24 +450,7 @@ export default function Cart() {
               <div className="cart-summary-title">Tóm tắt đơn hàng</div>
 
               {loading ? (
-                <div className="placeholder-glow">
-                  <div
-                    className="placeholder col-8 rounded mb-3"
-                    style={{ height: 16 }}
-                  />
-                  <div
-                    className="placeholder col-6 rounded mb-2"
-                    style={{ height: 14 }}
-                  />
-                  <div
-                    className="placeholder col-5 rounded mb-4"
-                    style={{ height: 14 }}
-                  />
-                  <div
-                    className="placeholder w-100 rounded-pill"
-                    style={{ height: 50 }}
-                  />
-                </div>
+                <div className="py-5"><Loading text="Đang tải tóm tắt đơn hàng..." /></div>
               ) : (
                 <>
                   <div className="cart-summary-row">

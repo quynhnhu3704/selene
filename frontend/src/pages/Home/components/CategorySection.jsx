@@ -1,4 +1,5 @@
 // frontend\src\pages\Home\components\CategorySection.jsx
+import Loading from "../../../components/common/Loading";
 import { Link } from "react-router-dom";
 
 import defaultImage from "../../../assets/images/default-product.png";
@@ -17,7 +18,7 @@ export default function CategorySection({ categories = [], loading = false }) {
       </div>
 
       {loading ? (
-        <div className="home-category-state">Đang tải danh mục...</div>
+        <div className="home-category-state"><Loading text="Đang tải danh mục..." /></div>
       ) : (
         <div className="home-category-grid">
           {categories.map((category) => (

@@ -67,7 +67,7 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link to="/" className="rb-footer-link">
+              <Link to="/ho-tro" className="rb-footer-link">
                 Chăm Sóc Khách Hàng
               </Link>
             </li>

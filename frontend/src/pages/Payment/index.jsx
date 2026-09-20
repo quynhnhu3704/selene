@@ -1,4 +1,5 @@
 // frontend\src\pages\Payment\index.jsx
+import Loading from "../../components/common/Loading";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -198,10 +199,8 @@ export default function Payment() {
           ]}
         />
 
-        <div className="py-5 text-center">
-          <div className="spinner-border text-dark" role="status">
-            <span className="visually-hidden">Đang tải</span>
-          </div>
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+          <Loading text="Đang tải thanh toán..." />
         </div>
       </>
     );
@@ -552,11 +551,7 @@ export default function Payment() {
                     </div>
 
                     <div className="payment-timer">
-                      <span
-                        className="spinner-grow spinner-grow-sm"
-                        aria-hidden="true"
-                      />
-                      Đang chờ SePay xác nhận
+                      <Loading text="Đang chờ SePay xác nhận..." />
                     </div>
                   </div>
                 </>

@@ -1,3 +1,4 @@
+import Loading from "../../../../components/common/Loading";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -263,7 +264,7 @@ export default function CreateOrder() {
                 ))}
               </select>
             </div>
-            {loadingProduct && <p role="status">Đang tải biến thể...</p>}
+            {loadingProduct && <Loading text="Đang tải biến thể..." />}
             {product && (
               <div className="col-12 d-flex gap-2 flex-wrap">
                 {product.variants?.map((variant) => (

@@ -1,4 +1,5 @@
 // frontend/src/pages/Admin/Dashboard/index.jsx
+import Loading from "../../../components/common/Loading";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -528,17 +529,8 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <div className="dash-loading" role="status">
-          <div className="spinner-border text-danger" />
-          <h2>Đang tổng hợp dữ liệu</h2>
-          <p>Những góc nhìn mới về cửa hàng đang được chuẩn bị…</p>
-          <div className="row g-3">
-            {STATS.map((stat) => (
-              <div key={stat.key} className="col-6 col-xl-4">
-                <div className="dash-skeleton" />
-              </div>
-            ))}
-          </div>
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+          <Loading text="Đang tổng hợp dữ liệu..." />
         </div>
       ) : error ? (
         <div className="dash-error" role="alert">

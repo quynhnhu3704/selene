@@ -9,12 +9,16 @@ import { placeOrder } from "../../services/order.service";
 import { getUser } from "../../utils/auth";
 import { getProfile } from "../../services/user.service";
 import Address from "../../components/common/Address";
+import VoucherPicker from "./VoucherPicker";
+import { getVoucherDiscount } from "../../utils/voucher";
 
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [submitting, setSubmitting] = useState(false);
+  const [voucher, setVoucher] = useState(null);
+  const [checkingVoucher, setCheckingVoucher] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [addressArea, setAddressArea] = useState(null);
   const [addressDetail, setAddressDetail] = useState("");
@@ -92,7 +96,7 @@ export default function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
-    if (submitting || !validateShippingInfo()) {
+    if (submitting || checkingVoucher || !validateShippingInfo()) {
       return;
     }
 
@@ -106,6 +110,7 @@ export default function Checkout() {
         recipient_phone: shippingInfo.recipient_phone.trim(),
         recipient_address: shippingInfo.recipient_address,
         note: shippingInfo.note.trim(),
+        ...(appliedVoucher ? { voucher_code: appliedVoucher.code } : {}),
       };
 
       const response = await placeOrder(payload);
@@ -167,6 +172,12 @@ export default function Checkout() {
         item.quantity,
     0,
   );
+
+  const appliedVoucher =
+    voucher && totalPrice >= Number(voucher.min_order_value || 0)
+      ? voucher
+      : null;
+  const discountAmount = getVoucherDiscount(appliedVoucher, totalPrice);
 
   // Nếu vào trang thanh toán trực tiếp mà không có sản phẩm
   if (selectedItems.length === 0) {
@@ -574,6 +585,16 @@ export default function Checkout() {
               />
             </div>
 
+            {/* Mã khuyến mãi */}
+            <VoucherPicker
+              key={totalPrice}
+              orderValue={totalPrice}
+              voucher={appliedVoucher}
+              onChange={setVoucher}
+              onCheckingChange={setCheckingVoucher}
+              disabled={submitting}
+            />
+
             {/* Phương thức thanh toán */}
             <div className="checkout-card">
               <div className="checkout-card-title">Phương thức thanh toán</div>
@@ -710,19 +731,30 @@ export default function Checkout() {
                 <strong style={{ color: "#28a745" }}>Miễn phí</strong>
               </div>
 
+              {appliedVoucher && (
+                <div className="checkout-summary-row">
+                  <span>Khuyến mãi ({appliedVoucher.code})</span>
+                  <strong style={{ color: "#28a745" }}>
+                    -{fmt(discountAmount)}
+                  </strong>
+                </div>
+              )}
+
               <hr className="checkout-divider" />
 
               <div className="checkout-total">
                 <span className="checkout-total-label">Tổng cộng</span>
 
-                <span className="checkout-total-value">{fmt(totalPrice)}</span>
+                <span className="checkout-total-value">
+                  {fmt(totalPrice - discountAmount)}
+                </span>
               </div>
 
               <button
                 className="checkout-btn"
                 type="button"
                 onClick={handlePlaceOrder}
-                disabled={submitting}
+                disabled={submitting || checkingVoucher}
               >
                 {submitting ? (
                   <>

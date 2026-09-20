@@ -1,4 +1,5 @@
 // frontend\src\components\common\Address.jsx
+import Loading from "./Loading";
 import { useEffect, useRef, useState } from "react";
 
 const API = "https://provinces.open-api.vn/api/v2";
@@ -212,7 +213,7 @@ export default function Address({
             )}
           </div>
         </div>
-        {loading && <div role="status">Đang tải địa chỉ…</div>}
+        {loading && <Loading text="Đang tải địa chỉ…" />}
         {error && (
           <div role="alert" className="text-danger">
             {error}{" "}

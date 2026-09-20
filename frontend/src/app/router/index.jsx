@@ -7,6 +7,7 @@ import Home from "../../pages/Home";
 import Login from "../../pages/Account/Login";
 import Register from "../../pages/Account/Register";
 import ProductList from "../../pages/ProductList";
+import Wishlist from "../../pages/Wishlist";
 import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
@@ -14,6 +15,9 @@ import Profile from "../../pages/Account/Profile";
 import Cart from "../../pages/Cart";
 import Checkout from "../../pages/Checkout";
 import Payment from "../../pages/Payment";
+import Promotions from "../../pages/Promotions";
+import Support from "../../pages/Support";
+import AdminSupport from "../../pages/Admin/Support";
 
 import Info from "../../pages/Account/Profile/pages/Info";
 import Orders from "../../pages/Account/Profile/pages/Orders";
@@ -64,6 +68,7 @@ export default function AppRouter() {
         <Route path="/auth/success" element={<GoogleSuccess />} />
 
         {/* ===== SẢN PHẨM ===== */}
+        <Route path="/yeu-thich" element={<Wishlist />} />
         <Route path="/san-pham" element={<ProductList />} />
         <Route path="/san-pham/:id" element={<ProductDetail />} />
 
@@ -75,11 +80,14 @@ export default function AppRouter() {
         <Route path="/thanh-toan/qr" element={<Payment />} />
 
         <Route path="/ve-chung-toi" element={<About />} />
+        <Route path="/khuyen-mai" element={<Promotions />} />
+        <Route path="/ho-tro" element={<Support />} />
       </Route>
 
       {/* Layout Admin */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
+        <Route path="ho-tro" element={<AdminSupport />} />
 
         <Route path="san-pham" element={<AdminProducts />} />
         <Route path="san-pham/them-moi" element={<CreateProduct />} />

@@ -122,7 +122,7 @@ export default function CategoryPage({ create = false }) {
         </Link>
       </div>
       {loading ? (
-        <Loading text="Đang tải danh mục..." />
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}><Loading text="Đang tải danh mục..." /></div>
       ) : error ? (
         <div className="alert alert-danger">{error}</div>
       ) : (
