@@ -49,10 +49,10 @@ const MENU_ITEMS = [
     enabled: true,
   },
   {
-    key: "store",
-    label: "Cửa hàng",
-    icon: "bi-shop",
-    path: "/",
+    key: "permissions",
+    label: "Phân quyền",
+    icon: "bi-shield-check",
+    path: "/admin/phan-quyen",
     enabled: true,
   },
 ];
@@ -313,7 +313,7 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          <nav className="adm-nav-scroll">{MENU_ITEMS.map(renderItem)}</nav>
+          <nav className="adm-nav-scroll">{MENU_ITEMS.filter((item) => item.key !== "permissions" || Number(profile?.role_id) === 1).map(renderItem)}</nav>
 
           <div className="adm-sidebar-bottom">
             <button

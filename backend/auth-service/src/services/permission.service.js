@@ -2,6 +2,43 @@
 import { PermissionModel } from "../models/permission.model.js";
 import { AccountModel } from "../models/account.model.js";
 import { getRoleName } from "../configs/roles.js";
+import { RoleModel } from "../models/role.model.js";
+
+// Kiểm tra trực tiếp tài khoản để quyền quản trị không phụ thuộc token cũ.
+const requirePermissionManager = async (accountId) => {
+  const account = await AccountModel.findById(accountId);
+  if (!account || account.status !== "active" || Number(account.role_id) !== 1) {
+    throw { status: 403, message: "Chỉ chủ cửa hàng được quản lý phân quyền!" };
+  }
+};
+
+export const getPermissionMatrix = async (accountId) => {
+  await requirePermissionManager(accountId);
+  return PermissionModel.getPermissionMatrix();
+};
+
+export const setRolePermission = async (accountId, roleId, permissionId, enabled) => {
+  await requirePermissionManager(accountId);
+  const id = Number(roleId);
+  if (!Number.isInteger(id) || id <= 0 || typeof enabled !== "boolean") {
+    throw { status: 400, message: "Dữ liệu phân quyền không hợp lệ!" };
+  }
+  if (id === 1) {
+    throw { status: 400, message: "Không thể thay đổi quyền của chủ cửa hàng!" };
+  }
+  const [role, permission] = await Promise.all([
+    RoleModel.findById(id),
+    PermissionModel.getPermissionById(permissionId),
+  ]);
+  if (!role || !permission) {
+    throw { status: 404, message: "Vai trò hoặc quyền không tồn tại!" };
+  }
+  if (role.status !== "active" || (enabled && permission.status !== "active")) {
+    throw { status: 400, message: "Không thể cấp quyền đã ngừng hoạt động hoặc sửa vai trò đã khóa!" };
+  }
+  await PermissionModel.setRolePermission(id, permissionId, enabled);
+  return { role_id: id, permission_id: permissionId, enabled };
+};
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;

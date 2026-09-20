@@ -189,9 +189,11 @@ export default function AdminOrders() {
             }}
           />
         </div>
+        <div className="position-relative" style={{ width: "17.5%", minWidth: 190 }}>
+          <i className="bi bi-funnel position-absolute top-50 translate-middle-y" style={{ left: 14, pointerEvents: "none" }} aria-hidden="true" />
         <select
           className="form-select form-control"
-          style={{ width: "17.5%", minWidth: 190 }}
+          style={{ paddingLeft: 38 }}
           aria-label="Lọc trạng thái đơn hàng"
           value={status}
           onChange={(e) => updateOrderQuery({ status: e.target.value })}
@@ -203,9 +205,12 @@ export default function AdminOrders() {
             </option>
           ))}
         </select>
+        </div>
+        <div className="position-relative" style={{ width: "17.5%", minWidth: 190 }}>
+          <i className="bi bi-sort-down position-absolute top-50 translate-middle-y" style={{ left: 14, pointerEvents: "none" }} aria-hidden="true" />
         <select
           className="form-select form-control"
-          style={{ width: "17.5%", minWidth: 190 }}
+          style={{ paddingLeft: 38 }}
           aria-label="Sắp xếp đơn hàng"
           value={sort}
           onChange={(e) => updateOrderQuery({ sort: e.target.value })}
@@ -216,6 +221,7 @@ export default function AdminOrders() {
             </option>
           ))}
         </select>
+        </div>
         <button
           type="reset"
           className="form-btn btn btn-outline-dark fw-semibold mb-0 px-4"

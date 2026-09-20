@@ -22,6 +22,7 @@ export const CategoryModel = {
         {
           category_id: categoryData.category_id,
           name: categoryData.name,
+          image_url: categoryData.image_url || null,
           description: categoryData.description || null,
           status: categoryData.status || "active",
           created_at: categoryData.created_at,
@@ -53,6 +54,7 @@ export const CategoryModel = {
       .from("categories")
       .update({
         name: updateData.name,
+        image_url: updateData.image_url,
         description: updateData.description,
         status: updateData.status,
         updated_at: updateData.updated_at, // Nhận thời gian từ Node.js truyền xuống
@@ -73,17 +75,26 @@ export const CategoryModel = {
         category_id,
         name,
         description,
+        image_url,
+        products(count),
         status,
         created_at,
         updated_at
       `,
         { count: "exact" },
       ) // Đếm tổng số bản ghi thực tế trong DB
-      .order("created_at", { ascending: false }) // Danh mục mới nhất xếp lên đầu
+      .order("created_at", { ascending: false })
+      .order("category_id") // Danh mục mới nhất xếp lên đầu
       .range(from, to); // Cắt dữ liệu theo trang [from, to]
 
     if (error) throw error;
-    return { data, count };
+    return {
+      data: data.map(({ products, ...category }) => ({
+        ...category,
+        product_count: products?.[0]?.count || 0,
+      })),
+      count,
+    };
   },
 
   // Lấy danh mục tối giản để dùng cho bộ lọc sản phẩm Admin
@@ -113,7 +124,7 @@ export const CategoryModel = {
   getActiveCategoriesForProductFilter: async () => {
     const { data, error } = await supabase
       .from("categories")
-      .select("category_id, name")
+      .select("category_id, name, image_url")
       .eq("status", "active")
       .order("name", { ascending: true });
 

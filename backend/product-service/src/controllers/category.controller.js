@@ -1,17 +1,30 @@
 // backend\product-service\src\controllers\category.controller.js
 import * as categoryService from "../services/category.service.js";
 
+export const handleGetCategoryDetail = async (req, res) => {
+  try {
+    const data = await categoryService.getCategoryDetail(req.params.categoryId);
+    return res.status(200).json({ status: 200, data });
+  } catch (error) {
+    const status = error.message.includes("Không tìm thấy") ? 404 : 500;
+    return res.status(status).json({ status, message: error.message });
+  }
+};
+
 // thêm category
 export const handleCreateCategory = async (req, res) => {
   try {
     const { name, description, status } = req.body;
 
     // Gọi service xử lý logic nghiệp vụ
-    const result = await categoryService.createCategory({
-      name,
-      description,
-      status,
-    });
+    const result = await categoryService.createCategory(
+      {
+        name,
+        description,
+        status,
+      },
+      req.file,
+    );
 
     // Trả về response thành công đúng format của hệ thống
     return res.status(201).json({
@@ -24,6 +37,7 @@ export const handleCreateCategory = async (req, res) => {
 
     // Phân tách loại lỗi (Bad Request vs Server Error)
     const isClientError =
+      error.message.includes("Ảnh danh mục") ||
       error.message.includes("bắt buộc") ||
       error.message.includes("đã tồn tại");
 
@@ -41,11 +55,15 @@ export const handleUpdateCategory = async (req, res) => {
     const { name, description, status } = req.body;
 
     // Gọi service xử lý
-    const result = await categoryService.updateCategory(categoryId, {
-      name,
-      description,
-      status,
-    });
+    const result = await categoryService.updateCategory(
+      categoryId,
+      {
+        name,
+        description,
+        status,
+      },
+      req.file,
+    );
 
     return res.status(200).json({
       status: 200,
@@ -56,6 +74,7 @@ export const handleUpdateCategory = async (req, res) => {
     console.error("Lỗi tại handleUpdateCategory Controller:", error.message);
 
     const isClientError =
+      error.message.includes("Ảnh danh mục") ||
       error.message.includes("trống") ||
       error.message.includes("đã được sử dụng") ||
       error.message.includes("Không tìm thấy");
@@ -70,10 +89,16 @@ export const handleUpdateCategory = async (req, res) => {
 // lấy danh sách
 export const handleGetAllCategories = async (req, res) => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, q, status, sort } = req.query;
 
     // Gọi xuống service để lấy dữ liệu phân trang
-    const result = await categoryService.getAllCategories({ page, limit });
+    const result = await categoryService.getAllCategories({
+      page,
+      limit,
+      q,
+      status,
+      sort,
+    });
 
     // Trả về cấu trúc JSON chuẩn hệ thống của bạn
     return res.status(200).json({
@@ -140,5 +165,29 @@ export const handleUpdateCategoryStatus = async (req, res) => {
       status: isClientError ? 400 : 500,
       message: error.message || "Internal Server Error!",
     });
+  }
+};
+
+// Xuất danh sách danh mục ra Excel.
+export const handleExportCategoriesToExcel = async (req, res) => {
+  try {
+    const buffer = await categoryService.generateCategoriesExcelBuffer();
+    const dateStr = new Date().toISOString().split("T")[0];
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=categories_export_${dateStr}.xlsx`,
+    );
+    return res.send(buffer);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({
+        status: 500,
+        message: error.message || "Không thể xuất dữ liệu danh mục!",
+      });
   }
 };

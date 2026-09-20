@@ -32,6 +32,8 @@ import {
 import multer from "multer";
 import {
   handleCreatePermission,
+  handleGetPermissionMatrix,
+  handleSetRolePermission,
   handleGetAllPermissions,
   handleGetPermissionsByAccountId,
   handleUpdatePermission,
@@ -137,6 +139,9 @@ router.put(
 );
 
 // quyền (permission)
+router.get("/manage/permission-matrix", verifyToken, handleGetPermissionMatrix);
+router.put("/manage/roles/:roleId/permissions/:permissionId", verifyToken, handleSetRolePermission);
+
 router.get(
   "/manage/permissions",
   verifyToken,

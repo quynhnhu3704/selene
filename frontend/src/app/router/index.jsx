@@ -34,6 +34,9 @@ import EditUser from "../../pages/Admin/Users/pages/Edit";
 import ProfilePage from "../../pages/Admin/components/ProfilePage";
 import AdminUsers from "../../pages/Admin/Users";
 import AdminCategories from "../../pages/Admin/Categories";
+import AdminPermissions from "../../pages/Admin/Permissions";
+import CreateCategory from "../../pages/Admin/Categories/pages/Create";
+import EditCategory from "../../pages/Admin/Categories/pages/Edit";
 
 import CreateProduct from "../../pages/Admin/Products/pages/Create";
 import EditProduct from "../../pages/Admin/Products/pages/Edit";
@@ -101,6 +104,9 @@ export default function AppRouter() {
           element={<ProfilePage role="staff" readOnly />}
         />
         <Route path="danh-muc" element={<AdminCategories />} />
+        <Route path="phan-quyen" element={<AdminPermissions />} />
+        <Route path="danh-muc/them-moi" element={<CreateCategory />} />
+        <Route path="danh-muc/:categoryId/sua" element={<EditCategory />} />
       </Route>
 
       {/* 404 */}

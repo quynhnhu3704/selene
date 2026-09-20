@@ -30,16 +30,24 @@ router.get(
 
 // admin
 // category
+router.get(
+  "/manage/category-detail/:categoryId",
+  verifyToken,
+  verifyPermission("category:view"),
+  categoryController.handleGetCategoryDetail,
+);
 router.post(
   "/manage/category/add",
   verifyToken,
   verifyPermission("category:create"),
+  upload.single("image"),
   categoryController.handleCreateCategory,
 );
 router.put(
   "/manage/category/update/:categoryId",
   verifyToken,
   verifyPermission("category:update"),
+  upload.single("image"),
   categoryController.handleUpdateCategory,
 );
 router.put(
@@ -59,6 +67,13 @@ router.get(
   verifyToken,
   verifyPermission("product:view"),
   categoryController.handleGetCategoriesForProductFilter,
+);
+
+router.get(
+  "/manage/categories/export",
+  verifyToken,
+  verifyPermission("category:view"),
+  categoryController.handleExportCategoriesToExcel,
 );
 
 // brand

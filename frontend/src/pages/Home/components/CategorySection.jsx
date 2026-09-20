@@ -1,52 +1,9 @@
 // frontend\src\pages\Home\components\CategorySection.jsx
 import { Link } from "react-router-dom";
 
-import aoImage from "../../../assets/categories/ao.jpg";
-import chanVayImage from "../../../assets/categories/chan-vay.jpg";
-import damImage from "../../../assets/categories/dam.jpg";
-import quanImage from "../../../assets/categories/quan.jpg";
-import setBoImage from "../../../assets/categories/set-bo.jpg";
-
-const CATEGORY_CONFIG = [
-  {
-    name: "Áo",
-    image: aoImage,
-  },
-  {
-    name: "Chân váy",
-    image: chanVayImage,
-  },
-  {
-    name: "Đầm",
-    image: damImage,
-  },
-  {
-    name: "Quần",
-    image: quanImage,
-  },
-  {
-    name: "Set bộ",
-    image: setBoImage,
-  },
-];
+import defaultImage from "../../../assets/images/default-product.png";
 
 export default function CategorySection({ categories = [], loading = false }) {
-  const displayCategories = CATEGORY_CONFIG.map((config) => {
-    const category = categories.find(
-      (item) =>
-        String(item.name || "")
-          .trim()
-          .toLowerCase() === config.name.toLowerCase(),
-    );
-
-    return category
-      ? {
-          ...config,
-          category_id: category.category_id,
-        }
-      : null;
-  }).filter(Boolean);
-
   return (
     <section className="home-categories">
       <div className="home-category-title">
@@ -63,7 +20,7 @@ export default function CategorySection({ categories = [], loading = false }) {
         <div className="home-category-state">Đang tải danh mục...</div>
       ) : (
         <div className="home-category-grid">
-          {displayCategories.map((category) => (
+          {categories.map((category) => (
             <Link
               key={category.category_id}
               to={`/san-pham?category=${encodeURIComponent(
@@ -71,7 +28,15 @@ export default function CategorySection({ categories = [], loading = false }) {
               )}`}
               className="home-category-card"
             >
-              <img src={category.image} alt={category.name} loading="lazy" />
+              <img
+                src={category.image_url || defaultImage}
+                alt={category.name}
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = defaultImage;
+                }}
+              />
 
               <div className="home-category-overlay">
                 <span>{category.name}</span>
