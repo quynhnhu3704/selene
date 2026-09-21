@@ -284,7 +284,7 @@ export default function OrderDetail({ readOnly = false }) {
                             <img
                               className="adm-thumb"
                               src={item.image_url || defaultImage}
-                              alt={item.product_name}
+                              alt=""
                               onError={(e) => {
                                 e.currentTarget.onerror = null;
                                 e.currentTarget.src = defaultImage;

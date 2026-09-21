@@ -681,7 +681,7 @@ export default function Checkout() {
                   <div className="checkout-item" key={item.cart_item_id}>
                     <img
                       src={item.product.image_url || "/placeholder.jpg"}
-                      alt={item.product.product_name}
+                      alt=""
                       className="checkout-item-img"
                       onError={(e) => {
                         e.currentTarget.src = "/placeholder.jpg";

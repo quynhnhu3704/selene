@@ -136,7 +136,7 @@ export default function CategoryPage({ create = false }) {
                 {(preview || form.image_url) && (
                   <img
                     src={preview || form.image_url}
-                    alt="Ảnh danh mục"
+                    alt=""
                     className="d-block rounded mb-3"
                     style={{
                       width: "100%",

@@ -236,7 +236,7 @@ export default function InfoPanel({ profile, setProfile }) {
         <div className="info-avatar-wrap">
           <img
             src={avatarPreview}
-            alt="Avatar"
+            alt=""
             className="info-avatar"
             onError={(e) => {
               e.currentTarget.onerror = null;

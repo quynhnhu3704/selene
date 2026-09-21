@@ -31,7 +31,7 @@ export default function CategorySection({ categories = [], loading = false }) {
             >
               <img
                 src={category.image_url || defaultImage}
-                alt={category.name}
+                alt=""
                 loading="lazy"
                 onError={(e) => {
                   e.currentTarget.onerror = null;

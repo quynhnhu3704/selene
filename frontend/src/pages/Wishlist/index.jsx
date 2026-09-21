@@ -53,7 +53,7 @@ export default function Wishlist() {
               <div key={product.product_id}>
                 <div className="wl-image">
                   <Link to={"/san-pham/" + product.product_id}>
-                    <img src={product.image_url || defaultImage} alt={product.product_name} loading="lazy"
+                    <img src={product.image_url || defaultImage} alt="" loading="lazy"
                       onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = defaultImage; }} />
                   </Link>
                   <button type="button" className="wl-remove" onClick={() => toggleWishlist(product)} aria-label={"Bỏ yêu thích " + product.product_name}>

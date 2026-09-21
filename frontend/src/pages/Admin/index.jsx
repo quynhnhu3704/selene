@@ -337,7 +337,7 @@ export default function AdminLayout() {
         <aside className="adm-sidebar">
           <div className="adm-logo-row">
             <div className="adm-logo-left">
-              <img src={logoIcon} alt="Selene" className="adm-logo-icon" />
+              <img src={logoIcon} alt="" className="adm-logo-icon" />
               <span className="adm-logo-text">Selene</span>
             </div>
           </div>
@@ -377,7 +377,7 @@ export default function AdminLayout() {
               <div className="adm-admin-badge">
                 <img
                   src={profile?.avatar_url || defaultAvatar}
-                  alt={profile?.full_name || "Admin"}
+                  alt=""
                   className="adm-admin-ava"
                   onError={(e) => {
                     e.currentTarget.onerror = null;

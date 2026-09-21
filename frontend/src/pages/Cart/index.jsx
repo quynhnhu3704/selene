@@ -349,7 +349,7 @@ export default function Cart() {
                           <Link to={`/san-pham/${item.product.product_id}`}>
                             <img
                               src={item.product.image_url || "/placeholder.jpg"}
-                              alt={item.product.product_name}
+                              alt=""
                               className="cart-item-img"
                               onError={(e) => {
                                 e.currentTarget.src = "/placeholder.jpg";

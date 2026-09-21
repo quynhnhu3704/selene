@@ -21,7 +21,7 @@
 //               <div className="col-3" key={p.id}>
 //                 <div className="rb-pcard">
 //                   <div className="rb-pimg">
-//                     <img src={p.img} alt={p.name} />
+//                     <img src={p.img} alt="" />
 //                     <div className="rb-rank">{p.rank}</div>
 //                   </div>
 //                   <div className="rb-pinfo">
@@ -54,7 +54,7 @@
 //             <div className="col-3" key={p.id}>
 //               <div className="rb-pcard">
 //                 <div className="rb-pimg">
-//                   <img src={p.img} alt={p.name} />
+//                   <img src={p.img} alt="" />
 //                   <div className="rb-newbadge">MỚI</div>
 //                 </div>
 //                 <div className="rb-pinfo">
@@ -144,7 +144,7 @@ export default function ProductSection({
                   <Link to={"/san-pham/" + product.product_id}>
                     <img
                       src={product.image_url}
-                      alt={product.product_name}
+                      alt=""
                       loading="lazy"
                     />
                   </Link>

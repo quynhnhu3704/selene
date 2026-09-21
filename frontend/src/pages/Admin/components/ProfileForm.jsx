@@ -29,7 +29,7 @@ export default function ProfileForm({
             {profile.avatar_url && (
               <img
                 src={profile.avatar_url}
-                alt="Ảnh đại diện"
+                alt=""
                 className="adm-thumb mb-3"
               />
             )}

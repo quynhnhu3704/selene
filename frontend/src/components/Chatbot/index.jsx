@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { sendMessageToBot } from "../../services/chatbot.service";
 import defaultProduct from "../../assets/images/default-product.png";
 
-const BOT_AVATAR = "https://api.dicebear.com/9.x/bottts/svg?seed=SmartHub";
+import BOT_AVATAR from "../../assets/images/default-chatbot.png";
 
 // Giữ giao diện chat mẫu, nhận văn bản và sản phẩm riêng từ API của Selene.
 function Chatbot() {
@@ -84,7 +84,7 @@ function Chatbot() {
           <div className="chatbot-header">
             <div className="header-left">
               <div className="avatar-online">
-                <img src={BOT_AVATAR} alt="Bot avatar" />
+                <img src={BOT_AVATAR} alt="" />
               </div>
               <div className="header-info">
                 <h5 className="fw-semibold mb-0">Trợ lý ảo Selene</h5>
@@ -121,7 +121,7 @@ function Chatbot() {
               <div key={index} className={`message-row ${msg.role}`}>
                 {msg.role === "bot" && (
                   <div className="bot-avatar">
-                    <img src={BOT_AVATAR} alt="Bot" />
+                    <img src={BOT_AVATAR} alt="" />
                   </div>
                 )}
                 <div className={`bubble ${msg.role}`}>
@@ -138,7 +138,7 @@ function Chatbot() {
                         >
                           <img
                             src={product.image_url || defaultProduct}
-                            alt={product.product_name}
+                            alt=""
                           />
                           <div className="chatbot-product-info">
                             <div className="chatbot-product-name">
@@ -162,7 +162,7 @@ function Chatbot() {
             {isSending && (
               <div className="message-row bot">
                 <div className="bot-avatar">
-                  <img src={BOT_AVATAR} alt="Bot" />
+                  <img src={BOT_AVATAR} alt="" />
                 </div>
                 <div
                   className="bubble bot typing"

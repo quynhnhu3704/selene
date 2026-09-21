@@ -406,7 +406,7 @@ export default function Header() {
                       >
                         <img
                           src={product.image_url || defaultImage}
-                          alt={product.product_name}
+                          alt=""
                           onError={(event) => {
                             event.currentTarget.onerror = null;
                             event.currentTarget.src = defaultImage;
@@ -481,7 +481,7 @@ export default function Header() {
         {/* CỘT 1: LOGO */}
         <div className="rb-col-logo">
           <Link to="/">
-            <img src={logo} alt="logo" width={165} height={75} />
+            <img src={logo} alt="" width={150} height={75} />
           </Link>
         </div>
 
@@ -555,7 +555,7 @@ export default function Header() {
         <div className="rb-topicons">
           <Link to="/yeu-thich" className="rb-icon-wrap text-decoration-none text-dark">
             <div className="rb-icon-rel">
-              <i className="bi bi-heart fs-5" />
+              <i className="bi bi-suit-heart fs-5" />
               <span className="rb-bdot">{wl}</span>
             </div>
             <strong className="rb-ilabel mt-1">Yêu Thích</strong>
@@ -659,7 +659,7 @@ export default function Header() {
         {/* GIỮA: Logo */}
         <div className="rb-mob-logo">
           <Link to="/">
-            <img src={logo} alt="logo" height={48} />
+            <img src={logo} alt="" height={48} />
           </Link>
         </div>
 
@@ -748,7 +748,7 @@ export default function Header() {
       {/* Drawer menu */}
       <div className={`rb-mob-drawer${menuOpen ? " open" : ""}`}>
         <div className="rb-mob-drawer-head">
-          <img src={logo} alt="logo" />
+          <img src={logo} alt="" />
           <button className="rb-mob-close" onClick={() => setMenuOpen(false)}>
             <i className="bi bi-x-lg" />
           </button>

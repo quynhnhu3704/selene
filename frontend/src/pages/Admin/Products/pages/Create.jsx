@@ -430,7 +430,7 @@ export default function CreateProduct() {
               onClick={() => mainImgRef.current.click()}
             >
               {mainImg ? (
-                <img src={mainImg} alt="main" />
+                <img src={mainImg} alt="" />
               ) : (
                 <div className="cp-main-img-placeholder">
                   <i className="bi bi-cloud-arrow-up" />
@@ -452,7 +452,7 @@ export default function CreateProduct() {
                 <img
                   key={i}
                   src={src}
-                  alt={`thumb-${i}`}
+                  alt=""
                   className={`cp-thumb${i === 0 ? " active" : ""}`}
                 />
               ))}

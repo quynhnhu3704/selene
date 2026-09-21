@@ -250,10 +250,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   background: #fff;
-  border: 1px solid #eee7df;
+  border: 1px solid #e5e5e5;
   border-radius: 12px;
-  box-shadow: 0 14px 40px rgba(43, 34, 24, 0.16);
-  color: #292520;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16);
+  color: #212529;
   text-align: left;
   scrollbar-width: thin;
   z-index: 10;
@@ -263,11 +263,11 @@
   font-weight: 800;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #85715a;
+  color: #871b1b;
 }
 .rb-search-history {
   padding: 16px;
-  border-bottom: 1px solid #f0ece7;
+  border-bottom: 1px solid #eeeeee;
 }
 .rb-search-dropdown button {
   background: transparent;
@@ -277,7 +277,7 @@
 }
 .rb-search-dropdown .rb-search-clear {
   padding: 4px 0 4px 12px;
-  color: #81786d;
+  color: #666666;
   font-size: 11px;
 }
 .rb-search-history-row {
@@ -291,22 +291,22 @@
 .rb-search-dropdown .rb-search-remove {
   padding: 6px 10px;
   font-size: 18px;
-  color: #92867a;
+  color: #666666;
 }
 .rb-search-product {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0ece7;
+  border-bottom: 1px solid #eeeeee;
   color: inherit;
   text-decoration: none;
   transition: background 150ms ease;
 }
 .rb-search-product:hover,
 .rb-search-history-row:hover {
-  background: #faf7f2;
-  color: #292520;
+  background: #fffafa;
+  color: #212529;
 }
 .rb-search-product img {
   width: 66px;
@@ -314,7 +314,7 @@
   flex-shrink: 0;
   object-fit: cover;
   border-radius: 6px;
-  background: #f5f3ef;
+  background: #f3f3f3;
 }
 .rb-search-product-info {
   flex: 1;
@@ -323,12 +323,13 @@
 .rb-search-category {
   display: block;
   font-size: 11px;
-  color: #8b7861;
+  color: #871b1b;
   margin-bottom: 4px;
 }
 .rb-search-product-name {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 13px;
@@ -336,22 +337,23 @@
   font-weight: 600;
 }
 .rb-search-price {
+  color: #871b1b;
   font-size: 14px;
   font-weight: 800;
 }
 .rb-search-original {
-  color: #99918a;
+  color: #767676;
   font-size: 12px;
 }
 .rb-search-product-arrow {
   font-size: 13px;
-  color: #a69580;
+  color: #871b1b;
 }
 .rb-search-state {
   padding: 28px 18px;
   text-align: center;
   font-size: 13px;
-  color: #81786d;
+  color: #666666;
 }
 .rb-search-dropdown .rb-search-all {
   display: block;
@@ -359,16 +361,16 @@
   padding: 15px;
   font-size: 12px;
   font-weight: 700;
-  color: #786044;
-  background: #faf7f2;
+  color: #871b1b;
+  background: #fffafa;
 }
 .rb-search-dropdown button:hover {
-  color: #3c2d1d;
+  color: #6f1515;
 }
 .rb-search-dropdown :is(a, button):focus-visible {
-  outline: 2px solid #a68b69;
+  outline: 2px solid #871b1b;
   outline-offset: -2px;
-  background: #faf7f2;
+  background: #fffafa;
 }
 .rb-mob-search-bar .rb-search-dropdown {
   width: 100%;
@@ -1750,17 +1752,17 @@
   margin-right: 1.5rem;
 
   --bs-btn-hover-color: #871b1b;
-  --bs-btn-hover-bg: whitesmoke;
+  --bs-btn-hover-bg: #fffafa;
   --bs-btn-hover-border-color: #871b1b;
   --bs-btn-active-color: #871b1b;
-  --bs-btn-active-bg: whitesmoke;
+  --bs-btn-active-bg: #fffafa;
   --bs-btn-active-border-color: #871b1b;
   --bs-btn-focus-shadow-rgb: 0, 0, 0;
 }
 .btn-outline-danger:hover {
   color: #871b1b;
   border-color: #871b1b;
-  background-color: whitesmoke;
+  background-color: #fffafa;
   box-shadow: none !important;
 }
 

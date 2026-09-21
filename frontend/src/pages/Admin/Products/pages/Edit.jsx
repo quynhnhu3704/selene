@@ -636,7 +636,7 @@ export default function EditProduct() {
 
             {/* // Xem trước và tải lên, xóa từng ảnh bằng nút riêng. */}
             {mainImg ? (
-              <img src={mainImg} alt="Ảnh chính sản phẩm" className="img-fluid w-100 rounded-3" />
+              <img src={mainImg} alt="" className="img-fluid w-100 rounded-3" />
             ) : (
               <div className="text-center text-secondary border rounded-3 p-5">
                 <i className="bi bi-cloud-arrow-up fs-2 d-block mb-2" />
@@ -677,7 +677,7 @@ export default function EditProduct() {
                 <div key={i} className="col-6 col-md-4">
                   <img
                     src={src}
-                    alt={`Ảnh phụ ${i + 1}`}
+                    alt=""
                     className="img-fluid w-100 rounded-3"
                   />
                   <button

@@ -405,7 +405,7 @@ function ProductDetailContent({ id }) {
         <ImageModal title={modal === "size" ? "Hướng dẫn chọn size" : PRODUCT.name}
           fullscreen={modal === "zoom"}
           src={modal === "size" ? SIZE_GUIDE_IMAGE : PRODUCT.images[activeImg]}
-          alt={modal === "size" ? "Bảng kích thước tham khảo" : PRODUCT.name}
+          alt=""
           onError={modal === "zoom" ? () => hideFailedImage(PRODUCT.images[activeImg]) : undefined}
           note={modal === "size" ? "Bảng size tham khảo. Liên hệ tư vấn để chọn kích thước phù hợp với sản phẩm." : undefined}
           onClose={() => setModal(null)} />
@@ -421,7 +421,7 @@ function ProductDetailContent({ id }) {
                   <img
                     key={img}
                     src={img}
-                    alt={`Ảnh ${i + 1}`}
+                    alt=""
                     className={`pd-thumb${activeImg === i ? " active" : ""}`}
                     onClick={() => setSelectedImage(img)}
                     onError={() => hideFailedImage(img)}
@@ -434,7 +434,7 @@ function ProductDetailContent({ id }) {
                   key={PRODUCT.images[activeImg]}
                   src={PRODUCT.images[activeImg]}
                   onError={() => hideFailedImage(PRODUCT.images[activeImg])}
-                  alt={PRODUCT.name}
+                  alt=""
                   className="pd-main-img"
                 />
 
@@ -595,7 +595,7 @@ function ProductDetailContent({ id }) {
                   <img
                     className="pd-color-swatch"
                     src={c.image}
-                    alt={c.label}
+                    alt=""
                   />
                 </button>
               ))}
@@ -690,7 +690,7 @@ function ProductDetailContent({ id }) {
               <button type="button" className={`pd-wishlist${isFavorite(product.product_id) ? " active" : ""}`}
                 onClick={() => toggleWishlist(product)} aria-pressed={isFavorite(product.product_id)}
                 aria-label={isFavorite(product.product_id) ? "Bỏ yêu thích" : "Thêm vào yêu thích"}>
-                <i className={`bi ${isFavorite(product.product_id) ? "bi-heart-fill" : "bi-heart"}`} />
+                <i className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-heart"}`} />
               </button>
             </div>
 

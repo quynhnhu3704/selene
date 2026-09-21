@@ -484,7 +484,7 @@ export default function AdminCategories() {
                       <div className="adm-cell">
                         <img
                           src={p.image_url || defaultImage}
-                          alt={p.name}
+                          alt=""
                           className="adm-thumb"
                           onError={(e) => {
                             e.currentTarget.onerror = null;

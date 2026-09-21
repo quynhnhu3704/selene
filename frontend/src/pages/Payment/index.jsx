@@ -536,7 +536,7 @@ export default function Payment() {
 
                   {payment.qrUrl ? (
                     <div className="qr-wrapper mb-3">
-                      <img src={payment.qrUrl} alt="QR thanh toán SePay" />
+                      <img src={payment.qrUrl} alt="" />
                     </div>
                   ) : (
                     <p className="text-danger small mb-3">

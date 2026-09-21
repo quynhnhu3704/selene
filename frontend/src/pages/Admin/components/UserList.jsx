@@ -73,7 +73,7 @@ export default function UserList({
   return (
     <>
       <Helmet>
-        <title>Quản lý {title.toLowerCase()} | Selene</title>
+        <title>{`Quản lý ${title.toLowerCase()} | Selene`}</title>
       </Helmet>
       <div className="adm-page-head">
         <div className="adm-page-title">{title}</div>

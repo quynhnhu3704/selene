@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function ImageModal({ title, src, alt, note, fullscreen = false, onClose, onError }) {
+export default function ImageModal({ title, src, note, fullscreen = false, onClose, onError }) {
   const dialogRef = useRef(null);
   const [failedSrc, setFailedSrc] = useState(null);
 
@@ -26,7 +26,7 @@ export default function ImageModal({ title, src, alt, note, fullscreen = false, 
           <button type="button" onClick={onClose} aria-label="Đóng" autoFocus><i className="bi bi-x-lg" /></button>
         </div>
         {note && <p className="text-muted small">{note}</p>}
-        {src && failedSrc !== src && <img key={src} src={src} alt={alt} onError={() => {
+        {src && failedSrc !== src && <img key={src} src={src} alt="" onError={() => {
           setFailedSrc(src);
           onError?.();
         }} />}

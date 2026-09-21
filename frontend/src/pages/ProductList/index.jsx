@@ -10,6 +10,7 @@ import {
 import { useWishlist } from "../../context/WishlistContext";
 import Pagination from "../../components/common/Pagination";
 import Loading from "../../components/common/Loading";
+import ProductImage from "../../components/common/ProductImage";
 
 import orangeColor from "../../assets/colors/orange.jpg";
 import blackColor from "../../assets/colors/black.jpg";
@@ -686,10 +687,8 @@ export default function ProductList() {
         }
 
         .pl-pcard { cursor: pointer; }
-        .pl-favorite { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none; border: none; color: #871B1B; font-size: 20px; transition: opacity 0.2s, background 0.2s; }
-        .pl-pcard:hover .pl-favorite, .pl-pcard:focus-within .pl-favorite, .pl-favorite.active { opacity: 1; }
-        .pl-favorite:hover {  }
-        @media (hover: none), (pointer: coarse) { .pl-favorite { opacity: 1; } }
+        .pl-favorite { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none; border: none; color: #871B1B; font-size: 20px; opacity: 0; transition: opacity 0.2s; }
+        .pl-pcard:hover .pl-favorite, .pl-favorite.active { opacity: 1; }
         .pl-pimg-wrap {
           position: relative;
           overflow: hidden;
@@ -722,8 +721,7 @@ export default function ProductList() {
 
         .pl-pinfo { padding: 10px 0 6px; }
         .pl-pname {
-          font-size: 13px;
-          color: #222;
+          font-size: 16px;
           text-decoration: none;
           font-weight: 500;
           line-height: 1.45;
@@ -739,15 +737,15 @@ export default function ProductList() {
           gap: 8px;
         }
         .pl-price-current {
-          font-size: 14px;
-          font-weight: 700;
-          color: #111;
+          font-size: 16px;
+          font-weight: 600;
+          color: #871B1B;
         }
         .pl-price-original {
-          font-size: 13px;
-          color: #aaa;
+          font-size: 16px;
+          color: #6c757d;
           text-decoration: line-through;
-          font-weight: 400;
+          text-decoration-color: #6c757d;
         }
 
         /* ── PAGINATION ── */
@@ -835,12 +833,12 @@ export default function ProductList() {
           gap: 5px;
           max-width: 100%;
           border: 1px solid #871b1b;
-          border-radius: 999px;
+          border-radius: 50rem;
           padding: 5px 8px 5px 10px;
-          background: #fff7f7;
+          background: #fffafa;
           color: #871b1b;
           cursor: pointer;
-          font-size: 12px;
+          font-size: 14px;
           text-align: left;
         }
         .pl-selected-chip span {
@@ -849,7 +847,7 @@ export default function ProductList() {
           white-space: nowrap;
         }
         .pl-selected-chip i {
-          font-size: 13px;
+          font-size: 14px;
         }
         .pl-cat-label,
         .pl-check-label {
@@ -982,8 +980,7 @@ export default function ProductList() {
           padding: 10px 12px;
           border-left: 3px solid #871b1b;
           background: #fff8f8;
-          color: #333;
-          font-size: 13.5px;
+          font-size: 14px;
         }
         .pl-search-summary button {
           flex: 0 0 auto;
@@ -992,8 +989,11 @@ export default function ProductList() {
           background: transparent;
           color: #871b1b;
           cursor: pointer;
-          font-size: 12.5px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .pl-search-summary button:hover {
+          text-decoration: underline;
         }
         .pl-state {
           padding: 40px 0;
@@ -1228,7 +1228,7 @@ export default function ProductList() {
                         <img
                           className="pl-color-swatch"
                           src={COLOR_IMAGES[color.value]}
-                          alt={color.label}
+                          alt=""
                           loading="lazy"
                         />
                       </button>
@@ -1331,9 +1331,9 @@ export default function ProductList() {
                   <div className="pl-pcard" key={product.product_id}>
                     <div className="pl-pimg-wrap">
                       <Link to={"/san-pham/" + product.product_id}>
-                        <img
+                        <ProductImage
                           src={product.image_url}
-                          alt={product.product_name}
+                          alt=""
                           loading="lazy"
                         />
                         {product.second_image_url && (
@@ -1353,7 +1353,7 @@ export default function ProductList() {
                       <button type="button" className={`pl-favorite${isFavorite(product.product_id) ? " active" : ""}`}
                         onClick={() => toggleWishlist(product)} aria-pressed={isFavorite(product.product_id)}
                         aria-label={isFavorite(product.product_id) ? "Bỏ yêu thích " + product.product_name : "Yêu thích " + product.product_name}>
-                        <i className={`bi ${isFavorite(product.product_id) ? "bi-heart-fill" : "bi-heart"}`} />
+                        <i className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-suit-heart"}`} />
                       </button>
                     </div>
 
