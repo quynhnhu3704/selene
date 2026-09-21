@@ -212,6 +212,12 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
     const updated_at = new Date().toISOString();
     const updated = await PromotionModel.updateStatus(promotion_id, targetStatus, updated_at);
 
+    // Nếu cập nhật promotion thành inactive -> Cập nhật tất cả promotion_items thành inactive
+    // Nếu thành active -> status của promotion_items giữ nguyên không thay đổi
+    if (targetStatus === "inactive") {
+      await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", updated_at);
+    }
+
     // Tự động tính toán lại discount_price trong bảng products cho các sản phẩm liên quan
     const affectedProductIds = (existingPromo?.promotion_items || []).map((item) => item.product_id);
     if (affectedProductIds.length > 0) {
@@ -362,6 +368,8 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       } else {
         await PromotionModel.deletePromotionItems(promotion_id);
       }
+    } else if (status === "inactive") {
+      await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", currentTime);
     }
 
     // Trả về đối tượng khuyến mãi sau khi đã cập nhật hoàn chỉnh
@@ -452,6 +460,59 @@ export const addProductsToPromotion = async (promotion_id, inputData = {}) => {
     return updatedPromotion;
   } catch (error) {
     console.error("Lỗi tại addProductsToPromotion Service:", error.message);
+    throw error;
+  }
+};
+
+// Cập nhật trạng thái của 1 sản phẩm khuyến mãi (promotion_item)
+export const updatePromotionItemStatus = async (promotion_item_id, statusInput) => {
+  try {
+    const existingItem = await PromotionModel.getPromotionItemById(promotion_item_id);
+    if (!existingItem) {
+      throw new Error("Không tìm thấy sản phẩm khuyến mãi yêu cầu!");
+    }
+
+    const parentPromo = await PromotionModel.getPromotionById(existingItem.promotion_id);
+    if (!parentPromo) {
+      throw new Error("Không tìm thấy chương trình khuyến mãi tương ứng!");
+    }
+
+    let targetStatus;
+    if (statusInput) {
+      const validStatuses = ["active", "inactive", "out_of_stock", "expired"];
+      if (!validStatuses.includes(statusInput)) {
+        throw new Error("Trạng thái sản phẩm khuyến mãi không hợp lệ!");
+      }
+      targetStatus = statusInput;
+    } else {
+      // Toggle giữa active và inactive nếu không truyền statusInput
+      targetStatus = existingItem.status === "active" ? "inactive" : "active";
+    }
+
+    // Kiểm tra quy tắc:
+    // Nếu status của chương trình khuyến mãi đang là active -> có thể chuyển qua lại giữa active/inactive
+    // Ngược lại (promotion không ở trạng thái active) -> promotion_item chỉ có thể ở trạng thái inactive (hoặc non-active)
+    if (targetStatus === "active" && parentPromo.status !== "active") {
+      throw new Error(
+        "Không thể kích hoạt sản phẩm khuyến mãi khi chương trình khuyến mãi không ở trạng thái 'active'!"
+      );
+    }
+
+    const currentTime = new Date().toISOString();
+    const updatedItem = await PromotionModel.updateSinglePromotionItemStatus(
+      promotion_item_id,
+      targetStatus,
+      currentTime
+    );
+
+    // Tự động tính toán lại discount_price của sản phẩm liên quan
+    if (existingItem.product_id) {
+      await PromotionModel.recalculateProductsDiscountPrice([existingItem.product_id]);
+    }
+
+    return updatedItem;
+  } catch (error) {
+    console.error("Lỗi tại updatePromotionItemStatus Service:", error.message);
     throw error;
   }
 };

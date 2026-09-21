@@ -159,5 +159,11 @@ router.post(
   verifyPermission(["promotion:update", "product:update", "promotion:create", "product:create"]),
   promotionController.handleAddProductsToPromotion,
 );
+router.put(
+  "/manage/promotion-item/change-status/:promotionItemId",
+  verifyToken,
+  verifyPermission(["promotion:update", "product:update"]),
+  promotionController.handleUpdatePromotionItemStatus,
+);
 
 export default router;

@@ -243,6 +243,19 @@ export const PromotionModel = {
     if (error) throw error;
   },
 
+  // Cập nhật trạng thái cho tất cả các promotion_items thuộc 1 khuyến mãi
+  updatePromotionItemsStatus: async (promotion_id, status, updated_at) => {
+    const { error } = await supabase
+      .from("promotion_items")
+      .update({
+        status,
+        updated_at: updated_at || new Date().toISOString(),
+      })
+      .eq("promotion_id", promotion_id);
+
+    if (error) throw error;
+  },
+
   // Tính toán lại và cập nhật discount_price trong bảng products cho các sản phẩm
   recalculateProductsDiscountPrice: async (productIds) => {
     if (!productIds || productIds.length === 0) return;
@@ -281,17 +294,16 @@ export const PromotionModel = {
       if (activePItems.length > 0) {
         const promoIds = [...new Set(activePItems.map((item) => item.promotion_id))];
 
-        // 3. Lấy thông tin các chương trình khuyến mãi đang active
-        const { data: activePromos, error: promoErr } = await supabase
+        // 3. Lấy thông tin các chương trình khuyến mãi tương ứng (phụ thuộc vào status của promotion_items)
+        const { data: promos, error: promoErr } = await supabase
           .from("promotions")
-          .select("discount_type, discount_value, start_date, end_date, status")
-          .in("promotion_id", promoIds)
-          .eq("status", "active");
+          .select("discount_type, discount_value, start_date, end_date")
+          .in("promotion_id", promoIds);
 
         if (promoErr) throw promoErr;
 
-        if (activePromos && activePromos.length > 0) {
-          for (const promo of activePromos) {
+        if (promos && promos.length > 0) {
+          for (const promo of promos) {
             const startDate = new Date(promo.start_date);
             const endDate = new Date(promo.end_date);
 
@@ -326,5 +338,32 @@ export const PromotionModel = {
         })
         .eq("product_id", prod.product_id);
     }
+  },
+
+  // Lấy chi tiết 1 bản ghi promotion_item theo ID
+  getPromotionItemById: async (promotion_item_id) => {
+    const { data, error } = await supabase
+      .from("promotion_items")
+      .select("*")
+      .eq("promotion_item_id", promotion_item_id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật trạng thái của 1 promotion_item theo ID
+  updateSinglePromotionItemStatus: async (promotion_item_id, status, updated_at) => {
+    const { data, error } = await supabase
+      .from("promotion_items")
+      .update({
+        status,
+        updated_at: updated_at || new Date().toISOString(),
+      })
+      .eq("promotion_item_id", promotion_item_id)
+      .select();
+
+    if (error) throw error;
+    return data ? data[0] : null;
   },
 };

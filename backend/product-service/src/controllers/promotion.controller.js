@@ -165,3 +165,31 @@ export const handleAddProductsToPromotion = async (req, res) => {
     });
   }
 };
+
+// Controller cập nhật trạng thái của 1 sản phẩm khuyến mãi (promotion_item)
+export const handleUpdatePromotionItemStatus = async (req, res) => {
+  try {
+    const { promotionItemId } = req.params;
+    const { status } = req.body;
+
+    const result = await promotionService.updatePromotionItemStatus(promotionItemId, status);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Cập nhật trạng thái sản phẩm khuyến mãi thành công!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Lỗi tại handleUpdatePromotionItemStatus Controller:", error.message);
+
+    const isClientError =
+      error.message.includes("không hợp lệ") ||
+      error.message.includes("Không tìm thấy") ||
+      error.message.includes("Không thể kích hoạt");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};
