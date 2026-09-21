@@ -1,5 +1,4 @@
 // frontend\src\pages\ProductList.jsx
-import Loading from "../../components/common/Loading";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -10,6 +9,7 @@ import {
 } from "../../services/product.service";
 import { useWishlist } from "../../context/WishlistContext";
 import Pagination from "../../components/common/Pagination";
+import Loading from "../../components/common/Loading";
 
 import orangeColor from "../../assets/colors/orange.jpg";
 import blackColor from "../../assets/colors/black.jpg";
@@ -26,6 +26,45 @@ import blueColor from "../../assets/colors/blue.jpg";
 import greenColor from "../../assets/colors/green.jpg";
 
 const PRODUCTS_PER_PAGE = 12;
+
+function FilterSkeleton({ variant }) {
+  if (variant === "price") {
+    return (
+      <div className="pl-price-range" aria-hidden="true">
+        <div className="pl-skeleton-slider">
+          <span className="pl-skeleton" />
+        </div>
+        <div className="pl-price-values">
+          <span className="pl-skeleton pl-skeleton-line" style={{ width: "28%" }} />
+          <span className="pl-skeleton pl-skeleton-line" style={{ width: "36%" }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "colors") {
+    return (
+      <div className="pl-color-list" aria-hidden="true">
+        {Array.from({ length: 13 }, (_, index) => (
+          <div className="pl-color-btn" key={index}>
+            <span className="pl-color-swatch pl-skeleton" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`pl-filter-skeleton pl-filter-skeleton-${variant}`} aria-hidden="true">
+      {[65, 45, 58, 40, 62].map((width, index) => (
+        <div className="pl-skeleton-filter-row" key={index}>
+          <span className="pl-skeleton pl-skeleton-checkbox" />
+          <span className="pl-skeleton pl-skeleton-line" style={{ width: `${variant === "sizes" ? width / 2 : width}%` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function fmt(n) {
   return Number(n || 0).toLocaleString("vi-VN") + "đ";
@@ -494,6 +533,37 @@ export default function ProductList() {
 
         .pl-sidebar-section { margin-bottom: 28px; }
 
+        .pl-skeleton {
+          display: block;
+          border-radius: 4px;
+          background: #e9ecef;
+          animation: pl-skeleton-pulse 1.4s ease-in-out infinite;
+        }
+        .pl-skeleton-line { height: 14px; }
+        .pl-skeleton-filter-row {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          height: 39px;
+        }
+        .pl-filter-skeleton-sizes .pl-skeleton-filter-row { height: 31px; }
+        .pl-skeleton-checkbox { width: 15px; height: 15px; flex-shrink: 0; }
+        .pl-skeleton-slider {
+          display: flex;
+          align-items: center;
+          height: 22px;
+          margin: 0 4px 12px;
+        }
+        .pl-skeleton-slider > span { width: 100%; height: 4px; }
+        .pl-price-values:has(.pl-skeleton) { align-items: center; min-height: 21px; }
+        @keyframes pl-skeleton-pulse {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .pl-skeleton { animation: none; }
+        }
+
         .pl-sidebar-title {
           font-size: 15px;
           font-weight: 600;
@@ -592,6 +662,11 @@ export default function ProductList() {
           padding: 28px 0 0 36px;
         }
 
+        .pl-main > .spinner-loading {
+          min-height: 60vh;
+          min-height: 60dvh;
+        }
+
         /* TOP ROW: title + sort */
         .pl-main-top {
           display: flex;
@@ -611,26 +686,39 @@ export default function ProductList() {
         }
 
         .pl-pcard { cursor: pointer; }
-        .pl-favorite { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid #eadada; border-radius: 50%; background: #fff; color: #871B1B; font-size: 18px; opacity: 0; transition: opacity 0.2s, background 0.2s; box-shadow: 0 2px 8px #0001; }
+        .pl-favorite { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none; border: none; color: #871B1B; font-size: 20px; transition: opacity 0.2s, background 0.2s; }
         .pl-pcard:hover .pl-favorite, .pl-pcard:focus-within .pl-favorite, .pl-favorite.active { opacity: 1; }
-        .pl-favorite:hover { background: #fcf2f2; }
+        .pl-favorite:hover {  }
         @media (hover: none), (pointer: coarse) { .pl-favorite { opacity: 1; } }
         .pl-pimg-wrap {
           position: relative;
           overflow: hidden;
+          border-radius: 12px;
           background: #f5f5f5;
           margin-bottom: 0;
         }
-        .pl-pimg-wrap a { display: block; }
+        .pl-pimg-wrap a { display: block; position: relative; }
         .pl-pimg-wrap img {
           width: 100%;
           aspect-ratio: 3/4;
           object-fit: cover;
           object-position: top center;
           display: block;
-          transition: transform 0.35s ease;
         }
-        .pl-pcard:hover .pl-pimg-wrap img { transform: scale(1.04); }
+        .pl-pimg-wrap .pl-pimg-secondary {
+          position: absolute;
+          inset: 0;
+          height: 100%;
+          opacity: 0;
+          transition: opacity 0.35s ease;
+        }
+        @media (hover: hover) {
+          .pl-pimg-wrap:hover .pl-pimg-secondary { opacity: 1; }
+        }
+        .pl-pimg-wrap a:focus-visible .pl-pimg-secondary { opacity: 1; }
+        @media (prefers-reduced-motion: reduce) {
+          .pl-pimg-wrap .pl-pimg-secondary { transition: none; }
+        }
 
         .pl-pinfo { padding: 10px 0 6px; }
         .pl-pname {
@@ -973,6 +1061,7 @@ export default function ProductList() {
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Danh mục</div>
             <div className="pl-sidebar-scroll">
+              {filterLoading && <FilterSkeleton variant="categories" />}
               {!filterLoading && (
                 <ul className="pl-cat-list">
                   {filterOptions.categories.map((category) => (
@@ -1047,7 +1136,7 @@ export default function ProductList() {
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Mức giá</div>
 
-            {filterLoading ? null : priceMax > priceMin ? (
+            {filterLoading ? <FilterSkeleton variant="price" /> : priceMax > priceMin ? (
               <div className="pl-price-range">
                 <div
                   className="pl-range-track"
@@ -1094,6 +1183,7 @@ export default function ProductList() {
 
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Kích thước</div>
+            {filterLoading && <FilterSkeleton variant="sizes" />}
 
             {!filterLoading && (
               <ul className="pl-check-list">
@@ -1116,6 +1206,7 @@ export default function ProductList() {
 
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Màu sắc</div>
+            {filterLoading && <FilterSkeleton variant="colors" />}
 
             {!filterLoading && (
               <>
@@ -1210,12 +1301,28 @@ export default function ProductList() {
           )}
 
           {loading ? (
-            <div className="pl-state"><Loading text="Đang tải sản phẩm..." /></div>
+            <Loading text="Đang tải sản phẩm..." />
           ) : productError ? (
             <div className="pl-state error">{productError}</div>
           ) : products.length === 0 ? (
-            <div className="pl-state">
-              Không tìm thấy sản phẩm phù hợp với bộ lọc đã chọn.
+            <div className="page-empty" role="status">
+              <i className="bi bi-search page-empty-icon" aria-hidden="true" />
+              <p className="mt-3 mb-1 fw-semibold text-secondary">
+                Không tìm thấy sản phẩm
+              </p>
+              <p className="text-muted" style={{ fontSize: 14 }}>
+                Thử lại với từ khóa hoặc bộ lọc khác!
+              </p>
+              {selectedFilters.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-dark mt-3 px-4 form-btn fw-semibold"
+                  onClick={clearAllFilters}
+                >
+                  <i className="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
+                  Đặt lại
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -1229,6 +1336,19 @@ export default function ProductList() {
                           alt={product.product_name}
                           loading="lazy"
                         />
+                        {product.second_image_url && (
+                          <img
+                            key={product.second_image_url}
+                            className="pl-pimg-secondary"
+                            src={product.second_image_url}
+                            alt=""
+                            aria-hidden="true"
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
                       </Link>
                       <button type="button" className={`pl-favorite${isFavorite(product.product_id) ? " active" : ""}`}
                         onClick={() => toggleWishlist(product)} aria-pressed={isFavorite(product.product_id)}

@@ -228,8 +228,8 @@ const getAdminProductFilters = (options) => {
   };
 };
 
-//  Hàm dùng chung: Trích xuất 1 tấm ảnh đầu tiên từ dữ liệu image_urls trong DB
-const getFirstImage = (imageUrlsData) => {
+// Trích xuất ảnh theo thứ tự từ dữ liệu image_urls trong DB.
+const getProductImage = (imageUrlsData, index = 0) => {
   if (!imageUrlsData) return "";
 
   let parsedImages = imageUrlsData;
@@ -243,18 +243,20 @@ const getFirstImage = (imageUrlsData) => {
     }
   }
 
-  // Nếu là mảng và có phần tử, lấy phần tử đầu tiên [0]
+  // Nếu là mảng, lấy ảnh ở vị trí yêu cầu.
   if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-    return parsedImages[0];
+    return parsedImages[index] || "";
   }
 
   // Trường hợp dữ liệu sau khi xử lý vẫn là chuỗi URL đơn thuần
   if (typeof parsedImages === "string") {
-    return parsedImages;
+    return index === 0 ? parsedImages : "";
   }
 
   return "";
 };
+
+const getFirstImage = (imageUrlsData) => getProductImage(imageUrlsData);
 
 // Lấy tất cả sản phẩm cho customer
 export const getAllProduct = async (options = {}) => {
@@ -283,6 +285,7 @@ export const getAllProduct = async (options = {}) => {
       product_id: product.product_id,
       product_name: product.product_name,
       image_url: getFirstImage(product.image_urls),
+      second_image_url: getProductImage(product.image_urls, 1),
       category_name: product.categories?.name || null,
       discount_price: product.discount_price,
       original_price: product.original_price,
