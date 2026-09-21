@@ -57,9 +57,19 @@ export const PromotionModel = {
   createPromotionItems: async (itemsData) => {
     if (!itemsData || itemsData.length === 0) return [];
 
+    const currentTime = new Date().toISOString();
+    const formattedItems = itemsData.map((item) => ({
+      promotion_item_id: item.promotion_item_id,
+      promotion_id: item.promotion_id,
+      product_id: item.product_id,
+      created_at: item.created_at || currentTime,
+      updated_at: item.updated_at || currentTime,
+      status: item.status || "active",
+    }));
+
     const { data, error } = await supabase
       .from("promotion_items")
-      .insert(itemsData)
+      .insert(formattedItems)
       .select();
 
     if (error) throw error;
@@ -254,18 +264,22 @@ export const PromotionModel = {
     for (const prod of productsList) {
       const origPrice = Number(prod.original_price) || 0;
 
-      // 2. Lấy danh sách các promotion_items liên quan đến sản phẩm này
+      // 2. Lấy danh sách các promotion_items liên quan đến sản phẩm này (chỉ lấy items đang active)
       const { data: pItems, error: pItemsErr } = await supabase
         .from("promotion_items")
-        .select("promotion_id")
+        .select("promotion_id, status")
         .eq("product_id", prod.product_id);
 
       if (pItemsErr) throw pItemsErr;
 
       let maxDiscountAmount = 0;
 
-      if (pItems && pItems.length > 0) {
-        const promoIds = [...new Set(pItems.map((item) => item.promotion_id))];
+      const activePItems = (pItems || []).filter(
+        (item) => !item.status || item.status === "active"
+      );
+
+      if (activePItems.length > 0) {
+        const promoIds = [...new Set(activePItems.map((item) => item.promotion_id))];
 
         // 3. Lấy thông tin các chương trình khuyến mãi đang active
         const { data: activePromos, error: promoErr } = await supabase

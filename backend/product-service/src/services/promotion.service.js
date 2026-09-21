@@ -129,6 +129,8 @@ export const createPromotion = async (promotionInput) => {
         promotion_id,
         product_id: pid,
         created_at: currentTime,
+        updated_at: currentTime,
+        status: initialStatus || "active",
       }));
 
       createdItems = await PromotionModel.createPromotionItems(itemsToInsert);
@@ -352,6 +354,8 @@ export const updatePromotion = async (promotion_id, updateInput) => {
           promotion_id,
           product_id: pid,
           created_at: currentTime,
+          updated_at: currentTime,
+          status: status || existingPromotion.status || "active",
         }));
 
         await PromotionModel.createPromotionItems(itemsToInsert);
@@ -431,6 +435,8 @@ export const addProductsToPromotion = async (promotion_id, inputData = {}) => {
       promotion_id,
       product_id: pid,
       created_at: currentTime,
+      updated_at: currentTime,
+      status: existingPromotion.status || "active",
     }));
 
     await PromotionModel.createPromotionItems(itemsToInsert);
