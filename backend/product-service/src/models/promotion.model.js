@@ -76,7 +76,7 @@ export const PromotionModel = {
     return data;
   },
 
-  // Lấy danh sách khuyến mãi có phân trang kèm đầy đủ sản phẩm chi tiết
+  // Lấy danh sách khuyến mãi có phân trang (chỉ lấy danh sách các chương trình khuyến mãi)
   getPromotionsWithPagination: async (from, to, filters = {}) => {
     let query = supabase
       .from("promotions")
@@ -98,54 +98,7 @@ export const PromotionModel = {
     const { data: promotions, error, count } = await query;
     if (error) throw error;
 
-    if (!promotions || promotions.length === 0) {
-      return { data: [], count: count || 0 };
-    }
-
-    // Lấy tất cả promotion_id trong trang này
-    const promotionIds = promotions.map((p) => p.promotion_id);
-
-    // Lấy tất cả promotion_items tương ứng
-    const { data: items, error: itemsError } = await supabase
-      .from("promotion_items")
-      .select("*")
-      .in("promotion_id", promotionIds);
-
-    if (itemsError) throw itemsError;
-
-    // Lấy danh sách product_id duy nhất
-    const productIds = [...new Set((items || []).map((item) => item.product_id).filter(Boolean))];
-
-    let productsMap = {};
-    if (productIds.length > 0) {
-      const { data: productsData, error: productsError } = await supabase
-        .from("products")
-        .select("product_id, product_name, image_urls, price, original_price, discount_price, status")
-        .in("product_id", productIds);
-
-      if (productsError) throw productsError;
-
-      (productsData || []).forEach((prod) => {
-        productsMap[prod.product_id] = prod;
-      });
-    }
-
-    // Ghép dữ liệu promotion_items và products vào từng promotion
-    const result = promotions.map((promo) => {
-      const promoItems = (items || [])
-        .filter((item) => item.promotion_id === promo.promotion_id)
-        .map((item) => ({
-          ...item,
-          products: productsMap[item.product_id] || null,
-        }));
-
-      return {
-        ...promo,
-        promotion_items: promoItems,
-      };
-    });
-
-    return { data: result, count };
+    return { data: promotions || [], count: count || 0 };
   },
 
   // Cập nhật trạng thái khuyến mãi theo ID

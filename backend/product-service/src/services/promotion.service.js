@@ -185,7 +185,7 @@ export const createPromotion = async (promotionInput) => {
   }
 };
 
-// Lấy danh sách tất cả chương trình khuyến mãi (Kèm theo thông tin chi tiết sản phẩm áp dụng)
+// Lấy danh sách tất cả chương trình khuyến mãi (chỉ danh sách các khuyến mãi)
 export const getAllPromotions = async (options = {}) => {
   try {
     const page = parseInt(options.page) || 1;
@@ -212,6 +212,25 @@ export const getAllPromotions = async (options = {}) => {
     };
   } catch (error) {
     console.error("Lỗi tại getAllPromotions Service:", error.message || error);
+    throw error;
+  }
+};
+
+// Lấy chi tiết chương trình khuyến mãi theo ID (kèm danh sách sản phẩm áp dụng)
+export const getPromotionDetail = async (promotionId) => {
+  try {
+    if (!promotionId) {
+      throw new Error("Mã chương trình khuyến mãi (promotionId) là bắt buộc!");
+    }
+
+    const promotion = await PromotionModel.getPromotionById(promotionId);
+    if (!promotion) {
+      throw new Error("Không tìm thấy chương trình khuyến mãi yêu cầu!");
+    }
+
+    return promotion;
+  } catch (error) {
+    console.error("Lỗi tại getPromotionDetail Service:", error.message || error);
     throw error;
   }
 };

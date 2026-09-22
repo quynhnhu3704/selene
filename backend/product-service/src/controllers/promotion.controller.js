@@ -55,7 +55,7 @@ export const handleCreatePromotion = async (req, res) => {
   }
 };
 
-// Controller lấy danh sách tất cả khuyến mãi (kèm chi tiết sản phẩm áp dụng)
+// Controller lấy danh sách tất cả khuyến mãi (chỉ thông tin khuyến mãi)
 export const handleGetAllPromotions = async (req, res) => {
   try {
     const { page, limit, status, q } = req.query;
@@ -77,6 +77,30 @@ export const handleGetAllPromotions = async (req, res) => {
     console.error("Lỗi tại handleGetAllPromotions Controller:", error.message);
     return res.status(500).json({
       status: 500,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};
+
+// Controller lấy chi tiết khuyến mãi theo ID (kèm thông tin chi tiết các sản phẩm áp dụng)
+export const handleGetPromotionDetail = async (req, res) => {
+  try {
+    const { promotionId } = req.params;
+
+    const result = await promotionService.getPromotionDetail(promotionId);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Lấy chi tiết khuyến mãi thành công!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Lỗi tại handleGetPromotionDetail Controller:", error.message);
+
+    const isNotFound = error.message.includes("Không tìm thấy");
+
+    return res.status(isNotFound ? 404 : 500).json({
+      status: isNotFound ? 404 : 500,
       message: error.message || "Internal Server Error!",
     });
   }

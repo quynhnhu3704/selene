@@ -141,6 +141,12 @@ router.get(
   verifyPermission(["promotion:view", "product:view"]),
   promotionController.handleGetAllPromotions,
 );
+router.get(
+  "/manage/promotion-detail/:promotionId",
+  verifyToken,
+  verifyPermission(["promotion:view", "product:view"]),
+  promotionController.handleGetPromotionDetail,
+);
 router.put(
   "/manage/promotion/change-status/:promotionId",
   verifyToken,
