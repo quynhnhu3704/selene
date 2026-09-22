@@ -5,6 +5,27 @@ const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+// Helper kiểm tra xung đột sản phẩm đã được áp dụng trong chương trình khuyến mãi active khác
+const verifyNoActivePromotionConflicts = async (productIds, excludePromotionId = null) => {
+  if (!productIds || productIds.length === 0) return;
+  const conflicts = await PromotionModel.checkProductActivePromotionConflicts(
+    productIds,
+    excludePromotionId
+  );
+  if (conflicts && conflicts.length > 0) {
+    const details = conflicts
+      .map(
+        (c) =>
+          `Sản phẩm '${c.product_name}' (Mã SP: ${c.product_id}) đang được áp dụng trong chương trình khuyến mãi '${c.promotion_name}' (Mã KM: ${c.promotion_id})`
+      )
+      .join("; ");
+    throw new Error(
+      `Không thể thực hiện! ${details}. Mỗi sản phẩm chỉ được áp dụng 1 chương trình khuyến mãi ở trạng thái active!`
+    );
+  }
+};
+
+
 // Tạo mới 1 chương trình khuyến mãi
 export const createPromotion = async (promotionInput) => {
   try {
@@ -104,6 +125,11 @@ export const createPromotion = async (promotionInput) => {
         : 0;
 
     const initialStatus = status || "active";
+
+    // Kiểm tra xung đột sản phẩm nếu khuyến mãi ở trạng thái active
+    if (initialStatus === "active" && targetProductIds.length > 0) {
+      await verifyNoActivePromotionConflicts(targetProductIds);
+    }
 
     // 5. Thêm bản ghi khuyến mãi
     const newPromotion = await PromotionModel.create({
@@ -207,6 +233,17 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
     } else {
       // Nếu không truyền status -> Tự động toggle giữa active và inactive
       targetStatus = existingPromo.status === "active" ? "inactive" : "active";
+    }
+
+    // Nếu chuyển sang active -> Kiểm tra xung đột cho các sản phẩm thuộc chương trình này
+    if (targetStatus === "active") {
+      const activeItemProductIds = (existingPromo?.promotion_items || [])
+        .filter((item) => !item.status || item.status === "active")
+        .map((item) => item.product_id);
+
+      if (activeItemProductIds.length > 0) {
+        await verifyNoActivePromotionConflicts(activeItemProductIds, promotion_id);
+      }
     }
 
     const updated_at = new Date().toISOString();
@@ -328,6 +365,25 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       updateData.status = status;
     }
 
+    // Kiểm tra xung đột khi khuyến mãi ở (hoặc được cập nhật thành) trạng thái active
+    const targetStatus = status !== undefined ? status : existingPromotion.status;
+    const rawProductIds = product_ids || productIds;
+    let targetProductIds = [];
+
+    if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
+      targetProductIds = [
+        ...new Set(rawProductIds.map((id) => String(id).trim()).filter(Boolean)),
+      ];
+    } else {
+      targetProductIds = (existingPromotion?.promotion_items || [])
+        .filter((item) => !item.status || item.status === "active")
+        .map((item) => item.product_id);
+    }
+
+    if (targetStatus === "active" && targetProductIds.length > 0) {
+      await verifyNoActivePromotionConflicts(targetProductIds, promotion_id);
+    }
+
     const currentTime = new Date().toISOString();
     updateData.updated_at = currentTime;
 
@@ -337,12 +393,7 @@ export const updatePromotion = async (promotion_id, updateInput) => {
     }
 
     // 7. Cập nhật danh sách sản phẩm áp dụng (promotion_items)
-    const rawProductIds = product_ids || productIds;
     if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
-      const targetProductIds = [
-        ...new Set(rawProductIds.map((id) => String(id).trim()).filter(Boolean)),
-      ];
-
       if (targetProductIds.length > 0) {
         const existingProducts = await PromotionModel.checkProductsExist(targetProductIds);
         const foundIds = existingProducts.map((p) => p.product_id);
@@ -436,6 +487,11 @@ export const addProductsToPromotion = async (promotion_id, inputData = {}) => {
       throw new Error("Tất cả sản phẩm gửi lên đều đã tồn tại trong chương trình khuyến mãi này!");
     }
 
+    // Nếu khuyến mãi đang ở trạng thái active -> Kiểm tra các sản phẩm mới có thuộc khuyến mãi active khác không
+    if (existingPromotion.status === "active") {
+      await verifyNoActivePromotionConflicts(newIdsToInsert, promotion_id);
+    }
+
     // 4. Thêm các bản ghi sản phẩm mới vào bảng promotion_items
     const currentTime = new Date().toISOString();
     const itemsToInsert = newIdsToInsert.map((pid) => ({
@@ -492,10 +548,18 @@ export const updatePromotionItemStatus = async (promotion_item_id, statusInput) 
     // Kiểm tra quy tắc:
     // Nếu status của chương trình khuyến mãi đang là active -> có thể chuyển qua lại giữa active/inactive
     // Ngược lại (promotion không ở trạng thái active) -> promotion_item chỉ có thể ở trạng thái inactive (hoặc non-active)
-    if (targetStatus === "active" && parentPromo.status !== "active") {
-      throw new Error(
-        "Không thể kích hoạt sản phẩm khuyến mãi khi chương trình khuyến mãi không ở trạng thái 'active'!"
-      );
+    if (targetStatus === "active") {
+      if (parentPromo.status !== "active") {
+        throw new Error(
+          "Không thể kích hoạt sản phẩm khuyến mãi khi chương trình khuyến mãi không ở trạng thái 'active'!"
+        );
+      }
+      if (existingItem.product_id) {
+        await verifyNoActivePromotionConflicts(
+          [existingItem.product_id],
+          existingItem.promotion_id
+        );
+      }
     }
 
     const currentTime = new Date().toISOString();

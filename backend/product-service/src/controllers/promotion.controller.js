@@ -44,7 +44,9 @@ export const handleCreatePromotion = async (req, res) => {
       error.message.includes("không đúng định dạng") ||
       error.message.includes("phải lớn hơn") ||
       error.message.includes("không được vượt quá") ||
-      error.message.includes("không tồn tại");
+      error.message.includes("không tồn tại") ||
+      error.message.includes("Không thể thực hiện") ||
+      error.message.includes("đang được áp dụng");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
@@ -98,7 +100,9 @@ export const handleUpdatePromotionStatus = async (req, res) => {
 
     const isClientError =
       error.message.includes("không hợp lệ") ||
-      error.message.includes("Không tìm thấy");
+      error.message.includes("Không tìm thấy") ||
+      error.message.includes("Không thể thực hiện") ||
+      error.message.includes("đang được áp dụng");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
@@ -130,7 +134,9 @@ export const handleUpdatePromotion = async (req, res) => {
       error.message.includes("không đúng định dạng") ||
       error.message.includes("phải lớn hơn") ||
       error.message.includes("không được vượt quá") ||
-      error.message.includes("không tồn tại");
+      error.message.includes("không tồn tại") ||
+      error.message.includes("Không thể thực hiện") ||
+      error.message.includes("đang được áp dụng");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
@@ -157,7 +163,9 @@ export const handleAddProductsToPromotion = async (req, res) => {
       error.message.includes("không được để trống") ||
       error.message.includes("Không tìm thấy") ||
       error.message.includes("không tồn tại") ||
-      error.message.includes("đã tồn tại");
+      error.message.includes("đã tồn tại") ||
+      error.message.includes("Không thể thực hiện") ||
+      error.message.includes("đang được áp dụng");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,
@@ -185,7 +193,9 @@ export const handleUpdatePromotionItemStatus = async (req, res) => {
     const isClientError =
       error.message.includes("không hợp lệ") ||
       error.message.includes("Không tìm thấy") ||
-      error.message.includes("Không thể kích hoạt");
+      error.message.includes("Không thể kích hoạt") ||
+      error.message.includes("Không thể thực hiện") ||
+      error.message.includes("đang được áp dụng");
 
     return res.status(isClientError ? 400 : 500).json({
       status: isClientError ? 400 : 500,

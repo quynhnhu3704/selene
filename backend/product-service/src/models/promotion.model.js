@@ -366,4 +366,78 @@ export const PromotionModel = {
     if (error) throw error;
     return data ? data[0] : null;
   },
+
+  // Kiểm tra xem các sản phẩm trong productIds có đang thuộc khuyến mãi active nào khác hay không
+  checkProductActivePromotionConflicts: async (productIds, excludePromotionId = null) => {
+    if (!productIds || productIds.length === 0) return [];
+
+    const uniqueProductIds = [
+      ...new Set(productIds.map((id) => String(id).trim()).filter(Boolean)),
+    ];
+    if (uniqueProductIds.length === 0) return [];
+
+    // 1. Lấy tất cả các promotion_items của các product_id này
+    let query = supabase
+      .from("promotion_items")
+      .select("promotion_id, product_id, status")
+      .in("product_id", uniqueProductIds);
+
+    if (excludePromotionId) {
+      query = query.neq("promotion_id", excludePromotionId);
+    }
+
+    const { data: items, error: itemErr } = await query;
+    if (itemErr) throw itemErr;
+    if (!items || items.length === 0) return [];
+
+    // Lọc những items có status active (hoặc không có status -> mặc định active)
+    const activeItems = items.filter((item) => !item.status || item.status === "active");
+    if (activeItems.length === 0) return [];
+
+    // 2. Lấy danh sách promotion_id và kiểm tra xem khuyến mãi tương ứng có đang ở trạng thái active hay không
+    const promoIds = [...new Set(activeItems.map((item) => item.promotion_id))];
+    const { data: activePromos, error: promoErr } = await supabase
+      .from("promotions")
+      .select("promotion_id, name, status")
+      .in("promotion_id", promoIds)
+      .eq("status", "active");
+
+    if (promoErr) throw promoErr;
+    if (!activePromos || activePromos.length === 0) return [];
+
+    const activePromoMap = {};
+    activePromos.forEach((p) => {
+      activePromoMap[p.promotion_id] = p;
+    });
+
+    // Lọc các items thuộc về khuyến mãi đang active
+    const conflictingItems = activeItems.filter((item) => activePromoMap[item.promotion_id]);
+    if (conflictingItems.length === 0) return [];
+
+    // 3. Lấy thông tin chi tiết các sản phẩm bị xung đột để tạo thông báo đầy đủ
+    const conflictingProductIds = [...new Set(conflictingItems.map((item) => item.product_id))];
+    const { data: productsData } = await supabase
+      .from("products")
+      .select("product_id, product_name")
+      .in("product_id", conflictingProductIds);
+
+    const productMap = {};
+    (productsData || []).forEach((prod) => {
+      productMap[prod.product_id] = prod;
+    });
+
+    // 4. Tổng hợp danh sách các xung đột
+    const conflicts = conflictingItems.map((item) => {
+      const promo = activePromoMap[item.promotion_id];
+      const prod = productMap[item.product_id];
+      return {
+        product_id: item.product_id,
+        product_name: prod?.product_name || item.product_id,
+        promotion_id: promo.promotion_id,
+        promotion_name: promo.name,
+      };
+    });
+
+    return conflicts;
+  },
 };
