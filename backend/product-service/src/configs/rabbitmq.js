@@ -1,6 +1,7 @@
 import amqp from "amqplib";
 import { config } from "./index.js";
 import { supabase } from "./supabase.js";
+import { updatePromotionUsedQuantityOnOrder } from "../services/promotion.service.js";
 
 let channel = null; // Biến dùng để lưu giữ Channel sau khi kết nối thành công
 
@@ -181,8 +182,11 @@ export const listenForStockUpdate = async () => {
           );
         }
       }
+
+      // Cập nhật số lượng đã sử dụng (used_quantity) của các chương trình khuyến mãi liên quan
+      await updatePromotionUsedQuantityOnOrder(items);
     } catch (err) {
-      console.error("Lỗi xử lý sự kiện cập nhật tồn kho:", err);
+      console.error("Lỗi xử lý sự kiện cập nhật tồn kho và khuyến mãi:", err);
     }
     // Xác nhận đã nhận và xử lý xong message
     channel.ack(msg);

@@ -1,5 +1,6 @@
 // backend\product-service\src\services\promotion.service.js
 import { PromotionModel } from "../models/promotion.model.js";
+import { supabase } from "../configs/supabase.js";
 
 const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -249,9 +250,9 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
     const updated_at = new Date().toISOString();
     const updated = await PromotionModel.updateStatus(promotion_id, targetStatus, updated_at);
 
-    // Nếu cập nhật promotion thành inactive -> Cập nhật tất cả promotion_items thành inactive
+    // Nếu cập nhật promotion thành inactive hoặc out_of_stock -> Cập nhật tất cả promotion_items thành inactive
     // Nếu thành active -> status của promotion_items giữ nguyên không thay đổi
-    if (targetStatus === "inactive") {
+    if (targetStatus === "inactive" || targetStatus === "out_of_stock") {
       await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", updated_at);
     }
 
@@ -419,7 +420,7 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       } else {
         await PromotionModel.deletePromotionItems(promotion_id);
       }
-    } else if (status === "inactive") {
+    } else if (status === "inactive" || status === "out_of_stock") {
       await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", currentTime);
     }
 
@@ -578,5 +579,120 @@ export const updatePromotionItemStatus = async (promotion_item_id, statusInput) 
   } catch (error) {
     console.error("Lỗi tại updatePromotionItemStatus Service:", error.message);
     throw error;
+  }
+};
+
+// Cập nhật số lượng đã dùng (used_quantity) của chương trình khuyến mãi khi đơn hàng được tạo thành công
+export const updatePromotionUsedQuantityOnOrder = async (orderItems) => {
+  try {
+    if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) return;
+
+    // 1. Tổng hợp số lượng mua theo product_id cho các sản phẩm có quantity > 0
+    const productQtyMap = {};
+    for (const item of orderItems) {
+      const qty = Number(item.quantity);
+      if (!qty || qty <= 0) continue;
+
+      let productId = item.product_id;
+
+      // Nếu không có product_id trong item payload, truy vấn từ product_variants theo variant_id
+      if (!productId && item.variant_id) {
+        const { data: variant } = await supabase
+          .from("product_variants")
+          .select("product_id")
+          .eq("variant_id", item.variant_id)
+          .single();
+        if (variant) productId = variant.product_id;
+      }
+
+      if (productId) {
+        productQtyMap[productId] = (productQtyMap[productId] || 0) + qty;
+      }
+    }
+
+    const productIds = Object.keys(productQtyMap);
+    if (productIds.length === 0) return;
+
+    // 2. Tìm danh sách promotion_items đang ở trạng thái active của các sản phẩm này
+    const { data: activeItems, error: itemsErr } = await supabase
+      .from("promotion_items")
+      .select("promotion_id, product_id")
+      .in("product_id", productIds)
+      .eq("status", "active");
+
+    if (itemsErr || !activeItems || activeItems.length === 0) return;
+
+    // 3. Tìm các chương trình khuyến mãi cha tương ứng đang ở trạng thái active
+    const promoIds = [...new Set(activeItems.map((item) => item.promotion_id))];
+    const { data: activePromos, error: promoErr } = await supabase
+      .from("promotions")
+      .select("promotion_id, used_quantity, quantity_limit, status")
+      .in("promotion_id", promoIds)
+      .eq("status", "active");
+
+    if (promoErr || !activePromos || activePromos.length === 0) return;
+
+    const promoMap = {};
+    activePromos.forEach((p) => {
+      promoMap[p.promotion_id] = p;
+    });
+
+    // 4. Tính toán tổng số lượng sản phẩm mua thuộc về từng chương trình khuyến mãi
+    const promoQtyMap = {};
+    for (const item of activeItems) {
+      const pId = item.promotion_id;
+      if (promoMap[pId]) {
+        const qtyBought = productQtyMap[item.product_id] || 0;
+        promoQtyMap[pId] = (promoQtyMap[pId] || 0) + qtyBought;
+      }
+    }
+
+    const currentTime = new Date().toISOString();
+
+    // 5. Cập nhật used_quantity và status cho từng chương trình khuyến mãi
+    for (const promoId of Object.keys(promoQtyMap)) {
+      const promo = promoMap[promoId];
+      const addedQty = promoQtyMap[promoId];
+      const currentUsed = Number(promo.used_quantity) || 0;
+      const limit = Number(promo.quantity_limit) || 0;
+
+      const newUsedQuantity = currentUsed + addedQty;
+      const isLimitReached = limit > 0 && newUsedQuantity >= limit;
+
+      if (isLimitReached) {
+        // Cập nhật khuyến mãi thành out_of_stock và gán used_quantity mới
+        await PromotionModel.update(promoId, {
+          used_quantity: newUsedQuantity,
+          status: "out_of_stock",
+          updated_at: currentTime,
+        });
+
+        // Cập nhật tất cả các promotion_items thuộc khuyến mãi này thành inactive
+        await PromotionModel.updatePromotionItemsStatus(promoId, "inactive", currentTime);
+
+        // Lấy danh sách sản phẩm thuộc khuyến mãi để tính toán lại discount_price trong bảng products
+        const fullPromo = await PromotionModel.getPromotionById(promoId);
+        const affectedProductIds = (fullPromo?.promotion_items || []).map((item) => item.product_id);
+        if (affectedProductIds.length > 0) {
+          await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
+        }
+
+        console.log(
+          `[+] Chương trình khuyến mãi ${promoId} đã sử dụng hết suất (${newUsedQuantity}/${limit}). Đã chuyển status thành 'out_of_stock', promotion_items thành 'inactive' và tính lại discount_price.`
+        );
+      } else {
+        // Cập nhật used_quantity mới
+        await PromotionModel.update(promoId, {
+          used_quantity: newUsedQuantity,
+          updated_at: currentTime,
+        });
+
+        console.log(
+          `[+] Chương trình khuyến mãi ${promoId} đã cập nhật used_quantity: ${currentUsed} -> ${newUsedQuantity} / ${limit || "không giới hạn"}.`
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Lỗi tại updatePromotionUsedQuantityOnOrder:", error.message || error);
   }
 };
