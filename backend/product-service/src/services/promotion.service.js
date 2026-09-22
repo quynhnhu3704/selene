@@ -250,9 +250,9 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
     const updated_at = new Date().toISOString();
     const updated = await PromotionModel.updateStatus(promotion_id, targetStatus, updated_at);
 
-    // Nếu cập nhật promotion thành inactive hoặc out_of_stock -> Cập nhật tất cả promotion_items thành inactive
+    // Nếu cập nhật promotion thành inactive, out_of_stock hoặc expired -> Cập nhật tất cả promotion_items thành inactive
     // Nếu thành active -> status của promotion_items giữ nguyên không thay đổi
-    if (targetStatus === "inactive" || targetStatus === "out_of_stock") {
+    if (targetStatus === "inactive" || targetStatus === "out_of_stock" || targetStatus === "expired") {
       await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", updated_at);
     }
 
@@ -420,7 +420,7 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       } else {
         await PromotionModel.deletePromotionItems(promotion_id);
       }
-    } else if (status === "inactive" || status === "out_of_stock") {
+    } else if (status === "inactive" || status === "out_of_stock" || status === "expired") {
       await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", currentTime);
     }
 
@@ -695,4 +695,73 @@ export const updatePromotionUsedQuantityOnOrder = async (orderItems) => {
   } catch (error) {
     console.error("Lỗi tại updatePromotionUsedQuantityOnOrder:", error.message || error);
   }
+};
+
+// Tự động kiểm tra và chuyển các chương trình khuyến mãi đã hết hạn (end_date <= now) sang 'expired'
+export const checkAndUpdateExpiredPromotions = async () => {
+  try {
+    const now = new Date();
+
+    // 1. Lấy tất cả chương trình khuyến mãi đang ở trạng thái active
+    const { data: activePromos, error } = await supabase
+      .from("promotions")
+      .select("*")
+      .eq("status", "active");
+
+    if (error) {
+      console.error("[Scheduler] Lỗi khi kiểm tra khuyến mãi hết hạn:", error.message);
+      return;
+    }
+
+    if (!activePromos || activePromos.length === 0) return;
+
+    // 2. Lọc các khuyến mãi có end_date <= thời gian hiện tại bằng JS Date (chính xác tuyệt đối)
+    const expiredPromos = activePromos.filter((promo) => {
+      if (!promo.end_date) return false;
+      const endDateObj = new Date(promo.end_date);
+      return !isNaN(endDateObj.getTime()) && endDateObj <= now;
+    });
+
+    if (expiredPromos.length === 0) return;
+
+    console.log(`[Scheduler] Phát hiện ${expiredPromos.length} chương trình khuyến mãi đã hết hạn.`);
+
+    for (const promo of expiredPromos) {
+      const promoId = promo.promotion_id;
+      const currentTime = new Date().toISOString();
+
+      // Cập nhật status của khuyến mãi thành expired
+      await PromotionModel.updateStatus(promoId, "expired", currentTime);
+
+      // Cập nhật tất cả các promotion_items thuộc khuyến mãi này thành inactive
+      await PromotionModel.updatePromotionItemsStatus(promoId, "inactive", currentTime);
+
+      // Lấy danh sách sản phẩm liên quan để tính toán lại discount_price
+      const fullPromo = await PromotionModel.getPromotionById(promoId);
+      const affectedProductIds = (fullPromo?.promotion_items || []).map((item) => item.product_id);
+
+      if (affectedProductIds.length > 0) {
+        await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
+      }
+
+      console.log(
+        `[+] Khuyến mãi '${promo.name}' (${promoId}) đã hết hạn (kết thúc: ${promo.end_date}). Đã tự động cập nhật status thành 'expired', items thành 'inactive' và tính lại giá sản phẩm.`
+      );
+    }
+  } catch (err) {
+    console.error("Lỗi tại checkAndUpdateExpiredPromotions:", err.message || err);
+  }
+};
+
+// Khởi chạy trình lên lịch (Scheduler) kiểm tra khuyến mãi hết hạn định kỳ
+export const startPromotionScheduler = (intervalMs = 60000) => {
+  console.log(`[Scheduler] Đã khởi chạy Promotion Scheduler (quét định kỳ mỗi ${intervalMs / 1000}s)...`);
+
+  // Thực hiện quét ngay khi khởi động
+  checkAndUpdateExpiredPromotions();
+
+  // Lập lịch quét định kỳ
+  setInterval(() => {
+    checkAndUpdateExpiredPromotions();
+  }, intervalMs);
 };
