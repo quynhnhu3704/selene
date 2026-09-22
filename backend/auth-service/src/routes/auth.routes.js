@@ -9,8 +9,11 @@ import {
   handleLogout,
 } from "../controllers/auth.controller.js";
 import {
+  handleGetAdminUsers,
+  handleExportAdminUsers,
   handleChangePassword,
   handleCreateStaff,
+  handleCreateCustomer,
   handleGetAccounts,
   handleGetCustomerProfile,
   handleGetProfileDetail,
@@ -29,14 +32,14 @@ import {
 import multer from "multer";
 import {
   handleCreatePermission,
+  handleGetPermissionMatrix,
+  handleSetRolePermission,
   handleGetAllPermissions,
   handleGetPermissionsByAccountId,
   handleUpdatePermission,
   handleTogglePermissionStatus,
 } from "../controllers/permission.controller.js";
-import {
-  handleToggleRoleStatus,
-} from "../controllers/role.controller.js";
+import { handleToggleRoleStatus } from "../controllers/role.controller.js";
 
 const router = express.Router();
 
@@ -84,7 +87,29 @@ router.put(
   handleUpdateStaffProfile,
 );
 
+router.get(
+  "/manage/users",
+  verifyToken,
+  verifyPermission("profile:view"),
+  handleGetAdminUsers,
+);
+router.get(
+  "/manage/users/export",
+  verifyToken,
+  verifyPermission("profile:view"),
+  handleExportAdminUsers,
+);
+
 // user - admin
+// khách hàng
+router.post(
+  "/manage/customer/add",
+  verifyToken,
+  verifyPermission("user:create"),
+  upload.single("avatar_url"),
+  handleCreateCustomer,
+);
+
 // nhân viên
 router.post(
   "/manage/staff/add",
@@ -114,6 +139,9 @@ router.put(
 );
 
 // quyền (permission)
+router.get("/manage/permission-matrix", verifyToken, handleGetPermissionMatrix);
+router.put("/manage/roles/:roleId/permissions/:permissionId", verifyToken, handleSetRolePermission);
+
 router.get(
   "/manage/permissions",
   verifyToken,

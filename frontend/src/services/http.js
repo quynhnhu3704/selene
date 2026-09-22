@@ -3,7 +3,7 @@ import axios from "axios";
 import { getAccessToken, saveAccessToken, logout } from "../utils/auth";
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.DEV ? "/api" : import.meta.env.VITE_API_URL,
   timeout: 10000,
   withCredentials: true,
 });
@@ -47,6 +47,7 @@ http.interceptors.response.use(
       !originalRequest.url.includes("/auth/register") &&
       !originalRequest.url.includes("/auth/refresh-token")
     ) {
+      originalRequest._retry = true;
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -73,8 +74,10 @@ http.interceptors.response.use(
         return http(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        logout();
-        window.location.href = "/tai-khoan/dang-nhap";
+        if ([400, 401, 403].includes(err.response?.status)) {
+          logout();
+          window.location.href = "/tai-khoan/dang-nhap";
+        }
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

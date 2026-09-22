@@ -30,19 +30,19 @@ export default function Hero() {
       <div className="carousel-inner">
         <div className="carousel-item active">
           <a href="#">
-            <img src={hero1} className="d-block w-100" alt="slide1" />
+            <img src={hero1} className="d-block w-100" alt="" />
           </a>
         </div>
 
         <div className="carousel-item">
           <a href="#">
-            <img src={hero2} className="d-block w-100" alt="slide2" />
+            <img src={hero2} className="d-block w-100" alt="" />
           </a>
         </div>
 
         <div className="carousel-item">
           <a href="#">
-            <img src={hero3} className="d-block w-100" alt="slide3" />
+            <img src={hero3} className="d-block w-100" alt="" />
           </a>
         </div>
       </div>

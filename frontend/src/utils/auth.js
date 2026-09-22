@@ -30,7 +30,8 @@ export const getUser = () => {
 };
 
 export const saveUser = (user) => {
-  localStorage.setItem("user", JSON.stringify(user));
+  // API hồ sơ chỉ trả thông tin cá nhân, không có role/accountId của phiên đăng nhập.
+  localStorage.setItem("user", JSON.stringify({ ...getUser(), ...user }));
 };
 
 export const isAdmin = () => {

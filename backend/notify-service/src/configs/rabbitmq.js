@@ -11,7 +11,11 @@ let connection = null;
 export const connectRabbitMQ = async () => {
   try {
     const rabbitMqUrl = process.env.RABBITMQ_URL || "amqp://localhost:5672";
-    connection = await amqp.connect(rabbitMqUrl);
+    // connection = await amqp.connect(rabbitMqUrl);
+    connection = await amqp.connect(rabbitMqUrl, {
+      // Bỏ qua lỗi xác thực chứng chỉ self-signed trên môi trường local
+      rejectUnauthorized: false,
+    });
     channel = await connection.createChannel();
 
     console.log("[x] Connected to RabbitMQ in Notify Service");

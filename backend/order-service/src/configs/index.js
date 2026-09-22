@@ -24,6 +24,7 @@ if (!process.env.SUPABASE_KEY) {
 
 export const config = {
   port: process.env.PORT || 8003,
+  authServiceUrl: process.env.AUTH_SERVICE_URL || "http://localhost:8001",
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET,
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   supabaseUrl: process.env.SUPABASE_URL,

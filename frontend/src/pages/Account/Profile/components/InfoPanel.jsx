@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { saveUser } from "../../../../utils/auth";
 import { updateProfile } from "../../../../services/user.service";
+import Address from "../../../../components/common/Address";
 import defaultAvatar from "../../../../assets/images/default-avatar.png";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -15,7 +16,10 @@ export default function InfoPanel({ profile, setProfile }) {
     phone_number: "",
     gender: "",
     dob: "",
+    identity_card: "",
+    address: "",
   });
+  const isStaff = [1, 2].includes(Number(profile?.role_id));
   const [errors, setErrors] = useState({});
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(defaultAvatar);
@@ -87,6 +91,8 @@ export default function InfoPanel({ profile, setProfile }) {
       phone_number: profile.phone_number || "",
       gender: profile.gender || "",
       dob: profile.dob || "",
+      identity_card: profile.identity_card || "",
+      address: profile.address || "",
     });
     setAvatarPreview(profile?.avatar_url || defaultAvatar);
     setAvatarFile(null);
@@ -125,6 +131,10 @@ export default function InfoPanel({ profile, setProfile }) {
       newErrors.phone_number = "Số điện thoại không hợp lệ";
     }
 
+    if (isStaff && form.identity_card.trim() && !/^[0-9]{12}$/.test(form.identity_card.trim())) {
+      newErrors.identity_card = "CCCD phải gồm 12 chữ số";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -140,6 +150,10 @@ export default function InfoPanel({ profile, setProfile }) {
       data.append("phone_number", form.phone_number.trim());
       data.append("gender", form.gender);
       data.append("dob", form.dob);
+      if (isStaff) {
+        data.append("identity_card", form.identity_card.trim());
+        data.append("address", form.address.trim());
+      }
       if (avatarFile) {
         data.append("avatar_url", avatarFile);
       }
@@ -170,6 +184,10 @@ export default function InfoPanel({ profile, setProfile }) {
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
+
+  // Hiển thị SĐT theo XXXX.XXX.XXX, giữ nguyên giá trị nhập.
+  const displayPhone = (phone) =>
+    String(phone || "").replace(/^(\d{4})(\d{3})(\d{3})$/, "$1.$2.$3");
 
   const displayDate = (date) => {
     if (!date) return "";
@@ -218,7 +236,7 @@ export default function InfoPanel({ profile, setProfile }) {
         <div className="info-avatar-wrap">
           <img
             src={avatarPreview}
-            alt="Avatar"
+            alt=""
             className="info-avatar"
             onError={(e) => {
               e.currentTarget.onerror = null;
@@ -344,7 +362,7 @@ export default function InfoPanel({ profile, setProfile }) {
                   )}
                 </>
               ) : (
-                <span>{form.phone_number || <Empty />}</span>
+                <span>{displayPhone(form.phone_number) || <Empty />}</span>
               )}
             </div>
           </div>
@@ -360,7 +378,7 @@ export default function InfoPanel({ profile, setProfile }) {
                     className="form-control text-start d-flex justify-content-between align-items-center"
                     onClick={() => setGenderOpen((prev) => !prev)}
                   >
-                    <span>{form.gender || "-- Chọn --"}</span>
+                    <span>{form.gender || "-- Chưa cập nhật --"}</span>
                     <i
                       className={`bi ${genderOpen ? "bi-caret-up" : "bi-caret-down"}`}
                     />
@@ -374,7 +392,7 @@ export default function InfoPanel({ profile, setProfile }) {
                           className="dropdown-item fw-normal"
                           onClick={() => handleGenderSelect("")}
                         >
-                          -- Chọn --
+                          -- Chưa cập nhật --
                         </button>
                       </li>
                       <li>
@@ -441,6 +459,51 @@ export default function InfoPanel({ profile, setProfile }) {
               )}
             </div>
           </div>
+          {isStaff && (
+            <>
+              <div className="info-field">
+                <span className="info-field-label">CCCD</span>
+                <div className="info-field-val">
+                  {editing ? (
+                    <>
+                      <input
+                        name="identity_card"
+                        placeholder="Nhập CCCD"
+                        className={`form-control ${errors.identity_card ? "is-invalid" : ""}`}
+                        value={form.identity_card}
+                        onChange={handleChange}
+                        inputMode="numeric"
+                        maxLength={12}
+                      />
+                      {errors.identity_card && (
+                        <div className="invalid-feedback d-block">
+                          {errors.identity_card}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span>{form.identity_card || <Empty />}</span>
+                  )}
+                </div>
+              </div>
+              <div className="info-field full">
+                <span className="info-field-label">Địa chỉ</span>
+                <div className="info-field-val">
+                  {editing ? (
+                    <Address
+                      optional
+                      initialAddress={profile?.address || ""}
+                      onChange={(address) => {
+                        setForm((prev) => ({ ...prev, address }));
+                      }}
+                    />
+                  ) : (
+                    <span>{form.address || <Empty />}</span>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── ACTIONS ── */}

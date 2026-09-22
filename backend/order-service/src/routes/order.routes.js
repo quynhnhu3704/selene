@@ -3,23 +3,65 @@ import express from "express";
 import * as cartController from "../controllers/cart.controller.js";
 import * as voucherController from "../controllers/voucher.controller.js";
 import * as orderController from "../controllers/order.controller.js";
+import * as dashboardController from "../controllers/dashboard.controller.js";
+import { getSupportOrders } from "../controllers/support.controller.js";
 import {
   verifyToken,
   verifyPermission,
 } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
+router.get("/internal/support/orders", getSupportOrders);
+
+const verifyOrderManager = (req, res, next) => {
+  if (!["admin", "staff"].includes(req.user?.role)) {
+    return res.status(403).json({
+      success: false,
+      message: "Bạn không có quyền quản lý đơn hàng!",
+    });
+  }
+  next();
+};
 
 // ================= ADMIN =================
 router.get(
+  "/manage/dashboard",
+  verifyToken,
+  verifyOrderManager,
+  verifyPermission("order:view"),
+  dashboardController.handleGetDashboardStatistics,
+);
+router.get(
+  "/manage/user-order-counts",
+  verifyToken,
+  verifyPermission("profile:view"),
+  orderController.handleGetUserOrderCounts,
+);
+router.get(
   "/manage/orders",
   verifyToken,
+  verifyOrderManager,
   verifyPermission("order:view"),
   orderController.handleGetAllOrdersForAdmin,
 );
 router.get(
+  "/manage/orders/export",
+  verifyToken,
+  verifyOrderManager,
+  verifyPermission("order:view"),
+  orderController.handleExportOrders,
+);
+router.post(
+  "/manage/orders",
+  verifyToken,
+  verifyOrderManager,
+  verifyPermission("order:create"),
+  orderController.handleCreateOrderForAdmin,
+);
+router.get(
   "/manage/orders/:orderId",
   verifyToken,
+  verifyOrderManager,
   verifyPermission("order:view"),
   orderController.handleGetOrderByIdForAdmin,
 );
@@ -35,9 +77,13 @@ router.put(
   verifyPermission("order:update"),
   orderController.handleConfirmOrdersBulk,
 );
-
-
-
+router.put(
+  "/manage/orders/:orderId",
+  verifyToken,
+  verifyOrderManager,
+  verifyPermission("order:update"),
+  orderController.handleUpdateOrderForAdmin,
+);
 
 // ================= VOUCHER =================
 router.post(

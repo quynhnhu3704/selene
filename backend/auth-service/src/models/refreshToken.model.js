@@ -35,6 +35,7 @@ export const RefreshTokenModel = {
       .eq("account_id", accountId)
       .single();
 
+    if (error && error.code !== "PGRST116") throw error;
     if (error) return null;
     return data;
   },

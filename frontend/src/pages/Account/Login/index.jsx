@@ -1,8 +1,8 @@
 // frontend\src\pages\Login.jsx
 import Breadcrumb from "../../../components/layout/Breadcrumb";
 import { Helmet } from "react-helmet-async";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { saveLogin } from "../../../utils/auth";
 import { toast } from "react-toastify";
 import { login } from "../../../services/auth.service";
@@ -14,6 +14,18 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) return;
+
+    toast.error(error, { toastId: "google-login-error" });
+
+    const params = new URLSearchParams(searchParams);
+    params.delete("error");
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleReset = () => {
     setEmail("");

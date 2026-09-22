@@ -23,9 +23,11 @@
     "react-toastify": "^11.1.0",
     "recharts": "^3.10.0",
     "selene-shop": "file:..",
+    "socket.io-client": "^4.8.3",
     "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.2.1",

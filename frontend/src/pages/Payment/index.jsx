@@ -1,4 +1,5 @@
 // frontend\src\pages\Payment\index.jsx
+import Loading from "../../components/common/Loading";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -82,15 +83,15 @@ export default function Payment() {
   ].filter((item) => item.value);
   const paymentSteps = isSePay
     ? [
-      "Mở ứng dụng ngân hàng và chọn quét mã QR.",
-      "Kiểm tra số tiền cùng nội dung chuyển khoản đã được điền sẵn.",
-      "Xác nhận giao dịch; trang này sẽ tự cập nhật khi SePay xác nhận.",
-    ]
+        "Mở ứng dụng ngân hàng và chọn quét mã QR.",
+        "Kiểm tra số tiền cùng nội dung chuyển khoản đã được điền sẵn.",
+        "Xác nhận giao dịch; trang này sẽ tự cập nhật khi SePay xác nhận.",
+      ]
     : [
-      "Mở ứng dụng ngân hàng của bạn.",
-      "Nhập đúng số tài khoản, tên chủ tài khoản và số tiền ở trên.",
-      "Ghi mã tham chiếu đơn hàng để cửa hàng kiểm tra giao dịch nhanh hơn.",
-    ];
+        "Mở ứng dụng ngân hàng của bạn.",
+        "Nhập đúng số tài khoản, tên chủ tài khoản và số tiền ở trên.",
+        "Ghi mã tham chiếu đơn hàng để cửa hàng kiểm tra giao dịch nhanh hơn.",
+      ];
 
   useEffect(() => {
     if (payment || !orderIdFromUrl) {
@@ -151,10 +152,7 @@ export default function Payment() {
         const response = await getOrderById(payment.orderId);
         const order = response.data;
 
-        if (
-          active &&
-          (order.payment_status === "paid" || order.status === "confirmed")
-        ) {
+        if (active && order.payment_status === "paid") {
           setPaid(true);
         }
       } catch (error) {
@@ -201,10 +199,8 @@ export default function Payment() {
           ]}
         />
 
-        <div className="py-5 text-center">
-          <div className="spinner-border text-dark" role="status">
-            <span className="visually-hidden">Đang tải</span>
-          </div>
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+          <Loading text="Đang tải thanh toán..." />
         </div>
       </>
     );
@@ -540,7 +536,7 @@ export default function Payment() {
 
                   {payment.qrUrl ? (
                     <div className="qr-wrapper mb-3">
-                      <img src={payment.qrUrl} alt="QR thanh toán SePay" />
+                      <img src={payment.qrUrl} alt="" />
                     </div>
                   ) : (
                     <p className="text-danger small mb-3">
@@ -555,11 +551,7 @@ export default function Payment() {
                     </div>
 
                     <div className="payment-timer">
-                      <span
-                        className="spinner-grow spinner-grow-sm"
-                        aria-hidden="true"
-                      />
-                      Đang chờ SePay xác nhận
+                      <Loading text="Đang chờ SePay xác nhận..." />
                     </div>
                   </div>
                 </>
@@ -620,9 +612,9 @@ export default function Payment() {
                       style={
                         item.highlight
                           ? {
-                            color: "#871B1B",
-                            fontSize: 16,
-                          }
+                              color: "#871B1B",
+                              fontSize: 16,
+                            }
                           : undefined
                       }
                     >
@@ -631,8 +623,9 @@ export default function Payment() {
                   </div>
 
                   <button
-                    className={`copy-btn ${copied === item.key ? "copied" : ""
-                      }`}
+                    className={`copy-btn ${
+                      copied === item.key ? "copied" : ""
+                    }`}
                     type="button"
                     onClick={() => copyToClipboard(item.copyValue, item.key)}
                   >

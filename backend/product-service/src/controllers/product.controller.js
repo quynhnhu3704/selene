@@ -187,12 +187,13 @@ export const handleUpdateProduct = async (req, res) => {
 // lấy tất cả sản phẩm cho admin
 export const handleGetAllProductsForAdmin = async (req, res) => {
   try {
-    const { q, category, price, status, page, limit } = req.query;
+    const { q, category, price, sort, status, page, limit } = req.query;
 
     const result = await productService.getAllProductsAdmin({
       q,
       category,
       price,
+      sort,
       status,
       page,
       limit,
@@ -332,16 +333,16 @@ export const handleExportProductsToExcel = async (req, res) => {
 
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${filename}`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
 
     return res.status(200).send(buffer);
   } catch (error) {
-    console.error("Lỗi tại handleExportProductsToExcel Controller:", error.message);
+    console.error(
+      "Lỗi tại handleExportProductsToExcel Controller:",
+      error.message,
+    );
     return res.status(500).json({
       status: 500,
       message: error.message || "Lỗi máy chủ khi xuất dữ liệu Excel!",

@@ -2,6 +2,7 @@ import amqp from "amqplib";
 import { config } from "./index.js";
 import { supabase } from "./supabase.js";
 import { updatePromotionUsedQuantityOnOrder } from "../services/promotion.service.js";
+import { reserveStock, restoreStock } from "../services/stock.service.js";
 
 let channel = null; // Biến dùng để lưu giữ Channel sau khi kết nối thành công
 
@@ -18,10 +19,36 @@ export const connectRabbitMQ = async () => {
     // 3. Kích hoạt hàm lắng nghe queue ngay lập tức sau khi kết nối thành công
     await listenForCartProductDetails();
     await listenForStockUpdate();
+    await listenForStockRequests();
   } catch (error) {
     console.error("Failed to connect to RabbitMQ:", error.message);
   }
 };
+
+async function listenForStockRequests() {
+  const queue = "rpc_stock_queue";
+  await channel.assertQueue(queue, { durable: false });
+  await channel.consume(queue, async (msg) => {
+    if (!msg) return;
+    let response;
+    try {
+      const { action, items } = JSON.parse(msg.content.toString());
+      if (!Array.isArray(items) || !["reserve", "restore"].includes(action))
+        throw new Error("Yêu cầu tồn kho không hợp lệ.");
+      if (action === "reserve") await reserveStock(items);
+      else await restoreStock(items);
+      response = { success: true };
+    } catch (error) {
+      response = { success: false, message: error.message };
+    }
+    channel.sendToQueue(
+      msg.properties.replyTo,
+      Buffer.from(JSON.stringify(response)),
+      { correlationId: msg.properties.correlationId },
+    );
+    channel.ack(msg);
+  });
+}
 
 // Hàm lắng nghe yêu cầu RPC từ queue để truy vấn và cung cấp thông tin sản phẩm cho giỏ hàng
 export const listenForCartProductDetails = async () => {

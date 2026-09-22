@@ -2,6 +2,44 @@
 import { supabase } from "../configs/supabase.js";
 
 export const UserProfileModel = {
+  // Lấy danh sách hồ sơ người dùng theo vai trò
+  getAdminProfiles: async (roleId) => {
+    const profiles = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error, count } = await supabase
+        .from("user_profiles")
+        .select(
+          `
+        profile_id,
+        account_id,
+        full_name,
+        phone_number,
+        avatar_url,
+        dob,
+        accounts!inner (
+          email,
+          role_id,
+          status,
+          created_at
+        )
+      `,
+          { count: "exact" },
+        )
+        .eq("accounts.role_id", roleId)
+        .order("profile_id", { ascending: true })
+        .range(from, from + 499);
+      if (error) throw error;
+      if (!data?.length) break;
+
+      profiles.push(...data);
+      from += data.length;
+      if (count !== null && from >= count) break;
+    }
+
+    return profiles;
+  },
   // Xử lý upload ảnh lên Supabase Storage
   uploadAvatarFile: async (fileName, fileBuffer, contentType) => {
     const { error } = await supabase.storage
@@ -29,7 +67,7 @@ export const UserProfileModel = {
   getAccountById: async (accountId) => {
     const { data } = await supabase
       .from("accounts")
-      .select("email, status")
+      .select("email, status, role_id")
       .eq("account_id", accountId)
       .single();
     return data;
@@ -76,6 +114,7 @@ export const UserProfileModel = {
       .from("user_profiles")
       .select("account_id")
       .eq("phone_number", phone);
+    if (error) throw error;
     return data;
   },
 
@@ -112,7 +151,7 @@ export const UserProfileModel = {
         identity_card,
         accounts (
           email,
-          role_name,
+          role_id,
           status
         )
       `,
@@ -130,6 +169,7 @@ export const UserProfileModel = {
       .select(
         `
         profile_id,
+        account_id,
         full_name,
         phone_number,
         identity_card,
@@ -140,7 +180,7 @@ export const UserProfileModel = {
         status,
         accounts (
           email,
-          role_name,
+          role_id,
           status
         )
       `,

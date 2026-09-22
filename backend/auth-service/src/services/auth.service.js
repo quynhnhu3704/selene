@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import { OAuth2Client } from "google-auth-library";
 import { config } from "../configs/index.js";
 import { AccountModel } from "../models/account.model.js";
+import { getRoleName } from "../configs/roles.js";
 import { RefreshTokenModel } from "../models/refreshToken.model.js";
 import { UserProfileModel } from "../models/userProfile.model.js";
 
@@ -119,7 +120,7 @@ export const loginUser = async (email, password) => {
   // dữ liệu được nhúng vào jwt
   const payload = {
     accountId: account.account_id,
-    role: account.role_name,
+    role: getRoleName(account.role_id),
     permissions,
   };
 
@@ -153,7 +154,7 @@ export const loginUser = async (email, password) => {
     user: {
       accountId: account.account_id,
       email: account.email,
-      role: account.role_name,
+      role: getRoleName(account.role_id),
       permissions: permissions,
     },
   };
@@ -317,7 +318,7 @@ export const loginWithGoogle = async (code) => {
   // 7. Ký cấp bộ mã token nội bộ của hệ thống
   const jwtPayload = {
     accountId: account.account_id,
-    role: account.role_name,
+    role: getRoleName(account.role_id),
     permissions,
   };
 
@@ -350,7 +351,7 @@ export const loginWithGoogle = async (code) => {
     user: {
       accountId: account.account_id,
       email: account.email,
-      role: account.role_name,
+      role: getRoleName(account.role_id),
       permissions,
     },
   };
@@ -400,7 +401,7 @@ export const refreshAccessToken = async (refreshToken) => {
     );
     const jwtPayload = {
       accountId: account.account_id,
-      role: account.role_name,
+      role: getRoleName(account.role_id),
       permissions,
     };
 
@@ -411,6 +412,20 @@ export const refreshAccessToken = async (refreshToken) => {
     return { accessToken: newAccessToken };
   } catch (err) {
     console.error("Lỗi chi tiết tại tầng Service:", err.message);
+    // A database/network outage must not invalidate a valid browser session.
+    const invalidSession =
+      err.name === "TokenExpiredError" ||
+      err.name === "JsonWebTokenError" ||
+      /Phiên đăng nhập|Phiên|phiên đăng nhập|phiên làm việc|cấu hình phiên|Tài khoản/.test(
+        err.message || "",
+      );
+    if (!invalidSession) {
+      const unavailable = new Error(
+        "Không thể làm mới phiên lúc này. Vui lòng thử lại.",
+      );
+      unavailable.status = 503;
+      throw unavailable;
+    }
 
     // Nếu là lỗi do chính chúng ta chủ động throw ở trên, giữ nguyên thông báo lỗi để FE hiển thị rõ ràng
     if (err.message && !err.name) {

@@ -59,13 +59,14 @@ export const getProductById = async (id) => {
 
 // Lấy danh sách sản phẩm cho Admin
 export const getAdminProducts = async (filters = {}) => {
-  const { q, category, price, status, page = 1, limit = 10 } = filters;
+  const { q, category, price, status, sort, page = 1, limit = 10 } = filters;
   const params = { limit };
 
   if (q) params.q = q;
   if (category) params.category = category;
   if (price) params.price = price;
   if (status) params.status = status;
+  if (sort && sort !== "default") params.sort = sort;
   if (Number(page) > 1) params.page = page;
 
   const res = await http.get("/products/manage/products", {
@@ -84,9 +85,12 @@ export const getAdminProductCategories = async () => {
 
 // Khóa hoặc mở khóa sản phẩm
 export const updateAdminProductStatus = async (productId, status) => {
-  const res = await http.patch(`/products/manage/product/status/${productId}`, {
-    status,
-  });
+  const res = await http.put(
+    `/products/manage/product/change-status/${productId}`,
+    {
+      status,
+    },
+  );
 
   return res.data;
 };
@@ -96,6 +100,22 @@ export const exportProductsToExcel = async () => {
   const res = await http.get("/products/manage/products/export", {
     responseType: "blob",
   });
+
+  return res.data;
+};
+
+// Lấy chi tiết sản phẩm cho Admin
+export const getAdminProductDetail = async (productId) => {
+  const res = await http.get(`/products/manage/product-detail/${productId}`);
+  return res.data;
+};
+
+// Cập nhật sản phẩm cho Admin (Hỗ trợ gửi FormData chứa cả ảnh và biến thể)
+export const updateAdminProduct = async (productId, formData) => {
+  const res = await http.put(
+    `/products/manage/product/update/${productId}`,
+    formData,
+  );
 
   return res.data;
 };

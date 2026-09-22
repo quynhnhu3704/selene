@@ -3,7 +3,7 @@ import { RoleModel } from "../models/role.model.js";
 import { AccountModel } from "../models/account.model.js";
 import { UserProfileModel } from "../models/userProfile.model.js";
 
-export const toggleRoleStatus = async (roleId) => {
+export const toggleRoleStatus = async (roleId, currentAccountId) => {
   // 1. Kiểm tra vai trò có tồn tại hay không
   const role = await RoleModel.findById(roleId);
   if (!role) {
@@ -13,6 +13,14 @@ export const toggleRoleStatus = async (roleId) => {
   // 2. Chuyển đổi trạng thái (active <-> inactive)
   const currentStatus = role.status || "active";
   const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+  const currentAccount = await AccountModel.findById(currentAccountId);
+  if (newStatus === "inactive" && currentAccount?.role_id === roleId) {
+    throw {
+      status: 400,
+      message: "Không thể vô hiệu hóa vai trò của chính mình!",
+    };
+  }
 
   // 3. Cập nhật trạng thái của vai trò
   const updatedRole = await RoleModel.updateRoleStatus(roleId, newStatus);
@@ -26,7 +34,10 @@ export const toggleRoleStatus = async (roleId) => {
     await AccountModel.updateAccountsStatusByRoleId(roleId, newStatus);
 
     // Cập nhật trạng thái user_profiles tương ứng
-    await UserProfileModel.updateUserProfilesStatusByAccountIds(accountIds, newStatus);
+    await UserProfileModel.updateUserProfilesStatusByAccountIds(
+      accountIds,
+      newStatus,
+    );
   }
 
   return updatedRole;

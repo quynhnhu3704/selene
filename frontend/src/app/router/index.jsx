@@ -7,6 +7,7 @@ import Home from "../../pages/Home";
 import Login from "../../pages/Account/Login";
 import Register from "../../pages/Account/Register";
 import ProductList from "../../pages/ProductList";
+import Wishlist from "../../pages/Wishlist";
 import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
@@ -14,6 +15,9 @@ import Profile from "../../pages/Account/Profile";
 import Cart from "../../pages/Cart";
 import Checkout from "../../pages/Checkout";
 import Payment from "../../pages/Payment";
+import Promotions from "../../pages/Promotions";
+import Support from "../../pages/Support";
+import AdminSupport from "../../pages/Admin/Support";
 
 import Info from "../../pages/Account/Profile/pages/Info";
 import Orders from "../../pages/Account/Profile/pages/Orders";
@@ -24,8 +28,22 @@ import AdminLayout from "../../pages/Admin";
 import AdminDashboard from "../../pages/Admin/Dashboard";
 import AdminProducts from "../../pages/Admin/Products";
 import AdminOrders from "../../pages/Admin/Orders";
+import CreateOrder from "../../pages/Admin/Orders/pages/Create";
+import OrderDetail from "../../pages/Admin/Orders/pages/Detail";
+import AdminStaffs from "../../pages/Admin/Staffs";
+import CreateStaff from "../../pages/Admin/Staffs/pages/Create";
+import EditStaff from "../../pages/Admin/Staffs/pages/Edit";
+import CreateUser from "../../pages/Admin/Users/pages/Create";
+import EditUser from "../../pages/Admin/Users/pages/Edit";
+import ProfilePage from "../../pages/Admin/components/ProfilePage";
 import AdminUsers from "../../pages/Admin/Users";
 import AdminCategories from "../../pages/Admin/Categories";
+import AdminPermissions from "../../pages/Admin/Permissions";
+import CreateCategory from "../../pages/Admin/Categories/pages/Create";
+import EditCategory from "../../pages/Admin/Categories/pages/Edit";
+
+import CreateProduct from "../../pages/Admin/Products/pages/Create";
+import EditProduct from "../../pages/Admin/Products/pages/Edit";
 
 export default function AppRouter() {
   return (
@@ -50,6 +68,7 @@ export default function AppRouter() {
         <Route path="/auth/success" element={<GoogleSuccess />} />
 
         {/* ===== SẢN PHẨM ===== */}
+        <Route path="/yeu-thich" element={<Wishlist />} />
         <Route path="/san-pham" element={<ProductList />} />
         <Route path="/san-pham/:id" element={<ProductDetail />} />
 
@@ -61,15 +80,41 @@ export default function AppRouter() {
         <Route path="/thanh-toan/qr" element={<Payment />} />
 
         <Route path="/ve-chung-toi" element={<About />} />
+        <Route path="/khuyen-mai" element={<Promotions />} />
+        <Route path="/ho-tro" element={<Support />} />
       </Route>
 
       {/* Layout Admin */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
+        <Route path="ho-tro" element={<AdminSupport />} />
+
         <Route path="san-pham" element={<AdminProducts />} />
+        <Route path="san-pham/them-moi" element={<CreateProduct />} />
+        <Route path="san-pham/:productId/sua" element={<EditProduct />} />
+
         <Route path="don-hang" element={<AdminOrders />} />
-        <Route path="nguoi-dung" element={<AdminUsers />} />
+        <Route path="don-hang/them" element={<CreateOrder />} />
+        <Route path="don-hang/:orderId" element={<OrderDetail readOnly />} />
+        <Route path="don-hang/:orderId/sua" element={<OrderDetail />} />
+        <Route path="khach-hang" element={<AdminUsers />} />
+        <Route path="khach-hang/them-moi" element={<CreateUser />} />
+        <Route path="khach-hang/:profileId/sua" element={<EditUser />} />
+        <Route
+          path="khach-hang/:profileId"
+          element={<ProfilePage role="customer" readOnly />}
+        />
+        <Route path="nhan-vien" element={<AdminStaffs />} />
+        <Route path="nhan-vien/them-moi" element={<CreateStaff />} />
+        <Route path="nhan-vien/:profileId/sua" element={<EditStaff />} />
+        <Route
+          path="nhan-vien/:profileId"
+          element={<ProfilePage role="staff" readOnly />}
+        />
         <Route path="danh-muc" element={<AdminCategories />} />
+        <Route path="phan-quyen" element={<AdminPermissions />} />
+        <Route path="danh-muc/them-moi" element={<CreateCategory />} />
+        <Route path="danh-muc/:categoryId/sua" element={<EditCategory />} />
       </Route>
 
       {/* 404 */}

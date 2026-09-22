@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Nunito", sans-serif;
+  font-family: "Manrope", sans-serif;
 }
 
 /* SWEET ALERT DIỆN MẠO MỚI */
@@ -16,7 +16,7 @@
 .se-swal-title {
   font-size: 23px !important;
   font-weight: 700;
-  color: #444;
+  color: #343A40;
   padding: 0 !important;
   margin-bottom: 8px !important;
 }
@@ -85,19 +85,19 @@
 .Toastify__toast,
 .Toastify__toast-body,
 .Toastify__close-button {
-  font-family: "Nunito", sans-serif !important;
+  font-family: "Manrope", sans-serif !important;
 }
 
 .spinner-loading {
-  min-height: 70vh;
+  /* min-height: 40vh; */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 .spinner-loading .spinner-border {
-  width: 2rem;
-  height: 2rem;
-  color: #871b1b;
+  width: 1.75rem;
+  height: 1.75rem;
+  /* color: #212529; */
 }
 
 .breadcrumb-item + .breadcrumb-item::before {
@@ -120,12 +120,16 @@
 }
 
 /* ════════════════════════════════
-    DESKTOP HEADER (>= 1520)
+    DESKTOP HEADER
 ════════════════════════════════ */
 .rb-desktop-header {
-  display: flex;
+  display: grid;
+  /* Chỉ các cột trống (lề và khoảng cách giữa ba cụm) được co giãn. */
+  grid-template-columns:
+    /* minmax(0, 75px) 165px minmax(0, 1fr) max-content */
+    minmax(0, 75px) 165px minmax(0, 1fr) 975px
+    minmax(0, 1fr) max-content minmax(0, 75px);
   align-items: center;
-  padding: 0 75px 0 75px;
   background: white;
   position: sticky;
   top: 0;
@@ -135,6 +139,7 @@
 
 /* CỘT 1: LOGO */
 .rb-col-logo {
+  grid-column: 2;
   flex: 0 0 165px;
   display: flex;
   align-items: center;
@@ -143,7 +148,7 @@
 
 /* CỘT 2: TOPBAR + NAV */
 .rb-col-center {
-  flex: 1 1 0;
+  grid-column: 4;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -178,7 +183,7 @@
   background: #f3f3f3;
   border: none;
   font-size: 1em;
-  font-family: "Nunito", sans-serif;
+  font-family: "Manrope", sans-serif;
   width: 360px;
   max-width: 360px;
   padding-left: 1.25em;
@@ -201,6 +206,219 @@
   box-shadow: none !important;
   outline: none !important;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Dropdown tìm kiếm dùng chung cho desktop và mobile. */
+.rb-search-wrap {
+  position: relative;
+}
+.rb-search-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 36px);
+  max-height: min(640px, calc(100dvh - 150px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16);
+  color: #212529;
+  text-align: left;
+  scrollbar-width: thin;
+  z-index: 10;
+}
+.rb-search-heading {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #871b1b;
+}
+.rb-search-history {
+  padding: 16px;
+  border-bottom: 1px solid #eeeeee;
+}
+.rb-search-dropdown button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+}
+.rb-search-dropdown .rb-search-clear {
+  padding: 4px 0 4px 12px;
+  color: #666666;
+  font-size: 11px;
+}
+.rb-search-history-row {
+  border-radius: 6px;
+}
+.rb-search-dropdown .rb-search-history-term {
+  min-width: 0;
+  padding: 8px;
+  font-size: 13px;
+}
+.rb-search-dropdown .rb-search-remove {
+  padding: 6px 10px;
+  font-size: 18px;
+  color: #666666;
+}
+.rb-search-product {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eeeeee;
+  color: inherit;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+.rb-search-product:hover,
+.rb-search-history-row:hover {
+  background: #fffafa;
+  color: #212529;
+}
+.rb-search-product img {
+  width: 66px;
+  height: 88px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #f3f3f3;
+}
+.rb-search-product-info {
+  flex: 1;
+  min-width: 0;
+}
+.rb-search-category {
+  display: block;
+  font-size: 11px;
+  color: #871b1b;
+  margin-bottom: 4px;
+}
+.rb-search-product-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.rb-search-price {
+  color: #871b1b;
+  font-size: 14px;
+  font-weight: 800;
+}
+.rb-search-original {
+  color: #767676;
+  font-size: 12px;
+}
+.rb-search-product-arrow {
+  font-size: 13px;
+  color: #871b1b;
+}
+.rb-search-state {
+  padding: 28px 18px;
+  text-align: center;
+  font-size: 13px;
+  color: #666666;
+}
+.rb-search-dropdown .rb-search-all {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #871b1b;
+  background: #fffafa;
+}
+.rb-search-dropdown button:hover {
+  color: #6f1515;
+}
+.rb-search-dropdown :is(a, button):focus-visible {
+  outline: 2px solid #871b1b;
+  outline-offset: -2px;
+  background: #fffafa;
+}
+.rb-mob-search-bar .rb-search-dropdown {
+  width: 100%;
+  max-height: calc(100dvh - 140px);
+}
+@media (max-width: 375px) {
+  .rb-search-product {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .rb-search-product-arrow {
+    display: none;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .rb-toplink {
   text-decoration: none;
   color: #212529;
@@ -278,6 +496,7 @@
 
 /* CỘT 3: ICONS */
 .rb-topicons {
+  grid-column: 6;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -334,7 +553,7 @@
 }
 
 /* ════════════════════════════════
-    MOBILE HEADER (< 1521)
+    MOBILE / TABLET HEADER
 ════════════════════════════════ */
 .rb-mobile-header {
   display: none;
@@ -421,7 +640,7 @@
 .rb-mob-search-bar input {
   background: #f3f3f3;
   border: none;
-  font-family: "Nunito", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 14px;
   padding-left: 1.25em;
 }
@@ -512,24 +731,31 @@
 }
 
 /* ── BREAKPOINTS ── */
-@media (max-width: 1520px) {
-  .rb-desktop-header {
-    display: none !important;
-  }
-  .rb-mobile-header {
-    display: flex !important;
-  }
+.rb-mob-drawer,
+.rb-mob-overlay.open,
+.rb-mob-search-bar {
+  display: none;
 }
-@media (min-width: 1521px) {
-  .rb-mobile-header {
-    display: none !important;
-  }
-  .rb-mob-drawer {
-    display: none !important;
-  }
-  .rb-mob-overlay {
-    display: none !important;
-  }
+
+/* Giữ layout ẩn để đo ba cụm, nhưng không cho phần đo gây tràn trang. */
+.rb-desktop-header.is-compact {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: clip;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.rb-desktop-header.is-compact ~ .rb-mobile-header,
+.rb-desktop-header.is-compact ~ .rb-mob-drawer {
+  display: flex;
+}
+
+.rb-desktop-header.is-compact ~ .rb-mob-overlay.open,
+.rb-desktop-header.is-compact ~ .rb-mob-search-bar {
+  display: block;
 }
 
 /* ── HERO ── */
@@ -576,7 +802,7 @@
   margin-bottom: 32px;
 }
 .rb-sec-title h2 {
-  font-family: "Nunito", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 26px;
   font-weight: 700;
   color: #111;
@@ -724,14 +950,14 @@
   text-align: center;
 }
 .rb-feel h2 {
-  font-family: "Nunito", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 50px;
   font-weight: 900;
   color: #871b1b;
   margin: 0 0 12px;
 }
 .rb-feel p {
-  font-family: "Nunito", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 25px;
   font-weight: 600;
   color: #871b1b;
@@ -922,8 +1148,10 @@
   margin-bottom: 7px;
 }
 .form-label {
-  font-size: 16px;
-  font-weight: 500;
+  /* font-size: 16px;
+  font-weight: 500; */
+  font-size: 13px;
+  font-weight: 600;
   color: #212529;
 }
 .form-link-sm {
@@ -960,7 +1188,7 @@
 .form-eye {
   position: absolute;
   right: 14px;
-  top: 1.25em;
+  top: 1.05em;
   transform: translateY(-50%);
   background: none;
   border: none;
@@ -988,6 +1216,18 @@
   color: #212529;
   border-color: #212529;
   background-color: whitesmoke;
+}
+.form-btn[type="reset"],
+.form-btn-google,
+.form-btn.btn-export,
+.form-btn-cancel {
+  --bs-btn-hover-color: #212529;
+  --bs-btn-hover-bg: whitesmoke;
+  --bs-btn-hover-border-color: #212529;
+  --bs-btn-active-color: #212529;
+  --bs-btn-active-bg: whitesmoke;
+  --bs-btn-active-border-color: #212529;
+  --bs-btn-focus-shadow-rgb: 0, 0, 0;
 }
 .form-btn-cancel:hover,
 .form-btn-cancel:focus,
@@ -1161,6 +1401,8 @@
 .page-empty-icon {
   font-size: 48px;
   color: #d0d0d0;
+  margin-bottom: 12px;
+  display: block;
 }
 
 /* Responsive */
@@ -1273,16 +1515,20 @@
   border-right: none;
 }
 .info-field-label {
+  /* font-size: 16px; */
+  /* font-weight: 500; */
+  font-size: 14px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   margin-bottom: 6px;
-  font-weight: 500;
+  color: #212529;
 }
 .info-field-val {
   font-size: 15px;
   min-height: 24px;
-  color: #6c757d;
-  font-weight: 500;
+  color: #343A40;
+  /* font-weight: 500; */
 }
 
 /* ── ACTIONS ── */
@@ -1465,6 +1711,61 @@
   }
 }
 
+/* ADMIN HEADER & SIDEBAR */
+.adm-admin-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-admin-ava {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0; /* Ngăn không cho ảnh bị bóp méo nếu text quá dài */
+}
+
+.adm-admin-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 40px;
+}
+
+.adm-admin-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #212529;
+}
+
+.adm-admin-role {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.btn-outline-danger {
+  color: #871b1b;
+  border-color: #871b1b;
+  margin-bottom: 0;
+  margin-right: 1.5rem;
+
+  --bs-btn-hover-color: #871b1b;
+  --bs-btn-hover-bg: #fffafa;
+  --bs-btn-hover-border-color: #871b1b;
+  --bs-btn-active-color: #871b1b;
+  --bs-btn-active-bg: #fffafa;
+  --bs-btn-active-border-color: #871b1b;
+  --bs-btn-focus-shadow-rgb: 0, 0, 0;
+}
+.btn-outline-danger:hover {
+  color: #871b1b;
+  border-color: #871b1b;
+  background-color: #fffafa;
+  box-shadow: none !important;
+}
+
 /* ADMIN */
 .adm-page-head {
   display: flex;
@@ -1490,9 +1791,14 @@
 .adm-toolbar-search {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 150px;
   max-width: 320px;
 }
+
+/* .adm-toolbar .dropdown {
+  flex: 0 0 12.25rem;
+} */
+
 .adm-toolbar-search i {
   position: absolute;
   left: 14px;
@@ -1520,7 +1826,7 @@
   padding: 0.5em 1em;
   font-size: 13px;
   font-weight: 600;
-  color: #444;
+  color: #343A40;
   border-radius: 0.5em;
   cursor: pointer;
   transition: all 0.15s;
@@ -1554,46 +1860,145 @@
   white-space: nowrap;
 }
 
+/* ── TABLE ── */
+.adm-table-wrap {
+  border: 1px solid #efefed;
+  border-radius: 12px;
+  overflow: hidden;
+}
 
+.adm-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-color: #efefed;
+  border-spacing: 0;
+  margin: 0;
+}
 
+/* Header */
+.adm-table th {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #343A40;
+  background: #efefed;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
 
+/* Body */
+.adm-table td {
+  font-size: 13.5px;
+  color: #212529;
+  padding: 12px 14px;
+  vertical-align: middle;
+}
 
+.adm-table tbody tr:last-child {
+  border-bottom: none;
+}
 
+/* Bỏ border dưới của row cuối để không chồng với border của table */
+.adm-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
 
+.adm-stt {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #6c757d;
+}
+.adm-cell {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+.adm-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block; /* Đảm bảo ảnh là block để căn chỉnh chính xác */
+}
+.adm-name {
+  font-weight: 700;
+  color: #212529;
+}
+.adm-sub {
+  font-size: 12px;
+  color: #6c757d;
+}
 
+.adm-cell > div:last-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
 
+.adm-link {
+  text-decoration: none;
+  cursor: pointer;
+  align-self: center; /* Đẩy riêng thẻ chứa ảnh (hoặc thẻ img) ra giữa theo chiều dọc */
+}
 
+.adm-link:hover .adm-name {
+  color: #871b1b;
+}
 
+.adm-cell > .adm-link:hover .adm-thumb {
+  opacity: 0.85;
+}
 
+.adm-price-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 42px;
+}
 
+.adm-price {
+  font-weight: 600;
+}
 
+.adm-original-price {
+  font-size: 12px;
+  color: #6c757d;
+  text-decoration: line-through;
+  text-decoration-color: #6c757d;
+  /* text-decoration-color: #9ca0ac; */
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* ── ACTION BUTTONS ── */
+.adm-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  color: #6c757d;
+}
+.adm-action-btn:hover {
+  background: #fefce8;
+  color: #ca8a04;
+}
+.adm-action-btn.lock:hover {
+  background: #fff0f0;
+  color: #dc2626;
+}
+.adm-action-btn.unlock:hover {
+  background: #f0fdf4;
+  color: #16a34a;
+}
 
 /* TEST MẪU CHO TRANG HOME */
 .pl-home-products {

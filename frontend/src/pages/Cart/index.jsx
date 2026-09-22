@@ -1,5 +1,6 @@
 // frontend\src\pages\Cart\index.jsx
 // frontend\src\pages\Cart\index.jsx
+import Loading from "../../components/common/Loading";
 import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../../context/CartContext";
@@ -9,28 +10,6 @@ import Swal from "sweetalert2";
 
 /* ── helpers ── */
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
-
-/* ── SKELETON ROW ── */
-function SkeletonRow() {
-  return (
-    <div className="cart-item placeholder-item">
-      <div
-        className="placeholder rounded"
-        style={{ width: 80, height: 100, flexShrink: 0 }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          className="placeholder col-8 rounded mb-2"
-          style={{ height: 16 }}
-        />
-        <div className="placeholder col-4 rounded" style={{ height: 13 }} />
-      </div>
-      <div className="placeholder rounded" style={{ width: 100, height: 36 }} />
-      <div className="placeholder rounded" style={{ width: 80, height: 16 }} />
-      <div className="placeholder rounded" style={{ width: 24, height: 24 }} />
-    </div>
-  );
-}
 
 export default function Cart() {
   const { cart, removeFromCart, increaseQuantity, decreaseQuantity } =
@@ -255,7 +234,7 @@ export default function Cart() {
         .cart-check-all input { width: 17px; height: 17px; accent-color: #212529; cursor: pointer; flex-shrink: 0; }
         .cart-del-sel {
           background: none; border: none; cursor: pointer;
-          font-size: 13px; color: #adb5bd; font-family: 'Nunito', sans-serif;
+          font-size: 13px; color: #adb5bd; font-family: 'Manrope', sans-serif;
           font-weight: 600; padding: 0; transition: color 0.15s;
         }
         .cart-del-sel:hover { color: #871B1B; }
@@ -283,7 +262,7 @@ export default function Cart() {
         .cart-checkout-btn {
           width: 100%; height: 50px; background: #212529; border: none;
           border-radius: 50px; color: #fff;
-          font-size: 15px; font-weight: 800; font-family: 'Nunito', sans-serif;
+          font-size: 15px; font-weight: 800; font-family: 'Manrope', sans-serif;
           letter-spacing: 0.5px; cursor: pointer;
           transition: background 0.18s, transform 0.1s;
           display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -352,7 +331,7 @@ export default function Cart() {
             {/* items */}
             <div className="cart-list">
               {loading
-                ? [1, 2, 3].map((k) => <SkeletonRow key={k} />)
+                ? <div className="py-5"><Loading text="Đang tải giỏ hàng..." /></div>
                 : cartItems
                     .filter((i) => i.product)
                     .map((item) => (
@@ -370,7 +349,7 @@ export default function Cart() {
                           <Link to={`/san-pham/${item.product.product_id}`}>
                             <img
                               src={item.product.image_url || "/placeholder.jpg"}
-                              alt={item.product.product_name}
+                              alt=""
                               className="cart-item-img"
                               onError={(e) => {
                                 e.currentTarget.src = "/placeholder.jpg";
@@ -471,24 +450,7 @@ export default function Cart() {
               <div className="cart-summary-title">Tóm tắt đơn hàng</div>
 
               {loading ? (
-                <div className="placeholder-glow">
-                  <div
-                    className="placeholder col-8 rounded mb-3"
-                    style={{ height: 16 }}
-                  />
-                  <div
-                    className="placeholder col-6 rounded mb-2"
-                    style={{ height: 14 }}
-                  />
-                  <div
-                    className="placeholder col-5 rounded mb-4"
-                    style={{ height: 14 }}
-                  />
-                  <div
-                    className="placeholder w-100 rounded-pill"
-                    style={{ height: 50 }}
-                  />
-                </div>
+                <div className="py-5"><Loading text="Đang tải tóm tắt đơn hàng..." /></div>
               ) : (
                 <>
                   <div className="cart-summary-row">

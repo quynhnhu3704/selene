@@ -44,7 +44,7 @@ export const handleGetOrders = async (req, res) => {
 
 export const handleGetAllOrdersForAdmin = async (req, res) => {
   try {
-    const orders = await orderService.getAllOrdersForAdmin();
+    const orders = await orderService.getAllOrdersForAdmin(req.query);
 
     res.status(200).json({
       success: true,
@@ -73,6 +73,26 @@ export const handleGetOrderByIdForAdmin = async (req, res) => {
     const status = error.message === "Không tìm thấy đơn hàng!" ? 404 : 500;
 
     res.status(status).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const handleUpdateOrderForAdmin = async (req, res) => {
+  try {
+    const order = await orderService.updateOrderForAdmin(
+      req.params.orderId,
+      req.body,
+      req.user.role,
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật đơn hàng thành công!",
+      data: order,
+    });
+  } catch (error) {
+    return res.status(error.status || 400).json({
       success: false,
       message: error.message,
     });
@@ -134,9 +154,9 @@ const extractOrderCode = (payload) => {
 const isValidWebhookAuthorization = (authorization) => {
   const apiKey = config.sepayWebhookApiKey;
 
-  // Nếu môi trường dev / chưa cấu hình SEPAY_WEBHOOK_API_KEY trong env, chấp nhận webhook
+  // Webhook công khai phải được xác thực trước khi cập nhật thanh toán.
   if (!apiKey) {
-    return true;
+    return false;
   }
 
   const received = String(authorization || "").trim();
@@ -152,12 +172,21 @@ const isValidWebhookAuthorization = (authorization) => {
 };
 
 export const handleSePayWebhook = async (req, res) => {
+  if (!config.sepayWebhookApiKey) {
+    return res.status(503).json({ success: false });
+  }
   if (!isValidWebhookAuthorization(req.get("authorization"))) {
     return res.status(401).json({ success: false });
   }
 
   try {
     const { transferType, transferAmount } = req.body || {};
+    if (
+      String(req.body?.accountNumber || "") !==
+      String(config.sepayAccountNumber)
+    ) {
+      return res.status(200).json({ success: true });
+    }
     const orderCode = extractOrderCode(req.body);
 
     // SePay có thể gửi giao dịch ra, giao dịch không khớp, hoặc retry cùng payload.
@@ -276,5 +305,77 @@ export const handleCancelOrder = async (req, res) => {
   }
 };
 
+// Lấy số đơn hàng của từng tài khoản
+export const handleGetUserOrderCounts = async (req, res) => {
+  try {
+    const counts = await orderService.getUserOrderCounts();
+    return res.status(200).json({
+      status: 200,
+      message: "Thống kê đơn hàng thành công!",
+      data: counts,
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
 
+    console.error("Lỗi Controller Thống Kê Đơn Hàng:", error.stack);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal Server Error!",
+    });
+  }
+};
 
+export const handleCreateOrderForAdmin = async (req, res) => {
+  try {
+    const data = await orderService.createOrderForAdmin(
+      req.body,
+      req.headers.authorization,
+    );
+    res
+      .status(201)
+      .json({ success: true, message: "Tạo đơn hàng thành công!", data });
+  } catch (error) {
+    res
+      .status(error.status || 400)
+      .json({ success: false, message: error.message });
+  }
+};
+
+export const handleExportOrders = async (req, res) => {
+  try {
+    const { orders } = await orderService.getAllOrdersForAdmin(req.query, true);
+    const columns = [
+      ["order_code", "Mã đơn"],
+      ["recipient_name", "Khách hàng"],
+      ["recipient_phone", "Số điện thoại"],
+      ["recipient_address", "Địa chỉ"],
+      ["total_quantity", "Số lượng"],
+      ["final_amount", "Tổng tiền"],
+      ["payment_method", "Phương thức thanh toán"],
+      ["payment_status", "Thanh toán"],
+      ["status", "Trạng thái"],
+      ["created_at", "Ngày đặt"],
+    ];
+    const cell = (value) => {
+      let text = String(value ?? "");
+      if (/^[=+@\-\t\r\n]/.test(text)) text = "'" + text;
+      return '"' + text.replaceAll('"', '""') + '"';
+    };
+    const csv = [
+      columns.map(([, label]) => cell(label)).join(","),
+      ...orders.map((order) =>
+        columns.map(([key]) => cell(order[key])).join(","),
+      ),
+    ].join("\r\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="orders.csv"');
+    res.send("\uFEFF" + csv);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -1,6 +1,32 @@
 // backend\auth-service\src\controllers\permission.controller.js
 import * as permissionService from "../services/permission.service.js";
 
+export const handleGetPermissionMatrix = async (req, res) => {
+  try {
+    const data = await permissionService.getPermissionMatrix(req.user.accountId);
+    return res.status(200).json({ status: 200, data });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      status: error.status || 500,
+      message: error.status ? error.message : "Không thể tải bảng phân quyền!",
+    });
+  }
+};
+
+export const handleSetRolePermission = async (req, res) => {
+  try {
+    const data = await permissionService.setRolePermission(
+      req.user.accountId, req.params.roleId, req.params.permissionId, req.body?.enabled,
+    );
+    return res.status(200).json({ status: 200, message: "Đã cập nhật quyền!", data });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      status: error.status || 500,
+      message: error.status ? error.message : "Không thể lưu phân quyền!",
+    });
+  }
+};
+
 // lấy tất cả các quyền hiện có
 export const handleGetAllPermissions = async (req, res) => {
   try {

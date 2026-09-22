@@ -1,5 +1,5 @@
 // frontend\src\pages\Checkout\index.jsx
-import { useContext, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
@@ -7,13 +7,22 @@ import { CartContext } from "../../context/CartContext";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import { placeOrder } from "../../services/order.service";
 import { getUser } from "../../utils/auth";
+import { getProfile } from "../../services/user.service";
+import Address from "../../components/common/Address";
+import VoucherPicker from "./VoucherPicker";
+import { getVoucherDiscount } from "../../utils/voucher";
 
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [submitting, setSubmitting] = useState(false);
+  const [voucher, setVoucher] = useState(null);
+  const [checkingVoucher, setCheckingVoucher] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [addressArea, setAddressArea] = useState(null);
+  const [addressDetail, setAddressDetail] = useState("");
+  const editedFields = useRef(new Set());
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -27,9 +36,36 @@ export default function Checkout() {
   });
 
   const selected = location.state?.selected || [];
+  useEffect(() => {
+    let active = true;
+    getProfile()
+      .then((response) => {
+        if (!active) return;
+        const profile = response.data.profile;
+        setShippingInfo((current) => ({
+          ...current,
+          recipient_name: editedFields.current.has("recipient_name")
+            ? current.recipient_name
+            : profile?.full_name || current.recipient_name,
+          recipient_phone: editedFields.current.has("recipient_phone")
+            ? current.recipient_phone
+            : profile?.phone_number || current.recipient_phone,
+        }));
+      })
+      .catch(() => {
+        if (active)
+          toast.error(
+            "Không thể tải hồ sơ. Bạn có thể nhập thông tin nhận hàng.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const cartItems = cart?.items || [];
 
   const updateShippingInfo = (field, value) => {
+    editedFields.current.add(field);
     setShippingInfo((current) => ({ ...current, [field]: value }));
     setFormErrors((current) => ({ ...current, [field]: "" }));
   };
@@ -48,16 +84,19 @@ export default function Checkout() {
       errors.recipient_phone = "Số điện thoại chưa hợp lệ.";
     }
 
-    if (!shippingInfo.recipient_address.trim()) {
+    if (!addressDetail.trim()) {
       errors.recipient_address = "Vui lòng nhập địa chỉ nhận hàng.";
     }
+    if (!addressArea)
+      errors.recipient_address =
+        "Vui lòng chọn tỉnh / thành phố và phường / xã, rồi nhập số nhà, tên đường.";
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handlePlaceOrder = async () => {
-    if (submitting || !validateShippingInfo()) {
+    if (submitting || checkingVoucher || !validateShippingInfo()) {
       return;
     }
 
@@ -69,8 +108,9 @@ export default function Checkout() {
         payment_method: paymentMethod,
         recipient_name: shippingInfo.recipient_name.trim(),
         recipient_phone: shippingInfo.recipient_phone.trim(),
-        recipient_address: shippingInfo.recipient_address.trim(),
+        recipient_address: shippingInfo.recipient_address,
         note: shippingInfo.note.trim(),
+        ...(appliedVoucher ? { voucher_code: appliedVoucher.code } : {}),
       };
 
       const response = await placeOrder(payload);
@@ -132,6 +172,12 @@ export default function Checkout() {
         item.quantity,
     0,
   );
+
+  const appliedVoucher =
+    voucher && totalPrice >= Number(voucher.min_order_value || 0)
+      ? voucher
+      : null;
+  const discountAmount = getVoucherDiscount(appliedVoucher, totalPrice);
 
   // Nếu vào trang thanh toán trực tiếp mà không có sản phẩm
   if (selectedItems.length === 0) {
@@ -251,7 +297,7 @@ export default function Checkout() {
           border-radius: 8px;
           padding: 0 13px;
           font-size: 14px;
-          font-family: 'Nunito', sans-serif;
+          font-family: 'Manrope', sans-serif;
           outline: none;
           margin-bottom: 16px;
         }
@@ -279,7 +325,7 @@ export default function Checkout() {
           border-radius: 8px;
           padding: 12px 13px;
           font-size: 14px;
-          font-family: 'Nunito', sans-serif;
+          font-family: 'Manrope', sans-serif;
           outline: none;
           resize: vertical;
         }
@@ -392,7 +438,7 @@ export default function Checkout() {
           color: #fff;
           font-size: 15px;
           font-weight: 800;
-          font-family: 'Nunito', sans-serif;
+          font-family: 'Manrope', sans-serif;
           cursor: pointer;
           transition: background 0.18s;
         }
@@ -509,17 +555,16 @@ export default function Checkout() {
 
               <label className="checkout-label">Địa chỉ nhận hàng</label>
 
-              <input
-                type="text"
-                className={`checkout-input ${
+              <Address
+                onChange={(address, area, detail) => {
+                  setAddressArea(area);
+                  setAddressDetail(detail);
+                  updateShippingInfo("recipient_address", address);
+                }}
+                inputClassName={`checkout-input ${
                   formErrors.recipient_address ? "input-error" : ""
                 }`}
-                placeholder="Nhập địa chỉ nhận hàng"
-                value={shippingInfo.recipient_address}
-                onChange={(event) =>
-                  updateShippingInfo("recipient_address", event.target.value)
-                }
-                aria-invalid={Boolean(formErrors.recipient_address)}
+                invalid={Boolean(formErrors.recipient_address)}
               />
 
               {formErrors.recipient_address && (
@@ -539,6 +584,16 @@ export default function Checkout() {
                 }
               />
             </div>
+
+            {/* Mã khuyến mãi */}
+            <VoucherPicker
+              key={totalPrice}
+              orderValue={totalPrice}
+              voucher={appliedVoucher}
+              onChange={setVoucher}
+              onCheckingChange={setCheckingVoucher}
+              disabled={submitting}
+            />
 
             {/* Phương thức thanh toán */}
             <div className="checkout-card">
@@ -626,7 +681,7 @@ export default function Checkout() {
                   <div className="checkout-item" key={item.cart_item_id}>
                     <img
                       src={item.product.image_url || "/placeholder.jpg"}
-                      alt={item.product.product_name}
+                      alt=""
                       className="checkout-item-img"
                       onError={(e) => {
                         e.currentTarget.src = "/placeholder.jpg";
@@ -676,19 +731,30 @@ export default function Checkout() {
                 <strong style={{ color: "#28a745" }}>Miễn phí</strong>
               </div>
 
+              {appliedVoucher && (
+                <div className="checkout-summary-row">
+                  <span>Khuyến mãi ({appliedVoucher.code})</span>
+                  <strong style={{ color: "#28a745" }}>
+                    -{fmt(discountAmount)}
+                  </strong>
+                </div>
+              )}
+
               <hr className="checkout-divider" />
 
               <div className="checkout-total">
                 <span className="checkout-total-label">Tổng cộng</span>
 
-                <span className="checkout-total-value">{fmt(totalPrice)}</span>
+                <span className="checkout-total-value">
+                  {fmt(totalPrice - discountAmount)}
+                </span>
               </div>
 
               <button
                 className="checkout-btn"
                 type="button"
                 onClick={handlePlaceOrder}
-                disabled={submitting}
+                disabled={submitting || checkingVoucher}
               >
                 {submitting ? (
                   <>

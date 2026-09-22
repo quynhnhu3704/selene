@@ -1,11 +1,20 @@
 // frontend\src\pages\Admin\index.jsx
+import Loading from "../../components/common/Loading";
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import defaultAvatar from "../../assets/images/default-avatar.png";
 import { getProfile } from "../../services/user.service";
 import logoIcon from "../../assets/images/icon.png";
+import UnreadBadge from "../../components/SupportChat/UnreadBadge";
 
 const MENU_ITEMS = [
+  {
+    key: "support",
+    label: "Hỗ trợ khách hàng",
+    icon: "bi-chat-dots",
+    path: "/admin/ho-tro",
+    enabled: true,
+  },
   {
     key: "home",
     label: "Trang chủ",
@@ -31,7 +40,14 @@ const MENU_ITEMS = [
     key: "customers",
     label: "Khách hàng",
     icon: "bi-people",
-    path: "/admin/nguoi-dung",
+    path: "/admin/khach-hang",
+    enabled: true,
+  },
+  {
+    key: "staffs",
+    label: "Nhân viên",
+    icon: "bi-person-badge",
+    path: "/admin/nhan-vien",
     enabled: true,
   },
   {
@@ -42,10 +58,10 @@ const MENU_ITEMS = [
     enabled: true,
   },
   {
-    key: "store",
-    label: "Cửa hàng",
-    icon: "bi-shop",
-    path: "/",
+    key: "permissions",
+    label: "Phân quyền",
+    icon: "bi-shield-check",
+    path: "/admin/phan-quyen",
     enabled: true,
   },
 ];
@@ -55,18 +71,23 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isCurrentRequest = true;
     const fetchProfile = async () => {
       try {
         const res = await getProfile();
-        setProfile(res.data.profile);
+        if (isCurrentRequest) setProfile(res.data.profile);
       } catch (error) {
         console.error("Không thể lấy thông tin admin:", error);
+      } finally {
+        if (isCurrentRequest) setLoading(false);
       }
     };
 
     fetchProfile();
+    return () => { isCurrentRequest = false; };
   }, []);
 
   const isActive = (path) => {
@@ -83,6 +104,7 @@ export default function AdminLayout() {
         <i className={`bi ${item.icon}`} />
         <span className="adm-nav-label-txt">
           {item.realLabel || item.label}
+          {item.key === "support" && <UnreadBadge admin />}
         </span>
         {item.badge ? (
           <span className="adm-nav-badge">{item.badge}</span>
@@ -130,6 +152,20 @@ export default function AdminLayout() {
     }
   };
 
+  if (loading) {
+    return (
+      <div
+        className="d-flex align-items-center justify-content-center"
+        style={{ minHeight: "100vh" }}
+      >
+        <Loading text="Đang kiểm tra quyền truy cập..." />
+      </div>
+    );
+  }
+
+  if (!profile) return <Navigate to="/tai-khoan/dang-nhap" replace />;
+  if (![1, 2].includes(Number(profile.role_id))) return <Navigate to="/" replace />;
+
   return (
     <>
       <style>{`
@@ -170,7 +206,7 @@ export default function AdminLayout() {
   position: sticky;
   top: 0;
   z-index: 100;
-
+  // border-bottom: 1px solid #efefed;
   border-radius: 1em 1em 0 0;
 }
 
@@ -233,7 +269,7 @@ export default function AdminLayout() {
         
         .adm-nav-item {
           display: flex; align-items: center; gap: 11px;
-          padding: ${collapsed ? "10px 0" : "9px 12px"};
+          padding: ${collapsed ? "9px 0" : "9px 12px"};
           justify-content: ${collapsed ? "center" : "flex-start"};
           font-size: 13.5px; font-weight: 600; color: #444;
           text-decoration: none; cursor: pointer;
@@ -290,19 +326,7 @@ export default function AdminLayout() {
 
         .adm-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 22px; }
 
-        .adm-store-link {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 13px; font-weight: 700; color: #6B7280;
-          text-decoration: none; padding: 8px 12px; border-radius: 10px;
-          border: 1px solid #ECEBF2; transition: all 0.15s;
-        }
-        .adm-store-link:hover { color: #5B4FE0; border-color: #C9C3F8; background: #F8F7FC; }
 
-        .adm-admin-badge { display: flex; align-items: center; gap: 10px; }
-        .adm-admin-ava { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #ECEBF2; }
-        .adm-admin-info { line-height: 1.25; }
-        .adm-admin-name { font-size: 13.5px; font-weight: 800; color: #17151F; }
-        .adm-admin-role { font-size: 12px; color: #9CA0AC; font-weight: 600; }
 
         // .adm-content { flex: 1; padding: 28px 32px 40px; background: #fff; border-radius: 0 0 1em 1em; margin: 0 1em 1em 0; }
         
@@ -313,12 +337,12 @@ export default function AdminLayout() {
         <aside className="adm-sidebar">
           <div className="adm-logo-row">
             <div className="adm-logo-left">
-              <img src={logoIcon} alt="Selene" className="adm-logo-icon" />
+              <img src={logoIcon} alt="" className="adm-logo-icon" />
               <span className="adm-logo-text">Selene</span>
             </div>
           </div>
 
-          <nav className="adm-nav-scroll">{MENU_ITEMS.map(renderItem)}</nav>
+          <nav className="adm-nav-scroll">{MENU_ITEMS.filter((item) => item.key !== "permissions" || Number(profile?.role_id) === 1).map(renderItem)}</nav>
 
           <div className="adm-sidebar-bottom">
             <button
@@ -345,15 +369,15 @@ export default function AdminLayout() {
                 to="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="adm-store-link"
+                className="form-btn btn btn-outline-danger fw-semibold px-4"
               >
-                <i className="bi bi-shop" /> Về cửa hàng
+                <i className="bi bi-shop me-1" /> Về cửa hàng
               </Link>
 
               <div className="adm-admin-badge">
                 <img
                   src={profile?.avatar_url || defaultAvatar}
-                  alt={profile?.full_name || "Admin"}
+                  alt=""
                   className="adm-admin-ava"
                   onError={(e) => {
                     e.currentTarget.onerror = null;

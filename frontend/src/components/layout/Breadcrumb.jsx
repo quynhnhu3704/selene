@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export default function Breadcrumb({ items }) {
   return (
     // <div className="bg-light">
-    <div className="container py-3" style={{ margin: "0 75px" }}>
+    <div className="container py-3 px-0" style={{ margin: "0 75px" }}>
       <nav
         aria-label="breadcrumb"
         style={{

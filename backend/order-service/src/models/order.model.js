@@ -2,6 +2,41 @@
 import { supabase } from "../configs/supabase.js";
 
 export const OrderModel = {
+  // Lấy tài khoản của các đơn hàng để thống kê
+  getOrderAccounts: async () => {
+    const orders = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error, count } = await supabase
+        .from("orders")
+        .select("order_id, account_id", { count: "exact" })
+        .order("order_id", { ascending: true })
+        .range(from, from + 499);
+
+      if (error) throw error;
+      if (!data?.length) break;
+
+      orders.push(...data);
+      from += data.length;
+      if (count !== null && from >= count) break;
+    }
+
+    return orders;
+  },
+
+  deleteIncompleteOrder: async (orderId) => {
+    const items = await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", orderId);
+    if (items.error) throw items.error;
+    const order = await supabase
+      .from("orders")
+      .delete()
+      .eq("order_id", orderId);
+    if (order.error) throw order.error;
+  },
   // Tạo đơn hàng mới
   createOrder: async (orderData) => {
     const { data, error } = await supabase
@@ -52,7 +87,9 @@ export const OrderModel = {
 
   // SePay gửi lại mã đơn trong nội dung/mã thanh toán.
   findByOrderCode: async (orderCode) => {
-    const cleanCode = String(orderCode || "").replace(/-/g, "").trim();
+    const cleanCode = String(orderCode || "")
+      .replace(/-/g, "")
+      .trim();
     const { data, error } = await supabase
       .from("orders")
       .select("*")
@@ -87,14 +124,66 @@ export const OrderModel = {
 
   // Lấy danh sách đơn hàng cho Admin với các trường cụ thể
   findAllForAdmin: async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(
-        "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at, updated_at",
-      )
-      .order("created_at", { ascending: false });
+    const orders = [];
+    let from = 0;
+    while (true) {
+      const { data, error, count } = await supabase
+        .from("orders")
+        .select(
+          "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at, updated_at, order_items(quantity)",
+          { count: "exact" },
+        )
+        .order("created_at", { ascending: false })
+        .order("order_id", { ascending: false })
+        .range(from, from + 499);
+      if (error) throw error;
+      if (!data?.length) break;
+      orders.push(...data);
+      from += data.length;
+      if (count !== null && from >= count) break;
+    }
+    return orders;
+  },
 
+  updateItemsForAdmin: async (items) => {
+    const fields = [
+      "order_item_id",
+      "order_id",
+      "product_id",
+      "variant_id",
+      "product_name",
+      "size",
+      "color",
+      "unit_price",
+      "quantity",
+    ];
+    const { error } = await supabase.from("order_items").upsert(
+      items.map((item) =>
+        Object.fromEntries(fields.map((key) => [key, item[key]])),
+      ),
+      { onConflict: "order_item_id" },
+    );
     if (error) throw error;
+  },
+
+  updateForAdmin: async (order, changes) => {
+    let query = supabase
+      .from("orders")
+      .update({ ...changes, updated_at: new Date().toISOString() })
+      .eq("order_id", order.order_id)
+      .eq("status", order.status);
+    query = order.updated_at
+      ? query.eq("updated_at", order.updated_at)
+      : query.is("updated_at", null);
+    const { data, error } = await query.select().maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      const conflict = new Error(
+        "Đơn hàng đã thay đổi. Vui lòng tải lại trước khi sửa!",
+      );
+      conflict.status = 409;
+      throw conflict;
+    }
     return data;
   },
 
@@ -162,6 +251,3 @@ export const OrderModel = {
     return data;
   },
 };
-
-
-

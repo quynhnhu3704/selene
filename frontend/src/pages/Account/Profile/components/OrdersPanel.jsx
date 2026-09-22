@@ -1,4 +1,5 @@
 // frontend\src\pages\Account\Profile\components\OrdersPanel.jsx
+import Loading from "../../../../components/common/Loading";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getOrders } from "../../../../services/order.service";
@@ -58,7 +59,7 @@ export default function OrdersPanel() {
       console.error("Không thể tải danh sách đơn hàng:", requestError);
       setError(
         requestError.response?.data?.message ||
-        "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
+          "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
       );
     } finally {
       setLoading(false);
@@ -84,12 +85,7 @@ export default function OrdersPanel() {
 
       {loading ? (
         <div className="page-empty">
-          <div className="spinner-border text-dark" role="status">
-            <span className="visually-hidden">Đang tải đơn hàng</span>
-          </div>
-          <p className="mt-3 mb-0 text-muted" style={{ fontSize: 14 }}>
-            Đang tải đơn hàng...
-          </p>
+          <Loading text="Đang tải đơn hàng..." />
         </div>
       ) : error ? (
         <div className="page-empty">
@@ -162,6 +158,11 @@ export default function OrdersPanel() {
                     </td>
                     <td className="px-3 py-3 fw-bold">
                       {formatCurrency(order.final_amount)}
+                      {Number(order.total_discount_price) > 0 && (
+                        <div className="my-order-subtext text-success">
+                          Đã giảm {formatCurrency(order.total_discount_price)}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <span className={`badge ${status.className}`}>
@@ -177,7 +178,7 @@ export default function OrdersPanel() {
                     </td>
                     <td className="px-3 py-3 text-end">
                       {order.payment_method !== "cod" &&
-                        order.payment_status !== "paid" ? (
+                      order.payment_status !== "paid" ? (
                         <Link
                           to={`/thanh-toan/qr?orderId=${encodeURIComponent(
                             order.order_id,

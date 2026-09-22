@@ -4,8 +4,9 @@ import * as authService from "../services/auth.service.js";
 // Cấu hình Cookie
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true, // Phải là true khi sameSite: 'none'
-  sameSite: "none",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày tính bằng ms
 };
 
@@ -198,8 +199,8 @@ export const handleRefreshToken = async (req, res) => {
       accessToken: result.accessToken,
     });
   } catch (error) {
-    return res.status(401).json({
-      status: 401,
+    return res.status(error.status || 401).json({
+      status: error.status || 401,
       message: error.message,
     });
   }

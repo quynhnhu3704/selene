@@ -1,22 +1,153 @@
 // frontend\src\components\layout\Header.jsx
-import { useState, useEffect } from "react";
+import Loading from "../common/Loading";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { isLoggedIn, isAdmin, logout as clearLogin } from "../../utils/auth";
 import { logout } from "../../services/auth.service";
 import Swal from "sweetalert2";
+import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
+import { getUser } from "../../utils/auth";
+import { getProducts } from "../../services/product.service";
+import defaultImage from "../../assets/images/default-product.png";
+import UnreadBadge from "../SupportChat/UnreadBadge";
+
+const HISTORY_LIMIT = 8;
+const getHistoryKey = () => {
+  try {
+    const accountId = isLoggedIn() && getUser()?.accountId;
+    return accountId ? `selene-search-history:${accountId}` : null;
+  } catch {
+    return null;
+  }
+};
+const readSearchHistory = (key) => {
+  try {
+    const items = JSON.parse(localStorage.getItem(key));
+    return Array.isArray(items)
+      ? items
+          .filter((item) => typeof item === "string" && item.trim())
+          .slice(0, HISTORY_LIMIT)
+      : [];
+  } catch {
+    return [];
+  }
+};
+const fmtPrice = (price) => Number(price || 0).toLocaleString("vi-VN") + "đ";
+
+// Mobile/tablet luôn dùng menu thu gọn; desktop còn kiểm tra chỗ trống thực tế.
+const COMPACT_HEADER_QUERY =
+  "(max-width: 1024px), (max-width: 1366px) and (hover: none) and (pointer: coarse)";
 
 export default function Header() {
+  const desktopHeaderRef = useRef(null);
+  const [compact, setCompact] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const [wl] = useState(0);
+  const { wishlist } = useWishlist();
+  const wl = wishlist.length;
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLogin, setIsLogin] = useState(isLoggedIn());
   const [admin, setAdmin] = useState(isAdmin());
+  const [historyKey, setHistoryKey] = useState(getHistoryKey);
+  const [searchHistory, setSearchHistory] = useState(() =>
+    readSearchHistory(getHistoryKey()),
+  );
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [searchResult, setSearchResult] = useState({
+    query: "",
+    products: [],
+    total: 0,
+    error: "",
+  });
+  const [composing, setComposing] = useState(false);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
+  const keyword = searchQuery.trim();
+
+  const updateHistory = (items) => {
+    const key = getHistoryKey();
+    if (!key || key !== historyKey) return;
+    setSearchHistory(items);
+    try {
+      localStorage.setItem(key, JSON.stringify(items));
+    } catch {
+      // Vẫn tìm kiếm được khi trình duyệt không cho phép lưu localStorage.
+    }
+  };
+
+  const saveSearch = (query) => {
+    if (!query) return;
+    updateHistory(
+      [
+        query,
+        ...readSearchHistory(getHistoryKey()).filter(
+          (item) =>
+            item.toLocaleLowerCase("vi") !== query.toLocaleLowerCase("vi"),
+        ),
+      ].slice(0, HISTORY_LIMIT),
+    );
+  };
+
+  const searchProducts = (query) => {
+    if (!query) return;
+    saveSearch(query);
+    setSearchQuery(query);
+    navigate(`/san-pham?${new URLSearchParams({ q: query }).toString()}`);
+    setSuggestionsOpen(false);
+    setSearchOpen(false);
+  };
+
+  useEffect(() => {
+    if (!suggestionsOpen || !keyword || composing) return;
+    let isCurrentRequest = true;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getProducts({ q: keyword, limit: 4 });
+        if (!isCurrentRequest) return;
+        setSearchResult({
+          query: keyword,
+          products: res.data || [],
+          total: res.pagination?.totalItems || 0,
+          error: "",
+        });
+      } catch {
+        if (isCurrentRequest)
+          setSearchResult({
+            query: keyword,
+            products: [],
+            total: 0,
+            error: "Không thể tải sản phẩm. Bạn hãy thử lại nhé.",
+          });
+      }
+    }, 250);
+    return () => {
+      isCurrentRequest = false;
+      clearTimeout(timer);
+    };
+  }, [keyword, suggestionsOpen, composing]);
+
+  useEffect(() => {
+    const closeSearch = (event) => {
+      if (
+        !desktopSearchRef.current?.contains(event.target) &&
+        !mobileSearchRef.current?.contains(event.target)
+      ) {
+        setSuggestionsOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", closeSearch);
+    return () => document.removeEventListener("pointerdown", closeSearch);
+  }, []);
+
+  useEffect(() => {
+    setSuggestionsOpen(false);
+    setSearchOpen(false);
+  }, [location.pathname, location.search, compact]);
 
   const navClass = ({ isActive }) =>
     isActive ? "rb-navlink rb-active" : "rb-navlink";
@@ -24,12 +155,7 @@ export default function Header() {
   const handleProductSearch = (event) => {
     event.preventDefault();
 
-    const query = searchQuery.trim();
-    if (!query) return;
-
-    const params = new URLSearchParams({ q: query });
-    navigate(`/san-pham?${params.toString()}`);
-    setSearchOpen(false);
+    if (!composing) searchProducts(keyword);
   };
 
   // Lúc nào login thành công Header sẽ tự đổi
@@ -37,6 +163,9 @@ export default function Header() {
     const syncLogin = () => {
       setIsLogin(isLoggedIn());
       setAdmin(isAdmin());
+      const key = getHistoryKey();
+      setHistoryKey(key);
+      setSearchHistory(key ? readSearchHistory(key) : []);
     };
     window.addEventListener("storage", syncLogin);
     window.addEventListener("login-success", syncLogin);
@@ -52,21 +181,39 @@ export default function Header() {
     setSearchQuery(new URLSearchParams(location.search).get("q") || "");
   }, [location.pathname, location.search]);
 
-  // Tự động đóng search khi resize về desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 1520) {
+  // Đo cả khi đang thu gọn để có thể trở lại desktop khi đủ chỗ.
+  useLayoutEffect(() => {
+    const header = desktopHeaderRef.current;
+    const compactHeader = window.matchMedia(COMPACT_HEADER_QUERY);
+    const syncHeader = () => {
+      const requiredWidth = Array.from(header.children).reduce(
+        (total, group) => total + group.getBoundingClientRect().width,
+        24, // Chừa tối thiểu 12px ở mỗi bên, không sửa khoảng cách trong cụm.
+      );
+      const nextCompact =
+        compactHeader.matches ||
+        requiredWidth > header.getBoundingClientRect().width;
+      setCompact(nextCompact);
+      if (!nextCompact) {
         setSearchOpen(false);
         setMenuOpen(false); // cũng đóng menu luôn cho sạch
       }
     };
 
-    window.addEventListener("resize", handleResize);
+    compactHeader.addEventListener("change", syncHeader);
+    window.addEventListener("resize", syncHeader);
+    const observer = new ResizeObserver(syncHeader);
+    observer.observe(header);
+    Array.from(header.children).forEach((group) => observer.observe(group));
 
     // Kiểm tra ngay khi component mount
-    handleResize();
+    syncHeader();
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      compactHeader.removeEventListener("change", syncHeader);
+      window.removeEventListener("resize", syncHeader);
+      observer.disconnect();
+    };
   }, []);
 
   // Thêm đoạn này
@@ -110,21 +257,236 @@ export default function Header() {
     window.location.href = "/";
   };
 
+  const renderSearch = (mobile = false) => {
+    const id = mobile
+      ? "mobile-search-suggestions"
+      : "desktop-search-suggestions";
+    const visible = suggestionsOpen && (mobile ? compact : !compact);
+    const loading = keyword && (composing || searchResult.query !== keyword);
+    const history = historyKey
+      ? searchHistory.filter((item) =>
+          item
+            .toLocaleLowerCase("vi")
+            .includes(keyword.toLocaleLowerCase("vi")),
+        )
+      : [];
+
+    return (
+      <form
+        ref={mobile ? mobileSearchRef : desktopSearchRef}
+        className={mobile ? "rb-search-wrap" : "rb-search rb-search-wrap mx-5"}
+        onSubmit={handleProductSearch}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget))
+            setSuggestionsOpen(false);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setSuggestionsOpen(false);
+            event.stopPropagation();
+          }
+          if (event.key === "ArrowDown" && event.target.tagName === "INPUT") {
+            event.preventDefault();
+            event.currentTarget
+              .querySelector(
+                ".rb-search-dropdown a, .rb-search-dropdown button",
+              )
+              ?.focus();
+          }
+        }}
+      >
+        <div className="input-group">
+          <input
+            className="form-control"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setSuggestionsOpen(true);
+            }}
+            onFocus={() => setSuggestionsOpen(true)}
+            onCompositionStart={() => setComposing(true)}
+            onCompositionEnd={() => setComposing(false)}
+            placeholder="Tìm tên hoặc mã sản phẩm..."
+            aria-label="Tìm tên hoặc mã sản phẩm"
+            aria-expanded={visible}
+            aria-controls={visible ? id : undefined}
+            autoComplete="off"
+            maxLength={100}
+            autoFocus={mobile}
+          />
+          <button
+            className="input-group-text"
+            type="submit"
+            aria-label="Tìm kiếm"
+          >
+            <i className="bi bi-search" />
+          </button>
+        </div>
+        {visible && (
+          <div className="rb-search-dropdown" id={id}>
+            {history.length > 0 && (
+              <div className="rb-search-history">
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <span className="rb-search-heading">
+                    <i className="bi bi-clock-history me-2" />
+                    Tìm kiếm gần đây
+                  </span>
+                  <button
+                    type="button"
+                    className="rb-search-clear"
+                    onClick={() => updateHistory([])}
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
+                {history.map((item) => (
+                  <div
+                    className="d-flex align-items-center rb-search-history-row"
+                    key={item}
+                  >
+                    <button
+                      type="button"
+                      className="rb-search-history-term text-start flex-grow-1 text-truncate"
+                      onClick={() => searchProducts(item)}
+                    >
+                      <i className="bi bi-search me-2" />
+                      {item}
+                    </button>
+                    <button
+                      type="button"
+                      className="rb-search-remove"
+                      aria-label={`Xóa tìm kiếm ${item}`}
+                      onClick={() =>
+                        updateHistory(
+                          searchHistory.filter((value) => value !== item),
+                        )
+                      }
+                    >
+                      <i className="bi bi-x" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {keyword ? (
+              <>
+                <div className="rb-search-heading px-3 pt-3 pb-2">
+                  Sản phẩm gợi ý
+                </div>
+                <div
+                  className="rb-search-results"
+                  aria-live="polite"
+                  aria-busy={!!loading}
+                >
+                  {loading ? (
+                    <div className="rb-search-state">
+                      <Loading text="Đang tìm sản phẩm..." />
+                    </div>
+                  ) : searchResult.error ? (
+                    <div className="rb-search-state">{searchResult.error}</div>
+                  ) : searchResult.products.length === 0 ? (
+                    <div className="rb-search-state">
+                      <i className="bi bi-search d-block fs-4 mb-2" />
+                      Chưa tìm thấy sản phẩm phù hợp.
+                      <small className="d-block mt-1">
+                        Thử tên hoặc mã sản phẩm khác nhé.
+                      </small>
+                    </div>
+                  ) : (
+                    searchResult.products.map((product) => (
+                      <Link
+                        className="rb-search-product"
+                        key={product.product_id}
+                        to={`/san-pham/${product.product_id}`}
+                        onClick={() => {
+                          saveSearch(keyword);
+                          setSuggestionsOpen(false);
+                          setSearchOpen(false);
+                        }}
+                      >
+                        <img
+                          src={product.image_url || defaultImage}
+                          alt=""
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = defaultImage;
+                          }}
+                        />
+                        <div className="rb-search-product-info">
+                          <span className="rb-search-category">
+                            {product.category_name || "Chưa phân loại"}
+                          </span>
+                          <span className="rb-search-product-name">
+                            {product.product_name}
+                          </span>
+                          <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
+                            <span className="rb-search-price">
+                              {fmtPrice(
+                                product.discount_price ??
+                                  product.original_price,
+                              )}
+                            </span>
+                            {Number(product.original_price) >
+                              Number(
+                                product.discount_price ??
+                                  product.original_price,
+                              ) && (
+                              <del className="rb-search-original">
+                                {fmtPrice(product.original_price)}
+                              </del>
+                            )}
+                          </div>
+                        </div>
+                        <i className="bi bi-arrow-up-right rb-search-product-arrow" />
+                      </Link>
+                    ))
+                  )}
+                </div>
+                <button className="rb-search-all" type="submit">
+                  Xem tất cả
+                  {!loading && searchResult.total > 0
+                    ? ` ${searchResult.total} sản phẩm`
+                    : " kết quả"}
+                  <i className="bi bi-arrow-right ms-2" />
+                </button>
+              </>
+            ) : (
+              history.length === 0 && (
+                <div className="rb-search-state">
+                  <i className="bi bi-search d-block fs-4 mb-2" />
+                  Bạn đang tìm sản phẩm nào?
+                  <small className="d-block mt-1">
+                    Nhập tên hoặc mã để khám phá sản phẩm.
+                  </small>
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </form>
+    );
+  };
+
   return (
     <>
       {/* ══════════════════════════════════
           DESKTOP HEADER
       ══════════════════════════════════ */}
-      <div className="rb-desktop-header">
+      <div
+        ref={desktopHeaderRef}
+        className={`rb-desktop-header${compact ? " is-compact" : ""}`}
+        aria-hidden={compact}
+        inert={compact}
+      >
         {/* CỘT 1: LOGO */}
         <div className="rb-col-logo">
           <Link to="/">
-            <img src={logo} alt="logo" width={165} height={75} />
+            <img src={logo} alt="" width={150} height={75} />
           </Link>
         </div>
 
         {/* CỘT 2: TOPBAR + NAV */}
-        <div className="rb-col-center me-5">
+        <div className="rb-col-center">
           {/* HÀNG 1: HOTLINE + SEARCH */}
           <div className="rb-topbar">
             <div className="rb-topbar-left">
@@ -149,20 +511,7 @@ export default function Header() {
               </span>
             </div>
 
-            <form className="rb-search mx-5" onSubmit={handleProductSearch}>
-              <div className="input-group">
-                <input
-                  className="form-control"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Tìm tên hoặc mã sản phẩm..."
-                  aria-label="Tìm tên hoặc mã sản phẩm"
-                />
-                <button className="input-group-text" type="submit">
-                  <i className="bi bi-search" />
-                </button>
-              </div>
-            </form>
+            {renderSearch()}
           </div>
 
           {/* HÀNG 2: NAV LINKS */}
@@ -186,6 +535,9 @@ export default function Header() {
               VỀ SELENE<i className="bi bi-caret-down ms-2 icon-down"></i>
               <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
+            <NavLink to="/ho-tro" className={navClass}>
+              HỖ TRỢ<UnreadBadge />
+            </NavLink>
             <NavLink
               to="/khuyen-mai"
               className={({ isActive }) =>
@@ -201,13 +553,13 @@ export default function Header() {
 
         {/* CỘT 3: ICONS */}
         <div className="rb-topicons">
-          <div className="rb-icon-wrap">
+          <Link to="/yeu-thich" className="rb-icon-wrap text-decoration-none text-dark">
             <div className="rb-icon-rel">
-              <i className="bi bi-heart fs-5" />
+              <i className="bi bi-suit-heart fs-5" />
               <span className="rb-bdot">{wl}</span>
             </div>
             <strong className="rb-ilabel mt-1">Yêu Thích</strong>
-          </div>
+          </Link>
 
           <div className="dropdown-center">
             <div
@@ -307,16 +659,16 @@ export default function Header() {
         {/* GIỮA: Logo */}
         <div className="rb-mob-logo">
           <Link to="/">
-            <img src={logo} alt="logo" height={48} />
+            <img src={logo} alt="" height={48} />
           </Link>
         </div>
 
         {/* PHẢI: icons */}
         <div className="rb-mob-right">
-          <div className="rb-mob-icon">
+          <Link to="/yeu-thich" className="rb-mob-icon text-decoration-none" aria-label="Yêu thích">
             <i className="bi bi-heart" />
             <span className="rb-mob-bdot">{wl}</span>
-          </div>
+          </Link>
 
           <div className="dropdown">
             <div
@@ -384,21 +736,7 @@ export default function Header() {
 
       {/* Mobile search bar dropdown */}
       {searchOpen && (
-        <div className="rb-mob-search-bar">
-          <form className="input-group" onSubmit={handleProductSearch}>
-            <input
-              className="form-control"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Tìm tên hoặc mã sản phẩm..."
-              aria-label="Tìm tên hoặc mã sản phẩm"
-              autoFocus
-            />
-            <button className="input-group-text" type="submit">
-              <i className="bi bi-search" />
-            </button>
-          </form>
-        </div>
+        <div className="rb-mob-search-bar">{renderSearch(true)}</div>
       )}
 
       {/* Overlay */}
@@ -410,7 +748,7 @@ export default function Header() {
       {/* Drawer menu */}
       <div className={`rb-mob-drawer${menuOpen ? " open" : ""}`}>
         <div className="rb-mob-drawer-head">
-          <img src={logo} alt="logo" />
+          <img src={logo} alt="" />
           <button className="rb-mob-close" onClick={() => setMenuOpen(false)}>
             <i className="bi bi-x-lg" />
           </button>
@@ -432,6 +770,9 @@ export default function Header() {
           </li>
           <li>
             <Link to="/ve-chung-toi">VỀ SELENE</Link>
+          </li>
+          <li>
+            <Link to="/ho-tro">HỖ TRỢ</Link>
           </li>
           <li>
             <Link to="/" className="promo">

@@ -6,6 +6,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import axios from "axios";
 import cookieParser from "cookie-parser";
+import { createAuthProxy } from "./auth-proxy.js";
 
 dotenv.config();
 
@@ -27,6 +28,28 @@ app.use(
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL;
+const CHAT_SERVICE_URL = process.env.CHAT_SERVICE_URL || "http://localhost:8004";
+
+// Giữ nguyên đường dẫn Socket.IO qua Gateway, kể cả WebSocket upgrade đầu tiên.
+const chatSocketProxy = createProxyMiddleware({
+  target: CHAT_SERVICE_URL,
+  changeOrigin: true,
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/chat/socket.io")) return chatSocketProxy(req, res, next);
+  next();
+});
+app.use("/api/chat", createProxyMiddleware({
+  target: CHAT_SERVICE_URL,
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error("Proxy Error (Chat):", err.message);
+      res.writeHead(502, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: 502, message: "Chat CSKH tạm thời không khả dụng." }));
+    },
+  },
+}));
 
 if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
   console.error(
@@ -38,24 +61,9 @@ if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
 // Routes - API Gateway
 app.use(
   "/api/auth",
-  createProxyMiddleware({
+  createAuthProxy({
     target: AUTH_SERVICE_URL,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/auth": "",
-    },
-    onProxyReq: (proxyReq, req, res) => {
-      // Nếu client gửi cookie lên Gateway, đảm bảo header Cookie được giữ nguyên sang Auth Service
-      if (req.headers.cookie) {
-        proxyReq.setHeader("Cookie", req.headers.cookie);
-      }
-    },
-    onError: (err, req, res) => {
-      console.error("Proxy Error (Auth):", err);
-      res
-        .status(502)
-        .json({ success: false, message: "Auth Service Unavailable" });
-    },
+    frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
   }),
 );
 
@@ -69,6 +77,27 @@ app.use(
       res
         .status(502)
         .json({ success: false, message: "Product Service Unavailable" });
+    },
+  }),
+);
+
+// Chuyển chatbot đến product-service, có thể đổi target sang agent-service sau này.
+app.use(
+  "/api/chatbot",
+  createProxyMiddleware({
+    target: PRODUCT_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: (path) => `/chatbot${path === "/" ? "" : path}`,
+    proxyTimeout: 30000,
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Chatbot):", err.message);
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          status: 502,
+          message: "Trợ lý ảo Selene đang tạm thời không hoạt động.",
+        }));
+      },
     },
   }),
 );
@@ -125,9 +154,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Gateway Service running on port ${PORT}`);
   console.log(`Routing /api/auth to ${AUTH_SERVICE_URL}`);
   console.log(`Routing /api/products to ${PRODUCT_SERVICE_URL}`);
   console.log(`Routing /api/orders to ${ORDER_SERVICE_URL}`);
+});
+server.on("upgrade", (req, socket, head) => {
+  if (req.url.startsWith("/api/chat/socket.io")) chatSocketProxy.upgrade(req, socket, head);
+  else socket.destroy();
 });

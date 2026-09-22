@@ -4,6 +4,7 @@ import morgan from "morgan";
 import cors from "cors";
 import { config } from "./configs/index.js";
 import productRoutes from "./routes/product.routes.js";
+import chatbotRoutes from "./routes/chatbot.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { connectRabbitMQ } from "./configs/rabbitmq.js";
 import { startPromotionScheduler } from "./services/promotion.service.js";
@@ -21,6 +22,8 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 // Routes
+// Tách route chatbot khỏi các API quản lý sản phẩm hiện tại.
+app.use("/chatbot", chatbotRoutes);
 app.use("/", productRoutes);
 
 // Health Check

@@ -155,7 +155,8 @@ export const generateProductsExcelBuffer = async () => {
     // Lấy dữ liệu từ bảng products cùng categories, brands và product_variants
     const { data: products, error } = await supabase
       .from("products")
-      .select(`
+      .select(
+        `
         product_id,
         product_name,
         original_price,
@@ -175,13 +176,17 @@ export const generateProductsExcelBuffer = async () => {
           stock_quantity,
           status
         )
-      `)
+      `,
+      )
       .order("created_at", { ascending: false })
       .order("product_id", { ascending: true })
       .range(from, to);
 
     if (error) {
-      console.error("Lỗi truy vấn Supabase trong export service:", error.message);
+      console.error(
+        "Lỗi truy vấn Supabase trong export service:",
+        error.message,
+      );
       throw new Error(`Lỗi cơ sở dữ liệu khi xuất Excel: ${error.message}`);
     }
 
@@ -236,8 +241,8 @@ export const generateProductsExcelBuffer = async () => {
             product_id: isFirstRow ? product.product_id : "",
             variant_id: v.variant_id || "",
             product_name: isFirstRow ? product.product_name : "",
-            category_name: isFirstRow ? (product.categories?.name || "") : "",
-            brand_name: isFirstRow ? (product.brands?.name || "") : "",
+            category_name: isFirstRow ? product.categories?.name || "" : "",
+            brand_name: isFirstRow ? product.brands?.name || "" : "",
             original_price: isFirstRow ? product.original_price : null,
             price: isFirstRow ? product.price : null,
             discount_price: isFirstRow ? product.discount_price : null,
@@ -354,7 +359,11 @@ export const generateProductsExcelBuffer = async () => {
     let maxLen = 0;
     column.eachCell({ includeEmpty: true }, (cell) => {
       // Chỉ tính toán chiều rộng dựa trên các ô thuộc về bảng dữ liệu (dòng 7 trở đi)
-      if (cell.row >= 7 && cell.value && (!cell.master || cell === cell.master)) {
+      if (
+        cell.row >= 7 &&
+        cell.value &&
+        (!cell.master || cell === cell.master)
+      ) {
         let valueStr = "";
         if (cell.numFmt && typeof cell.value === "number") {
           valueStr = cell.value.toLocaleString("vi-VN");

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import confirmLock from "../../../utils/confirmLock";
 import {
   getAdminProductCategories,
   getAdminProducts,
@@ -9,6 +10,8 @@ import {
   exportProductsToExcel,
 } from "../../../services/product.service";
 import Pagination from "../../../components/common/Pagination";
+import Loading from "../../../components/common/Loading";
+import ProductImage from "../../../components/common/ProductImage";
 import { Helmet } from "react-helmet-async";
 
 const fmtVND = (n) => (n || 0).toLocaleString("vi-VN") + "đ";
@@ -17,30 +20,35 @@ const PRODUCTS_PER_PAGE = 12;
 const TABS = [
   { key: "", label: "Tất cả" },
   { key: "active", label: "Hoạt động" },
-  { key: "archived", label: "Đã khóa" },
+  { key: "inactive", label: "Đã khóa" },
 ];
 
-const PRICE_RANGES = [
-  { key: "", label: "Tất cả mức giá" },
-  { key: "under-200k", label: "Dưới 200.000đ" },
-  { key: "200k-500k", label: "200.000đ – 500.000đ" },
-  { key: "500k-1m", label: "500.000đ – 1.000.000đ" },
-  { key: "over-1m", label: "Trên 1.000.000đ" },
+const SORT_OPTIONS = [
+  { key: "default", label: "Mặc định" },
+  { key: "az", label: "Tên: A → Z" },
+  { key: "za", label: "Tên: Z → A" },
+  { key: "price_asc", label: "Giá: Thấp → Cao" },
+  { key: "price_desc", label: "Giá: Cao → Thấp" },
+  { key: "stock_asc", label: "Tồn kho: Ít → Nhiều" },
+  { key: "stock_desc", label: "Tồn kho: Nhiều → Ít" },
 ];
 
 export default function AdminProducts() {
+  const saveScrollPosition = () => {
+    sessionStorage.setItem("admin-products-scroll", String(window.scrollY));
+  };
   const [searchParams, setSearchParams] = useSearchParams();
 
   const q = searchParams.get("q") || "";
   const category = searchParams.get("category") || "";
-  const selectedPrice = searchParams.get("price") || "";
+  const selectedSort = searchParams.get("sort") || "default";
   const selectedStatus = searchParams.get("status") || "";
   const pageParam = Number(searchParams.get("page"));
   const page = Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1;
 
-  const price = PRICE_RANGES.some((range) => range.key === selectedPrice)
-    ? selectedPrice
-    : "";
+  const sort = SORT_OPTIONS.some((item) => item.key === selectedSort)
+    ? selectedSort
+    : "default";
   const status = TABS.some((tab) => tab.key === selectedStatus)
     ? selectedStatus
     : "";
@@ -48,14 +56,14 @@ export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [priceOpen, setPriceOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [updatingProductId, setUpdatingProductId] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const [searchValue, setSearchValue] = useState(q);
   const categoryRef = useRef(null);
-  const priceRef = useRef(null);
+  const sortRef = useRef(null);
   const isComposing = useRef(false);
 
   const [pagination, setPagination] = useState({
@@ -68,7 +76,7 @@ export default function AdminProducts() {
   const updateProductQuery = (changes, options = {}) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      const shouldResetPage = ["q", "category", "price", "status"].some(
+      const shouldResetPage = ["q", "category", "sort", "status"].some(
         (key) => key in changes,
       );
 
@@ -104,7 +112,7 @@ export default function AdminProducts() {
         const res = await getAdminProducts({
           q,
           category,
-          price,
+          sort,
           status,
           page,
           limit: PRODUCTS_PER_PAGE,
@@ -138,7 +146,19 @@ export default function AdminProducts() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [q, category, price, status, page]);
+  }, [q, category, sort, status, page]);
+
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem("admin-products-scroll");
+
+    if (savedScroll !== null) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, Number(savedScroll));
+      });
+
+      sessionStorage.removeItem("admin-products-scroll");
+    }
+  }, []);
 
   useEffect(() => {
     setSearchValue(q);
@@ -169,8 +189,8 @@ export default function AdminProducts() {
         setCategoryOpen(false);
       }
 
-      if (priceRef.current && !priceRef.current.contains(e.target)) {
-        setPriceOpen(false);
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setSortOpen(false);
       }
     };
 
@@ -183,11 +203,22 @@ export default function AdminProducts() {
 
   /* ── lock / unlock ── */
   const handleLock = async (product) => {
-    const isLocked = product.status === "archived";
-    const nextStatus = isLocked ? "active" : "archived";
+    if (updatingProductId) return;
+    // Bao quát cả hai trường hợp "inactive" hoặc "archived" là đã bị khóa
+    const isLocked =
+      product.status === "inactive" || product.status === "archived";
+    const nextStatus = isLocked ? "active" : "inactive";
 
     try {
       setUpdatingProductId(product.product_id);
+      if (
+        !isLocked &&
+        !(await confirmLock(
+          "Khóa sản phẩm",
+          `Khóa sản phẩm "${product.product_name}"?`,
+        ))
+      )
+        return;
 
       await updateAdminProductStatus(product.product_id, nextStatus);
 
@@ -195,7 +226,7 @@ export default function AdminProducts() {
       const res = await getAdminProducts({
         q,
         category,
-        price,
+        sort,
         status,
         page,
         limit: PRODUCTS_PER_PAGE,
@@ -256,7 +287,8 @@ export default function AdminProducts() {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.message || "Lỗi khi tải file hoặc xuất dữ liệu Excel!"
+        err.response?.data?.message ||
+          "Lỗi khi tải file hoặc xuất dữ liệu Excel!",
       );
     } finally {
       setExporting(false);
@@ -269,7 +301,7 @@ export default function AdminProducts() {
     updateProductQuery({
       q: "",
       category: "",
-      price: "",
+      sort: "",
       status: "",
       page: 1,
     });
@@ -278,115 +310,9 @@ export default function AdminProducts() {
   const selectedCategory = categories.find(
     (item) => item.category_id === category,
   );
-  const selectedPriceRange =
-    PRICE_RANGES.find((range) => range.key === price) || PRICE_RANGES[0];
 
   return (
     <>
-      <style>{`
-
-
-        /* ── TABLE ── */
-        // .adm-table-wrap { border-top: 1px solid #F0EFF5; }
-        // .adm-table th { font-size: 12.5px; font-weight: 700; color: #9CA0AC; border-bottom: 1px solid #F0EFF5 !important; padding: 13px 14px; white-space: nowrap; }
-        // .adm-table td { font-size: 13.5px; color: #17151F; border-color: #F5F4F9 !important; padding: 12px 14px; vertical-align: middle; }
-        // .adm-table tbody tr { transition: background 0.12s; }
-        // .adm-table tbody tr:hover { background: #FAFAFC; }
-
-/* ── TABLE ── */
-.adm-table-wrap {
-  border: 1px solid #F0EFF5;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.adm-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid #F0EFF5 !important;
-  margin: 0;
-}
-
-/* Header */
-.adm-table th {
-  font-size: 15px;
-  font-weight: 700;
-  color: #9CA0AC;
-  background: #FAFAFC;
-  padding: 13px 14px;
-  white-space: nowrap;
-}
-
-/* Body */
-.adm-table td {
-  font-size: 13.5px;
-  color: #212529;
-  padding: 12px 14px;
-  vertical-align: middle;
-}
-
-/* Striped rows */
-.adm-table tbody tr:nth-child(odd) {
-  background: #FFFFFF;
-}
-
-.adm-table tbody tr:nth-child(even) {
-  background: #FAFAFC;
-}
-
-/* Hover */
-.adm-table tbody tr {
-  transition: background 0.12s;
-}
-
-.adm-table tbody tr:hover {
-  background: #F3F4F6;
-}
-
-
-        .adm-stt { font-size: 13px; font-weight: 700; color: #9CA0AC; }
-
-        .adm-cell { display: flex; align-items: center; gap: 12px; }
-        .adm-thumb { width: 42px; height: 42px; border-radius: 10px; object-fit: cover; background: #F0EFF5; flex-shrink: 0; }
-        .adm-pname { font-weight: 800; color: #17151F; }
-        .adm-psub { font-size: 12px; color: #9CA0AC; font-weight: 600; }
-        .adm-sub-line { font-size: 12px; color: #9CA0AC; font-weight: 600; }
-
-
-
-        /* ── ACTION BUTTONS ── */
-        .adm-action-btn {
-          width: 32px; height: 32px; border-radius: 8px; border: none; background: none;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s; color: #9CA0AC;
-        }
-        .adm-action-btn:hover { background: #F0EFF5; color: #17151F; }
-        .adm-action-btn.lock:hover { background: #FFF0F0; color: #DC2626; }
-        .adm-action-btn.unlock:hover { background: #F0FDF4; color: #16A34A; }
-
-.adm-product-link {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.adm-product-link:hover .adm-pname {
-  color: #871b1b;
-}
-
-.adm-cell > .adm-product-link:hover .adm-thumb {
-  opacity: 0.85;
-}
-
-.adm-original-price {
-  font-size: 12px;
-  color: #9CA0AC;
-  font-weight: 600;
-  text-decoration: line-through;
-  margin-top: 2px;
-}
-      `}</style>
-
       <Helmet>
         <title>Quản lý sản phẩm | Selene</title>
       </Helmet>
@@ -405,12 +331,16 @@ export default function AdminProducts() {
           >
             {exporting ? (
               <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
                 Đang xuất...
               </>
             ) : (
               <>
-                <i className="bi bi-download me-1" /> Xuất dữ liệu
+                <i className="bi bi-download me-2" /> Xuất dữ liệu
               </>
             )}
           </button>
@@ -462,7 +392,10 @@ export default function AdminProducts() {
             className="form-control text-start d-flex justify-content-between align-items-center"
             onClick={() => setCategoryOpen((prev) => !prev)}
           >
-            <span>{selectedCategory?.name || "Tất cả danh mục"}</span>
+            <span>
+              <i className="bi bi-funnel me-2" />
+              {selectedCategory?.name || "Tất cả danh mục"}
+            </span>
 
             <i
               className={`bi ${categoryOpen ? "bi-caret-up" : "bi-caret-down"}`}
@@ -502,37 +435,38 @@ export default function AdminProducts() {
           )}
         </div>
 
-        {/* Filter: Giá */}
+        {/* Filter: Sắp xếp */}
         <div
           className="dropdown"
-          ref={priceRef}
+          ref={sortRef}
           style={{ width: "17.5%", minWidth: 190 }}
         >
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"
-            onClick={() => setPriceOpen((prev) => !prev)}
+            onClick={() => setSortOpen((prev) => !prev)}
           >
-            <span>{selectedPriceRange.label}</span>
-
-            <i
-              className={`bi ${priceOpen ? "bi-caret-up" : "bi-caret-down"}`}
-            />
+            <span>
+              <i className="bi bi-sort-down me-2" />
+              {SORT_OPTIONS.find((s) => s.key === sort)?.label ||
+                "Sắp xếp mặc định"}
+            </span>
+            <i className={`bi ${sortOpen ? "bi-caret-up" : "bi-caret-down"}`} />
           </button>
 
-          {priceOpen && (
+          {sortOpen && (
             <ul className="dropdown-menu show w-100 mt-1 shadow-sm">
-              {PRICE_RANGES.map((r) => (
-                <li key={r.key}>
+              {SORT_OPTIONS.map((s) => (
+                <li key={s.key}>
                   <button
                     type="button"
                     className="dropdown-item fw-normal"
                     onClick={() => {
-                      updateProductQuery({ price: r.key });
-                      setPriceOpen(false);
+                      updateProductQuery({ sort: s.key });
+                      setSortOpen(false);
                     }}
                   >
-                    {r.label}
+                    {s.label}
                   </button>
                 </li>
               ))}
@@ -567,31 +501,27 @@ export default function AdminProducts() {
         <table className="table adm-table mb-0">
           <thead>
             <tr>
-              <th style={{ width: 48 }}>#</th>
-              <th>Sản phẩm</th>
-              <th>Danh mục</th>
-              <th>Giá bán</th>
-              <th>Tồn kho</th>
-              <th>Trạng thái</th>
-              <th></th>
+              <th className="text-center" style={{ width: "5%" }}></th>
+              <th style={{ width: "38%" }}>Sản phẩm</th>
+              <th className="text-center">Danh mục</th>
+              <th className="text-end">Giá bán</th>
+              <th className="text-center">Tồn kho</th>
+              <th className="text-center">Trạng thái</th>
+              <th className="text-center"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="text-center text-muted py-5"
-                  style={{ fontSize: 14 }}
-                >
-                  Đang tải danh sách sản phẩm...
+                <td colSpan={7} className="py-5">
+                  <Loading text="Đang tải sản phẩm..." />
                 </td>
               </tr>
             ) : error ? (
               <tr>
                 <td
                   colSpan={7}
-                  className="text-center text-danger py-5"
+                  className="text-center text-danger fw-semibold py-5"
                   style={{ fontSize: 14 }}
                 >
                   {error}
@@ -599,26 +529,23 @@ export default function AdminProducts() {
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="text-center text-muted py-5"
-                  style={{ fontSize: 14 }}
-                >
-                  <i
-                    className="bi bi-inbox"
-                    style={{
-                      fontSize: 32,
-                      display: "block",
-                      marginBottom: 8,
-                      opacity: 0.3,
-                    }}
-                  />
-                  Không tìm thấy sản phẩm
+                <td colSpan={7} className="page-empty py-5">
+                  <i className="bi bi-inbox page-empty-icon" />
+                  <p
+                    className="mt-3 mb-1 fw-semibold text-secondary"
+                    style={{ fontSize: 16 }}
+                  >
+                    Không tìm thấy sản phẩm
+                  </p>
+                  <p className="text-muted mb-3" style={{ fontSize: 14 }}>
+                    Thử lại với từ khóa hoặc bộ lọc khác!
+                  </p>
                 </td>
               </tr>
             ) : (
               products.map((p, idx) => {
-                const isLocked = p.status === "archived";
+                const isLocked =
+                  p.status === "inactive" || p.status === "archived";
                 const isUpdating = updatingProductId === p.product_id;
                 const effectiveStatus = p.status;
 
@@ -627,7 +554,7 @@ export default function AdminProducts() {
                 return (
                   <tr key={p.product_id}>
                     {/* STT */}
-                    <td>
+                    <td className="text-center">
                       <span className="adm-stt">{stt}</span>
                     </td>
 
@@ -638,11 +565,11 @@ export default function AdminProducts() {
                           to={`/san-pham/${p.product_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="adm-product-link"
+                          className="adm-link"
                         >
-                          <img
+                          <ProductImage
                             src={p.image_url}
-                            alt={p.product_name}
+                            alt=""
                             className="adm-thumb"
                           />
                         </Link>
@@ -652,34 +579,36 @@ export default function AdminProducts() {
                             to={`/san-pham/${p.product_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="adm-product-link"
+                            className="adm-link"
                           >
-                            <div className="adm-pname">{p.product_name}</div>
+                            <div className="adm-name">{p.product_name}</div>
                           </Link>
 
-                          <div className="adm-psub">{p.product_id}</div>
+                          <div className="adm-sub">{p.product_id}</div>
                         </div>
                       </div>
                     </td>
 
-                    {/* ID */}
-                    <td>
+                    {/* Danh mục */}
+                    <td className="text-center">
                       <div>{p.category_name || "—"}</div>
                     </td>
 
                     {/* Giá bán */}
-                    <td>
-                      <div className="fw-bold">{fmtVND(p.price)}</div>
+                    <td className="text-end">
+                      <div className="adm-price-cell">
+                        <div className="fw-semibold">{fmtVND(p.price)}</div>
 
-                      {p.original_price ? (
-                        <div className="adm-original-price">
-                          {fmtVND(p.original_price)}
-                        </div>
-                      ) : null}
+                        {p.original_price ? (
+                          <div className="adm-original-price">
+                            {fmtVND(p.original_price)}
+                          </div>
+                        ) : null}
+                      </div>
                     </td>
 
                     {/* Stock */}
-                    <td>
+                    <td className="text-center">
                       <span
                         className={`adm-stock rounded-pill ${
                           (p.stock_quantity || 0) >= 200
@@ -694,7 +623,7 @@ export default function AdminProducts() {
                     </td>
 
                     {/* Status */}
-                    <td>
+                    <td className="text-center">
                       <span
                         className={`adm-status rounded-pill ${
                           effectiveStatus === "active"
@@ -707,13 +636,16 @@ export default function AdminProducts() {
                     </td>
 
                     {/* Thao tác */}
-                    <td>
-                      <div className="d-flex gap-1">
+                    <td className="text-center">
+                      <div className="d-flex gap-1 justify-content-center">
                         {/* Sửa */}
                         <Link
-                          to={`/admin/san-pham/${p.product_id}/sua`}
+                          to={`/admin/san-pham/${p.product_id}/sua?returnUrl=${encodeURIComponent(
+                            window.location.pathname + window.location.search,
+                          )}`}
                           className="adm-action-btn"
                           title="Chỉnh sửa"
+                          onClick={saveScrollPosition}
                         >
                           <i className="bi bi-pencil-square" />
                         </Link>
