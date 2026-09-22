@@ -3,6 +3,7 @@ import express from "express";
 import * as productController from "../controllers/product.controller.js";
 import * as categoryController from "../controllers/category.controller.js";
 import * as brandController from "../controllers/brand.controller.js";
+import * as promotionController from "../controllers/promotion.controller.js";
 import {
   verifyToken,
   verifyPermission,
@@ -140,6 +141,50 @@ router.get(
   verifyToken,
   verifyPermission("product:view"),
   productController.handleGetProductDetailForAdmin,
+);
+
+// promotion
+router.post(
+  "/manage/promotion/add",
+  verifyToken,
+  verifyPermission(["promotion:create", "product:create"]),
+  promotionController.handleCreatePromotion,
+);
+router.get(
+  "/manage/promotions",
+  verifyToken,
+  verifyPermission(["promotion:view", "product:view"]),
+  promotionController.handleGetAllPromotions,
+);
+router.get(
+  "/manage/promotion-detail/:promotionId",
+  verifyToken,
+  verifyPermission(["promotion:view", "product:view"]),
+  promotionController.handleGetPromotionDetail,
+);
+router.put(
+  "/manage/promotion/change-status/:promotionId",
+  verifyToken,
+  verifyPermission(["promotion:update", "product:update"]),
+  promotionController.handleUpdatePromotionStatus,
+);
+router.put(
+  "/manage/promotion/update/:promotionId",
+  verifyToken,
+  verifyPermission(["promotion:update", "product:update"]),
+  promotionController.handleUpdatePromotion,
+);
+router.post(
+  "/manage/promotion/add-items/:promotionId",
+  verifyToken,
+  verifyPermission(["promotion:update", "product:update", "promotion:create", "product:create"]),
+  promotionController.handleAddProductsToPromotion,
+);
+router.put(
+  "/manage/promotion-item/change-status/:promotionItemId",
+  verifyToken,
+  verifyPermission(["promotion:update", "product:update"]),
+  promotionController.handleUpdatePromotionItemStatus,
 );
 
 export default router;

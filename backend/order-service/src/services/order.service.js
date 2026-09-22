@@ -289,10 +289,16 @@ export const createOrder = async (accountId, orderData) => {
         discount_amount: total_discount_price,
       });
 
-      // Cập nhật số lượng đã dùng của voucher
-      await VoucherModel.update(appliedVoucher.voucher_id, {
-        used_quantity: appliedVoucher.used_quantity + 1,
-      });
+      // Cập nhật số lượng đã dùng của voucher và kiểm tra out_of_stock
+      const newUsedQty = appliedVoucher.used_quantity + 1;
+      const updateData = { used_quantity: newUsedQty };
+      if (
+        appliedVoucher.total_quantity > 0 &&
+        newUsedQty >= appliedVoucher.total_quantity
+      ) {
+        updateData.status = "out_of_stock";
+      }
+      await VoucherModel.update(appliedVoucher.voucher_id, updateData);
     }
 
     // 9. Chỉ xóa các sản phẩm vừa đặt; các sản phẩm không chọn vẫn ở lại giỏ.

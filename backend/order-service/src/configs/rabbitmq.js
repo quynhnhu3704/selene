@@ -100,9 +100,10 @@ export const sendUpdateProductStock = async (orderItems) => {
   const queueName = "update_stock_queue";
   await channel.assertQueue(queueName, { durable: false });
 
-  // Lọc ra các thông tin cần thiết: variant_id và quantity
+  // Lọc ra các thông tin cần thiết: variant_id, product_id và quantity
   const payload = orderItems.map((item) => ({
     variant_id: item.variant_id,
+    product_id: item.product_id,
     quantity: item.quantity,
   }));
 

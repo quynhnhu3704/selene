@@ -66,6 +66,17 @@ const getPositiveInteger = (value, defaultValue) => {
   return parsedValue > 0 ? parsedValue : defaultValue;
 };
 
+const resolveVariantStatus = (stockQuantity, currentStatus) => {
+  const stock = Number(stockQuantity) || 0;
+  if (stock === 0) {
+    return "out_of_stock";
+  }
+  if (!currentStatus || currentStatus === "out_of_stock") {
+    return "active";
+  }
+  return currentStatus;
+};
+
 const getQueryValue = (value) => {
   return typeof value === "string" ? value.trim() : "";
 };
@@ -134,7 +145,7 @@ const sortCategoriesByName = (categories, names) => {
 
     return (
       (firstPosition ?? Number.MAX_SAFE_INTEGER) -
-        (secondPosition ?? Number.MAX_SAFE_INTEGER) ||
+      (secondPosition ?? Number.MAX_SAFE_INTEGER) ||
       firstCategory.name.localeCompare(secondCategory.name, "vi")
     );
   });
@@ -166,11 +177,11 @@ const buildCustomerCategoryTree = (categories) => {
   return [
     ...(shirtCategory
       ? [
-          {
-            ...shirtCategory,
-            children: shirtChildren,
-          },
-        ]
+        {
+          ...shirtCategory,
+          children: shirtChildren,
+        },
+      ]
       : []),
     ...rootCategories.map((category) => ({ ...category, children: [] })),
   ];
@@ -585,13 +596,16 @@ export const createProductWithVariants = async (inputData, files) => {
           "",
         );
 
+      const stock = Number(v.stock_quantity) || 0;
+      const variantStatus = resolveVariantStatus(stock, v.status);
+
       return {
         variant_id,
         product_id: productId,
         size: v.size,
         color: v.color,
-        stock_quantity: v.stock_quantity || 0,
-        status: v.status || "active",
+        stock_quantity: stock,
+        status: variantStatus,
         created_at: currentTime,
         updated_at: currentTime,
       };
@@ -711,13 +725,16 @@ export const updateProductWithVariants = async (
           "",
         );
 
+      const stock = Number(v.stock_quantity) || 0;
+      const variantStatus = resolveVariantStatus(stock, v.status);
+
       return {
         variant_id,
         product_id: productId,
         size: v.size,
         color: v.color,
-        stock_quantity: Number(v.stock_quantity) || 0,
-        status: v.status || "active",
+        stock_quantity: stock,
+        status: variantStatus,
         updated_at: currentTime,
       };
     });

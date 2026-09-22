@@ -6,6 +6,7 @@ import { config } from "./configs/index.js";
 import orderRoutes from "./routes/order.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { connectRabbitMQ } from "./configs/rabbitmq.js";
+import { startVoucherScheduler } from "./services/voucher.service.js";
 
 const app = express();
 
@@ -33,4 +34,5 @@ app.use(errorHandler);
 app.listen(config.port, async () => {
   console.log(`Order Service running on port ${config.port}`);
   await connectRabbitMQ();
+  startVoucherScheduler();
 });
