@@ -221,10 +221,13 @@ export const VoucherService = {
 
     const usageRecord = await VoucherModel.recordUsage(usageData);
 
-    // Update used_quantity
-    await VoucherModel.update(voucherId, {
-      used_quantity: voucher.used_quantity + 1,
-    });
+    // Update used_quantity and check out_of_stock
+    const newUsedQty = voucher.used_quantity + 1;
+    const updateData = { used_quantity: newUsedQty };
+    if (voucher.total_quantity > 0 && newUsedQty >= voucher.total_quantity) {
+      updateData.status = "out_of_stock";
+    }
+    await VoucherModel.update(voucherId, updateData);
 
     return { usageRecord, discountAmount };
   },
@@ -238,4 +241,59 @@ export const VoucherService = {
   getVoucherUsagesByAccountId: async (accountId) => {
     return await VoucherModel.findUsagesByAccountId(accountId);
   },
+};
+
+// Tự động kiểm tra và chuyển các mã voucher đã hết hạn (end_date <= now) sang 'expired'
+export const checkAndUpdateExpiredVouchers = async () => {
+  try {
+    const now = new Date();
+
+    // 1. Lấy tất cả voucher đang ở trạng thái active
+    const activeVouchers = await VoucherModel.findAllActiveForCustomer();
+
+    if (!activeVouchers || activeVouchers.length === 0) return;
+
+    // 2. Lọc các voucher có end_date <= thời gian hiện tại bằng JS Date
+    const expiredVouchers = activeVouchers.filter((voucher) => {
+      if (!voucher.end_date) return false;
+      const endDateObj = new Date(voucher.end_date);
+      return !isNaN(endDateObj.getTime()) && endDateObj <= now;
+    });
+
+    if (expiredVouchers.length === 0) return;
+
+    console.log(
+      `[Voucher Scheduler] Phát hiện ${expiredVouchers.length} mã voucher đã hết hạn.`,
+    );
+
+    for (const voucher of expiredVouchers) {
+      await VoucherModel.update(voucher.voucher_id, {
+        status: "expired",
+      });
+
+      console.log(
+        `[+] Voucher '${voucher.code}' (${voucher.voucher_id}) đã hết hạn (kết thúc: ${voucher.end_date}). Đã tự động cập nhật status thành 'expired'.`,
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[Voucher Scheduler] Lỗi tại checkAndUpdateExpiredVouchers:",
+      err.message || err,
+    );
+  }
+};
+
+// Khởi chạy trình lên lịch (Scheduler) kiểm tra voucher hết hạn định kỳ
+export const startVoucherScheduler = (intervalMs = 60000) => {
+  console.log(
+    `[Voucher Scheduler] Đã khởi chạy Voucher Scheduler (quét định kỳ mỗi ${intervalMs / 1000}s)...`,
+  );
+
+  // Thực hiện quét ngay khi khởi động
+  checkAndUpdateExpiredVouchers();
+
+  // Lập lịch quét định kỳ
+  setInterval(() => {
+    checkAndUpdateExpiredVouchers();
+  }, intervalMs);
 };
