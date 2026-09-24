@@ -6,7 +6,7 @@ for (const name of ["JWT_ACCESS_SECRET", "SUPABASE_URL", "SUPABASE_KEY"]) {
 }
 
 export const config = {
-  port: process.env.PORT || 8004,
+  port: process.env.PORT || 8005,
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET,
   supabaseUrl: process.env.SUPABASE_URL,
