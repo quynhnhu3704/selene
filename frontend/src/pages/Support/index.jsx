@@ -1,64 +1,56 @@
-import Loading from "../../components/common/Loading";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { createConversation, getMyConversations } from "../../services/chat.service";
-import { isLoggedIn } from "../../utils/auth";
+import { useState } from "react";
 import ChatPanel from "../../components/SupportChat/ChatPanel";
-import useChatSession from "../../components/SupportChat/useChatSession";
 import { STATUS_LABELS } from "../../components/SupportChat/constants";
 import "../../components/SupportChat/support.css";
 
+const MOCK_CUSTOMER = {
+  accountId: 101,
+  full_name: "Khách hàng",
+  role: "customer",
+};
+
+const INITIAL_CONVERSATIONS = [
+  {
+    conversation_id: 1,
+    customer_id: 101,
+    customer_name: "Khách hàng",
+    customer_unread: 0,
+    staff_unread: 0,
+    status: "open",
+    last_message: "Xin chào, tôi cần hỗ trợ tư vấn sản phẩm.",
+    created_at: new Date().toISOString(),
+  }
+];
+
 function CustomerSupport() {
-  const { session, connected, error: sessionError, retry } = useChatSession();
-  const [conversations, setConversations] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  useEffect(() => {
-    if (!session || session.user.role !== "customer") return;
-    let active = true;
-    let sequence = 0;
-    const refresh = async () => {
-      const request = ++sequence;
-      try {
-        const res = await getMyConversations();
-        if (!active || request !== sequence) return;
-        setConversations(res.data.data);
-        setSelectedId((current) => current || res.data.data[0]?.conversation_id || null);
-        setError("");
-      } catch (err) { if (active) setError(err.response?.data?.message || "Không thể tải hội thoại."); }
-      finally { if (active) setLoading(false); }
+  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
+  const [selectedId, setSelectedId] = useState(1);
+
+  const start = () => {
+    const newConv = {
+      conversation_id: Date.now(),
+      customer_id: 101,
+      customer_name: "Khách hàng",
+      customer_unread: 0,
+      staff_unread: 0,
+      status: "open",
+      last_message: "Yêu cầu hỗ trợ mới",
+      created_at: new Date().toISOString(),
     };
-    refresh();
-    session.socket.on("conversation:update", refresh);
-    session.socket.on("connect", refresh);
-    const timer = setInterval(refresh, 15000);
-    return () => { active = false; clearInterval(timer); session.socket.off("conversation:update", refresh); session.socket.off("connect", refresh); };
-  }, [session]);
-  const start = async () => {
-    setCreating(true);
-    setError("");
-    try {
-      const res = await createConversation();
-      setConversations((current) => [res.data.data, ...current.filter((item) => item.conversation_id !== res.data.data.conversation_id)]);
-      setSelectedId(res.data.data.conversation_id);
-    } catch (err) { setError(err.response?.data?.message || "Không thể tạo hội thoại."); }
-    finally { setCreating(false); }
+    setConversations((prev) => [newConv, ...prev]);
+    setSelectedId(newConv.conversation_id);
   };
-  if (sessionError) return <div className="alert alert-warning">{sessionError} <button className="btn btn-link" onClick={retry}>Thử lại</button></div>;
-  if (!session) return <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}><Loading text="Đang kết nối..." /></div>;
-  if (session.user.role !== "customer") return <Link className="btn btn-dark" to="/admin/ho-tro">Mở hộp thư CSKH</Link>;
-  const selected = conversations.find((item) => item.conversation_id === selectedId);
+
+  const selected = conversations.find((item) => item.conversation_id === selectedId) || conversations[0];
   const open = conversations.find((item) => item.status !== "closed");
+
   return <>
-    {error && <div className="alert alert-warning" role="alert">{error}</div>}
     <div className="support-workspace">
       <aside className="support-conversations">
         <div className="p-3 border-bottom"><strong>Hội thoại của bạn</strong>
-          <button className="btn btn-dark btn-sm w-100 mt-3" disabled={creating || loading}
+          <button className="btn btn-dark btn-sm w-100 mt-3"
             onClick={() => open ? setSelectedId(open.conversation_id) : start()}>
-            {creating ? "Đang tạo..." : open ? "Tiếp tục hội thoại" : "Yêu cầu hỗ trợ mới"}
+            {open ? "Tiếp tục hội thoại" : "Yêu cầu hỗ trợ mới"}
           </button>
         </div>
         <div className="support-conversation-scroll">
@@ -76,13 +68,13 @@ function CustomerSupport() {
       </aside>
       <section className="support-main">
         <div className="support-chat-header"><div><strong>Chat với nhân viên Selene</strong>
-          <div className="support-connection">{connected ? "Đã kết nối" : "Đang kết nối lại..."}</div></div>
+          <div className="support-connection">Đã kết nối</div></div>
           {selected && <span className={`support-status ${selected.status}`}>{STATUS_LABELS[selected.status]}</span>}
         </div>
-        {loading ? <div className="support-empty"><Loading text="Đang tải hội thoại..." /></div> : selected ? <ChatPanel key={selected.conversation_id} conversation={selected} user={session.user} socket={session.socket} canReply /> :
+        {selected ? <ChatPanel key={selected.conversation_id} conversation={selected} user={MOCK_CUSTOMER} canReply /> :
           <div className="support-empty"><i className="bi bi-headset" /><h5>Chúng tôi có thể giúp gì cho bạn?</h5>
             <p>Hỏi về đơn hàng, sản phẩm hoặc chính sách đổi trả.</p>
-            <button className="btn btn-dark" disabled={creating || loading} onClick={start}>Bắt đầu trò chuyện</button></div>}
+            <button className="btn btn-dark" onClick={start}>Bắt đầu trò chuyện</button></div>}
       </section>
     </div>
   </>;
@@ -92,8 +84,6 @@ export default function Support() {
   return <div className="support-page">
     <h1 className="support-title">Chăm sóc khách hàng</h1>
     <p className="support-subtitle">Kết nối trực tiếp với nhân viên Selene để được hỗ trợ.</p>
-    {isLoggedIn() ? <CustomerSupport /> : <div className="support-empty"><i className="bi bi-headset" />
-      <p>Đăng nhập để trò chuyện và lưu lại lịch sử hỗ trợ của bạn.</p>
-      <Link className="btn btn-dark" to="/tai-khoan/dang-nhap">Đăng nhập</Link></div>}
+    <CustomerSupport />
   </div>;
 }
