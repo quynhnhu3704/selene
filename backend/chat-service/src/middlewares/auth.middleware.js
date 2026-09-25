@@ -1,4 +1,4 @@
-// backend\order-service\src\middlewares\auth.middleware.js
+// backend\chat-service\src\middlewares\auth.middleware.js
 import jwt from "jsonwebtoken";
 import { config } from "../configs/index.js";
 
@@ -75,4 +75,16 @@ export const verifyPermission = (requiredPermissions) => {
 
     next();
   };
+};
+
+
+// dùng cho file socket.js
+export const authenticate = async (token) => {
+  if (!token) throw new Error("Thiếu Token!");
+  try {
+    const decoded = jwt.verify(token, config.jwtAccessSecret);
+    return decoded;
+  } catch (err) {
+    throw new Error("Token không hợp lệ!");
+  }
 };

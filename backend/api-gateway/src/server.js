@@ -42,6 +42,7 @@ app.use((req, res, next) => {
 app.use("/api/chat", createProxyMiddleware({
   target: CHAT_SERVICE_URL,
   changeOrigin: true,
+  pathRewrite: { "^/api/chat": "" },
   on: {
     error: (err, req, res) => {
       console.error("Proxy Error (Chat):", err.message);

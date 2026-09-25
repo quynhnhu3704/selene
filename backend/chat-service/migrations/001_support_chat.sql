@@ -3,6 +3,7 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS public.conversations (
   conversation_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id text NOT NULL REFERENCES public.accounts(account_id),
+  customer_name text,
   assigned_staff_id text REFERENCES public.accounts(account_id),
   status text NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'active', 'closed')),
   last_message text,
