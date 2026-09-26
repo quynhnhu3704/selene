@@ -1,7 +1,7 @@
 // frontend/src/services/product.service.js
 import http from "./http";
 
-export const getProducts = async (filters = {}, fallbackLimit = 12) => {
+export const getProducts = async (filters = {}, fallbackLimit = 12, { signal } = {}) => {
   const normalizedFilters =
     typeof filters === "number"
       ? { page: filters, limit: fallbackLimit }
@@ -33,6 +33,7 @@ export const getProducts = async (filters = {}, fallbackLimit = 12) => {
   if (Number(page) > 1) params.page = page;
 
   const res = await http.get("/products/product-list", {
+    signal,
     params,
     withCredentials: false,
   });
@@ -41,8 +42,9 @@ export const getProducts = async (filters = {}, fallbackLimit = 12) => {
 };
 
 // Lấy dữ liệu thật để dựng sidebar filter cho customer
-export const getProductFilterOptions = async () => {
+export const getProductFilterOptions = async ({ signal } = {}) => {
   const res = await http.get("/products/product-filters", {
+    signal,
     withCredentials: false,
   });
 

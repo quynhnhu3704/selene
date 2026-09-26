@@ -1,7 +1,7 @@
 // frontend\src\pages\ProductDetail.jsx
 import ProductDetailSkeleton from "./Skeleton";
 import { useState, useEffect, useLayoutEffect, useContext } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import {
@@ -29,6 +29,10 @@ export default function ProductDetail() {
 }
 
 function ProductDetailContent({ id }) {
+  const { state } = useLocation();
+  const parentBreadcrumb = state?.from === "/yeu-thich"
+    ? { label: "Yêu thích", path: "/yeu-thich" }
+    : { label: "Sản phẩm", path: "/san-pham" };
   const { isFavorite, toggleWishlist } = useWishlist();
   const [modal, setModal] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -73,7 +77,7 @@ function ProductDetailContent({ id }) {
   };
 
   if (loading) {
-    return <ProductDetailSkeleton />;
+    return <ProductDetailSkeleton parentBreadcrumb={parentBreadcrumb} />;
   }
 
   if (!product) {
@@ -143,7 +147,7 @@ function ProductDetailContent({ id }) {
         <Breadcrumb
           items={[
             { label: "Trang chủ", path: "/" },
-            { label: "Sản phẩm", path: "/san-pham" },
+            parentBreadcrumb,
             { label: PRODUCT.name },
           ]}
         />
@@ -207,33 +211,6 @@ function ProductDetailContent({ id }) {
           width: 100%; aspect-ratio: 3/4;
           object-fit: cover; object-position: top; display: block;
         }
-
-        /* sale banner */
-        .pd-sale-banner {
-          position: absolute; bottom: 0; left: 0; right: 0;
-          background: #871B1B; padding: 10px 20px;
-          display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .pd-sale-banner span { font-size: 16px; font-weight: 700; color: #fff; text-transform: uppercase; }
-        .pd-sale-banner .pd-sale-badge {
-          background: #fff; color: #871B1B;
-          font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px;
-        }
-
-        /* arrows */
-        .pd-arrow {
-          position: absolute; top: 50%; transform: translateY(-50%);
-          background: #fff; border: 1px solid #ddd; border-radius: 50%;
-          width: 42px; height: 42px;
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; font-size: 15px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.12); color: #333;
-          transition: box-shadow 0.15s;
-        }
-        .pd-arrow:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .pd-arrow.prev { left: 12px; }
-        .pd-arrow.next { right: 12px; }
-        .pd-arrow:disabled { opacity: 0.35; cursor: default; }
 
         /* ════════════════════
            RIGHT PANEL
@@ -345,7 +322,7 @@ function ProductDetailContent({ id }) {
 
         .pd-wishlist, .pd-zoom { display: flex; align-items: center; justify-content: center; background: #fff; color: #871B1B; border: 1px solid #e5cccc; border-radius: 50%; width: 48px; height: 48px; flex-shrink: 0; font-size: 20px; }
         .pd-wishlist:hover, .pd-wishlist.active { background: #fcf2f2; border-color: #871B1B; }
-        .pd-zoom { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; box-shadow: 0 2px 12px #0001; }
+        .pd-zoom { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; background: rgba(252, 242, 242, 0.5); border: 0; }
         .pd-image-modal { position: fixed; inset: 0; margin: auto; border: none; border-radius: 14px; padding: 0; width: min(900px, 94vw); max-height: 90vh; max-height: 90dvh; overflow: auto; background: #fff; color: #212529; box-shadow: 0 16px 60px #0003; }
         .pd-image-modal::backdrop { background: rgba(20, 12, 12, 0.7); }
         .pd-modal-content { padding: 20px; }
@@ -396,8 +373,6 @@ function ProductDetailContent({ id }) {
           .pd-qty { height: 44px; }
           .pd-qty-btn { width: 30px; }
           .pd-btn-cart { font-size: 13px; min-width: 145px; }
-          .pd-sale-banner { padding: 10px; gap: 6px; }
-          .pd-sale-banner span { font-size: 11px; }
           .pd-thumb  { width: 70px; height: 90px; }
         }
       `}</style>
@@ -451,7 +426,7 @@ function ProductDetailContent({ id }) {
                   />
 
                   <button
-                    className="pd-arrow prev"
+                    className="slider-arrow prev"
                     aria-label="Ảnh trước"
                     disabled={PRODUCT.images.length < 2}
                     onClick={() =>
@@ -463,10 +438,10 @@ function ProductDetailContent({ id }) {
                       )
                     }
                   >
-                    <i className="bi bi-chevron-left" />
+                    <i className="bi bi-caret-left" aria-hidden="true" />
                   </button>
                   <button
-                    className="pd-arrow next"
+                    className="slider-arrow next"
                     aria-label="Ảnh tiếp theo"
                     disabled={PRODUCT.images.length < 2}
                     onClick={() =>
@@ -475,7 +450,7 @@ function ProductDetailContent({ id }) {
                       )
                     }
                   >
-                    <i className="bi bi-chevron-right" />
+                    <i className="bi bi-caret-right" aria-hidden="true" />
                   </button>
 
                   <button
@@ -486,11 +461,6 @@ function ProductDetailContent({ id }) {
                   >
                     <i className="bi bi-zoom-in" />
                   </button>
-                  <div className="pd-sale-banner">
-                    <i className="bi bi-tag text-white" />
-                    <span>Giá độc quyền website</span>
-                    <span className="pd-sale-badge">SALE</span>
-                  </div>
                 </div>
               </div>
             )}
@@ -724,7 +694,7 @@ function ProductDetailContent({ id }) {
                 }
               >
                 <i
-                  className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-heart"}`}
+                  className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-suit-heart"}`}
                 />
               </button>
             </div>

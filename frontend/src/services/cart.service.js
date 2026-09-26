@@ -2,8 +2,8 @@
 import http from "./http";
 
 // lấy giỏ hàng
-export const getCart = async () => {
-  const res = await http.get("/orders/cart");
+export const getCart = async ({ signal } = {}) => {
+  const res = await http.get("/orders/cart", { signal });
   return res.data;
 };
 

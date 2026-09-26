@@ -108,20 +108,22 @@ export function CartProvider({ children }) {
   useEffect(() => {
     if (!isLoggedIn()) return;
     let isCurrentRequest = true;
-    getCart()
+    const controller = new AbortController();
+    getCart({ signal: controller.signal })
       .then((res) => {
         if (isCurrentRequest) {
           setCart(res.data || { items: [], total_quantity: 0, total_price: 0 });
         }
       })
       .catch((error) => {
-        console.error("Lỗi khi lấy giỏ hàng:", error);
+        if (isCurrentRequest) console.error("Lỗi khi lấy giỏ hàng:", error);
       })
       .finally(() => {
         if (isCurrentRequest) setLoading(false);
       });
     return () => {
       isCurrentRequest = false;
+      controller.abort();
     };
   }, []);
 

@@ -62,9 +62,9 @@ app.use(
   }),
 );
 
-if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
+if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL || !PRODUCT_SERVICE_URL) {
   console.error(
-    "Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL).",
+    "Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL, PRODUCT_SERVICE_URL).",
   );
   process.exit(1);
 }
@@ -83,11 +83,15 @@ app.use(
   createProxyMiddleware({
     target: PRODUCT_SERVICE_URL,
     changeOrigin: true,
-    onError: (err, req, res) => {
-      console.error("Proxy Error (Product):", err);
-      res
-        .status(502)
-        .json({ success: false, message: "Product Service Unavailable" });
+    proxyTimeout: 30000,
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Product):", err.message);
+        if (res.headersSent || res.destroyed) return;
+        const status = ["ETIMEDOUT", "ECONNRESET"].includes(err.code) ? 504 : 502;
+        res.writeHead(status, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: "Product Service Unavailable" }));
+      },
     },
   }),
 );
@@ -120,11 +124,15 @@ app.use(
   createProxyMiddleware({
     target: ORDER_SERVICE_URL,
     changeOrigin: true,
-    onError: (err, req, res) => {
-      console.error("Proxy Error (Order):", err);
-      res
-        .status(502)
-        .json({ success: false, message: "Order Service Unavailable" });
+    proxyTimeout: 30000,
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Order):", err.message);
+        if (res.headersSent || res.destroyed) return;
+        const status = ["ETIMEDOUT", "ECONNRESET"].includes(err.code) ? 504 : 502;
+        res.writeHead(status, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: "Order Service Unavailable" }));
+      },
     },
   }),
 );

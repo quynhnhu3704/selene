@@ -1,80 +1,7 @@
+// frontend\src\pages\Home\components\ProductSection.jsx
+import ProductImage from "../../../components/common/ProductImage";
 import ProductLink from "../../../components/common/ProductLink";
-// // frontend\src\pages\Home\components\ProductSection.jsx
-// import { bestSellers, newProds } from "../data/products";
-
-// export default function ProductSection() {
-//   return (
-//     <>
-//       {/* BEST SELLERS */}
-//       <section className="rb-products">
-//         <div className="rb-sec-title">
-//           <h2>Sản Phẩm Bán Chạy</h2>
-//           <div className="rb-divider">
-//             <div className="gl" />
-//             <div className="gd" />
-//             <div className="gl" />
-//           </div>
-//         </div>
-//         <div className="rb-slider-wrap">
-//           <button className="rb-sbtn prev">&#8249;</button>
-//           <div className="row g-3">
-//             {bestSellers.map((p) => (
-//               <div className="col-3" key={p.id}>
-//                 <div className="rb-pcard">
-//                   <div className="rb-pimg">
-//                     <img src={p.img} alt="" />
-//                     <div className="rb-rank">{p.rank}</div>
-//                   </div>
-//                   <div className="rb-pinfo">
-//                     <div className="rb-pname">{p.name}</div>
-//                     <div className="rb-pbottom">
-//                       <span className="rb-price">{p.price}</span>
-//                       <span className="rb-sold">{p.sold}</span>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//           <button className="rb-sbtn next">&#8250;</button>
-//         </div>
-//       </section>
-
-//       {/* ═══ SẢN PHẨM MỚI ═══ */}
-//       <section className="rb-new-products">
-//         <div className="rb-sec-title">
-//           <h2>Sản Phẩm Mới</h2>
-//           <div className="rb-divider">
-//             <div className="gl" />
-//             <div className="gd" />
-//             <div className="gl" />
-//           </div>
-//         </div>
-//         <div className="row g-3">
-//           {newProds.map((p) => (
-//             <div className="col-3" key={p.id}>
-//               <div className="rb-pcard">
-//                 <div className="rb-pimg">
-//                   <img src={p.img} alt="" />
-//                   <div className="rb-newbadge">MỚI</div>
-//                 </div>
-//                 <div className="rb-pinfo">
-//                   <div className="rb-pname">{p.name}</div>
-//                   <div className="rb-pbottom">
-//                     <span className="rb-price">{p.price}</span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       </section>
-//     </>
-//   );
-// }
-
-import Loading from "../../../components/common/Loading";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 function fmt(n) {
@@ -84,10 +11,40 @@ function fmt(n) {
 export default function ProductSection({
   title,
   products = [],
-  type,
   loading = false,
 }) {
   const sliderRef = useRef(null);
+
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const image = slider.querySelector(".pl-pimg-wrap");
+    const updateScroll = () => {
+      if (image) {
+        slider.parentElement.style.setProperty(
+          "--slider-image-center",
+          `${image.offsetHeight / 2}px`,
+        );
+      }
+      setCanScrollPrev(slider.scrollLeft > 1);
+      setCanScrollNext(
+        slider.scrollLeft + slider.clientWidth < slider.scrollWidth - 1,
+      );
+    };
+    updateScroll();
+    const observer = new ResizeObserver(updateScroll);
+    observer.observe(slider);
+    if (image) observer.observe(image);
+    slider.addEventListener("scroll", updateScroll);
+    return () => {
+      observer.disconnect();
+      slider.removeEventListener("scroll", updateScroll);
+    };
+  }, [products, loading]);
 
   const scroll = (direction) => {
     if (!sliderRef.current) return;
@@ -110,79 +67,102 @@ export default function ProductSection({
             <div className="gl" />
           </div>
         </div>
-
-        {!loading && products.length > 4 && (
-          <div className="pl-home-slider-buttons">
-            <button
-              type="button"
-              onClick={() => scroll("prev")}
-              aria-label="Xem sản phẩm trước"
-            >
-              &#8249;
-            </button>
-
-            <button
-              type="button"
-              onClick={() => scroll("next")}
-              aria-label="Xem thêm sản phẩm"
-            >
-              &#8250;
-            </button>
-          </div>
-        )}
+        <Link className="pl-home-view-all" to="/san-pham">
+          Xem tất cả <span aria-hidden="true">→</span>
+        </Link>
       </div>
 
       {loading ? (
-        <div className="pl-home-state">
-          <Loading text="Đang tải sản phẩm..." />
+        <div role="status" aria-label={`Đang tải ${title.toLowerCase()}...`}>
+          <div className="pl-home-slider home-skeleton-row" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div className="pl-home-product-item" key={index}>
+                <div className="pl-pimg-wrap pl-skeleton home-product-skeleton-image" />
+                <div className="pl-pinfo">
+                  <div className="pl-skeleton home-product-skeleton-name" />
+                  <div className="pl-skeleton home-product-skeleton-price" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : products.length === 0 ? (
         <div className="pl-home-state">Chưa có sản phẩm.</div>
       ) : (
-        <div className="pl-home-slider" ref={sliderRef}>
-          {products.map((product) => (
-            <div className="pl-home-product-item" key={product.product_id}>
-              <div className="pl-pcard">
-                <div className="pl-pimg-wrap">
-                  <ProductLink productId={product.product_id}>
-                    <img src={product.image_url} alt="" loading="lazy" />
-                  </ProductLink>
+        <div className="pl-home-slider-wrap">
+          <div className="pl-home-slider" ref={sliderRef}>
+            {products.map((product) => (
+              <div className="pl-home-product-item" key={product.product_id}>
+                <div className="pl-pcard">
+                  <div className="pl-pimg-wrap">
+                    <ProductLink productId={product.product_id}>
+                      <ProductImage src={product.image_url} alt="" loading="lazy" />
+                      {product.second_image_url && (
+                        <img
+                          key={product.second_image_url}
+                          className="pl-pimg-secondary"
+                          src={product.second_image_url}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
+                    </ProductLink>
+                  </div>
 
-                  {type === "new" && (
-                    <span className="pl-home-new-badge">MỚI</span>
-                  )}
-                </div>
+                  <div className="pl-pinfo">
+                    <ProductLink
+                      className="pl-pname"
+                      productId={product.product_id}
+                    >
+                      {product.product_name}
+                    </ProductLink>
 
-                <div className="pl-pinfo">
-                  <ProductLink
-                    className="pl-pname"
-                    productId={product.product_id}
-                  >
-                    {product.product_name}
-                  </ProductLink>
-
-                  <div className="pl-price-row">
-                    <span className="pl-price-current">
-                      {fmt(product.discount_price)}
-                    </span>
-
-                    {Number(product.original_price) >
-                      Number(product.discount_price) && (
-                      <span className="pl-price-original">
-                        {fmt(product.original_price)}
+                    <div className="pl-price-row">
+                      <span className="pl-price-current">
+                        {fmt(product.discount_price)}
                       </span>
-                    )}
+
+                      {Number(product.original_price) >
+                        Number(product.discount_price) && (
+                        <span className="pl-price-original">
+                          {fmt(product.original_price)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          {(canScrollPrev || canScrollNext) && (
+            <>
+              <button
+                type="button"
+                className="slider-arrow pl-home-arrow prev"
+                onClick={() => scroll("prev")}
+                disabled={!canScrollPrev}
+                aria-label="Xem sản phẩm trước"
+              >
+                <i className="bi bi-caret-left" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="slider-arrow pl-home-arrow next"
+                onClick={() => scroll("next")}
+                disabled={!canScrollNext}
+                aria-label="Xem thêm sản phẩm"
+              >
+                <i className="bi bi-caret-right" aria-hidden="true" />
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      <div className="rb-view-all">
-        <Link to="/san-pham">Xem tất cả sản phẩm</Link>
-      </div>
     </section>
   );
 }

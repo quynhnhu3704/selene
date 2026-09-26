@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { prefetchProduct } from "../../services/product.service";
 
 export default function ProductLink({
@@ -6,12 +6,15 @@ export default function ProductLink({
   onPointerEnter,
   onFocus,
   onTouchStart,
+  state,
   ...props
 }) {
+  const { pathname } = useLocation();
   const preload = () => prefetchProduct(productId);
   return (
     <Link
       {...props}
+      state={{ ...state, from: pathname }}
       to={`/san-pham/${encodeURIComponent(productId)}`}
       onPointerEnter={(event) => {
         preload();

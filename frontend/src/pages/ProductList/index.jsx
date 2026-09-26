@@ -1,4 +1,4 @@
-import ProductLink from "../../components/common/ProductLink";
+import ProductCard from "../../components/common/ProductCard";
 // frontend\src\pages\ProductList.jsx
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -8,10 +8,8 @@ import {
   getProductFilterOptions,
   getProducts,
 } from "../../services/product.service";
-import { useWishlist } from "../../context/WishlistContext";
 import Pagination from "../../components/common/Pagination";
 import Loading from "../../components/common/Loading";
-import ProductImage from "../../components/common/ProductImage";
 
 import orangeColor from "../../assets/colors/orange.jpg";
 import blackColor from "../../assets/colors/black.jpg";
@@ -176,6 +174,10 @@ export default function ProductList() {
   const sidebarRef = useRef(null);
 
   useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
+
+  useLayoutEffect(() => {
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
 
@@ -194,7 +196,6 @@ export default function ProductList() {
     };
   }, []);
 
-  const { isFavorite, toggleWishlist } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openCats, setOpenCats] = useState({});
   const [sortOpen, setSortOpen] = useState(false);
@@ -833,64 +834,7 @@ export default function ProductList() {
             <>
               <div className="pl-grid">
                 {products.map((product) => (
-                  <div className="pl-pcard" key={product.product_id}>
-                    <div className="pl-pimg-wrap">
-                      <ProductLink productId={product.product_id}>
-                        <ProductImage
-                          src={product.image_url}
-                          alt=""
-                          loading="lazy"
-                        />
-                        {product.second_image_url && (
-                          <img
-                            key={product.second_image_url}
-                            className="pl-pimg-secondary"
-                            src={product.second_image_url}
-                            alt=""
-                            aria-hidden="true"
-                            loading="lazy"
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
-                            }}
-                          />
-                        )}
-                      </ProductLink>
-                      <button
-                        type="button"
-                        className={`pl-favorite${isFavorite(product.product_id) ? " active" : ""}`}
-                        onClick={() => toggleWishlist(product)}
-                        aria-pressed={isFavorite(product.product_id)}
-                        aria-label={
-                          isFavorite(product.product_id)
-                            ? "Bỏ yêu thích " + product.product_name
-                            : "Yêu thích " + product.product_name
-                        }
-                      >
-                        <i
-                          className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-suit-heart"}`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="pl-pinfo">
-                      <ProductLink
-                        className="pl-pname"
-                        productId={product.product_id}
-                      >
-                        {product.product_name}
-                      </ProductLink>
-
-                      <div className="pl-price-row">
-                        <span className="pl-price-current">
-                          {fmt(product.discount_price)}
-                        </span>
-
-                        <span className="pl-price-original">
-                          {fmt(product.original_price)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <ProductCard key={product.product_id} product={product} />
                 ))}
               </div>
 

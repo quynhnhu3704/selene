@@ -1,7 +1,7 @@
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import "./skeleton.css";
 
-export default function ProductDetailSkeleton() {
+export default function ProductDetailSkeleton({ parentBreadcrumb }) {
   return (
     <div
       className="pd-skeleton"
@@ -12,7 +12,7 @@ export default function ProductDetailSkeleton() {
       <Breadcrumb
         items={[
           { label: "Trang chủ", path: "/" },
-          { label: "Sản phẩm", path: "/san-pham" },
+          parentBreadcrumb,
         ]}
       />
       <div className="pd-skeleton-layout" aria-hidden="true">
