@@ -69,7 +69,9 @@ export default function OrdersPanel() {
       .finally(() => {
         if (isCurrentRequest) setLoading(false);
       });
-    return () => { isCurrentRequest = false; };
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [revision]);
 
   return (

@@ -1,3 +1,4 @@
+import ProductLink from "../../../components/common/ProductLink";
 // // frontend\src\pages\Home\components\ProductSection.jsx
 // import { bestSellers, newProds } from "../data/products";
 
@@ -132,7 +133,9 @@ export default function ProductSection({
       </div>
 
       {loading ? (
-        <div className="pl-home-state"><Loading text="Đang tải sản phẩm..." /></div>
+        <div className="pl-home-state">
+          <Loading text="Đang tải sản phẩm..." />
+        </div>
       ) : products.length === 0 ? (
         <div className="pl-home-state">Chưa có sản phẩm.</div>
       ) : (
@@ -141,13 +144,9 @@ export default function ProductSection({
             <div className="pl-home-product-item" key={product.product_id}>
               <div className="pl-pcard">
                 <div className="pl-pimg-wrap">
-                  <Link to={"/san-pham/" + product.product_id}>
-                    <img
-                      src={product.image_url}
-                      alt=""
-                      loading="lazy"
-                    />
-                  </Link>
+                  <ProductLink productId={product.product_id}>
+                    <img src={product.image_url} alt="" loading="lazy" />
+                  </ProductLink>
 
                   {type === "new" && (
                     <span className="pl-home-new-badge">MỚI</span>
@@ -155,12 +154,12 @@ export default function ProductSection({
                 </div>
 
                 <div className="pl-pinfo">
-                  <Link
+                  <ProductLink
                     className="pl-pname"
-                    to={"/san-pham/" + product.product_id}
+                    productId={product.product_id}
                   >
                     {product.product_name}
-                  </Link>
+                  </ProductLink>
 
                   <div className="pl-price-row">
                     <span className="pl-price-current">

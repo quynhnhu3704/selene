@@ -177,7 +177,12 @@ router.put(
 router.post(
   "/manage/promotion/add-items/:promotionId",
   verifyToken,
-  verifyPermission(["promotion:update", "product:update", "promotion:create", "product:create"]),
+  verifyPermission([
+    "promotion:update",
+    "product:update",
+    "promotion:create",
+    "product:create",
+  ]),
   promotionController.handleAddProductsToPromotion,
 );
 router.put(

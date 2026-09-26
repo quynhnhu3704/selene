@@ -148,7 +148,12 @@ export default function AdminUsers() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const { data } = await exportAdminUsers({ role, q, sort: sort === "default" ? "newest" : sort, status });
+      const { data } = await exportAdminUsers({
+        role,
+        q,
+        sort: sort === "default" ? "newest" : sort,
+        status,
+      });
       const url = URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;

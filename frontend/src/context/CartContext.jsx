@@ -120,7 +120,9 @@ export function CartProvider({ children }) {
       .finally(() => {
         if (isCurrentRequest) setLoading(false);
       });
-    return () => { isCurrentRequest = false; };
+    return () => {
+      isCurrentRequest = false;
+    };
   }, []);
 
   return (

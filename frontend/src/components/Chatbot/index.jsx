@@ -40,12 +40,20 @@ function Chatbot() {
       const result = await sendMessageToBot(userMsg.text, history);
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: result.data.reply, products: result.data.products },
+        {
+          role: "bot",
+          text: result.data.reply,
+          products: result.data.products,
+        },
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: "Có lỗi xảy ra, bạn thử lại nhé...", isError: true },
+        {
+          role: "bot",
+          text: "Có lỗi xảy ra, bạn thử lại nhé...",
+          isError: true,
+        },
       ]);
     } finally {
       sendingRef.current = false;
@@ -101,8 +109,13 @@ function Chatbot() {
             </button>
           </div>
 
-          <Link to="/ho-tro" className="btn btn-light btn-sm rounded-0" onClick={() => setOpen(false)}>
-            <i className="bi bi-headset me-2" />Chat với nhân viên
+          <Link
+            to="/ho-tro"
+            className="btn btn-light btn-sm rounded-0"
+            onClick={() => setOpen(false)}
+          >
+            <i className="bi bi-headset me-2" />
+            Chat với nhân viên
           </Link>
           <div
             className="chatbot-messages"
@@ -145,9 +158,21 @@ function Chatbot() {
                               {product.product_name}
                             </div>
                             <div className="chatbot-product-price">
-                              {Number(product.discount_price ?? product.original_price ?? 0).toLocaleString("vi-VN")}đ
-                              {product.original_price > (product.discount_price ?? product.original_price) && (
-                                <span className="chatbot-product-original">{Number(product.original_price).toLocaleString("vi-VN")}đ</span>
+                              {Number(
+                                product.discount_price ??
+                                  product.original_price ??
+                                  0,
+                              ).toLocaleString("vi-VN")}
+                              đ
+                              {product.original_price >
+                                (product.discount_price ??
+                                  product.original_price) && (
+                                <span className="chatbot-product-original">
+                                  {Number(
+                                    product.original_price,
+                                  ).toLocaleString("vi-VN")}
+                                  đ
+                                </span>
                               )}
                             </div>
                           </div>
@@ -186,7 +211,11 @@ function Chatbot() {
               aria-label="Tin nhắn cho trợ lý Selene"
               maxLength={2000}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
                   e.preventDefault();
                   send();
                 }

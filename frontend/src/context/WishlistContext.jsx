@@ -25,20 +25,24 @@ export function WishlistProvider({ children }) {
     }
   }, [wishlist]);
 
-  const isFavorite = (id) => wishlist.some((item) => item.product_id === String(id));
+  const isFavorite = (id) =>
+    wishlist.some((item) => item.product_id === String(id));
 
   const toggleWishlist = (product) => {
     const id = String(product.product_id);
     setWishlist((items) =>
       items.some((item) => item.product_id === id)
         ? items.filter((item) => item.product_id !== id)
-        : [...items, {
-            product_id: id,
-            product_name: product.product_name,
-            image_url: product.image_url || product.images?.[0],
-            discount_price: product.discount_price,
-            original_price: product.original_price,
-          }],
+        : [
+            ...items,
+            {
+              product_id: id,
+              product_name: product.product_name,
+              image_url: product.image_url || product.images?.[0],
+              discount_price: product.discount_price,
+              original_price: product.original_price,
+            },
+          ],
     );
   };
 

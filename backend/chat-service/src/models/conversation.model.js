@@ -3,10 +3,8 @@ import { supabase } from "../configs/supabase.js";
 export const ConversationModel = {
   // Lấy danh sách toàn bộ cuộc trò chuyện với bộ lọc status và tìm kiếm
   findAll: async ({ status, search }) => {
-    let query = supabase
-      .from("conversations")
-      .select(
-        `
+    let query = supabase.from("conversations").select(
+      `
         conversation_id,
         customer_name,
         last_message_id,
@@ -14,15 +12,19 @@ export const ConversationModel = {
         last_message,
         status,
         created_at
-      `
-      );
+      `,
+    );
 
     // Lọc theo trạng thái nếu có
     if (status && status !== "all") {
       const normalized = status.toLowerCase();
       if (normalized === "pending" || normalized === "waiting") {
         query = query.in("status", ["pending", "waiting"]);
-      } else if (normalized === "processing" || normalized === "open" || normalized === "active") {
+      } else if (
+        normalized === "processing" ||
+        normalized === "open" ||
+        normalized === "active"
+      ) {
         query = query.in("status", ["processing", "open", "active"]);
       } else {
         query = query.eq("status", normalized);
@@ -60,14 +62,20 @@ export const ConversationModel = {
         (item) =>
           item.customer_name?.toLowerCase().includes(q) ||
           item.last_message?.toLowerCase().includes(q) ||
-          item.conversation_id?.toLowerCase().includes(q)
+          item.conversation_id?.toLowerCase().includes(q),
       );
     }
 
     // Sắp xếp: Ưu tiên các cuộc trò chuyện trạng thái 'processing' lên đầu, sau đó sắp xếp theo thời gian giảm dần
     resultItems.sort((a, b) => {
-      const isAProcessing = a.status === "processing" || a.status === "open" || a.status === "active";
-      const isBProcessing = b.status === "processing" || b.status === "open" || b.status === "active";
+      const isAProcessing =
+        a.status === "processing" ||
+        a.status === "open" ||
+        a.status === "active";
+      const isBProcessing =
+        b.status === "processing" ||
+        b.status === "open" ||
+        b.status === "active";
 
       if (isAProcessing && !isBProcessing) return -1;
       if (!isAProcessing && isBProcessing) return 1;
@@ -103,7 +111,7 @@ export const ConversationModel = {
         last_message_at,
         last_message,
         status
-      `
+      `,
       )
       .eq("conversation_id", conversationId)
       .single();
@@ -113,7 +121,8 @@ export const ConversationModel = {
 
     return {
       conversation_id: data.conversation_id,
-      customer_name: (data.customer_name && data.customer_name.trim()) || "Khách hàng",
+      customer_name:
+        (data.customer_name && data.customer_name.trim()) || "Khách hàng",
       last_message_id: data.last_message_id,
       last_message_at: data.last_message_at,
       last_message: data.last_message,

@@ -33,7 +33,9 @@ export default function Address({
     setWard("");
     setWards([]);
     setInitializing(false);
-    const selectedProvince = provinces.find((item) => String(item.code) === value);
+    const selectedProvince = provinces.find(
+      (item) => String(item.code) === value,
+    );
     const nextArea = optional ? selectedProvince?.name || "" : null;
     handleAddressChange(nextArea, detail);
     setArea(nextArea || "");
@@ -43,10 +45,15 @@ export default function Address({
   const handleWardSelect = (value) => {
     setWard(value);
     const selectedWard = wards.find((item) => String(item.code) === value);
-    const selectedProvince = provinces.find((item) => String(item.code) === province);
-    const nextArea = selectedWard && selectedProvince
-      ? `${selectedWard.name}, ${selectedProvince.name}`
-      : optional ? selectedProvince?.name || "" : null;
+    const selectedProvince = provinces.find(
+      (item) => String(item.code) === province,
+    );
+    const nextArea =
+      selectedWard && selectedProvince
+        ? `${selectedWard.name}, ${selectedProvince.name}`
+        : optional
+          ? selectedProvince?.name || ""
+          : null;
     handleAddressChange(nextArea, detail);
     setArea(nextArea || "");
     setOpenDropdown("");
@@ -69,7 +76,9 @@ export default function Address({
     if (requestedProvince) {
       setWards(data.wards || []);
       if (initializing) {
-        const selectedProvince = provinces.find((item) => String(item.code) === requestedProvince);
+        const selectedProvince = provinces.find(
+          (item) => String(item.code) === requestedProvince,
+        );
         const selectedWard = (data.wards || []).find((item) =>
           initialAddress.endsWith(`${item.name}, ${selectedProvince?.name}`),
         );
@@ -87,7 +96,9 @@ export default function Address({
     } else {
       setProvinces(data);
       if (initializing) {
-        const selectedProvince = data.find((item) => initialAddress.endsWith(item.name));
+        const selectedProvince = data.find((item) =>
+          initialAddress.endsWith(item.name),
+        );
         if (selectedProvince) setProvince(String(selectedProvince.code));
         else setInitializing(false);
       }
@@ -128,12 +139,19 @@ export default function Address({
               className="form-control text-start d-flex justify-content-between align-items-center"
               disabled={initializing}
               aria-expanded={openDropdown === "province"}
-              onClick={() => setOpenDropdown((prev) => prev === "province" ? "" : "province")}
+              onClick={() =>
+                setOpenDropdown((prev) =>
+                  prev === "province" ? "" : "province",
+                )
+              }
             >
               <span>
-                {provinces.find((item) => String(item.code) === province)?.name || "Chọn tỉnh/thành phố"}
+                {provinces.find((item) => String(item.code) === province)
+                  ?.name || "Chọn tỉnh/thành phố"}
               </span>
-              <i className={`bi ${openDropdown === "province" ? "bi-caret-up" : "bi-caret-down"}`} />
+              <i
+                className={`bi ${openDropdown === "province" ? "bi-caret-up" : "bi-caret-down"}`}
+              />
             </button>
             {openDropdown === "province" && (
               <ul
@@ -176,12 +194,17 @@ export default function Address({
               className="form-control text-start d-flex justify-content-between align-items-center"
               disabled={!province || wards.length === 0 || initializing}
               aria-expanded={openDropdown === "ward"}
-              onClick={() => setOpenDropdown((prev) => prev === "ward" ? "" : "ward")}
+              onClick={() =>
+                setOpenDropdown((prev) => (prev === "ward" ? "" : "ward"))
+              }
             >
               <span>
-                {wards.find((item) => String(item.code) === ward)?.name || "Chọn phường/xã"}
+                {wards.find((item) => String(item.code) === ward)?.name ||
+                  "Chọn phường/xã"}
               </span>
-              <i className={`bi ${openDropdown === "ward" ? "bi-caret-up" : "bi-caret-down"}`} />
+              <i
+                className={`bi ${openDropdown === "ward" ? "bi-caret-up" : "bi-caret-down"}`}
+              />
             </button>
             {openDropdown === "ward" && (
               <ul

@@ -145,7 +145,7 @@ const sortCategoriesByName = (categories, names) => {
 
     return (
       (firstPosition ?? Number.MAX_SAFE_INTEGER) -
-      (secondPosition ?? Number.MAX_SAFE_INTEGER) ||
+        (secondPosition ?? Number.MAX_SAFE_INTEGER) ||
       firstCategory.name.localeCompare(secondCategory.name, "vi")
     );
   });
@@ -177,11 +177,11 @@ const buildCustomerCategoryTree = (categories) => {
   return [
     ...(shirtCategory
       ? [
-        {
-          ...shirtCategory,
-          children: shirtChildren,
-        },
-      ]
+          {
+            ...shirtCategory,
+            children: shirtChildren,
+          },
+        ]
       : []),
     ...rootCategories.map((category) => ({ ...category, children: [] })),
   ];

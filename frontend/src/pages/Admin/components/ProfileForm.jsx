@@ -28,11 +28,7 @@ export default function ProfileForm({
         <div className="row g-4">
           <div className="col-12">
             {profile.avatar_url && (
-              <img
-                src={profile.avatar_url}
-                alt=""
-                className="adm-thumb mb-3"
-              />
+              <img src={profile.avatar_url} alt="" className="adm-thumb mb-3" />
             )}
             {!readOnly && (
               <>
@@ -102,9 +98,7 @@ export default function ProfileForm({
             </label>
             {readOnly ? (
               <div>
-                {{ male: "Nam", female: "Nữ", other: "Khác" }[
-                  profile.gender
-                ] ||
+                {{ male: "Nam", female: "Nữ", other: "Khác" }[profile.gender] ||
                   profile.gender ||
                   "—"}
               </div>

@@ -41,7 +41,10 @@ export default function GoogleSuccess() {
   }, []);
 
   return (
-    <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+    <div
+      className="d-flex align-items-center justify-content-center"
+      style={{ minHeight: "60vh" }}
+    >
       <Loading text="Đang đăng nhập..." />
     </div>
   );

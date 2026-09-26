@@ -140,7 +140,11 @@ router.put(
 
 // quyền (permission)
 router.get("/manage/permission-matrix", verifyToken, handleGetPermissionMatrix);
-router.put("/manage/roles/:roleId/permissions/:permissionId", verifyToken, handleSetRolePermission);
+router.put(
+  "/manage/roles/:roleId/permissions/:permissionId",
+  verifyToken,
+  handleSetRolePermission,
+);
 
 router.get(
   "/manage/permissions",

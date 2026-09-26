@@ -1,3 +1,4 @@
+import ProductLink from "../../components/common/ProductLink";
 // frontend\src\pages\Cart\index.jsx
 // frontend\src\pages\Cart\index.jsx
 import Loading from "../../components/common/Loading";
@@ -334,105 +335,108 @@ export default function Cart() {
 
             {/* items */}
             <div className="cart-list">
-              {loading
-                ? <div className="py-5"><Loading text="Đang tải giỏ hàng..." /></div>
-                : cartItems
-                    .filter((i) => i.product)
-                    .map((item) => (
-                      <div className="cart-item" key={item.cart_item_id}>
-                        {/* checkbox */}
-                        <input
-                          type="checkbox"
-                          className="cart-item-check"
-                          checked={selected.includes(item.cart_item_id)}
-                          onChange={() => toggleOne(item.cart_item_id)}
-                        />
+              {loading ? (
+                <div className="py-5">
+                  <Loading text="Đang tải giỏ hàng..." />
+                </div>
+              ) : (
+                cartItems
+                  .filter((i) => i.product)
+                  .map((item) => (
+                    <div className="cart-item" key={item.cart_item_id}>
+                      {/* checkbox */}
+                      <input
+                        type="checkbox"
+                        className="cart-item-check"
+                        checked={selected.includes(item.cart_item_id)}
+                        onChange={() => toggleOne(item.cart_item_id)}
+                      />
 
-                        {/* image */}
-                        <div className="cart-item-img-wrap">
-                          <Link to={`/san-pham/${item.product.product_id}`}>
-                            <img
-                              src={item.product.image_url || "/placeholder.jpg"}
-                              alt=""
-                              className="cart-item-img"
-                              onError={(e) => {
-                                e.currentTarget.src = "/placeholder.jpg";
-                              }}
-                            />
-                          </Link>
-                        </div>
+                      {/* image */}
+                      <div className="cart-item-img-wrap">
+                        <ProductLink productId={item.product.product_id}>
+                          <img
+                            src={item.product.image_url || "/placeholder.jpg"}
+                            alt=""
+                            className="cart-item-img"
+                            onError={(e) => {
+                              e.currentTarget.src = "/placeholder.jpg";
+                            }}
+                          />
+                        </ProductLink>
+                      </div>
 
-                        {/* info */}
-                        <div className="cart-item-info">
-                          <Link
-                            to={`/san-pham/${item.product.product_id}`}
-                            className="cart-item-name"
-                          >
-                            {item.product.product_name}
-                          </Link>
-                          {item.product.color && (
-                            <span className="cart-item-meta">
-                              Màu: {item.product.color}
-                            </span>
-                          )}
-
-                          {item.product.size && (
-                            <span className="cart-item-meta ms-2">
-                              · Size: {item.product.size}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* đơn giá */}
-                        <div className="cart-item-price">
-                          {fmt(
-                            item.product.discount_price ??
-                              item.product.original_price ??
-                              0,
-                          )}
-                        </div>
-
-                        {/* qty stepper */}
-                        <div className="cart-qty">
-                          <button
-                            className="cart-qty-btn"
-                            disabled={item.quantity <= 1}
-                            onClick={() => decreaseQuantity(item.cart_item_id)}
-                          >
-                            <i className="bi bi-dash" />
-                          </button>
-                          <span className="cart-qty-val">{item.quantity}</span>
-                          <button
-                            className="cart-qty-btn"
-                            disabled={
-                              item.quantity >=
-                              (item.product.stock_quantity ?? 0)
-                            }
-                            onClick={() => increaseQuantity(item.cart_item_id)}
-                          >
-                            <i className="bi bi-plus" />
-                          </button>
-                        </div>
-
-                        {/* thành tiền */}
-                        <div className="cart-item-subtotal">
-                          {fmt(
-                            (item.product.discount_price ??
-                              item.product.original_price ??
-                              0) * item.quantity,
-                          )}
-                        </div>
-
-                        {/* delete */}
-                        <button
-                          className="cart-del-btn"
-                          onClick={() => handleDelete(item.cart_item_id)}
-                          title="Xoá sản phẩm"
+                      {/* info */}
+                      <div className="cart-item-info">
+                        <ProductLink
+                          productId={item.product.product_id}
+                          className="cart-item-name"
                         >
-                          <i className="bi bi-trash3" />
+                          {item.product.product_name}
+                        </ProductLink>
+                        {item.product.color && (
+                          <span className="cart-item-meta">
+                            Màu: {item.product.color}
+                          </span>
+                        )}
+
+                        {item.product.size && (
+                          <span className="cart-item-meta ms-2">
+                            · Size: {item.product.size}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* đơn giá */}
+                      <div className="cart-item-price">
+                        {fmt(
+                          item.product.discount_price ??
+                            item.product.original_price ??
+                            0,
+                        )}
+                      </div>
+
+                      {/* qty stepper */}
+                      <div className="cart-qty">
+                        <button
+                          className="cart-qty-btn"
+                          disabled={item.quantity <= 1}
+                          onClick={() => decreaseQuantity(item.cart_item_id)}
+                        >
+                          <i className="bi bi-dash" />
+                        </button>
+                        <span className="cart-qty-val">{item.quantity}</span>
+                        <button
+                          className="cart-qty-btn"
+                          disabled={
+                            item.quantity >= (item.product.stock_quantity ?? 0)
+                          }
+                          onClick={() => increaseQuantity(item.cart_item_id)}
+                        >
+                          <i className="bi bi-plus" />
                         </button>
                       </div>
-                    ))}
+
+                      {/* thành tiền */}
+                      <div className="cart-item-subtotal">
+                        {fmt(
+                          (item.product.discount_price ??
+                            item.product.original_price ??
+                            0) * item.quantity,
+                        )}
+                      </div>
+
+                      {/* delete */}
+                      <button
+                        className="cart-del-btn"
+                        onClick={() => handleDelete(item.cart_item_id)}
+                        title="Xoá sản phẩm"
+                      >
+                        <i className="bi bi-trash3" />
+                      </button>
+                    </div>
+                  ))
+              )}
             </div>
 
             {/* back link */}
@@ -454,7 +458,9 @@ export default function Cart() {
               <div className="cart-summary-title">Tóm tắt đơn hàng</div>
 
               {loading ? (
-                <div className="py-5"><Loading text="Đang tải tóm tắt đơn hàng..." /></div>
+                <div className="py-5">
+                  <Loading text="Đang tải tóm tắt đơn hàng..." />
+                </div>
               ) : (
                 <>
                   <div className="cart-summary-row">

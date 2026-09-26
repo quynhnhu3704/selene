@@ -291,13 +291,15 @@ export default function UserList({
                       </Link>
                       <button
                         className={`adm-action-btn ${user.status === "active" ? "lock" : "unlock"}`}
-                        disabled={user.is_self || updatingId === user.account_id}
+                        disabled={
+                          user.is_self || updatingId === user.account_id
+                        }
                         title={
                           user.is_self
                             ? "Không thể khóa tài khoản của chính mình"
                             : user.status === "active"
-                            ? "Khóa tài khoản"
-                            : "Mở khóa tài khoản"
+                              ? "Khóa tài khoản"
+                              : "Mở khóa tài khoản"
                         }
                         onClick={() => onLock(user)}
                       >

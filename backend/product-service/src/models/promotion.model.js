@@ -20,7 +20,9 @@ export const PromotionModel = {
 
     const { data, error } = await supabase
       .from("products")
-      .select("product_id, product_name, price, original_price, discount_price, image_urls, status")
+      .select(
+        "product_id, product_name, price, original_price, discount_price, image_urls, status",
+      )
       .in("product_id", productIds);
 
     if (error) throw error;
@@ -88,7 +90,9 @@ export const PromotionModel = {
     }
 
     if (filters.q) {
-      query = query.or(`name.ilike.%${filters.q}%,promotion_id.ilike.%${filters.q}%`);
+      query = query.or(
+        `name.ilike.%${filters.q}%,promotion_id.ilike.%${filters.q}%`,
+      );
     }
 
     if (from !== undefined && to !== undefined) {
@@ -147,13 +151,17 @@ export const PromotionModel = {
 
     if (itemsError) throw itemsError;
 
-    const productIds = [...new Set((items || []).map((item) => item.product_id).filter(Boolean))];
+    const productIds = [
+      ...new Set((items || []).map((item) => item.product_id).filter(Boolean)),
+    ];
 
     let productsMap = {};
     if (productIds.length > 0) {
       const { data: productsData, error: productsError } = await supabase
         .from("products")
-        .select("product_id, product_name, image_urls, price, original_price, discount_price, status")
+        .select(
+          "product_id, product_name, image_urls, price, original_price, discount_price, status",
+        )
         .in("product_id", productIds);
 
       if (productsError) throw productsError;
@@ -213,7 +221,9 @@ export const PromotionModel = {
   recalculateProductsDiscountPrice: async (productIds) => {
     if (!productIds || productIds.length === 0) return;
 
-    const uniqueProductIds = [...new Set(productIds.map((id) => String(id).trim()).filter(Boolean))];
+    const uniqueProductIds = [
+      ...new Set(productIds.map((id) => String(id).trim()).filter(Boolean)),
+    ];
     if (uniqueProductIds.length === 0) return;
 
     // 1. Lấy thông tin giá gốc (original_price) của các sản phẩm cần cập nhật
@@ -241,11 +251,13 @@ export const PromotionModel = {
       let maxDiscountAmount = 0;
 
       const activePItems = (pItems || []).filter(
-        (item) => !item.status || item.status === "active"
+        (item) => !item.status || item.status === "active",
       );
 
       if (activePItems.length > 0) {
-        const promoIds = [...new Set(activePItems.map((item) => item.promotion_id))];
+        const promoIds = [
+          ...new Set(activePItems.map((item) => item.promotion_id)),
+        ];
 
         // 3. Lấy thông tin các chương trình khuyến mãi tương ứng (phụ thuộc vào status của promotion_items)
         const { data: promos, error: promoErr } = await supabase
@@ -280,7 +292,10 @@ export const PromotionModel = {
       }
 
       // Tính discount_price mới
-      const newDiscountPrice = Math.max(0, Math.round(origPrice - maxDiscountAmount));
+      const newDiscountPrice = Math.max(
+        0,
+        Math.round(origPrice - maxDiscountAmount),
+      );
 
       // 4. Cập nhật bảng products
       await supabase
@@ -306,7 +321,11 @@ export const PromotionModel = {
   },
 
   // Cập nhật trạng thái của 1 promotion_item theo ID
-  updateSinglePromotionItemStatus: async (promotion_item_id, status, updated_at) => {
+  updateSinglePromotionItemStatus: async (
+    promotion_item_id,
+    status,
+    updated_at,
+  ) => {
     const { data, error } = await supabase
       .from("promotion_items")
       .update({
@@ -321,7 +340,10 @@ export const PromotionModel = {
   },
 
   // Kiểm tra xem các sản phẩm trong productIds có đang thuộc khuyến mãi active nào khác hay không
-  checkProductActivePromotionConflicts: async (productIds, excludePromotionId = null) => {
+  checkProductActivePromotionConflicts: async (
+    productIds,
+    excludePromotionId = null,
+  ) => {
     if (!productIds || productIds.length === 0) return [];
 
     const uniqueProductIds = [
@@ -344,7 +366,9 @@ export const PromotionModel = {
     if (!items || items.length === 0) return [];
 
     // Lọc những items có status active (hoặc không có status -> mặc định active)
-    const activeItems = items.filter((item) => !item.status || item.status === "active");
+    const activeItems = items.filter(
+      (item) => !item.status || item.status === "active",
+    );
     if (activeItems.length === 0) return [];
 
     // 2. Lấy danh sách promotion_id và kiểm tra xem khuyến mãi tương ứng có đang ở trạng thái active hay không
@@ -364,11 +388,15 @@ export const PromotionModel = {
     });
 
     // Lọc các items thuộc về khuyến mãi đang active
-    const conflictingItems = activeItems.filter((item) => activePromoMap[item.promotion_id]);
+    const conflictingItems = activeItems.filter(
+      (item) => activePromoMap[item.promotion_id],
+    );
     if (conflictingItems.length === 0) return [];
 
     // 3. Lấy thông tin chi tiết các sản phẩm bị xung đột để tạo thông báo đầy đủ
-    const conflictingProductIds = [...new Set(conflictingItems.map((item) => item.product_id))];
+    const conflictingProductIds = [
+      ...new Set(conflictingItems.map((item) => item.product_id)),
+    ];
     const { data: productsData } = await supabase
       .from("products")
       .select("product_id, product_name")

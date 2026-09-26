@@ -1,6 +1,7 @@
+import ProductLink from "../../components/common/ProductLink";
 // frontend\src\pages\ProductList.jsx
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import {
@@ -36,8 +37,14 @@ function FilterSkeleton({ variant }) {
           <span className="pl-skeleton" />
         </div>
         <div className="pl-price-values">
-          <span className="pl-skeleton pl-skeleton-line" style={{ width: "28%" }} />
-          <span className="pl-skeleton pl-skeleton-line" style={{ width: "36%" }} />
+          <span
+            className="pl-skeleton pl-skeleton-line"
+            style={{ width: "28%" }}
+          />
+          <span
+            className="pl-skeleton pl-skeleton-line"
+            style={{ width: "36%" }}
+          />
         </div>
       </div>
     );
@@ -56,11 +63,17 @@ function FilterSkeleton({ variant }) {
   }
 
   return (
-    <div className={`pl-filter-skeleton pl-filter-skeleton-${variant}`} aria-hidden="true">
+    <div
+      className={`pl-filter-skeleton pl-filter-skeleton-${variant}`}
+      aria-hidden="true"
+    >
       {[65, 45, 58, 40, 62].map((width, index) => (
         <div className="pl-skeleton-filter-row" key={index}>
           <span className="pl-skeleton pl-skeleton-checkbox" />
-          <span className="pl-skeleton pl-skeleton-line" style={{ width: `${variant === "sizes" ? width / 2 : width}%` }} />
+          <span
+            className="pl-skeleton pl-skeleton-line"
+            style={{ width: `${variant === "sizes" ? width / 2 : width}%` }}
+          />
         </div>
       ))}
     </div>
@@ -505,537 +518,22 @@ export default function ProductList() {
         items={[{ label: "Trang chủ", path: "/" }, { label: "Sản phẩm" }]}
       />
 
-      <style>{`
-        /* ── LAYOUT ── */
-        /* Giữ layout và breadcrumb cùng chiều rộng, lề hai bên khi thu phóng. */
-        .pl-page > .container {
-          width: calc(100% - 150px);
-          margin: 0 75px;
-        }
-        .pl-layout {
-          display: flex;
-          align-items: flex-start;
-          gap: 0;
-          padding: 0 0 60px;
-          background: #fff;
-          min-height: 80vh;
-        }
-
-        /* ════════════
-           SIDEBAR
-        ════════════ */
-        .pl-sidebar {
-          flex: 0 0 290px;
-          width: 290px;
-          padding: 28px 0 0;
-          position: sticky;
-          top: var(--pl-sidebar-top, 80px);
-        }
-
-        .pl-sidebar-section { margin-bottom: 28px; }
-
-        .pl-skeleton {
-          display: block;
-          border-radius: 4px;
-          background: #e9ecef;
-          animation: pl-skeleton-pulse 1.4s ease-in-out infinite;
-        }
-        .pl-skeleton-line { height: 14px; }
-        .pl-skeleton-filter-row {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          height: 39px;
-        }
-        .pl-filter-skeleton-sizes .pl-skeleton-filter-row { height: 31px; }
-        .pl-skeleton-checkbox { width: 15px; height: 15px; flex-shrink: 0; }
-        .pl-skeleton-slider {
-          display: flex;
-          align-items: center;
-          height: 22px;
-          margin: 0 4px 12px;
-        }
-        .pl-skeleton-slider > span { width: 100%; height: 4px; }
-        .pl-price-values:has(.pl-skeleton) { align-items: center; min-height: 21px; }
-        @keyframes pl-skeleton-pulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .pl-skeleton { animation: none; }
-        }
-
-        .pl-sidebar-title {
-          font-size: 15px;
-          font-weight: 600;
-          margin-bottom: 12px;
-        }
-
-        /* Danh mục list */
-        .pl-cat-list { list-style: none; padding: 0; margin: 0; }
-        .pl-cat-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 9px 4px 9px 0;
-          font-size: 14px;
-          cursor: pointer;
-          text-decoration: none;
-        }
-        .pl-cat-row:hover, .pl-subcat-list .pl-check-label:hover { color: #871B1B; }
-
-        .pl-cat-toggle {
-          background: none;
-          border: 1px solid #871B1B;
-          border-radius: 3px;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: #871B1B;
-          font-size: 14px;
-          line-height: 1;
-          flex-shrink: 0;
-        }
-        .pl-cat-toggle:hover { border-color: #871B1B; color: #871B1B; }
-
-        /* Sub-categories */
-        .pl-subcat-list {
-          list-style: none;
-          padding: 0 0 6px 14px;
-          margin: 0;
-        }
-        .pl-subcat-list li a {
-          display: block;
-          padding: 5px 0;
-          font-size: 13px;
-          color: #555;
-          text-decoration: none;
-        }
-        .pl-subcat-list li a:hover { color: #871B1B; }
-
-        .pl-sidebar-scroll {
-          padding-right: 4px;
-          border-left: 3px solid transparent;
-        }
-
-        /* Checkbox filter */
-        .pl-check-list { list-style: none; padding: 0; margin: 0; }
-        .pl-check-list li {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          padding: 5px 0;
-          font-size: 14px;
-          cursor: pointer;
-        }
-        .pl-check-list li input[type="checkbox"] {
-          width: 15px; height: 15px;
-          accent-color: #871B1B;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-        .pl-check-list li:hover { color: #871B1B; }
-
-        /* Size */
-        .pl-size-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
-        .pl-size-btn {
-          border: 1px solid #ccc;
-          background: #fff;
-          border-radius: 4px;
-          padding: 5px 12px;
-          font-size: 12.5px;
-          font-family: 'Montserrat', sans-serif;
-          color: #333;
-          cursor: pointer;
-        }
-        .pl-size-btn:hover,
-        .pl-size-btn.active { border-color: #222; background: #222; color: #fff; }
-
-        /* ════════════
-           MAIN CONTENT
-        ════════════ */
-        .pl-main {
-          flex: 1 1 0;
-          min-width: 0;
-          padding: 28px 0 0 36px;
-        }
-
-        .pl-main > .spinner-loading {
-          min-height: 60vh;
-          min-height: 60dvh;
-        }
-
-        /* TOP ROW: title + sort */
-        .pl-main-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
-          gap: 12px;
-        }
-
-        /* ── PRODUCT GRID ── */
-        .pl-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px 20px;
-          margin-bottom: 40px;
-        }
-
-        .pl-pcard { cursor: pointer; }
-        .pl-favorite { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none; border: none; color: #871B1B; font-size: 20px; opacity: 0; transition: opacity 0.2s; }
-        .pl-pcard:hover .pl-favorite, .pl-favorite.active { opacity: 1; }
-        .pl-pimg-wrap {
-          position: relative;
-          overflow: hidden;
-          border-radius: 12px;
-          background: #f5f5f5;
-          margin-bottom: 0;
-        }
-        .pl-pimg-wrap a { display: block; position: relative; }
-        .pl-pimg-wrap img {
-          width: 100%;
-          aspect-ratio: 3/4;
-          object-fit: cover;
-          object-position: top center;
-          display: block;
-        }
-        .pl-pimg-wrap .pl-pimg-secondary {
-          position: absolute;
-          inset: 0;
-          height: 100%;
-          opacity: 0;
-          transition: opacity 0.35s ease;
-        }
-        @media (hover: hover) {
-          .pl-pimg-wrap:hover .pl-pimg-secondary { opacity: 1; }
-        }
-        .pl-pimg-wrap a:focus-visible .pl-pimg-secondary { opacity: 1; }
-        @media (prefers-reduced-motion: reduce) {
-          .pl-pimg-wrap .pl-pimg-secondary { transition: none; }
-        }
-
-        .pl-pinfo { padding: 10px 0 6px; }
-        .pl-pname {
-          font-size: 16px;
-          text-decoration: none;
-          font-weight: 500;
-          line-height: 1.45;
-          display: block;
-          margin-bottom: 10px;
-        }
-        .pl-pname:hover { color: #871B1B; }
-
-        .pl-price-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-        .pl-price-current {
-          font-size: 16px;
-          font-weight: 600;
-          color: #871B1B;
-        }
-        .pl-price-original {
-          font-size: 16px;
-          color: #6c757d;
-          text-decoration: line-through;
-          text-decoration-color: #6c757d;
-        }
-
-        /* ── PAGINATION ── */
-        .pl-pagination {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          margin-top: 8px;
-          flex-wrap: wrap;
-        }
-        .pl-pg-btn {
-          min-width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid #d0d0d0;
-          background: #fff;
-          font-size: 13.5px;
-          font-family: 'Montserrat', sans-serif;
-          font-weight: 600;
-          color: #333;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.15s;
-          padding: 0 4px;
-        }
-        .pl-pg-btn:hover:not(:disabled):not(.active) {
-          border-color: #222;
-          color: #111;
-        }
-        .pl-pg-btn.active {
-          background: #111;
-          color: #fff;
-          border-color: #111;
-        }
-        .pl-pg-btn:disabled { opacity: 0.4; cursor: default; }
-        .pl-pg-ellipsis { border: none; background: none; cursor: default; }
-        .pl-pg-next { font-size: 16px; }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 1100px) {
-          .pl-layout { padding-bottom: 48px; }
-          .pl-sidebar { flex: 0 0 230px; width: 230px; }
-        }
-        @media (max-width: 900px) {
-          .pl-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 1520px) {
-          .pl-breadcrumb-wrap { padding: 13px 24px; }
-          .pl-layout { padding-bottom: 48px; }
-          .pl-sidebar { flex: 0 0 220px; width: 220px; }
-          .pl-main { padding-left: 20px; }
-        }
-        @media (max-width: 640px) {
-          .pl-sidebar { display: none; }
-          .pl-main { padding-left: 0; }
-          .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-        }
-
-        /* Bộ lọc dữ liệu thật */
-        .pl-sidebar {
-          padding-right: 22px;
-        }
-        .pl-selected-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          margin-bottom: 10px;
-        }
-        .pl-selected-head .btn {
-          margin-right: 8px;
-        }
-
-        .pl-selected-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 7px;
-        }
-        .pl-selected-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          max-width: 100%;
-          border: 1px solid #871b1b;
-          border-radius: 50rem;
-          padding: 5px 8px 5px 10px;
-          background: #fffafa;
-          color: #871b1b;
-          cursor: pointer;
-          font-size: 14px;
-          text-align: left;
-        }
-        .pl-selected-chip span {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .pl-selected-chip i {
-          font-size: 14px;
-        }
-        .pl-cat-label,
-        .pl-check-label {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          flex: 1;
-          min-width: 0;
-          color: inherit;
-          cursor: pointer;
-        }
-        .pl-cat-label .form-check-input,
-        .pl-check-label .form-check-input {
-          margin: 0;
-          cursor: pointer;
-          flex: 0 0 auto;
-        }
-        .pl-cat-row {
-          gap: 8px;
-        }
-        .pl-subcat-list li {
-          padding: 4px 0;
-        }
-        .pl-subcat-list .pl-check-label {
-          font-size: 14px;
-        }
-        .pl-price-range {
-          padding: 4px 0 2px;
-        }
-        .pl-range-track {
-          position: relative;
-          height: 22px;
-          margin: 0 4px 12px;
-          background: linear-gradient(
-            to right,
-            #e5e5e5 0%,
-            #e5e5e5 var(--pl-range-start),
-            #871b1b var(--pl-range-start),
-            #871b1b var(--pl-range-end),
-            #e5e5e5 var(--pl-range-end),
-            #e5e5e5 100%
-          );
-          background-position: center;
-          background-repeat: no-repeat;
-          background-size: calc(100% - 16px) 4px;
-        }
-        .pl-range-input {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 22px;
-          margin: 0;
-          padding: 0;
-          border: 0;
-          appearance: none;
-          background: transparent;
-          pointer-events: none;
-        }
-        .pl-range-input::-webkit-slider-thumb {
-          box-sizing: border-box;
-          width: 16px;
-          height: 16px;
-          border: 2px solid #871b1b;
-          border-radius: 50%;
-          background: #fff;
-          appearance: none;
-          cursor: pointer;
-          pointer-events: auto;
-        }
-        .pl-range-input::-moz-range-thumb {
-          box-sizing: border-box;
-          width: 16px;
-          height: 16px;
-          border: 2px solid #871b1b;
-          border-radius: 50%;
-          background: #fff;
-          cursor: pointer;
-          pointer-events: auto;
-        }
-        .pl-price-values {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          font-size: 14px;
-        }
-        .pl-color-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 9px;
-        }
-        .pl-color-btn {
-          position: relative;
-          border: 1px solid #E6E6E6;
-          padding: 0.25em;
-          border-radius: 0.65em;
-          background: #fff;
-          cursor: pointer;
-          transition: border-color 0.15s, transform 0.15s;
-        }
-        .pl-color-btn:hover {
-          border: 1px solid #871b1b;
-        }
-        .pl-color-btn.active {
-          border-color: #871b1b;
-        }
-        .pl-color-swatch {
-          display: block;
-          width: 37.4px;
-          height: 37.4px;
-          border-radius: 0.35em;
-          object-fit: cover;
-        }
-        .pl-filter-message {
-          margin: 10px 0 0;
-          color: #777;
-          font-size: 12px;
-          line-height: 1.45;
-        }
-        .pl-filter-message {
-          margin-top: 0;
-          font-size: 13px;
-        }
-        .pl-search-summary {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 22px;
-          padding: 10px 12px;
-          border-left: 3px solid #871b1b;
-          background: #fff8f8;
-          font-size: 14px;
-        }
-        .pl-search-summary button {
-          flex: 0 0 auto;
-          border: 0;
-          padding: 0;
-          background: transparent;
-          color: #871b1b;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-        }
-        .pl-search-summary button:hover {
-          text-decoration: underline;
-        }
-        .pl-state {
-          padding: 40px 0;
-          color: #666;
-          text-align: center;
-        }
-        .pl-state.error {
-          color: #871b1b;
-        }
-        @media (max-width: 640px) {
-          .pl-layout {
-            display: block;
-            padding-bottom: 42px;
-          }
-          .pl-sidebar {
-            display: block;
-            position: static;
-            width: 100%;
-            padding-right: 0;
-            border-right: 0;
-            border-bottom: 1px solid #ebebeb;
-          }
-          .pl-main {
-            padding-left: 0;
-          }
-          .pl-search-summary {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-        }
-      `}</style>
-
       {/* ── LAYOUT: SIDEBAR + MAIN ── */}
       <div className="container pl-layout">
         {/* ══════════ SIDEBAR ══════════ */}
-        <aside ref={sidebarRef} className="pl-sidebar" aria-label="Bộ lọc sản phẩm" aria-busy={filterLoading}>
+        <aside
+          ref={sidebarRef}
+          className="pl-sidebar"
+          aria-label="Bộ lọc sản phẩm"
+          aria-busy={filterLoading}
+        >
           {selectedFilters.length > 0 && (
             <div className="pl-sidebar-section">
               <div className="pl-selected-head">
                 <div className="pl-sidebar-title mb-0">Đã chọn</div>
                 <button
-                  className="btn btn-outline-danger btn-sm fw-medium rounded-2" style={{ fontSize: "13px" }}
+                  className="btn btn-outline-danger btn-sm fw-medium rounded-2"
+                  style={{ fontSize: "13px" }}
                   onClick={clearAllFilters}
                 >
                   Xóa tất cả
@@ -1136,7 +634,9 @@ export default function ProductList() {
           <div className="pl-sidebar-section">
             <div className="pl-sidebar-title">Mức giá</div>
 
-            {filterLoading ? <FilterSkeleton variant="price" /> : priceMax > priceMin ? (
+            {filterLoading ? (
+              <FilterSkeleton variant="price" />
+            ) : priceMax > priceMin ? (
               <div className="pl-price-range">
                 <div
                   className="pl-range-track"
@@ -1264,7 +764,9 @@ export default function ProductList() {
                   {SORT_OPTIONS.find((s) => s.key === filters.sort)?.label ||
                     "Sắp xếp mặc định"}
                 </span>
-                <i className={`bi ${sortOpen ? "bi-caret-up" : "bi-caret-down"}`} />
+                <i
+                  className={`bi ${sortOpen ? "bi-caret-up" : "bi-caret-down"}`}
+                />
               </button>
 
               {sortOpen && (
@@ -1319,7 +821,10 @@ export default function ProductList() {
                   className="btn btn-dark mt-3 px-4 form-btn fw-semibold"
                   onClick={clearAllFilters}
                 >
-                  <i className="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
+                  <i
+                    className="bi bi-arrow-counterclockwise me-2"
+                    aria-hidden="true"
+                  />
                   Đặt lại
                 </button>
               )}
@@ -1330,7 +835,7 @@ export default function ProductList() {
                 {products.map((product) => (
                   <div className="pl-pcard" key={product.product_id}>
                     <div className="pl-pimg-wrap">
-                      <Link to={"/san-pham/" + product.product_id}>
+                      <ProductLink productId={product.product_id}>
                         <ProductImage
                           src={product.image_url}
                           alt=""
@@ -1349,21 +854,31 @@ export default function ProductList() {
                             }}
                           />
                         )}
-                      </Link>
-                      <button type="button" className={`pl-favorite${isFavorite(product.product_id) ? " active" : ""}`}
-                        onClick={() => toggleWishlist(product)} aria-pressed={isFavorite(product.product_id)}
-                        aria-label={isFavorite(product.product_id) ? "Bỏ yêu thích " + product.product_name : "Yêu thích " + product.product_name}>
-                        <i className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-suit-heart"}`} />
+                      </ProductLink>
+                      <button
+                        type="button"
+                        className={`pl-favorite${isFavorite(product.product_id) ? " active" : ""}`}
+                        onClick={() => toggleWishlist(product)}
+                        aria-pressed={isFavorite(product.product_id)}
+                        aria-label={
+                          isFavorite(product.product_id)
+                            ? "Bỏ yêu thích " + product.product_name
+                            : "Yêu thích " + product.product_name
+                        }
+                      >
+                        <i
+                          className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-suit-heart"}`}
+                        />
                       </button>
                     </div>
 
                     <div className="pl-pinfo">
-                      <Link
+                      <ProductLink
                         className="pl-pname"
-                        to={"/san-pham/" + product.product_id}
+                        productId={product.product_id}
                       >
                         {product.product_name}
-                      </Link>
+                      </ProductLink>
 
                       <div className="pl-price-row">
                         <span className="pl-price-current">
@@ -1391,7 +906,6 @@ export default function ProductList() {
           )}
         </main>
       </div>
-
     </div>
   );
 }

@@ -128,7 +128,15 @@ export default function OrderDetail({ readOnly = false }) {
     }
   };
 
-  if (loading) return <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}><Loading text="Đang tải đơn hàng..." /></div>;
+  if (loading)
+    return (
+      <div
+        className="d-flex align-items-center justify-content-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <Loading text="Đang tải đơn hàng..." />
+      </div>
+    );
   if (error || !order || (!readOnly && !canEdit))
     return (
       <>

@@ -362,10 +362,7 @@ export default function AdminCategories() {
         </div>
 
         {/* Filter: Sắp xếp */}
-        <div
-          className="dropdown"
-          ref={sortRef}
-        >
+        <div className="dropdown" ref={sortRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"

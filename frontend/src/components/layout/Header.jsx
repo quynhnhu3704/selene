@@ -1,3 +1,4 @@
+import ProductLink from "../common/ProductLink";
 // frontend\src\components\layout\Header.jsx
 import Loading from "../common/Loading";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
@@ -150,7 +151,8 @@ export default function Header() {
 
   const routeKey = JSON.stringify([location.pathname, location.search]);
   const searchContext = JSON.stringify([routeKey, compact]);
-  const [previousSearchContext, setPreviousSearchContext] = useState(searchContext);
+  const [previousSearchContext, setPreviousSearchContext] =
+    useState(searchContext);
   if (previousSearchContext !== searchContext) {
     setPreviousSearchContext(searchContext);
     setSuggestionsOpen(false);
@@ -404,10 +406,10 @@ export default function Header() {
                     </div>
                   ) : (
                     searchResult.products.map((product) => (
-                      <Link
+                      <ProductLink
                         className="rb-search-product"
                         key={product.product_id}
-                        to={`/san-pham/${product.product_id}`}
+                        productId={product.product_id}
                         onClick={() => {
                           saveSearch(keyword);
                           setSuggestionsOpen(false);
@@ -448,7 +450,7 @@ export default function Header() {
                           </div>
                         </div>
                         <i className="bi bi-arrow-up-right rb-search-product-arrow" />
-                      </Link>
+                      </ProductLink>
                     ))
                   )}
                 </div>
@@ -546,7 +548,8 @@ export default function Header() {
               <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/ho-tro" className={navClass}>
-              HỖ TRỢ<UnreadBadge />
+              HỖ TRỢ
+              <UnreadBadge />
             </NavLink>
             <NavLink
               to="/khuyen-mai"
@@ -563,7 +566,10 @@ export default function Header() {
 
         {/* CỘT 3: ICONS */}
         <div className="rb-topicons">
-          <Link to="/yeu-thich" className="rb-icon-wrap text-decoration-none text-dark">
+          <Link
+            to="/yeu-thich"
+            className="rb-icon-wrap text-decoration-none text-dark"
+          >
             <div className="rb-icon-rel">
               <i className="bi bi-suit-heart fs-5" />
               <span className="rb-bdot">{wl}</span>
@@ -675,7 +681,11 @@ export default function Header() {
 
         {/* PHẢI: icons */}
         <div className="rb-mob-right">
-          <Link to="/yeu-thich" className="rb-mob-icon text-decoration-none" aria-label="Yêu thích">
+          <Link
+            to="/yeu-thich"
+            className="rb-mob-icon text-decoration-none"
+            aria-label="Yêu thích"
+          >
             <i className="bi bi-heart" />
             <span className="rb-mob-bdot">{wl}</span>
           </Link>

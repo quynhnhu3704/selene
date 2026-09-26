@@ -16,4 +16,6 @@ app.use(morgan("dev"));
 app.get("/health", (req, res) => res.json({ service: "chat", status: "UP" }));
 app.use("/", chatRoutes);
 app.use(errorHandler);
-server.listen(config.port, () => console.log(`Chat Service running on port ${config.port}`));
+server.listen(config.port, () =>
+  console.log(`Chat Service running on port ${config.port}`),
+);

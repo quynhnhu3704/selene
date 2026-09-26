@@ -385,10 +385,7 @@ export default function AdminProducts() {
         </div>
 
         {/* Filter: Danh mục */}
-        <div
-          className="dropdown"
-          ref={categoryRef}
-        >
+        <div className="dropdown" ref={categoryRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"
@@ -438,10 +435,7 @@ export default function AdminProducts() {
         </div>
 
         {/* Filter: Sắp xếp */}
-        <div
-          className="dropdown"
-          ref={sortRef}
-        >
+        <div className="dropdown" ref={sortRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"

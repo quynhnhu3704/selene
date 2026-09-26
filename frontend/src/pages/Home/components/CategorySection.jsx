@@ -18,7 +18,9 @@ export default function CategorySection({ categories = [], loading = false }) {
       </div>
 
       {loading ? (
-        <div className="home-category-state"><Loading text="Đang tải danh mục..." /></div>
+        <div className="home-category-state">
+          <Loading text="Đang tải danh mục..." />
+        </div>
       ) : (
         <div className="home-category-grid">
           {categories.map((category) => (

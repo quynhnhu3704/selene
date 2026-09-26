@@ -28,37 +28,69 @@ const loadAllPages = async (fetchPage) => {
   }
 };
 
-const normalize = (value) => String(value || "")
-  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-  .replace(/đ/gi, "d").toLowerCase();
+const normalize = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase();
 
 const loadStaffs = async ({ q, sort, status }) => {
   const [self, staffs, profiles, accounts] = await Promise.all([
     getProfile(),
     loadAllPages((page) => getAdminStaffs({ page, limit: 100 })),
-    loadAllPages((page) => http.get("/auth/manage/profiles", { params: { page, limit: 100 } })),
-    loadAllPages((page) => http.get("/auth/manage/accounts", { params: { page, limit: 100 } })),
+    loadAllPages((page) =>
+      http.get("/auth/manage/profiles", { params: { page, limit: 100 } }),
+    ),
+    loadAllPages((page) =>
+      http.get("/auth/manage/accounts", { params: { page, limit: 100 } }),
+    ),
   ]);
   const selfId = self.data.profile.profile_id;
-  const managers = await Promise.all(profiles
-    .filter((user) => Number(user.role_id) === 1)
-    .map(async (user) => {
-      const { data } = await getAdminUserDetail(user.profile_id);
-      return { ...data.data, phone_number: data.data.phone };
-    }));
+  const managers = await Promise.all(
+    profiles
+      .filter((user) => Number(user.role_id) === 1)
+      .map(async (user) => {
+        const { data } = await getAdminUserDetail(user.profile_id);
+        return { ...data.data, phone_number: data.data.phone };
+      }),
+  );
   const accountMap = new Map(accounts.map((user) => [user.account_id, user]));
   const query = normalize(q).trim();
   const phoneQuery = query.replace(/\D/g, "");
   const users = [...staffs, ...managers]
-    .map((user) => ({ ...user, is_self: user.profile_id === selfId, created_at: accountMap.get(user.account_id)?.created_at || user.created_at }))
-    .filter((user) => (!status || user.status === status) &&
-      (!query || [user.full_name, user.email, user.phone_number].some((value) => normalize(value).includes(query)) ||
-        (phoneQuery.length >= 3 && String(user.phone_number || "").includes(phoneQuery))));
+    .map((user) => ({
+      ...user,
+      is_self: user.profile_id === selfId,
+      created_at:
+        accountMap.get(user.account_id)?.created_at || user.created_at,
+    }))
+    .filter(
+      (user) =>
+        (!status || user.status === status) &&
+        (!query ||
+          [user.full_name, user.email, user.phone_number].some((value) =>
+            normalize(value).includes(query),
+          ) ||
+          (phoneQuery.length >= 3 &&
+            String(user.phone_number || "").includes(phoneQuery))),
+    );
   const collator = new Intl.Collator("vi", { sensitivity: "base" });
   users.sort((a, b) => {
     const result = ["az", "za"].includes(sort)
-      ? (collator.compare(String(a.full_name || "").trim().split(/\s+/).at(-1), String(b.full_name || "").trim().split(/\s+/).at(-1)) || collator.compare(a.full_name || "", b.full_name || "")) * (sort === "za" ? -1 : 1)
-      : (new Date(a.created_at || 0) - new Date(b.created_at || 0)) * (sort === "oldest" ? 1 : -1);
+      ? (collator.compare(
+          String(a.full_name || "")
+            .trim()
+            .split(/\s+/)
+            .at(-1),
+          String(b.full_name || "")
+            .trim()
+            .split(/\s+/)
+            .at(-1),
+        ) || collator.compare(a.full_name || "", b.full_name || "")) *
+        (sort === "za" ? -1 : 1)
+      : (new Date(a.created_at || 0) - new Date(b.created_at || 0)) *
+        (sort === "oldest" ? 1 : -1);
     return result || a.profile_id.localeCompare(b.profile_id);
   });
   return users;
@@ -132,8 +164,18 @@ export default function AdminStaffs() {
         if (isCurrentRequest) {
           const totalPages = Math.ceil(rows.length / USERS_PER_PAGE);
           const currentPage = Math.min(page, Math.max(1, totalPages));
-          setUsers(rows.slice((currentPage - 1) * USERS_PER_PAGE, currentPage * USERS_PER_PAGE));
-          setPagination({ page: currentPage, limit: USERS_PER_PAGE, total_items: rows.length, total_pages: totalPages });
+          setUsers(
+            rows.slice(
+              (currentPage - 1) * USERS_PER_PAGE,
+              currentPage * USERS_PER_PAGE,
+            ),
+          );
+          setPagination({
+            page: currentPage,
+            limit: USERS_PER_PAGE,
+            total_items: rows.length,
+            total_pages: totalPages,
+          });
         }
       } catch (err) {
         if (isCurrentRequest)
@@ -193,10 +235,30 @@ export default function AdminStaffs() {
         return `"${safe.replace(/"/g, '\"\"')}"`;
       };
       const cells = [
-        ["Họ tên", "Email", "Số điện thoại", "Vai trò", "Trạng thái", "Ngày tham gia"],
-        ...rows.map((user) => [user.full_name, user.email, user.phone_number, user.role_name, user.status, user.created_at]),
+        [
+          "Họ tên",
+          "Email",
+          "Số điện thoại",
+          "Vai trò",
+          "Trạng thái",
+          "Ngày tham gia",
+        ],
+        ...rows.map((user) => [
+          user.full_name,
+          user.email,
+          user.phone_number,
+          user.role_name,
+          user.status,
+          user.created_at,
+        ]),
       ];
-      const data = new Blob(["\uFEFF", cells.map((row) => row.map(escapeCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+      const data = new Blob(
+        [
+          "\uFEFF",
+          cells.map((row) => row.map(escapeCell).join(",")).join("\r\n"),
+        ],
+        { type: "text/csv;charset=utf-8" },
+      );
       const url = URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;

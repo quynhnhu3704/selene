@@ -107,7 +107,15 @@ export default function ProfilePage({
       setSaving(false);
     }
   };
-  if (loading) return <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}><Loading text="Đang tải hồ sơ..." /></div>;
+  if (loading)
+    return (
+      <div
+        className="d-flex align-items-center justify-content-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <Loading text="Đang tải hồ sơ..." />
+      </div>
+    );
   if (error)
     return (
       <>

@@ -16,9 +16,10 @@ export default function useChatSession() {
       setSession({ user: res.data.data, socket });
     };
     load();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   return { session, connected, error, retry: () => {} };
 }
-

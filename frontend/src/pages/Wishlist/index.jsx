@@ -1,3 +1,4 @@
+import ProductLink from "../../components/common/ProductLink";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
@@ -13,8 +14,14 @@ export default function Wishlist() {
 
   return (
     <>
-      <Helmet><title>Sản phẩm yêu thích | Selene</title></Helmet>
-      <div className="wl-breadcrumb"><Breadcrumb items={[{ label: "Trang chủ", path: "/" }, { label: "Yêu thích" }]} /></div>
+      <Helmet>
+        <title>Sản phẩm yêu thích | Selene</title>
+      </Helmet>
+      <div className="wl-breadcrumb">
+        <Breadcrumb
+          items={[{ label: "Trang chủ", path: "/" }, { label: "Yêu thích" }]}
+        />
+      </div>
       <style>{`
         .wl-breadcrumb { padding: 0 75px; }
         .wl-breadcrumb > .container { width: 100%; max-width: none; margin: 0 !important; }
@@ -39,30 +46,56 @@ export default function Wishlist() {
         @media (max-width: 480px) { .wl-page { padding: 24px 16px; } .wl-grid { gap: 24px 12px; } }
       `}</style>
       <div className="wl-page">
-        <h1 className="wl-heading">Sản phẩm yêu thích <span>({wishlist.length} sản phẩm)</span></h1>
+        <h1 className="wl-heading">
+          Sản phẩm yêu thích <span>({wishlist.length} sản phẩm)</span>
+        </h1>
         {wishlist.length === 0 ? (
           <div className="wl-empty">
             <i className="bi bi-heart" />
             <h2>Bạn chưa có sản phẩm yêu thích</h2>
-            <p className="text-muted">Bấm biểu tượng trái tim để lưu những sản phẩm bạn thích.</p>
-            <Link to="/san-pham" className="wl-shop">Khám phá sản phẩm</Link>
+            <p className="text-muted">
+              Bấm biểu tượng trái tim để lưu những sản phẩm bạn thích.
+            </p>
+            <Link to="/san-pham" className="wl-shop">
+              Khám phá sản phẩm
+            </Link>
           </div>
         ) : (
           <div className="wl-grid">
             {wishlist.map((product) => (
               <div key={product.product_id}>
                 <div className="wl-image">
-                  <Link to={"/san-pham/" + product.product_id}>
-                    <img src={product.image_url || defaultImage} alt="" loading="lazy"
-                      onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = defaultImage; }} />
-                  </Link>
-                  <button type="button" className="wl-remove" onClick={() => toggleWishlist(product)} aria-label={"Bỏ yêu thích " + product.product_name}>
+                  <ProductLink productId={product.product_id}>
+                    <img
+                      src={product.image_url || defaultImage}
+                      alt=""
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = defaultImage;
+                      }}
+                    />
+                  </ProductLink>
+                  <button
+                    type="button"
+                    className="wl-remove"
+                    onClick={() => toggleWishlist(product)}
+                    aria-label={"Bỏ yêu thích " + product.product_name}
+                  >
                     <i className="bi bi-heart-fill" />
                   </button>
                 </div>
-                <Link to={"/san-pham/" + product.product_id} className="wl-name">{product.product_name}</Link>
-                <span className="wl-price">{fmt(product.discount_price ?? product.original_price)}</span>
-                {product.original_price > product.discount_price && <del className="text-muted small">{fmt(product.original_price)}</del>}
+                <ProductLink productId={product.product_id} className="wl-name">
+                  {product.product_name}
+                </ProductLink>
+                <span className="wl-price">
+                  {fmt(product.discount_price ?? product.original_price)}
+                </span>
+                {product.original_price > product.discount_price && (
+                  <del className="text-muted small">
+                    {fmt(product.original_price)}
+                  </del>
+                )}
               </div>
             ))}
           </div>

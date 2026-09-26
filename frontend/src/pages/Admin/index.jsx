@@ -1,7 +1,7 @@
 // frontend\src\pages\Admin\index.jsx
 import Loading from "../../components/common/Loading";
 import { useEffect, useState } from "react";
-import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import defaultAvatar from "../../assets/images/default-avatar.png";
 import { getProfile } from "../../services/user.service";
 import logoIcon from "../../assets/images/icon.png";
@@ -68,7 +68,7 @@ const MENU_ITEMS = [
 
 export default function AdminLayout() {
   const location = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +87,9 @@ export default function AdminLayout() {
     };
 
     fetchProfile();
-    return () => { isCurrentRequest = false; };
+    return () => {
+      isCurrentRequest = false;
+    };
   }, []);
 
   const isActive = (path) => {
@@ -164,7 +166,8 @@ export default function AdminLayout() {
   }
 
   if (!profile) return <Navigate to="/tai-khoan/dang-nhap" replace />;
-  if (![1, 2].includes(Number(profile.role_id))) return <Navigate to="/" replace />;
+  if (![1, 2].includes(Number(profile.role_id)))
+    return <Navigate to="/" replace />;
 
   return (
     <>
@@ -342,7 +345,12 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          <nav className="adm-nav-scroll">{MENU_ITEMS.filter((item) => item.key !== "permissions" || Number(profile?.role_id) === 1).map(renderItem)}</nav>
+          <nav className="adm-nav-scroll">
+            {MENU_ITEMS.filter(
+              (item) =>
+                item.key !== "permissions" || Number(profile?.role_id) === 1,
+            ).map(renderItem)}
+          </nav>
 
           <div className="adm-sidebar-bottom">
             <button

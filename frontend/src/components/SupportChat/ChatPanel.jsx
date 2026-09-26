@@ -18,10 +18,11 @@ export default function ChatPanel({ conversation, user, canReply }) {
       conversation_id: conversation.conversation_id,
       sender_id: 1,
       sender_role: "admin",
-      content: "Chào bạn, Selene sẵn sàng hỗ trợ bạn. Bạn cần hỏi về sản phẩm nào?",
+      content:
+        "Chào bạn, Selene sẵn sàng hỗ trợ bạn. Bạn cần hỏi về sản phẩm nào?",
       created_at: new Date(Date.now() - 1800000).toISOString(),
       is_read: true,
-    }
+    },
   ]);
 
   const send = (data) => {
@@ -39,12 +40,21 @@ export default function ChatPanel({ conversation, user, canReply }) {
 
   return (
     <div className="support-chat-panel">
-      <MessageList messages={messages} accountId={user?.accountId || 1} hasMore={false} loadingMore={false} />
+      <MessageList
+        messages={messages}
+        accountId={user?.accountId || 1}
+        hasMore={false}
+        loadingMore={false}
+      />
       {conversation.status === "closed" && (
-        <div className="support-notice">Hội thoại đã kết thúc. Bạn vẫn có thể xem lại lịch sử.</div>
+        <div className="support-notice">
+          Hội thoại đã kết thúc. Bạn vẫn có thể xem lại lịch sử.
+        </div>
       )}
-      <MessageInput disabled={!canReply || conversation.status === "closed"} onSend={send} />
+      <MessageInput
+        disabled={!canReply || conversation.status === "closed"}
+        onSend={send}
+      />
     </div>
   );
 }
-

@@ -9,7 +9,8 @@ export const getChatbotReply = async ({ message, history }) => {
     : "Selene chưa tìm thấy mẫu khớp với câu hỏi của bạn. Bạn cho mình biết thêm tên hoặc loại trang phục nhé! Một vài mẫu tham khảo ở bên dưới. ✨";
 
   if (context.products.length === 0) {
-    reply = "Selene chưa tìm thấy sản phẩm phù hợp để giới thiệu. Bạn cho mình biết thêm loại trang phục đang tìm nhé!";
+    reply =
+      "Selene chưa tìm thấy sản phẩm phù hợp để giới thiệu. Bạn cho mình biết thêm loại trang phục đang tìm nhé!";
   }
 
   let source = "catalog";

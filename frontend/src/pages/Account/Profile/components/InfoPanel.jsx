@@ -131,7 +131,11 @@ export default function InfoPanel({ profile, setProfile }) {
       newErrors.phone_number = "Số điện thoại không hợp lệ";
     }
 
-    if (isStaff && form.identity_card.trim() && !/^[0-9]{12}$/.test(form.identity_card.trim())) {
+    if (
+      isStaff &&
+      form.identity_card.trim() &&
+      !/^[0-9]{12}$/.test(form.identity_card.trim())
+    ) {
       newErrors.identity_card = "CCCD phải gồm 12 chữ số";
     }
 

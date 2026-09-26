@@ -2,7 +2,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 for (const name of ["JWT_ACCESS_SECRET", "SUPABASE_URL", "SUPABASE_KEY"]) {
-  if (!process.env[name]) throw new Error(`Missing ${name} environment variable.`);
+  if (!process.env[name])
+    throw new Error(`Missing ${name} environment variable.`);
 }
 
 export const config = {

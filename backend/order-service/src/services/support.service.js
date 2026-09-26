@@ -6,9 +6,15 @@ export const getSupportOrders = async (token) => {
   let payload;
   try {
     payload = jwt.verify(token, config.jwtAccessSecret, {
-      algorithms: ["HS256"], audience: "order-service", issuer: "chat-service",
+      algorithms: ["HS256"],
+      audience: "order-service",
+      issuer: "chat-service",
     });
-    if (payload.scope !== "chat:orders" || typeof payload.customerId !== "string" || !payload.customerId) {
+    if (
+      payload.scope !== "chat:orders" ||
+      typeof payload.customerId !== "string" ||
+      !payload.customerId
+    ) {
       throw new Error("Invalid support scope");
     }
   } catch {
