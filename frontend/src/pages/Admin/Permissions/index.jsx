@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AdminSelect from "../components/AdminSelect";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -251,27 +252,19 @@ export default function AdminPermissions() {
                 onChange={(event) => setSearch(event.target.value)}
               />
             </div>
-            <div className="position-relative permission-filter">
-              <i
-                className="bi bi-funnel position-absolute top-50 translate-middle-y"
-                style={{ left: 14, pointerEvents: "none" }}
-                aria-hidden="true"
-              />
-              <select
-                className="form-select form-control"
-                style={{ paddingLeft: 38 }}
-                aria-label="Lọc nhóm chức năng"
-                value={group}
-                onChange={(event) => setGroup(event.target.value)}
-              >
-                <option value="">Tất cả chức năng</option>
-                {groups.map((key) => (
-                  <option key={key} value={key}>
-                    {GROUP_LABELS[key] || key}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <AdminSelect
+              icon="bi-funnel"
+              aria-label="Lọc nhóm chức năng"
+              value={group}
+              onChange={(event) => setGroup(event.target.value)}
+            >
+              <option value="">Tất cả chức năng</option>
+              {groups.map((key) => (
+                <option key={key} value={key}>
+                  {GROUP_LABELS[key] || key}
+                </option>
+              ))}
+            </AdminSelect>
             <button
               className="form-btn btn btn-outline-dark fw-semibold mb-0 px-4"
               onClick={() => {

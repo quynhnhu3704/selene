@@ -66,14 +66,24 @@ export default function AdminUsers() {
     );
   };
 
-  useEffect(() => {
+  // Reset only when the URL query changes; preserve the local typing draft.
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (previousQuery !== q) {
+    setPreviousQuery(q);
     setSearchValue(q);
-  }, [q]);
+  }
+
+  // Prepare request state before committing a changed route/filter.
+  const requestKey = JSON.stringify([q, sort, status, page, revision]);
+  const [previousRequestKey, setPreviousRequestKey] = useState(requestKey);
+  if (previousRequestKey !== requestKey) {
+    setPreviousRequestKey(requestKey);
+    setLoading(true);
+    setError("");
+  }
 
   useEffect(() => {
     let isCurrentRequest = true;
-    setLoading(true);
-    setError("");
     const timer = setTimeout(async () => {
       try {
         const { data } = await getAdminCustomers({

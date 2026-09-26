@@ -36,11 +36,18 @@ export default function CategoryPage({ create = false }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Prepare request state before committing a changed route/filter.
+  const requestKey = JSON.stringify([create, categoryId]);
+  const [previousRequestKey, setPreviousRequestKey] = useState(requestKey);
+  if (previousRequestKey !== requestKey) {
+    setPreviousRequestKey(requestKey);
+    setLoading(!create);
+    setError("");
+  }
+
   useEffect(() => {
     if (create) return;
     let isCurrentRequest = true;
-    setLoading(true);
-    setError("");
     getAdminCategoryDetail(categoryId)
       .then((res) => {
         if (isCurrentRequest) setForm(res.data);
@@ -58,14 +65,8 @@ export default function CategoryPage({ create = false }) {
   }, [create, categoryId]);
 
   useEffect(() => {
-    if (!image) {
-      setPreview("");
-      return;
-    }
-    const url = URL.createObjectURL(image);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [image]);
+    if (preview) return () => URL.revokeObjectURL(preview);
+  }, [preview]);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -79,9 +80,11 @@ export default function CategoryPage({ create = false }) {
       toast.error("Chọn ảnh JPG, PNG, WEBP hoặc GIF tối đa 5 MB.");
       event.target.value = "";
       setImage(null);
+      setPreview("");
       return;
     }
     setImage(file || null);
+    setPreview(file ? URL.createObjectURL(file) : "");
   };
 
   const handleSubmit = async (event) => {

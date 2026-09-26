@@ -1,6 +1,5 @@
 // frontend\src\components\common\Address.jsx
-import Loading from "./Loading";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 const API = "https://provinces.open-api.vn/api/v2";
 
@@ -16,7 +15,6 @@ export default function Address({
   const [province, setProvince] = useState("");
   const [ward, setWard] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [retry, setRetry] = useState(0);
   const [area, setArea] = useState("");
   const [detail, setDetail] = useState(initialAddress);
@@ -30,6 +28,7 @@ export default function Address({
   };
 
   const handleProvinceSelect = (value) => {
+    setError("");
     setProvince(value);
     setWard("");
     setWards([]);
@@ -65,10 +64,38 @@ export default function Address({
     };
   }, []);
 
+  const handleAddressLoaded = useEffectEvent((data, requestedProvince) => {
+    setError("");
+    if (requestedProvince) {
+      setWards(data.wards || []);
+      if (initializing) {
+        const selectedProvince = provinces.find((item) => String(item.code) === requestedProvince);
+        const selectedWard = (data.wards || []).find((item) =>
+          initialAddress.endsWith(`${item.name}, ${selectedProvince?.name}`),
+        );
+        const nextArea = selectedWard
+          ? `${selectedWard.name}, ${selectedProvince.name}`
+          : selectedProvince?.name || "";
+        const nextDetail = nextArea
+          ? initialAddress.slice(0, -nextArea.length).replace(/,\s*$/, "")
+          : initialAddress;
+        if (selectedWard) setWard(String(selectedWard.code));
+        setArea(nextArea);
+        setDetail(nextDetail);
+        setInitializing(false);
+      }
+    } else {
+      setProvinces(data);
+      if (initializing) {
+        const selectedProvince = data.find((item) => initialAddress.endsWith(item.name));
+        if (selectedProvince) setProvince(String(selectedProvince.code));
+        else setInitializing(false);
+      }
+    }
+  });
+
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setError("");
     fetch(province ? `${API}/p/${province}?depth=2` : `${API}/p/`, {
       signal: controller.signal,
     })
@@ -77,39 +104,11 @@ export default function Address({
         return response.json();
       })
       .then((data) => {
-        if (province) {
-          setWards(data.wards || []);
-          if (initializing) {
-            const selectedProvince = provinces.find((item) => String(item.code) === province);
-            const selectedWard = (data.wards || []).find((item) =>
-              initialAddress.endsWith(`${item.name}, ${selectedProvince?.name}`),
-            );
-            const nextArea = selectedWard
-              ? `${selectedWard.name}, ${selectedProvince.name}`
-              : selectedProvince?.name || "";
-            const nextDetail = nextArea
-              ? initialAddress.slice(0, -nextArea.length).replace(/,\s*$/, "")
-              : initialAddress;
-            if (selectedWard) setWard(String(selectedWard.code));
-            setArea(nextArea);
-            setDetail(nextDetail);
-            setInitializing(false);
-          }
-        } else {
-          setProvinces(data);
-          if (initializing) {
-            const selectedProvince = data.find((item) => initialAddress.endsWith(item.name));
-            if (selectedProvince) setProvince(String(selectedProvince.code));
-            else setInitializing(false);
-          }
-        }
+        if (!controller.signal.aborted) handleAddressLoaded(data, province);
       })
       .catch((error) => {
-        if (error.name !== "AbortError")
+        if (!controller.signal.aborted && error.name !== "AbortError")
           setError("Không thể tải địa chỉ. Vui lòng thử lại.");
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
   }, [province, retry]);
@@ -175,7 +174,7 @@ export default function Address({
               id="shipping-ward"
               type="button"
               className="form-control text-start d-flex justify-content-between align-items-center"
-              disabled={!province || loading || initializing}
+              disabled={!province || wards.length === 0 || initializing}
               aria-expanded={openDropdown === "ward"}
               onClick={() => setOpenDropdown((prev) => prev === "ward" ? "" : "ward")}
             >
@@ -213,14 +212,16 @@ export default function Address({
             )}
           </div>
         </div>
-        {loading && <Loading text="Đang tải địa chỉ…" />}
         {error && (
           <div role="alert" className="text-danger">
             {error}{" "}
             <button
               type="button"
               className="btn btn-link"
-              onClick={() => setRetry((value) => value + 1)}
+              onClick={() => {
+                setError("");
+                setRetry((value) => value + 1);
+              }}
             >
               Thử lại
             </button>

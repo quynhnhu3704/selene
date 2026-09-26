@@ -50,7 +50,11 @@ export default function Header() {
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() =>
+    location.pathname === "/san-pham"
+      ? new URLSearchParams(location.search).get("q") || ""
+      : "",
+  );
   const [isLogin, setIsLogin] = useState(isLoggedIn());
   const [admin, setAdmin] = useState(isAdmin());
   const [historyKey, setHistoryKey] = useState(getHistoryKey);
@@ -144,10 +148,14 @@ export default function Header() {
     return () => document.removeEventListener("pointerdown", closeSearch);
   }, []);
 
-  useEffect(() => {
+  const routeKey = JSON.stringify([location.pathname, location.search]);
+  const searchContext = JSON.stringify([routeKey, compact]);
+  const [previousSearchContext, setPreviousSearchContext] = useState(searchContext);
+  if (previousSearchContext !== searchContext) {
+    setPreviousSearchContext(searchContext);
     setSuggestionsOpen(false);
     setSearchOpen(false);
-  }, [location.pathname, location.search, compact]);
+  }
 
   const navClass = ({ isActive }) =>
     isActive ? "rb-navlink rb-active" : "rb-navlink";
@@ -175,11 +183,13 @@ export default function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    if (location.pathname !== "/san-pham") return;
-
-    setSearchQuery(new URLSearchParams(location.search).get("q") || "");
-  }, [location.pathname, location.search]);
+  const [previousRouteKey, setPreviousRouteKey] = useState(routeKey);
+  if (previousRouteKey !== routeKey) {
+    setPreviousRouteKey(routeKey);
+    if (location.pathname === "/san-pham") {
+      setSearchQuery(new URLSearchParams(location.search).get("q") || "");
+    }
+  }
 
   // Đo cả khi đang thu gọn để có thể trở lại desktop khi đủ chỗ.
   useLayoutEffect(() => {

@@ -18,7 +18,7 @@ export function CartProvider({ children }) {
     total_price: 0,
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(isLoggedIn);
 
   // lấy giỏ hàng
   const fetchCart = async () => {
@@ -106,7 +106,21 @@ export function CartProvider({ children }) {
   const cartCount = cart.total_quantity;
 
   useEffect(() => {
-    fetchCart();
+    if (!isLoggedIn()) return;
+    let isCurrentRequest = true;
+    getCart()
+      .then((res) => {
+        if (isCurrentRequest) {
+          setCart(res.data || { items: [], total_quantity: 0, total_price: 0 });
+        }
+      })
+      .catch((error) => {
+        console.error("Lỗi khi lấy giỏ hàng:", error);
+      })
+      .finally(() => {
+        if (isCurrentRequest) setLoading(false);
+      });
+    return () => { isCurrentRequest = false; };
   }, []);
 
   return (

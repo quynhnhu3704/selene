@@ -160,9 +160,12 @@ export default function AdminProducts() {
     }
   }, []);
 
-  useEffect(() => {
+  // Reset only when the URL query changes; preserve the local typing draft.
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (previousQuery !== q) {
+    setPreviousQuery(q);
     setSearchValue(q);
-  }, [q]);
+  }
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -385,7 +388,6 @@ export default function AdminProducts() {
         <div
           className="dropdown"
           ref={categoryRef}
-          style={{ width: "17.5%", minWidth: 190 }}
         >
           <button
             type="button"
@@ -439,7 +441,6 @@ export default function AdminProducts() {
         <div
           className="dropdown"
           ref={sortRef}
-          style={{ width: "17.5%", minWidth: 190 }}
         >
           <button
             type="button"

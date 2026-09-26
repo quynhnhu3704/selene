@@ -1,5 +1,6 @@
 // frontend/src/pages/Admin/components/ProfileForm.jsx
 import { Link } from "react-router-dom";
+import AdminSelect from "./AdminSelect";
 import { toast } from "react-toastify";
 
 export default function ProfileForm({
@@ -108,9 +109,8 @@ export default function ProfileForm({
                   "—"}
               </div>
             ) : (
-              <select
+              <AdminSelect
                 id="gender"
-                className="form-select"
                 value={profile.gender || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, gender: e.target.value })
@@ -120,7 +120,7 @@ export default function ProfileForm({
                 <option value="Nam">Nam</option>
                 <option value="Nữ">Nữ</option>
                 <option value="Khác">Khác</option>
-              </select>
+              </AdminSelect>
             )}
           </div>
         </div>

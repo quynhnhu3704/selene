@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminSelect from "../components/AdminSelect";
 import ChatPanel from "../../../components/SupportChat/ChatPanel";
 import { STATUS_LABELS } from "../../../components/SupportChat/constants";
 import CustomerInfo from "./components/CustomerInfo";
@@ -71,9 +72,9 @@ function SupportInbox() {
     <div className="support-workspace">
       <aside className="support-conversations">
         <div className="p-3 border-bottom"><label className="fw-semibold mb-2" htmlFor="support-filter">Hội thoại</label>
-          <select className="form-select form-select-sm" id="support-filter" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <AdminSelect id="support-filter" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">Tất cả hội thoại</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select></div>
+          </AdminSelect></div>
         <div className="support-conversation-scroll">
           {!filtered.length && <p className="text-muted text-center p-3">Chưa có hội thoại.</p>}
           {filtered.map((item) => <button key={item.conversation_id}

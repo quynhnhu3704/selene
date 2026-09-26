@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Loading from "../../../components/common/Loading";
+import AdminSelect from "../components/AdminSelect";
 import Pagination from "../../../components/common/Pagination";
 import { toast } from "react-toastify";
 import {
@@ -105,9 +106,12 @@ export default function AdminOrders() {
     };
   }, [q, sort, status, page, revision]);
 
-  useEffect(() => {
+  // Reset only when the URL query changes; preserve the local typing draft.
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (previousQuery !== q) {
+    setPreviousQuery(q);
     setSearchValue(q);
-  }, [q]);
+  }
 
   const handleExport = async () => {
     if (exporting) return;
@@ -189,11 +193,8 @@ export default function AdminOrders() {
             }}
           />
         </div>
-        <div className="position-relative" style={{ width: "17.5%", minWidth: 190 }}>
-          <i className="bi bi-funnel position-absolute top-50 translate-middle-y" style={{ left: 14, pointerEvents: "none" }} aria-hidden="true" />
-        <select
-          className="form-select form-control"
-          style={{ paddingLeft: 38 }}
+        <AdminSelect
+          icon="bi-funnel"
           aria-label="Lọc trạng thái đơn hàng"
           value={status}
           onChange={(e) => updateOrderQuery({ status: e.target.value })}
@@ -204,13 +205,9 @@ export default function AdminOrders() {
               {item.label}
             </option>
           ))}
-        </select>
-        </div>
-        <div className="position-relative" style={{ width: "17.5%", minWidth: 190 }}>
-          <i className="bi bi-sort-down position-absolute top-50 translate-middle-y" style={{ left: 14, pointerEvents: "none" }} aria-hidden="true" />
-        <select
-          className="form-select form-control"
-          style={{ paddingLeft: 38 }}
+        </AdminSelect>
+        <AdminSelect
+          icon="bi-sort-down"
           aria-label="Sắp xếp đơn hàng"
           value={sort}
           onChange={(e) => updateOrderQuery({ sort: e.target.value })}
@@ -220,8 +217,7 @@ export default function AdminOrders() {
               {item.label}
             </option>
           ))}
-        </select>
-        </div>
+        </AdminSelect>
         <button
           type="reset"
           className="form-btn btn btn-outline-dark fw-semibold mb-0 px-4"

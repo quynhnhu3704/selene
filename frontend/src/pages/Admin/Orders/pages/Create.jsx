@@ -1,4 +1,5 @@
 import Loading from "../../../../components/common/Loading";
+import AdminSelect from "../../components/AdminSelect";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -174,9 +175,8 @@ export default function CreateOrder() {
               <label className="form-label" htmlFor="customer">
                 Khách hàng *
               </label>
-              <select
+              <AdminSelect
                 id="customer"
-                className="form-select"
                 required
                 value={form.account_id}
                 onChange={(e) => {
@@ -206,7 +206,7 @@ export default function CreateOrder() {
                     {row.full_name} — {row.email || row.phone_number}
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </div>
             {[
               ["recipient_name", "Người nhận", "text"],
@@ -249,9 +249,8 @@ export default function CreateOrder() {
               <label htmlFor="product" className="form-label">
                 Chọn sản phẩm
               </label>
-              <select
+              <AdminSelect
                 id="product"
-                className="form-select"
                 disabled={loadingProduct}
                 value={product?.product_id || ""}
                 onChange={(e) => selectProduct(e.target.value)}
@@ -262,7 +261,7 @@ export default function CreateOrder() {
                     {row.product_name}
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </div>
             {loadingProduct && <Loading text="Đang tải biến thể..." />}
             {product && (
@@ -362,9 +361,8 @@ export default function CreateOrder() {
               <label className="form-label" htmlFor="payment_method">
                 Thanh toán
               </label>
-              <select
+              <AdminSelect
                 id="payment_method"
-                className="form-select"
                 value={form.payment_method}
                 onChange={(e) => change("payment_method", e.target.value)}
               >
@@ -373,7 +371,7 @@ export default function CreateOrder() {
                     {method.label}
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </div>
             {[
               ["shipping_fee", "Phí vận chuyển"],

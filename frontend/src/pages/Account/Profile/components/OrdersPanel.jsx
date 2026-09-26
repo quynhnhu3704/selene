@@ -1,6 +1,6 @@
 // frontend\src\pages\Account\Profile\components\OrdersPanel.jsx
 import Loading from "../../../../components/common/Loading";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getOrders } from "../../../../services/order.service";
 
@@ -48,27 +48,29 @@ export default function OrdersPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await getOrders();
-      setOrders(Array.isArray(response.data) ? response.data : []);
-    } catch (requestError) {
-      console.error("Không thể tải danh sách đơn hàng:", requestError);
-      setError(
-        requestError.response?.data?.message ||
-          "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    let isCurrentRequest = true;
+    getOrders()
+      .then((response) => {
+        if (isCurrentRequest) {
+          setOrders(Array.isArray(response.data) ? response.data : []);
+        }
+      })
+      .catch((requestError) => {
+        if (!isCurrentRequest) return;
+        console.error("Không thể tải danh sách đơn hàng:", requestError);
+        setError(
+          requestError.response?.data?.message ||
+            "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
+        );
+      })
+      .finally(() => {
+        if (isCurrentRequest) setLoading(false);
+      });
+    return () => { isCurrentRequest = false; };
+  }, [revision]);
 
   return (
     <>
@@ -96,7 +98,11 @@ export default function OrdersPanel() {
           <button
             className="btn btn-dark px-4 form-btn fw-semibold"
             type="button"
-            onClick={loadOrders}
+            onClick={() => {
+              setLoading(true);
+              setError("");
+              setRevision((value) => value + 1);
+            }}
           >
             Thử lại
           </button>

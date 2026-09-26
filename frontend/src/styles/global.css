@@ -1795,9 +1795,140 @@
   max-width: 320px;
 }
 
-/* .adm-toolbar .dropdown {
-  flex: 0 0 12.25rem;
-} */
+.adm-toolbar > .dropdown {
+  width: 17.5%;
+  min-width: 190px;
+  max-width: 100%;
+}
+
+.adm-select {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+}
+.adm-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.adm-select-trigger {
+  min-height: 36.5px;
+}
+.adm-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.adm-toolbar > .dropdown > button {
+  gap: 0.5rem;
+}
+.adm-toolbar > .dropdown > button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.adm-select-trigger > .bi,
+.adm-toolbar > .dropdown > button > .bi {
+  flex-shrink: 0;
+}
+.adm-select-menu {
+  --bs-dropdown-link-color: var(--bs-body-color);
+  --bs-dropdown-link-disabled-color: var(--bs-tertiary-color);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  padding: 0.5rem 0;
+  margin: 0;
+  list-style: none;
+  background: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color-translucent);
+  border-radius: var(--bs-border-radius);
+}
+.adm-select-menu,
+.adm-toolbar > .dropdown .dropdown-menu {
+  min-width: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+/* Paint the menu background beneath the scrollbar, within its rounded border. */
+.adm-select-menu,
+.dropdown-menu {
+  background-clip: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #8b8b8b transparent;
+}
+.adm-select-menu::-webkit-scrollbar,
+.dropdown-menu::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+.adm-select-menu::-webkit-scrollbar-track,
+.dropdown-menu::-webkit-scrollbar-track {
+  margin-block: 6px;
+  background: transparent;
+}
+.adm-select-menu::-webkit-scrollbar-thumb,
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: #8b8b8b;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+.adm-select-menu::-webkit-scrollbar-button,
+.dropdown-menu::-webkit-scrollbar-button {
+  display: none;
+}
+.adm-select .dropdown-item,
+.adm-toolbar > .dropdown .dropdown-item {
+  padding: 0.375rem 0.75rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+@media (max-width: 575.98px) {
+  .adm-wrap .adm-sidebar {
+    width: 64px;
+  }
+  .adm-wrap .adm-logo-text,
+  .adm-wrap .adm-logo-caret,
+  .adm-wrap .adm-nav-label-txt,
+  .adm-wrap .adm-nav-badge,
+  .adm-wrap .adm-nav-chevron,
+  .adm-wrap .adm-collapse-btn {
+    display: none;
+  }
+  .adm-wrap .adm-nav-item {
+    justify-content: center;
+    padding: 9px 0;
+  }
+  .adm-wrap .adm-content {
+    padding: 20px 12px;
+  }
+  .adm-wrap .adm-topbar {
+    padding: 0 12px;
+  }
+  .adm-wrap .adm-topbar-right {
+    gap: 12px;
+  }
+  .adm-wrap .adm-topbar .form-btn {
+    white-space: nowrap;
+  }
+  .adm-wrap .adm-admin-info {
+    display: none;
+  }
+  .adm-wrap .adm-page-head {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .adm-toolbar > .dropdown {
+    width: 100%;
+    min-width: 0;
+  }
+}
 
 .adm-toolbar-search i {
   position: absolute;

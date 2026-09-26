@@ -160,9 +160,12 @@ export default function AdminCategories() {
     }
   }, []);
 
-  useEffect(() => {
+  // Reset only when the URL query changes; preserve the local typing draft.
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (previousQuery !== q) {
+    setPreviousQuery(q);
     setSearchValue(q);
-  }, [q]);
+  }
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -362,7 +365,6 @@ export default function AdminCategories() {
         <div
           className="dropdown"
           ref={sortRef}
-          style={{ width: "17.5%", minWidth: 190 }}
         >
           <button
             type="button"

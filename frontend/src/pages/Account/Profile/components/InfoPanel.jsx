@@ -204,9 +204,11 @@ export default function InfoPanel({ profile, setProfile }) {
     return isNaN(date.getTime()) ? null : date;
   };
 
-  useEffect(() => {
+  const [previousProfile, setPreviousProfile] = useState(null);
+  if (previousProfile !== profile) {
+    setPreviousProfile(profile);
     resetForm();
-  }, [profile]);
+  }
 
   // Thêm
   useEffect(() => {

@@ -9,6 +9,8 @@ import Breadcrumb from "../../components/layout/Breadcrumb";
 import Swal from "sweetalert2";
 
 /* ── helpers ── */
+const EMPTY_ITEMS = [];
+
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Cart() {
@@ -17,7 +19,7 @@ export default function Cart() {
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const cartItems = cart?.items || [];
+  const cartItems = cart?.items || EMPTY_ITEMS;
 
   /* simulate initial load */
   useEffect(() => {
@@ -26,13 +28,15 @@ export default function Cart() {
   }, []);
 
   /* auto-select all on first load */
-  useEffect(() => {
+  const [previousCartItems, setPreviousCartItems] = useState(null);
+  if (previousCartItems !== cartItems) {
+    setPreviousCartItems(cartItems);
     if (cartItems.length > 0 && selected.length === 0) {
       setSelected(
         cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
       );
     }
-  }, [cartItems]);
+  }
 
   const allSelected =
     selected.length === cartItems.length && cartItems.length > 0;

@@ -1,5 +1,6 @@
 // frontend/src/pages/Admin/Dashboard/index.jsx
 import Loading from "../../../components/common/Loading";
+import AdminSelect from "../components/AdminSelect";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -870,15 +871,14 @@ export default function Dashboard() {
                   subtitle="6 sản phẩm dẫn đầu từ đơn ghi nhận"
                   icon="bi-award"
                   action={
-                    <select
-                      className="dash-select"
+                    <AdminSelect
                       aria-label="Xếp hạng sản phẩm theo"
                       value={productMetric}
                       onChange={(event) => setProductMetric(event.target.value)}
                     >
                       <option value="units">Theo số lượng</option>
                       <option value="revenue">Theo tiền hàng</option>
-                    </select>
+                    </AdminSelect>
                   }
                 >
                   {products.length ? (

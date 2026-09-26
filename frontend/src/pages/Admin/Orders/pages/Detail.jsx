@@ -1,5 +1,6 @@
 // frontend/src/pages/Admin/Orders/pages/Detail.jsx
 import { useEffect, useState } from "react";
+import AdminSelect from "../../components/AdminSelect";
 import {
   Link,
   useNavigate,
@@ -46,10 +47,17 @@ export default function OrderDetail({ readOnly = false }) {
   const [error, setError] = useState("");
   const title = `${readOnly ? "Chi tiết" : "Chỉnh sửa"} đơn hàng`;
 
-  useEffect(() => {
-    let isCurrentRequest = true;
+  // Prepare request state before committing a changed route/filter.
+  const requestKey = JSON.stringify([orderId, readOnly]);
+  const [previousRequestKey, setPreviousRequestKey] = useState(requestKey);
+  if (previousRequestKey !== requestKey) {
+    setPreviousRequestKey(requestKey);
     setLoading(true);
     setError("");
+  }
+
+  useEffect(() => {
+    let isCurrentRequest = true;
     getAdminOrderDetail(orderId)
       .then(({ data }) => {
         if (isCurrentRequest)
@@ -211,9 +219,8 @@ export default function OrderDetail({ readOnly = false }) {
                   </span>
                 </div>
               ) : (
-                <select
+                <AdminSelect
                   id="status"
-                  className="form-select"
                   value={order.status}
                   onChange={(e) => changeField("status", e.target.value)}
                   required
@@ -230,7 +237,7 @@ export default function OrderDetail({ readOnly = false }) {
                       {item.label}
                     </option>
                   ))}
-                </select>
+                </AdminSelect>
               )}
             </div>
             {[
@@ -242,9 +249,8 @@ export default function OrderDetail({ readOnly = false }) {
                   {label}
                 </label>
                 {editInformation ? (
-                  <select
+                  <AdminSelect
                     id={key}
-                    className="form-select"
                     value={order[key]}
                     onChange={(e) => changeField(key, e.target.value)}
                     required
@@ -254,7 +260,7 @@ export default function OrderDetail({ readOnly = false }) {
                         {item.label}
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 ) : (
                   <div>
                     {options.find((item) => item.key === order[key])?.label ||
