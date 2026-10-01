@@ -6,9 +6,14 @@ import {
   getStatusClass,
 } from "../../../components/SupportChat/constants";
 import CustomerInfo from "./components/CustomerInfo";
-import { getConversations } from "../../../services/chat.service";
+import {
+  getConversations,
+  getConversationDetails,
+  reopenConversation,
+} from "../../../services/chat.service";
 import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
+import { toast } from "react-toastify";
 import "../../../components/SupportChat/support.css";
 
 // Helper định dạng thời gian thân thiện cho danh sách hội thoại
@@ -70,6 +75,12 @@ function SupportInbox() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+
+  // Chi tiết tin nhắn & dữ liệu cuộc hội thoại đang chọn
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Thông tin user đăng nhập
   const currentUser = getUser() || {
@@ -146,8 +157,29 @@ function SupportInbox() {
   // Kết nối Socket.IO để nhận thông báo realtime khi có hội thoại mới hoặc cập nhật trạng thái
   const statusRef = useRef(status);
   const searchRef = useRef(debouncedSearch);
+  const selectedIdRef = useRef(selectedId);
   statusRef.current = status;
   searchRef.current = debouncedSearch;
+  selectedIdRef.current = selectedId;
+
+  // Lấy chi tiết cuộc trò chuyện và danh sách tin nhắn từ API
+  const fetchDetail = useCallback(async (conversationId) => {
+    if (!conversationId) return;
+    setDetailLoading(true);
+    setDetailError("");
+    try {
+      const res = await getConversationDetails(conversationId);
+      const data = res?.data?.data || null;
+      setDetailData(data);
+    } catch (err) {
+      console.error("Lỗi khi tải chi tiết tin nhắn:", err);
+      setDetailError(
+        err?.response?.data?.message || "Không thể tải danh sách tin nhắn của cuộc trò chuyện."
+      );
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let socket = null;
@@ -171,8 +203,14 @@ function SupportInbox() {
         });
 
         // Nhận sự kiện có cập nhật cuộc trò chuyện -> cập nhật lại danh sách âm thầm
-        socket.on("conversation:update", () => {
+        socket.on("conversation:update", (payload) => {
           fetchList(statusRef.current, searchRef.current, true);
+          if (
+            payload?.conversation_id &&
+            String(payload.conversation_id) === String(selectedIdRef.current)
+          ) {
+            fetchDetail(payload.conversation_id);
+          }
         });
       } else {
         setConnectionStatus("offline");
@@ -196,22 +234,101 @@ function SupportInbox() {
         socket.disconnect();
       }
     };
-  }, [fetchList]);
+  }, [fetchList, fetchDetail]);
+
+  const selected = selectedId
+    ? conversations.find((item) => String(item.conversation_id) === String(selectedId)) || null
+    : null;
+
+  const currentUserId = currentUser?.accountId ?? currentUser?.account_id ?? currentUser?.id;
+  const currentStatus = (detailData?.status || selected?.status || "").toLowerCase();
+  const isPending = currentStatus === "pending" || currentStatus === "waiting";
+  const isProcessing =
+    currentStatus === "processing" || currentStatus === "active" || currentStatus === "open";
+  const isClosed = currentStatus === "closed";
+
+  const assignedStaffId = detailData?.assigned_staff_id ?? selected?.assigned_staff_id;
+  const isAssignedToMe = Boolean(
+    (assignedStaffId != null &&
+      currentUserId != null &&
+      String(assignedStaffId) === String(currentUserId)) ||
+    (detailData?.messages &&
+      detailData.messages.some(
+        (m) =>
+          m.sender_role === "staff" &&
+          currentUserId != null &&
+          String(m.sender_id) === String(currentUserId)
+      ))
+  );
+
+  // Điều kiện hiển thị theo yêu cầu:
+  // 1. Trạng thái processing + người tham gia đoạn chat là nhân viên đang đăng nhập:
+  //    -> Hiển thị tin nhắn, thông tin khách hàng, đơn hàng, thanh gửi tin nhắn
+  // 2. Trạng thái pending (giống đã đóng):
+  //    -> Hiển thị tin nhắn thôi, không hiển thị thông tin khách hàng/đơn hàng, ẩn thanh gửi tin nhắn
+  // 3. Trạng thái closed:
+  //    -> Hiển thị tin nhắn thôi, không hiển thị thông tin khách hàng/đơn hàng, ẩn thanh gửi tin nhắn
+  const canShowMessages = (isProcessing && isAssignedToMe) || isClosed || isPending;
+  const canShowCustomerInfo = isProcessing && isAssignedToMe;
+  const canSendMessage = isProcessing && isAssignedToMe;
+
+  // Tự động tải tin nhắn khi chọn cuộc hội thoại thỏa điều kiện
+  useEffect(() => {
+    if (!selectedId) {
+      setDetailData(null);
+      setDetailError("");
+      return;
+    }
+
+    const currentConv = conversations.find(
+      (item) => String(item.conversation_id) === String(selectedId)
+    );
+    const rawStatus = (currentConv?.status || "").toLowerCase();
+    const itemIsAssignedToMe = Boolean(
+      currentConv?.assigned_staff_id != null &&
+      currentUserId != null &&
+      String(currentConv.assigned_staff_id) === String(currentUserId)
+    );
+    const itemIsProcessingOther =
+      (rawStatus === "processing" || rawStatus === "active" || rawStatus === "open") &&
+      !itemIsAssignedToMe &&
+      currentConv?.assigned_staff_id != null;
+
+    if (itemIsProcessingOther) {
+      setDetailData(null);
+      setDetailLoading(false);
+      setDetailError("");
+      return;
+    }
+
+    // Tải tin nhắn cho cuộc trò chuyện (pending, closed, hoặc processing)
+    fetchDetail(selectedId);
+  }, [selectedId, selected?.status, selected?.assigned_staff_id, currentUserId, fetchDetail]);
 
   // Xử lý gán xử lý hội thoại
   const handleAssign = () => {
     if (!selectedId) return;
+    const staffId = currentUserId || 1;
     setConversations((prev) =>
       prev.map((item) =>
-        item.conversation_id === selectedId
+        String(item.conversation_id) === String(selectedId)
           ? {
             ...item,
-            status: "active",
-            assigned_staff_id: currentUser.accountId,
+            status: "processing",
+            assigned_staff_id: staffId,
           }
           : item
       )
     );
+
+    setSummary((prev) => ({
+      ...prev,
+      waitingCount: Math.max(0, (prev.waitingCount || 0) - 1),
+      processingCount: (prev.processingCount || 0) + 1,
+    }));
+
+    // Tải tin nhắn và thông tin chi tiết ngay khi nhận xử lý
+    fetchDetail(selectedId);
   };
 
   // Xử lý đóng hội thoại
@@ -219,16 +336,123 @@ function SupportInbox() {
     if (!selectedId) return;
     setConversations((prev) =>
       prev.map((item) =>
-        item.conversation_id === selectedId ? { ...item, status: "closed" } : item
+        String(item.conversation_id) === String(selectedId)
+          ? { ...item, status: "closed" }
+          : item
+      )
+    );
+
+    setSummary((prev) => ({
+      ...prev,
+      processingCount: Math.max(0, (prev.processingCount || 0) - 1),
+      closedCount: (prev.closedCount || 0) + 1,
+    }));
+
+    setDetailData((prev) => (prev ? { ...prev, status: "closed" } : prev));
+    toast.info("Đã đóng cuộc trò chuyện!");
+  };
+
+  // Xử lý mở lại hội thoại đã đóng
+  const handleReopen = async () => {
+    if (!selectedId) return;
+    const staffId = currentUserId || 1;
+
+    try {
+      if (typeof reopenConversation === "function") {
+        await reopenConversation(selectedId);
+      }
+    } catch (err) {
+      console.error("Lỗi khi mở lại hội thoại:", err);
+    }
+
+    setConversations((prev) =>
+      prev.map((item) =>
+        String(item.conversation_id) === String(selectedId)
+          ? {
+              ...item,
+              status: "processing",
+              assigned_staff_id: staffId,
+            }
+          : item
+      )
+    );
+
+    setSummary((prev) => ({
+      ...prev,
+      closedCount: Math.max(0, (prev.closedCount || 0) - 1),
+      processingCount: (prev.processingCount || 0) + 1,
+    }));
+
+    setDetailData((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "processing",
+            assigned_staff_id: staffId,
+          }
+        : prev
+    );
+
+    toast.success("Đã mở lại cuộc trò chuyện thành công!");
+    fetchDetail(selectedId);
+  };
+
+  // Gửi tin nhắn mới trong khung chat
+  const handleSendMessage = (data) => {
+    if (!selectedId || !data?.content) return;
+    const content = data.content.trim();
+    if (!content) return;
+
+    const newMsg = {
+      message_id: Date.now(),
+      conversation_id: selectedId,
+      sender_id: currentUserId || 1,
+      sender_role: currentUser?.role || "admin",
+      content: content,
+      created_at: new Date().toISOString(),
+      is_read: true,
+    };
+
+    setDetailData((prev) => ({
+      ...prev,
+      messages: [...(prev?.messages || []), newMsg],
+    }));
+
+    setConversations((prev) =>
+      prev.map((item) =>
+        String(item.conversation_id) === String(selectedId)
+          ? {
+            ...item,
+            last_message: content,
+            last_message_at: newMsg.created_at,
+          }
+          : item
       )
     );
   };
 
-  const selected = selectedId
-    ? conversations.find((item) => String(item.conversation_id) === String(selectedId)) || null
-    : null;
-
-  const assignedToMe = selected?.assigned_staff_id === currentUser.accountId;
+  // Tải thêm tin nhắn cũ hơn
+  const handleLoadMore = async () => {
+    if (!selectedId || loadingMore || !detailData?.pagination?.has_more) return;
+    setLoadingMore(true);
+    try {
+      const beforeCursor =
+        detailData.pagination?.next_cursor || detailData.messages?.[0]?.created_at;
+      const res = await getConversationDetails(selectedId, { before: beforeCursor });
+      const newData = res?.data?.data;
+      if (newData?.messages?.length) {
+        setDetailData((prev) => ({
+          ...prev,
+          messages: [...newData.messages, ...(prev?.messages || [])],
+          pagination: newData.pagination,
+        }));
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải thêm tin nhắn cũ:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const totalCount =
     (summary.waitingCount || 0) +
     (summary.processingCount || 0) +
@@ -497,10 +721,15 @@ function SupportInbox() {
             <>
               <div className="support-chat-header">
                 <div>
-                  <strong>{selected.customer_name || selected.customer?.full_name || "Khách hàng"}</strong>
+                  <strong>
+                    {detailData?.customer_name ||
+                      detailData?.customer?.full_name ||
+                      selected.customer_name ||
+                      "Khách hàng"}
+                  </strong>
                   <div className="mt-1 d-flex align-items-center gap-2">
-                    <span className={`support-status ${getStatusClass(selected.status)}`}>
-                      {getStatusLabel(selected.status)}
+                    <span className={`support-status ${getStatusClass(currentStatus)}`}>
+                      {getStatusLabel(currentStatus)}
                     </span>
                     <small className="text-muted">
                       Mã: {selected.conversation_id}
@@ -509,7 +738,7 @@ function SupportInbox() {
                 </div>
 
                 <div className="d-flex gap-2">
-                  {(selected.status === "waiting" || selected.status === "pending") && (
+                  {isPending && (
                     <button
                       type="button"
                       className="btn btn-dark btn-sm"
@@ -518,7 +747,7 @@ function SupportInbox() {
                       Nhận xử lý
                     </button>
                   )}
-                  {selected.status !== "closed" && (
+                  {!isClosed && !isPending && (
                     <button
                       type="button"
                       className="btn btn-outline-secondary btn-sm"
@@ -527,22 +756,38 @@ function SupportInbox() {
                       Đóng hội thoại
                     </button>
                   )}
+                  {isClosed && (
+                    <button
+                      type="button"
+                      className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
+                      onClick={handleReopen}
+                    >
+                      <i className="bi bi-arrow-counterclockwise" />
+                      <span>Mở lại hội thoại</span>
+                    </button>
+                  )}
                 </div>
               </div>
-
-              {selected.status !== "closed" && !assignedToMe && (
-                <div className="support-notice">
-                  {selected.assigned_staff_id
-                    ? "Hội thoại đang được nhân viên khác xử lý."
-                    : "Nhận xử lý hội thoại để gửi tin nhắn hỗ trợ khách hàng."}
-                </div>
-              )}
 
               <ChatPanel
                 key={selected.conversation_id}
                 conversation={selected}
                 user={currentUser}
-                canReply={assignedToMe || selected.status === "waiting"}
+                messages={detailData?.messages || []}
+                loading={detailLoading}
+                error={detailError}
+                pagination={detailData?.pagination}
+                loadingMore={loadingMore}
+                onLoadMore={handleLoadMore}
+                onSend={handleSendMessage}
+                onAssign={handleAssign}
+                onReopen={handleReopen}
+                canShowMessages={canShowMessages}
+                canSendMessage={canSendMessage}
+                isPending={isPending}
+                isProcessing={isProcessing}
+                isClosed={isClosed}
+                isAssignedToMe={isAssignedToMe}
               />
             </>
           ) : (
@@ -555,15 +800,16 @@ function SupportInbox() {
         </section>
 
         {/* Cột phải: Thông tin khách hàng & đơn hàng */}
-        {selected && (
+        {selected && canShowCustomerInfo && (
           <CustomerInfo
-            customer={
-              selected.customer || {
+            customer={{
+              ...(detailData?.customer || {
                 full_name: selected.customer_name,
                 email: selected.customer_email || "Chưa có email",
                 phone_number: selected.customer_phone || "Chưa có số điện thoại",
-              }
-            }
+              }),
+              orders: detailData?.orders || [],
+            }}
             canViewOrder={true}
           />
         )}

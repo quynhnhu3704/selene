@@ -141,6 +141,47 @@
 .support-empty p { font-size: 13px; max-width: 320px; margin: 0 auto; color: #777; }
 .support-notice { padding: 9px 18px; font-size: 12.5px; color: #666; background: #f4f2ef; border-bottom: 1px solid #eae7e4; }
 
+/* State notice for Pending / Locked / Restricted chats */
+.support-state-notice {
+  margin: auto;
+  padding: 48px 24px;
+  text-align: center;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.support-state-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 16px;
+}
+.support-state-icon.waiting {
+  background: #fef3c7;
+  color: #b45309;
+}
+.support-state-icon.locked {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.support-state-notice h5 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #17151f;
+  margin-bottom: 8px;
+}
+.support-state-notice p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
 /* Right Info Area */
 .support-customer-info { width: 240px; flex-shrink: 0; padding: 18px; border-left: 1px solid #e9e7e5; overflow-y: auto; overflow-wrap: anywhere; font-size: 13px; background: #faf9f8; }
 .support-order { padding: 10px 0; border-bottom: 1px solid #ebe8e5; }

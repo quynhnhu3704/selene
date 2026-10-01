@@ -59,6 +59,7 @@ export const ConversationModel = {
       return {
         conversation_id: conv.conversation_id,
         customer_id: conv.customer_id,
+        assigned_staff_id: conv.assigned_staff_id,
         last_message_id: conv.last_message_id,
         last_message: conv.last_message,
         last_message_at: conv.last_message_at || conv.created_at,
@@ -143,6 +144,7 @@ export const ConversationModel = {
       conversation_id: data.conversation_id,
       customer_id: data.customer_id,
       customer_name: (data.customer_name && data.customer_name.trim()) || "Khách hàng",
+      assigned_staff_id: data.assigned_staff_id,
       last_message_id: data.last_message_id,
       last_message_at: data.last_message_at,
       last_message: data.last_message,

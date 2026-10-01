@@ -85,21 +85,25 @@ export const closeConversation = async (id) => ({
   },
 });
 
-export const getMessages = async (id) => ({
+export const reopenConversation = async (id) => ({
   data: {
-    data: [
-      {
-        message_id: 1,
-        conversation_id: id,
-        sender_id: 101,
-        sender_role: "customer",
-        content: "Xin chào shop, tôi cần tư vấn sản phẩm.",
-        created_at: new Date().toISOString(),
-        is_read: true,
-      },
-    ],
+    data: { conversation_id: id, status: "processing" },
   },
 });
+
+
+/**
+ * Lấy danh sách tin nhắn và thông tin chi tiết cuộc trò chuyện (khách hàng, đơn hàng)
+ * @param {string} conversationId - ID cuộc hội thoại
+ * @param {Object} params - { before, limit }
+ */
+export const getConversationDetails = async (conversationId, params = {}) => {
+  return await http.get(`/chat/manage/conversations/${conversationId}/messages`, { params });
+};
+
+export const getMessages = async (conversationId, params = {}) => {
+  return await getConversationDetails(conversationId, params);
+};
 
 export const sendMessage = async (id, data) => ({
   data: {

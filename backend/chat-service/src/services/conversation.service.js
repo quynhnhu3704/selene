@@ -74,13 +74,18 @@ export const ConversationService = {
         msg.sender_id === customerId
           ? "customer"
           : msg.sender_type === "ai"
-          ? "ai"
-          : "staff",
+            ? "ai"
+            : "staff",
       is_read: msg.status === "seen",
     }));
 
+    // Tìm nhân viên đã gửi tin nhắn hỗ trợ trong hội thoại (nếu DB chưa có cột assigned_staff_id)
+    const staffMsg = formattedMessages.find((m) => m.sender_role === "staff");
+    const assignedStaffId = conversation.assigned_staff_id || staffMsg?.sender_id || null;
+
     return {
       conversation,
+      assigned_staff_id: assignedStaffId,
       customer: customerInfo,
       orders,
       messages: formattedMessages,

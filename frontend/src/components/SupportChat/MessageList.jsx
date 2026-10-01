@@ -11,19 +11,36 @@ export default function MessageList({ messages, accountId, hasMore, loadingMore,
       {loadingMore ? <Loading text="Đang tải tin nhắn..." /> : hasMore && <button className="btn btn-sm btn-light d-block mx-auto mb-3" disabled={loadingMore} onClick={onLoadMore}>
         Xem tin nhắn cũ hơn
       </button>}
-      {!messages.length && <div className="support-empty"><i className="bi bi-chat-heart" />
-        <h5>Selene luôn sẵn lòng hỗ trợ bạn</h5><p>Hãy gửi câu hỏi để bắt đầu cuộc trò chuyện với nhân viên.</p>
-      </div>}
+      {!messages.length && (
+        <div className="support-empty">
+          <i className="bi bi-chat-dots" />
+          <h5>Chưa có tin nhắn</h5>
+          <p>Cuộc hội thoại này hiện chưa có tin nhắn trao đổi.</p>
+        </div>
+      )}
       {messages.map((message) => {
-        const own = message.sender_id === accountId;
-        return <div key={message.message_id} className={`support-message-row${own ? " own" : ""}`}>
-          <div className="support-bubble">
-            <div>{message.content}</div>
-            <small>{new Date(message.created_at).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-              {own && <span className="ms-2">{message.is_read ? "Đã xem" : "Đã gửi"}</span>}
-            </small>
+        const isCustomer = message.sender_role === "customer";
+        const own = !isCustomer && (
+          String(message.sender_id) === String(accountId) ||
+          message.sender_role === "staff" ||
+          message.sender_role === "admin"
+        );
+        return (
+          <div key={message.message_id} className={`support-message-row${own ? " own" : ""}`}>
+            <div className="support-bubble">
+              <div>{message.content}</div>
+              <small>
+                {new Date(message.created_at).toLocaleString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                {own && <span className="ms-2">{message.is_read ? "Đã xem" : "Đã gửi"}</span>}
+              </small>
+            </div>
           </div>
-        </div>;
+        );
       })}
       <div ref={bottomRef} />
     </div>

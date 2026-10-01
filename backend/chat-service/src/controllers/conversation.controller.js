@@ -43,6 +43,7 @@ export const getConversationDetails = async (req, res, next) => {
         conversation_id: result.conversation.conversation_id, // ID cuộc hội thoại
         customer_id: result.conversation.customer_id,         // ID khách hàng
         customer_name: result.customer?.full_name || result.conversation.customer_name,
+        assigned_staff_id: result.assigned_staff_id || result.conversation.assigned_staff_id || null,
         status: result.conversation.status,
         customer: {
           account_id: result.customer?.account_id || result.conversation.customer_id,

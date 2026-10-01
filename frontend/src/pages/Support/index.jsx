@@ -41,6 +41,14 @@ function CustomerSupport() {
     setSelectedId(newConv.conversation_id);
   };
 
+  const handleReopen = (id) => {
+    setConversations((prev) =>
+      prev.map((item) =>
+        item.conversation_id === id ? { ...item, status: "open" } : item
+      )
+    );
+  };
+
   const selected = selectedId
     ? conversations.find((item) => item.conversation_id === selectedId) || null
     : null;
@@ -69,14 +77,40 @@ function CustomerSupport() {
         </div>
       </aside>
       <section className="support-main">
-        <div className="support-chat-header"><div><strong>Chat với nhân viên Selene</strong>
-          <div className="support-connection">Đã kết nối</div></div>
-          {selected && <span className={`support-status ${selected.status}`}>{STATUS_LABELS[selected.status]}</span>}
+        <div className="support-chat-header">
+          <div>
+            <strong>Chat với nhân viên Selene</strong>
+            <div className="support-connection">Đã kết nối</div>
+          </div>
+          {selected && (
+            <div className="d-flex align-items-center gap-2">
+              <span className={`support-status ${selected.status}`}>{STATUS_LABELS[selected.status]}</span>
+              {selected.status === "closed" && (
+                <button
+                  type="button"
+                  className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
+                  onClick={() => handleReopen(selected.conversation_id)}
+                >
+                  <i className="bi bi-arrow-counterclockwise" />
+                  <span>Mở lại hội thoại</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        {selected ? <ChatPanel key={selected.conversation_id} conversation={selected} user={MOCK_CUSTOMER} canReply /> :
+        {selected ? (
+          <ChatPanel
+            key={selected.conversation_id}
+            conversation={selected}
+            user={MOCK_CUSTOMER}
+            isClosed={selected.status === "closed"}
+            onReopen={() => handleReopen(selected.conversation_id)}
+            canReply
+          />
+        ) : (
           <div className="support-empty"><i className="bi bi-headset" /><h5>Chúng tôi có thể giúp gì cho bạn?</h5>
             <p>Hỏi về đơn hàng, sản phẩm hoặc chính sách đổi trả.</p>
-            <button className="btn btn-dark" onClick={start}>Bắt đầu trò chuyện</button></div>}
+            <button className="btn btn-dark" onClick={start}>Bắt đầu trò chuyện</button></div>)}
       </section>
     </div>
   </>;
