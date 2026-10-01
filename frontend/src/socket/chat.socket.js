@@ -1,30 +1,28 @@
-// Dummy socket object for staff chat (real socket connection disabled)
+import { io } from "socket.io-client";
+import { getAccessToken } from "../utils/auth";
+
 export const createChatSocket = () => {
-  const dummySocket = {
-    connected: true,
-    on: () => dummySocket,
-    off: () => dummySocket,
-    emit: (...args) => {
-      const lastArg = args[args.length - 1];
-      if (typeof lastArg === "function") {
-        lastArg(null, { success: true });
-      }
-      return dummySocket;
-    },
-    timeout: () => dummySocket,
-    connect: () => {
-      dummySocket.connected = true;
-      return dummySocket;
-    },
-    disconnect: () => {
-      dummySocket.connected = false;
-      return dummySocket;
-    },
-    dispose: () => {
-      dummySocket.connected = false;
-    },
-    removeAllListeners: () => dummySocket,
-  };
-  return dummySocket;
+  const token = getAccessToken();
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const socket = io({
+      path: "/api/chat/socket.io",
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      autoConnect: true,
+    });
+
+    return socket;
+  } catch (err) {
+    console.warn("Lỗi khởi tạo socket chat:", err);
+    return null;
+  }
 };
+
 

@@ -24,7 +24,7 @@ const INITIAL_CONVERSATIONS = [
 
 function CustomerSupport() {
   const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
-  const [selectedId, setSelectedId] = useState(1);
+  const [selectedId, setSelectedId] = useState(null);
 
   const start = () => {
     const newConv = {
@@ -41,7 +41,9 @@ function CustomerSupport() {
     setSelectedId(newConv.conversation_id);
   };
 
-  const selected = conversations.find((item) => item.conversation_id === selectedId) || conversations[0];
+  const selected = selectedId
+    ? conversations.find((item) => item.conversation_id === selectedId) || null
+    : null;
   const open = conversations.find((item) => item.status !== "closed");
 
   return <>
