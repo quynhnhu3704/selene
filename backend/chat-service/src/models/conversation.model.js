@@ -1,4 +1,5 @@
 import { supabase } from "../configs/supabase.js";
+import { CustomerModel } from "./customer.model.js";
 
 export const ConversationModel = {
   // Lấy danh sách toàn bộ cuộc trò chuyện với bộ lọc status và tìm kiếm
@@ -8,6 +9,7 @@ export const ConversationModel = {
       .select(
         `
         conversation_id,
+        customer_id,
         customer_name,
         last_message_id,
         last_message_at,
@@ -56,6 +58,7 @@ export const ConversationModel = {
 
       return {
         conversation_id: conv.conversation_id,
+        customer_id: conv.customer_id,
         last_message_id: conv.last_message_id,
         last_message: conv.last_message,
         last_message_at: conv.last_message_at || conv.created_at,
@@ -113,18 +116,21 @@ export const ConversationModel = {
     return count || 0;
   },
 
-  // Lấy chi tiết cuộc trò chuyện theo ID
+  // Lấy chi tiết cuộc trò chuyện theo conversation_id (ID cuộc trò chuyện)
   findById: async (conversationId) => {
     const { data, error } = await supabase
       .from("conversations")
       .select(
         `
         conversation_id,
+        customer_id,
         customer_name,
         last_message_id,
         last_message_at,
         last_message,
-        status
+        status,
+        created_at,
+        updated_at
       `
       )
       .eq("conversation_id", conversationId)
@@ -135,11 +141,19 @@ export const ConversationModel = {
 
     return {
       conversation_id: data.conversation_id,
+      customer_id: data.customer_id,
       customer_name: (data.customer_name && data.customer_name.trim()) || "Khách hàng",
       last_message_id: data.last_message_id,
       last_message_at: data.last_message_at,
       last_message: data.last_message,
       status: data.status,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
     };
   },
+
+  // Lấy thông tin chi tiết khách hàng từ bảng user_profiles
+  findCustomerInfo: (customerId, fallbackName = "Khách hàng") =>
+    CustomerModel.findByAccountId(customerId, fallbackName),
 };
+

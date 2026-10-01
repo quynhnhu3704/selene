@@ -28,7 +28,7 @@ app.use(
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL;
-const CHAT_SERVICE_URL = process.env.CHAT_SERVICE_URL || "http://localhost:8004";
+const CHAT_SERVICE_URL = process.env.CHAT_SERVICE_URL || "http://127.0.0.1:8005";
 
 // Giữ nguyên đường dẫn Socket.IO qua Gateway, kể cả WebSocket upgrade đầu tiên.
 const chatSocketProxy = createProxyMiddleware({

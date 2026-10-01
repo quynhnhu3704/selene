@@ -128,7 +128,7 @@ function SupportInbox() {
         console.error("Lỗi khi tải danh sách cuộc trò chuyện:", err);
         setError(
           err?.response?.data?.message ||
-            "Không thể kết nối đến máy chủ hoặc chưa có quyền xem hội thoại."
+          "Không thể kết nối đến máy chủ hoặc chưa có quyền xem hội thoại."
         );
       } finally {
         setLoading(false);
@@ -205,10 +205,10 @@ function SupportInbox() {
       prev.map((item) =>
         item.conversation_id === selectedId
           ? {
-              ...item,
-              status: "active",
-              assigned_staff_id: currentUser.accountId,
-            }
+            ...item,
+            status: "active",
+            assigned_staff_id: currentUser.accountId,
+          }
           : item
       )
     );

@@ -2,7 +2,7 @@ import { MessageModel } from "../models/message.model.js";
 import { ConversationService, requirePermission } from "./conversation.service.js";
 
 export const MessageService = {
-  getMessages: async (user, id, { before, limit = 50 }) => {
+  getMessages: async (user, id, { before, limit = 10 } = {}) => {
     await ConversationService.getAccessible(user, id);
     limit = Number(limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100 || (before && !/^\d+$/.test(String(before)))) {
@@ -17,7 +17,7 @@ export const MessageService = {
     if (conversation.status === "closed") throw { status: 409, message: "Hội thoại đã đóng!" };
     if (user.role !== "customer") {
       requirePermission(user, "chat:reply");
-      if (conversation.assigned_staff_id !== user.accountId) {
+      if (conversation.assigned_staff_id && conversation.assigned_staff_id !== user.accountId) {
         throw { status: 409, message: "Bạn cần nhận xử lý hội thoại trước khi trả lời!" };
       }
     }
