@@ -15,11 +15,11 @@ export const requirePermission = (user, permission) => {
 
 export const ConversationService = {
   // Lấy danh sách các cuộc trò chuyện
-  getConversations: async (user, { status, search }) => {
+  getConversations: async (user, { status, search, order }) => {
     requirePermission(user, "chat:view");
 
     const [conversations, waitingCount, processingCount, closedCount] = await Promise.all([
-      ConversationModel.findAll({ status, search }),
+      ConversationModel.findAll({ status, search, order }),
       ConversationModel.countByStatus(["pending", "waiting"]),
       ConversationModel.countByStatus(["processing", "open", "active"]),
       ConversationModel.countByStatus(["closed"]),

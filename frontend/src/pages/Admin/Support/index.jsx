@@ -102,6 +102,9 @@ function SupportInbox() {
         if (searchQuery && searchQuery.trim()) {
           params.search = searchQuery.trim();
         }
+        if (statusFilter === "waiting" || statusFilter === "pending") {
+          params.order = "asc";
+        }
 
         const res = await getConversations(params);
         const data = res?.data?.data || [];
@@ -247,6 +250,30 @@ function SupportInbox() {
     }
   };
 
+  const isWaitingTab = status === "waiting" || status === "pending";
+
+  // Sắp xếp danh sách hội thoại:
+  // - Riêng tab 'Chờ hỗ trợ' (waiting/pending): Sắp xếp thời gian tăng dần (cũ nhất / chờ lâu nhất lên đầu - FIFO)
+  // - Các tab khác: Ưu tiên trạng thái đang xử lý lên đầu, sau đó theo thời gian giảm dần (mới nhất lên đầu)
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const timeA = new Date(a.last_message_at || a.created_at || 0).getTime();
+    const timeB = new Date(b.last_message_at || b.created_at || 0).getTime();
+
+    if (isWaitingTab) {
+      return timeA - timeB;
+    }
+
+    const isAProcessing =
+      a.status === "processing" || a.status === "open" || a.status === "active";
+    const isBProcessing =
+      b.status === "processing" || b.status === "open" || b.status === "active";
+
+    if (isAProcessing && !isBProcessing) return -1;
+    if (!isAProcessing && isBProcessing) return 1;
+
+    return timeB - timeA;
+  });
+
   return (
     <>
       {/* Tiêu đề & Thống kê trạng thái */}
@@ -344,6 +371,14 @@ function SupportInbox() {
             )}
           </div>
 
+          {/* Gợi ý thứ tự chờ tăng dần cho tab Chờ hỗ trợ */}
+          {isWaitingTab && (
+            <div className="support-sort-hint">
+              <i className="bi bi-clock-history" />
+              <span>Sắp xếp: Thời gian tăng dần (cũ nhất trước)</span>
+            </div>
+          )}
+
           {/* Danh sách cuộn */}
           <div className="support-conversation-scroll">
             {/* Lỗi khi tải */}
@@ -377,7 +412,7 @@ function SupportInbox() {
             )}
 
             {/* Trạng thái rỗng */}
-            {!loading && !error && conversations.length === 0 && (
+            {!loading && !error && sortedConversations.length === 0 && (
               <div className="support-empty py-5">
                 <i className="bi bi-chat-left-dots" />
                 <h5>Không có cuộc trò chuyện</h5>
@@ -401,7 +436,7 @@ function SupportInbox() {
             {/* Danh sách cuộc trò chuyện */}
             {!loading &&
               !error &&
-              conversations.map((item) => {
+              sortedConversations.map((item) => {
                 const isSelected = String(selectedId) === String(item.conversation_id);
                 const statusClass = getStatusClass(item.status);
                 const statusLabel = getStatusLabel(item.status);

@@ -2,7 +2,7 @@ import { supabase } from "../configs/supabase.js";
 
 export const ConversationModel = {
   // Lấy danh sách toàn bộ cuộc trò chuyện với bộ lọc status và tìm kiếm
-  findAll: async ({ status, search }) => {
+  findAll: async ({ status, search, order }) => {
     let query = supabase
       .from("conversations")
       .select(
@@ -18,9 +18,11 @@ export const ConversationModel = {
       );
 
     // Lọc theo trạng thái nếu có
+    const normalized = status ? status.toLowerCase() : "";
+    const isWaitingFilter = normalized === "pending" || normalized === "waiting";
+
     if (status && status !== "all") {
-      const normalized = status.toLowerCase();
-      if (normalized === "pending" || normalized === "waiting") {
+      if (isWaitingFilter) {
         query = query.in("status", ["pending", "waiting"]);
       } else if (normalized === "processing" || normalized === "open" || normalized === "active") {
         query = query.in("status", ["processing", "open", "active"]);
@@ -29,9 +31,18 @@ export const ConversationModel = {
       }
     }
 
-    query = query
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
+    // Riêng tab 'Chờ hỗ trợ' (waiting / pending): mặc định sắp xếp thời gian tăng dần (cũ nhất lên đầu - FIFO)
+    const isAscending = order === "asc" || (!order && isWaitingFilter);
+
+    if (isAscending) {
+      query = query
+        .order("last_message_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
+    } else {
+      query = query
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+    }
 
     const { data: conversations, error } = await query;
     if (error) throw error;
@@ -48,6 +59,7 @@ export const ConversationModel = {
         last_message_id: conv.last_message_id,
         last_message: conv.last_message,
         last_message_at: conv.last_message_at || conv.created_at,
+        created_at: conv.created_at,
         status: conv.status,
         customer_name: nameInTable || "Khách hàng",
       };
@@ -64,18 +76,28 @@ export const ConversationModel = {
       );
     }
 
-    // Sắp xếp: Ưu tiên các cuộc trò chuyện trạng thái 'processing' lên đầu, sau đó sắp xếp theo thời gian giảm dần
-    resultItems.sort((a, b) => {
-      const isAProcessing = a.status === "processing" || a.status === "open" || a.status === "active";
-      const isBProcessing = b.status === "processing" || b.status === "open" || b.status === "active";
+    // Sắp xếp:
+    // - Nếu là Chờ hỗ trợ (isAscending): Sắp xếp theo thời gian tăng dần (cũ nhất / chờ lâu nhất lên đầu - FIFO)
+    // - Các tab khác: Ưu tiên các cuộc trò chuyện trạng thái 'processing' lên đầu, sau đó sắp xếp theo thời gian giảm dần (mới nhất lên đầu)
+    if (isAscending) {
+      resultItems.sort((a, b) => {
+        const timeA = new Date(a.last_message_at || a.created_at || 0).getTime();
+        const timeB = new Date(b.last_message_at || b.created_at || 0).getTime();
+        return timeA - timeB;
+      });
+    } else {
+      resultItems.sort((a, b) => {
+        const isAProcessing = a.status === "processing" || a.status === "open" || a.status === "active";
+        const isBProcessing = b.status === "processing" || b.status === "open" || b.status === "active";
 
-      if (isAProcessing && !isBProcessing) return -1;
-      if (!isAProcessing && isBProcessing) return 1;
+        if (isAProcessing && !isBProcessing) return -1;
+        if (!isAProcessing && isBProcessing) return 1;
 
-      const timeA = new Date(a.last_message_at || 0).getTime();
-      const timeB = new Date(b.last_message_at || 0).getTime();
-      return timeB - timeA;
-    });
+        const timeA = new Date(a.last_message_at || a.created_at || 0).getTime();
+        const timeB = new Date(b.last_message_at || b.created_at || 0).getTime();
+        return timeB - timeA;
+      });
+    }
 
     return resultItems;
   },

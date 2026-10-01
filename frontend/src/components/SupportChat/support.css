@@ -63,6 +63,24 @@
 .support-search-icon { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: #999; font-size: 13px; pointer-events: none; }
 .support-search-clear { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #888; cursor: pointer; font-size: 13px; padding: 0 4px; border-radius: 50%; }
 .support-search-clear:hover { color: #111; }
+ 
+/* Sort Hint for Queue */
+.support-sort-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fffbeb;
+  border-bottom: 1px solid #fef3c7;
+  font-size: 11px;
+  color: #92400e;
+  font-weight: 500;
+  user-select: none;
+}
+.support-sort-hint i {
+  font-size: 12px;
+  color: #b45309;
+}
 
 /* Scroll list with custom scrollbar */
 .support-conversation-scroll {

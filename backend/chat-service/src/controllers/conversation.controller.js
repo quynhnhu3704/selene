@@ -3,12 +3,13 @@ import { ConversationService } from "../services/conversation.service.js";
 // Lấy danh sách các cuộc trò chuyện
 export const getConversations = async (req, res, next) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, order } = req.query;
     const user = req.user;
 
     const result = await ConversationService.getConversations(user, {
       status,
       search,
+      order,
     });
 
     return res.status(200).json({
