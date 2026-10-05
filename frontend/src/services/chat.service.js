@@ -105,6 +105,20 @@ export const getMessages = async (conversationId, params = {}) => {
   return await getConversationDetails(conversationId, params);
 };
 
+/**
+ * Lấy danh sách tin nhắn của khách hàng hiện tại (10 tin mới nhất, hỗ trợ before khi kéo lên)
+ * API: router.get("/my-conversation/messages", getMyMessages);
+ * @param {Object} params - { before, limit }
+ * @returns {Promise} Axios response: { success, message, data: { conversation_id, customer_id, customer_name, status, messages, pagination } }
+ */
+export const getMyMessages = async (params = {}) => {
+  return await http.get("/chat/my-conversation/messages", { params });
+};
+
+// Aliases cho tương thích linh hoạt
+export const getMyConversationMessages = getMyMessages;
+export const getCustomerMessages = getMyMessages;
+
 export const sendMessage = async (id, data) => ({
   data: {
     data: {

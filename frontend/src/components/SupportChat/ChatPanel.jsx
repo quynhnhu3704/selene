@@ -81,6 +81,7 @@ export default function ChatPanel({
         <MessageList
           messages={messages}
           accountId={currentAccountId}
+          isCustomer={isCustomer}
           hasMore={pagination?.has_more}
           loadingMore={loadingMore}
           onLoadMore={onLoadMore}

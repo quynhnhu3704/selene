@@ -592,6 +592,11 @@ export default function Header() {
                       khoản
                     </Link>
                   </li>
+                  <li>
+                    <Link className="dropdown-item" to="/ho-tro">
+                      <i className="bi bi-chat-dots me-1"></i> Hỗ trợ &amp; Tin nhắn
+                    </Link>
+                  </li>
                   {admin && (
                     <>
                       <li>
@@ -696,6 +701,11 @@ export default function Header() {
                     <Link className="dropdown-item" to="/tai-khoan">
                       <i className="bi bi-person-bounding-box me-1"></i> Tài
                       khoản
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/ho-tro">
+                      <i className="bi bi-chat-dots me-1"></i> Hỗ trợ &amp; Tin nhắn
                     </Link>
                   </li>
                   {admin && (

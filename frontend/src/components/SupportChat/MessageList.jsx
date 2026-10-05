@@ -1,16 +1,35 @@
 import Loading from "../common/Loading";
 import { useEffect, useRef } from "react";
 
-export default function MessageList({ messages, accountId, hasMore, loadingMore, onLoadMore }) {
+export default function MessageList({
+  messages,
+  accountId,
+  isCustomer = false,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+}) {
   const bottomRef = useRef(null);
   const lastId = messages.at(-1)?.message_id;
   useEffect(() => { bottomRef.current?.scrollIntoView({ block: "nearest" }); }, [lastId]);
 
   return (
     <div className="support-messages" role="log" aria-label="Tin nhắn hỗ trợ" aria-live="polite">
-      {loadingMore ? <Loading text="Đang tải tin nhắn..." /> : hasMore && <button className="btn btn-sm btn-light d-block mx-auto mb-3" disabled={loadingMore} onClick={onLoadMore}>
-        Xem tin nhắn cũ hơn
-      </button>}
+      {loadingMore ? (
+        <Loading text="Đang tải tin nhắn..." />
+      ) : (
+        hasMore && (
+          <button
+            type="button"
+            className="btn btn-sm btn-light d-block mx-auto mb-3"
+            disabled={loadingMore}
+            onClick={onLoadMore}
+          >
+            <i className="bi bi-clock-history me-1" />
+            Xem tin nhắn cũ hơn
+          </button>
+        )
+      )}
       {!messages.length && (
         <div className="support-empty">
           <i className="bi bi-chat-dots" />
@@ -19,12 +38,14 @@ export default function MessageList({ messages, accountId, hasMore, loadingMore,
         </div>
       )}
       {messages.map((message) => {
-        const isCustomer = message.sender_role === "customer";
-        const own = !isCustomer && (
-          String(message.sender_id) === String(accountId) ||
-          message.sender_role === "staff" ||
-          message.sender_role === "admin"
-        );
+        const isSenderCustomer = message.sender_role === "customer";
+        const own = isCustomer
+          ? isSenderCustomer || String(message.sender_id) === String(accountId)
+          : !isSenderCustomer && (
+              String(message.sender_id) === String(accountId) ||
+              message.sender_role === "staff" ||
+              message.sender_role === "admin"
+            );
         return (
           <div key={message.message_id} className={`support-message-row${own ? " own" : ""}`}>
             <div className="support-bubble">
