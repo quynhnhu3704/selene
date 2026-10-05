@@ -15,7 +15,8 @@ export const ConversationModel = {
         last_message_at,
         last_message,
         status,
-        created_at
+        created_at,
+        updated_at
       `
       );
 
@@ -53,17 +54,35 @@ export const ConversationModel = {
       return [];
     }
 
+    // Lấy thông tin nhân viên xử lý từ bảng conversation_participants (role: 'staff' hoặc 'admin')
+    const convIds = conversations.map((c) => c.conversation_id);
+    const staffMap = {};
+    if (convIds.length > 0) {
+      const { data: participants } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id, account_id, role")
+        .in("conversation_id", convIds)
+        .in("role", ["staff", "admin"]);
+
+      (participants || []).forEach((p) => {
+        if (!staffMap[p.conversation_id]) {
+          staffMap[p.conversation_id] = p.account_id;
+        }
+      });
+    }
+
     const formatted = conversations.map((conv) => {
       const nameInTable = conv.customer_name && conv.customer_name.trim();
 
       return {
         conversation_id: conv.conversation_id,
         customer_id: conv.customer_id,
-        assigned_staff_id: conv.assigned_staff_id,
+        assigned_staff_id: staffMap[conv.conversation_id] || null,
         last_message_id: conv.last_message_id,
         last_message: conv.last_message,
         last_message_at: conv.last_message_at || conv.created_at,
         created_at: conv.created_at,
+        updated_at: conv.updated_at,
         status: conv.status,
         customer_name: nameInTable || "Khách hàng",
       };
@@ -135,16 +154,24 @@ export const ConversationModel = {
       `
       )
       .eq("conversation_id", conversationId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== "PGRST116") throw error;
     if (!data) return null;
+
+    // Lấy nhân viên xử lý từ conversation_participants
+    const { data: staffParticipant } = await supabase
+      .from("conversation_participants")
+      .select("account_id")
+      .eq("conversation_id", conversationId)
+      .in("role", ["staff", "admin"])
+      .maybeSingle();
 
     return {
       conversation_id: data.conversation_id,
       customer_id: data.customer_id,
       customer_name: (data.customer_name && data.customer_name.trim()) || "Khách hàng",
-      assigned_staff_id: data.assigned_staff_id,
+      assigned_staff_id: staffParticipant?.account_id || null,
       last_message_id: data.last_message_id,
       last_message_at: data.last_message_at,
       last_message: data.last_message,
@@ -154,8 +181,96 @@ export const ConversationModel = {
     };
   },
 
+  // Lấy chi tiết cuộc trò chuyện theo customer_id (ưu tiên cuộc hội thoại đang mở / chờ xử lý)
+  findByCustomerId: async (customerId) => {
+    if (!customerId) return null;
+
+    // 1. Tìm cuộc hội thoại còn đang mở (waiting, pending, processing, active, open)
+    const { data: openConv, error: openError } = await supabase
+      .from("conversations")
+      .select(
+        `
+        conversation_id,
+        customer_id,
+        customer_name,
+        last_message_id,
+        last_message_at,
+        last_message,
+        status,
+        created_at,
+        updated_at
+      `
+      )
+      .eq("customer_id", customerId)
+      .in("status", ["waiting", "pending", "processing", "active", "open"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let conv = openConv;
+    if (!conv) {
+      // 2. Nếu không có hội thoại mở, lấy hội thoại gần nhất (kể cả đã đóng)
+      const { data: latestConv, error: latestError } = await supabase
+        .from("conversations")
+        .select(
+          `
+          conversation_id,
+          customer_id,
+          customer_name,
+          last_message_id,
+          last_message_at,
+          last_message,
+          status,
+          created_at,
+          updated_at
+        `
+        )
+        .eq("customer_id", customerId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestError && latestError.code !== "PGRST116") throw latestError;
+      conv = latestConv;
+    }
+
+    if (!conv) return null;
+
+    // Lấy nhân viên xử lý từ conversation_participants
+    const { data: staffParticipant } = await supabase
+      .from("conversation_participants")
+      .select("account_id")
+      .eq("conversation_id", conv.conversation_id)
+      .in("role", ["staff", "admin"])
+      .maybeSingle();
+
+    return {
+      conversation_id: conv.conversation_id,
+      customer_id: conv.customer_id,
+      customer_name: (conv.customer_name && conv.customer_name.trim()) || "Khách hàng",
+      assigned_staff_id: staffParticipant?.account_id || null,
+      last_message_id: conv.last_message_id,
+      last_message_at: conv.last_message_at,
+      last_message: conv.last_message,
+      status: conv.status,
+      created_at: conv.created_at,
+      updated_at: conv.updated_at,
+    };
+  },
+
+  // Lấy toàn bộ danh sách conversation_id của khách hàng
+  findAllIdsByCustomerId: async (customerId) => {
+    if (!customerId) return [];
+    const { data, error } = await supabase
+      .from("conversations")
+      .select("conversation_id")
+      .eq("customer_id", customerId);
+
+    if (error) throw error;
+    return (data || []).map((c) => c.conversation_id);
+  },
+
   // Lấy thông tin chi tiết khách hàng từ bảng user_profiles
   findCustomerInfo: (customerId, fallbackName = "Khách hàng") =>
     CustomerModel.findByAccountId(customerId, fallbackName),
 };
-

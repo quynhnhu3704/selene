@@ -26,7 +26,7 @@ export const getConversations = async (req, res, next) => {
 // Lấy danh sách 10 tin nhắn mới nhất kèm thông tin khách hàng và đơn hàng 2 tháng gần đây theo ID cuộc hội thoại (conversation_id)
 export const getConversationDetails = async (req, res, next) => {
   try {
-    // ID ở URL là conversation_id (ID cuộc hội thoại được chọn)
+    // ID ở URL là conversation_id (ID cuộc hội thoại được chọn) hoặc customer_id
     const conversationId = req.params.conversationId || req.params.id;
     const { before, limit } = req.query;
     const user = req.user;
@@ -62,4 +62,79 @@ export const getConversationDetails = async (req, res, next) => {
     next(error);
   }
 };
+
+// Lấy danh sách tin nhắn theo từng khách hàng (mỗi lần 10 tin nhắn gần nhất, khi kéo lên thì lấy thêm)
+export const getCustomerMessages = async (req, res, next) => {
+  try {
+    const customerId = req.params.customerId;
+    const { before, limit } = req.query;
+    const user = req.user;
+
+    const result = await ConversationService.getCustomerMessages(user, customerId, {
+      before,
+      limit: limit ? Number(limit) : 10,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách tin nhắn theo khách hàng thành công!",
+      data: {
+        conversation_id: result.conversation.conversation_id,
+        customer_id: result.customer?.account_id || customerId,
+        customer_name: result.customer?.full_name || result.conversation.customer_name,
+        assigned_staff_id: result.assigned_staff_id || null,
+        status: result.conversation.status,
+        customer: {
+          account_id: result.customer?.account_id || customerId,
+          profile_id: result.customer?.profile_id || null,
+          full_name: result.customer?.full_name || result.conversation.customer_name || "Khách hàng",
+          email: result.customer?.email || "Chưa có email",
+          phone_number: result.customer?.phone_number || "Chưa có số điện thoại",
+          avatar_url: result.customer?.avatar_url || null,
+        },
+        orders: result.orders,
+        messages: result.messages,
+        pagination: result.pagination,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Khách hàng tự lấy danh sách tin nhắn của chính mình (10 tin mới nhất, kéo lên lấy tiếp)
+export const getMyMessages = async (req, res, next) => {
+  try {
+    const customerId = req.user?.accountId || req.user?.account_id || req.user?.id;
+    if (!customerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Không tìm thấy thông tin tài khoản người dùng!",
+      });
+    }
+    const { before, limit } = req.query;
+    const user = req.user;
+
+    const result = await ConversationService.getCustomerMessages(user, String(customerId), {
+      before,
+      limit: limit ? Number(limit) : 10,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách tin nhắn thành công!",
+      data: {
+        conversation_id: result.conversation.conversation_id,
+        customer_id: customerId,
+        customer_name: result.customer?.full_name || result.conversation.customer_name,
+        status: result.conversation.status,
+        messages: result.messages,
+        pagination: result.pagination,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 

@@ -5,7 +5,7 @@ export const MessageService = {
   getMessages: async (user, id, { before, limit = 10 } = {}) => {
     await ConversationService.getAccessible(user, id);
     limit = Number(limit);
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100 || (before && !/^\d+$/.test(String(before)))) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       throw { status: 400, message: "Phân trang tin nhắn không hợp lệ!" };
     }
     return MessageModel.findByConversation(id, before, limit);
