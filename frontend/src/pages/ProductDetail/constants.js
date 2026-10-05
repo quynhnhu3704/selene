@@ -32,7 +32,6 @@ export const COMMITS = [
   { icon: "bi-arrow-repeat", text1: "Đổi, trả miễn phí", text2: "tại nhà nếu không hài lòng", link: "Xem chính sách ↗", path: "/ve-chung-toi" },
   { icon: "bi-truck", text1: "Giao trong 3-5 ngày", text2: "và freeship đơn từ 498k" },
   { icon: "bi-shield-check", text1: "Cam kết bảo mật", text2: "thông tin khách hàng" },
-  { icon: "bi-chat-dots", text1: "Cần tư vấn thêm?", link: "Chat ngay!", path: "/ho-tro" },
 ];
 
 export const SIZE_GUIDE_IMAGE = "https://deltasport.vn/wp-content/uploads/2025/07/San-pham-nu-moi.png";

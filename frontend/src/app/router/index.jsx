@@ -16,7 +16,6 @@ import Cart from "../../pages/Cart";
 import Checkout from "../../pages/Checkout";
 import Payment from "../../pages/Payment";
 import Promotions from "../../pages/Promotions";
-import Support from "../../pages/Support";
 import AdminSupport from "../../pages/Admin/Support";
 
 import Info from "../../pages/Account/Profile/pages/Info";
@@ -81,7 +80,6 @@ export default function AppRouter() {
 
         <Route path="/ve-chung-toi" element={<About />} />
         <Route path="/khuyen-mai" element={<Promotions />} />
-        <Route path="/ho-tro" element={<Support />} />
       </Route>
 
       {/* Layout Admin */}

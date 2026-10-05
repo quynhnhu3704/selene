@@ -66,11 +66,6 @@ export default function Footer() {
                 Tin Tức Thời Trang
               </Link>
             </li>
-            <li>
-              <Link to="/ho-tro" className="rb-footer-link">
-                Chăm Sóc Khách Hàng
-              </Link>
-            </li>
           </ul>
         </div>
         <div className="col-12 col-lg-3">
