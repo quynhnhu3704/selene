@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { supabase } from "../configs/supabase.js";
 import { CustomerModel } from "./customer.model.js";
 
@@ -273,4 +274,173 @@ export const ConversationModel = {
   // Lấy thông tin chi tiết khách hàng từ bảng user_profiles
   findCustomerInfo: (customerId, fallbackName = "Khách hàng") =>
     CustomerModel.findByAccountId(customerId, fallbackName),
+
+  // Tìm cuộc hội thoại còn đang mở của khách hàng
+  findOpenByCustomerId: async (customerId) => {
+    if (!customerId) return null;
+    const { data, error } = await supabase
+      .from("conversations")
+      .select(
+        `
+        conversation_id,
+        customer_id,
+        customer_name,
+        last_message_id,
+        last_message_at,
+        last_message,
+        status,
+        created_at,
+        updated_at
+      `
+      )
+      .eq("customer_id", customerId)
+      .in("status", ["pending", "waiting", "processing", "active", "open"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data || null;
+  },
+
+  // Tạo mới cuộc hội thoại trong bảng conversations
+  create: async ({
+    conversation_id,
+    customer_id,
+    customer_name,
+    status = "pending",
+    last_message = null,
+    last_message_at = null,
+    last_message_id = null,
+  }) => {
+    const now = new Date().toISOString();
+    const convId = conversation_id || crypto.randomUUID();
+    const payload = {
+      conversation_id: convId,
+      customer_id,
+      customer_name: (customer_name && customer_name.trim()) || "Khách hàng",
+      status: status || "pending",
+      last_message: last_message || null,
+      last_message_at: last_message_at || now,
+      last_message_id: last_message_id || null,
+      created_at: now,
+      updated_at: now,
+    };
+
+    let { data, error } = await supabase
+      .from("conversations")
+      .insert([payload])
+      .select()
+      .single();
+
+    // Dự phòng trường hợp DB cũ có CHECK (status IN ('waiting', 'active', 'closed'))
+    if (error && error.message?.includes("conversations_status_check")) {
+      payload.status = "waiting";
+      const retry = await supabase
+        .from("conversations")
+        .insert([payload])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Cập nhật thông tin cuộc trò chuyện
+  update: async (conversationId, updates) => {
+    const { data, error } = await supabase
+      .from("conversations")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("conversation_id", conversationId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Tìm người tham gia theo conversation_id và account_id
+  findParticipant: async (conversationId, accountId) => {
+    const { data, error } = await supabase
+      .from("conversation_participants")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .eq("account_id", accountId)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data || null;
+  },
+
+  // Thêm người tham gia vào conversation_participants
+  addParticipant: async ({
+    conversation_participant_id,
+    conversation_id,
+    account_id,
+    role = "customer",
+    last_read_message_id = null,
+    last_read_at = null,
+  }) => {
+    const now = new Date().toISOString();
+    const payload = {
+      conversation_participant_id: conversation_participant_id || crypto.randomUUID(),
+      conversation_id,
+      account_id,
+      role: role || "customer",
+      last_read_message_id: last_read_message_id || null,
+      last_read_at: last_read_at || now,
+      joined_at: now,
+    };
+
+    const { data, error } = await supabase
+      .from("conversation_participants")
+      .insert([payload])
+      .select()
+      .maybeSingle();
+
+    if (error && error.code !== "23505") throw error; // Bỏ qua nếu đã tồn tại unique index
+    return data;
+  },
+
+  // Cập nhật hoặc thêm mới người tham gia (upsert)
+  upsertParticipant: async ({
+    conversation_id,
+    account_id,
+    role = "customer",
+    last_read_message_id = null,
+    last_read_at = null,
+  }) => {
+    const now = new Date().toISOString();
+
+    const existing = await ConversationModel.findParticipant(conversation_id, account_id);
+    if (existing) {
+      const updates = {};
+      if (last_read_message_id) updates.last_read_message_id = last_read_message_id;
+      if (last_read_at) updates.last_read_at = last_read_at;
+
+      const { data, error } = await supabase
+        .from("conversation_participants")
+        .update(updates)
+        .eq("conversation_participant_id", existing.conversation_participant_id)
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } else {
+      return ConversationModel.addParticipant({
+        conversation_id,
+        account_id,
+        role,
+        last_read_message_id,
+        last_read_at: last_read_at || now,
+      });
+    }
+  },
 };

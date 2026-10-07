@@ -1,4 +1,6 @@
 import { ConversationService } from "../services/conversation.service.js";
+import { MessageService } from "../services/message.service.js";
+import { notifyConversation } from "../socket.js";
 
 // Lấy danh sách các cuộc trò chuyện
 export const getConversations = async (req, res, next) => {
@@ -130,6 +132,66 @@ export const getMyMessages = async (req, res, next) => {
         status: result.conversation.status,
         messages: result.messages,
         pagination: result.pagination,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Gửi 1 tin nhắn loại text
+// - Nếu chưa có cuộc hội thoại thì tạo cuộc hội thoại mới và tạo tin nhắn mới
+// - Nếu có đoạn hội thoại rồi thì chỉ cần thêm tin nhắn mới vào hội thoại
+export const sendTextMessage = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const conversationId =
+      req.params.conversationId ||
+      req.params.id ||
+      req.body.conversation_id ||
+      req.body.conversationId ||
+      null;
+
+    const {
+      content,
+      customer_id,
+      customerId,
+      reply_to_message_id,
+      replyToMessageId,
+      sender_type,
+    } = req.body;
+
+    const result = await MessageService.sendTextMessage(user, {
+      conversation_id: conversationId,
+      customer_id: customer_id || customerId,
+      content,
+      reply_to_message_id: reply_to_message_id || replyToMessageId,
+      sender_type,
+    });
+
+    // Phát sự kiện realtime qua Socket.IO nếu có kết nối
+    const io = req.app.get("io");
+    if (io) {
+      try {
+        io.to(`conversation:${result.conversation.conversation_id}`).emit(
+          "message:new",
+          result.message
+        );
+        notifyConversation(io, result.conversation);
+      } catch (socketErr) {
+        console.warn("[sendTextMessage] Socket emission warning:", socketErr.message);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: result.is_new_conversation
+        ? "Đã tạo cuộc hội thoại mới và gửi tin nhắn thành công!"
+        : "Gửi tin nhắn thành công!",
+      data: {
+        message: result.message,
+        conversation: result.conversation,
+        is_new_conversation: result.is_new_conversation,
       },
     });
   } catch (error) {

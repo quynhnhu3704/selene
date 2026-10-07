@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { supabase } from "../configs/supabase.js";
 
 export const MessageModel = {
@@ -186,28 +187,48 @@ export const MessageModel = {
    * Tạo tin nhắn mới vào bảng messages
    */
   create: async ({
+    messageId,
     conversationId,
     senderId,
     content,
     senderType = "user",
     messageType = "text",
     replyToMessageId = null,
+    status = "sent",
   }) => {
-    const { data, error } = await supabase
+    const now = new Date().toISOString();
+    const newMsgId = messageId || crypto.randomUUID();
+
+    const insertPayload = {
+      message_id: newMsgId,
+      conversation_id: conversationId,
+      sender_id: senderId || null,
+      sender_type: senderType || "user",
+      message_type: messageType || "text",
+      content: content,
+      reply_to_message_id: replyToMessageId || null,
+      status: status || "sent",
+      created_at: now,
+      updated_at: now,
+    };
+
+    let { data, error } = await supabase
       .from("messages")
-      .insert([
-        {
-          conversation_id: conversationId,
-          sender_id: senderId,
-          sender_type: senderType,
-          message_type: messageType,
-          content: content,
-          reply_to_message_id: replyToMessageId,
-          status: "sent",
-        },
-      ])
+      .insert([insertPayload])
       .select()
       .single();
+
+    // Dự phòng trường hợp cột message_id trong database là GENERATED ALWAYS AS IDENTITY
+    if (error && error.message?.includes("identity column")) {
+      delete insertPayload.message_id;
+      const retry = await supabase
+        .from("messages")
+        .insert([insertPayload])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) throw error;
     return data;

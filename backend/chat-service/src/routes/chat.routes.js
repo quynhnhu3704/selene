@@ -4,25 +4,32 @@ import {
   getConversations,
   getConversationDetails,
   getMyMessages,
+  sendTextMessage,
 } from "../controllers/conversation.controller.js";
 
 const router = Router();
 
 router.use(verifyToken);
 
+// =========================================================
+// CÁC ROUTE LẤY DANH SÁCH & CHI TIẾT TIN NHẮN
+// =========================================================
+
 // 1. Lấy danh sách cuộc trò chuyện quản lý (Admin / Staff với quyền 'chat:view')
 router.get("/manage/conversations", verifyPermission("chat:view"), getConversations);
 
-// 2. Lấy danh sách 10 tin nhắn theo ID cuộc hội thoại ỗ trợ cho admin / staff
+// 2. Lấy danh sách 10 tin nhắn theo ID cuộc hội thoại hỗ trợ cho admin / staff
 router.get(
   "/manage/conversations/:conversationId/messages",
   verifyPermission("chat:view"),
   getConversationDetails
 );
 
-// 3. Lấy danh sách 10 tin nhắn theo ID cuộc hội thoại ỗ trợ cho custoomer
+// 3. Lấy danh sách 10 tin nhắn theo ID cuộc hội thoại hỗ trợ cho customer
 router.get("/my-conversation/messages", getMyMessages);
 
+// 4. Gửi 1 tin nhắn loại text (dùng chung, tự động tạo cuộc hội thoại nếu chưa có)
+router.post("/messages/text", sendTextMessage);
+
+
 export default router;
-
-
