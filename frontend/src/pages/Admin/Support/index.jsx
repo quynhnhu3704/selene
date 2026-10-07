@@ -11,6 +11,7 @@ import {
   getConversationDetails,
   reopenConversation,
   sendTextMessage,
+  sendAttachmentMessage,
 } from "../../../services/chat.service";
 import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
@@ -398,17 +399,25 @@ function SupportInbox() {
     fetchDetail(selectedId);
   };
 
-  // Gửi tin nhắn mới trong khung chat
+  // Gửi tin nhắn mới trong khung chat (text hoặc file đính kèm)
   const handleSendMessage = async (data) => {
-    if (!selectedId || !data?.content) return;
-    const content = data.content.trim();
-    if (!content) return;
+    if (!selectedId || (!data?.content && !data?.file)) return;
+    const content = data?.content ? data.content.trim() : "";
 
     try {
-      const res = await sendTextMessage({
-        conversation_id: selectedId,
-        content: content,
-      });
+      let res;
+      if (data.file) {
+        const formData = new FormData();
+        formData.append("file", data.file);
+        if (content) formData.append("content", content);
+        formData.append("conversation_id", selectedId);
+        res = await sendAttachmentMessage(formData);
+      } else {
+        res = await sendTextMessage({
+          conversation_id: selectedId,
+          content: content,
+        });
+      }
       const createdMsg = res?.data?.data?.message;
 
       const newMsg = createdMsg || {
@@ -416,7 +425,7 @@ function SupportInbox() {
         conversation_id: selectedId,
         sender_id: currentUserId || 1,
         sender_role: currentUser?.role || "admin",
-        content: content,
+        content: content || (data.file ? data.file.name : ""),
         created_at: new Date().toISOString(),
         is_read: true,
       };
@@ -429,12 +438,21 @@ function SupportInbox() {
         ],
       }));
 
+      const previewText =
+        newMsg.message_type === "image"
+          ? "[Hình ảnh]"
+          : newMsg.message_type === "video"
+          ? "[Video]"
+          : newMsg.attachments?.[0]
+          ? `[Tệp] ${newMsg.attachments[0].file_name || ""}`
+          : content || "Tin nhắn";
+
       setConversations((prev) =>
         prev.map((item) =>
           String(item.conversation_id) === String(selectedId)
             ? {
                 ...item,
-                last_message: content,
+                last_message: previewText,
                 last_message_at: newMsg.created_at,
               }
             : item

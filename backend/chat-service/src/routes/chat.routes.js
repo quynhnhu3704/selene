@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { verifyToken, verifyPermission } from "../middlewares/auth.middleware.js";
+import { chatUpload } from "../middlewares/upload.middleware.js";
 import {
   getConversations,
   getConversationDetails,
   getMyMessages,
   sendTextMessage,
+  sendAttachmentMessage,
 } from "../controllers/conversation.controller.js";
 
 const router = Router();
@@ -31,5 +33,11 @@ router.get("/my-conversation/messages", getMyMessages);
 // 4. Gửi 1 tin nhắn loại text (dùng chung, tự động tạo cuộc hội thoại nếu chưa có)
 router.post("/messages/text", sendTextMessage);
 
+// =========================================================
+// ROUTE GỬI HÌNH ẢNH, VIDEO, TỆP ĐÍNH KÈM
+// =========================================================
+
+// 5. Gửi tin nhắn đính kèm file/hình ảnh/video trực tiếp (multipart/form-data)
+router.post("/messages/attachment", chatUpload.any(), sendAttachmentMessage);
 
 export default router;

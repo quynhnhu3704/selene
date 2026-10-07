@@ -16,6 +16,7 @@
     "express": "^4.22.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.2.0",
     "selene-shop": "file:../..",
     "socket.io": "^4.8.1"
   }

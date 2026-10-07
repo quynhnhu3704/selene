@@ -1,14 +1,84 @@
 import crypto from "node:crypto";
 import { supabase } from "../configs/supabase.js";
+import { AttachmentModel } from "./attachment.model.js";
+
+const MESSAGE_FIELDS = `
+  message_id,
+  conversation_id,
+  sender_id,
+  sender_type,
+  message_type,
+  content,
+  reply_to_message_id,
+  status,
+  created_at,
+  updated_at
+`;
+
+/**
+ * Chuẩn hóa 1 bản ghi tin nhắn từ database kết hợp danh sách attachments
+ */
+const formatMessageRow = (msg, attachments = [], defaultSenderRole = null) => {
+  const firstAtt = attachments && attachments.length > 0 ? attachments[0] : null;
+
+  let fileUrl = firstAtt?.file_url || null;
+  let fileName = firstAtt?.file_name || null;
+  let fileSize = firstAtt?.file_size ? Number(firstAtt.file_size) : null;
+  let fileType = firstAtt?.file_type || null;
+  let messageType = msg.message_type || "text";
+  let displayContent = msg.content || "";
+
+  // Dự phòng: Nếu content là JSON fallback
+  if (!fileUrl && displayContent && typeof displayContent === "string" && displayContent.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(displayContent);
+      if (parsed.file_url || parsed.url) {
+        fileUrl = parsed.file_url || parsed.url;
+        fileName = parsed.file_name || parsed.name || null;
+        fileSize = parsed.file_size || parsed.size || null;
+        fileType = parsed.file_type || parsed.type || null;
+        if (parsed.type && ["image", "video", "file", "audio"].includes(parsed.type)) {
+          messageType = parsed.type;
+        }
+        displayContent = parsed.text || parsed.caption || fileName || (messageType === "image" ? "[Hình ảnh]" : messageType === "video" ? "[Video]" : "[Tệp đính kèm]");
+      }
+    } catch {}
+  }
+
+  // Tự động phân loại nếu có file đính kèm nhưng message_type vẫn là text
+  if (fileUrl && messageType === "text") {
+    const ext = (fileName || fileUrl).split(".").pop()?.split("?")[0]?.toLowerCase();
+    const mime = (fileType || "").toLowerCase();
+    if (mime.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext)) {
+      messageType = "image";
+    } else if (mime.startsWith("video/") || ["mp4", "mov", "webm", "mkv"].includes(ext)) {
+      messageType = "video";
+    } else {
+      messageType = "file";
+    }
+  }
+
+  return {
+    message_id: msg.message_id,
+    conversation_id: msg.conversation_id,
+    sender_id: msg.sender_id,
+    sender_type: msg.sender_type || defaultSenderRole || "user",
+    message_type: messageType,
+    content: displayContent,
+    attachments: attachments,
+    reply_to_message_id: msg.reply_to_message_id || null,
+    status: msg.status || "sent",
+    is_read: msg.status === "seen",
+    created_at: msg.created_at,
+    updated_at: msg.updated_at || msg.created_at,
+  };
+};
 
 export const MessageModel = {
   /**
-   * Lấy danh sách tin nhắn theo cuộc trò chuyện (mặc định 10 tin nhắn mới nhất)
-   * Khớp đúng bảng messages:
-   * message_id, conversation_id, sender_id, sender_type, message_type, content, reply_to_message_id, status, created_at, updated_at
-   * 
+   * Lấy danh sách tin nhắn theo cuộc trò chuyện (kèm dữ liệu từ bảng message_attachments)
    * @param {string} conversationId - ID cuộc trò chuyện
-   * @param {string|null} before - con trỏ thời gian created_at hoặc message_id để tải tin cũ hơn khi kéo lên
+   * @param {string|null} before - con trỏ thời gian created_at hoặc message_id
    * @param {number} limit - số lượng tin nhắn (mặc định 10)
    */
   findByConversation: async (conversationId, before = null, limit = 10) => {
@@ -16,43 +86,17 @@ export const MessageModel = {
 
     let query = supabase
       .from("messages")
-      .select(
-        `
-        message_id,
-        conversation_id,
-        sender_id,
-        sender_type,
-        message_type,
-        content,
-        reply_to_message_id,
-        status,
-        created_at,
-        updated_at
-      `
-      )
+      .select(MESSAGE_FIELDS)
       .eq("conversation_id", conversationId);
 
-    // Xử lý phân trang theo con trỏ thời gian tạo (created_at) hoặc message_id
     if (before) {
       if (!isNaN(Date.parse(before))) {
         query = query.lt("created_at", new Date(before).toISOString());
       } else {
-        // Nếu truyền vào message_id, lấy created_at của message đó để so sánh lùi
-        const { data: targetMsg } = await supabase
-          .from("messages")
-          .select("created_at, message_id")
-          .eq("message_id", before)
-          .maybeSingle();
-
-        if (targetMsg?.created_at) {
-          query = query.lt("created_at", targetMsg.created_at);
-        } else {
-          query = query.lt("message_id", before);
-        }
+        query = query.lt("message_id", before);
       }
     }
 
-    // Sắp xếp thời gian giảm dần để lấy các tin mới nhất (lấy fetchLimit + 1 để kiểm tra has_more)
     query = query
       .order("created_at", { ascending: false })
       .order("message_id", { ascending: false })
@@ -65,22 +109,25 @@ export const MessageModel = {
     const hasMore = rawMessages.length > fetchLimit;
     const items = hasMore ? rawMessages.slice(0, fetchLimit) : rawMessages;
 
-    // Sắp xếp lại theo thời gian tăng dần (cũ -> mới) cho hiển thị khung chat từ trên xuống
+    // Đảo ngược lại theo thứ tự thời gian tăng dần (cũ -> mới) cho khung chat
     items.reverse();
 
-    const formattedMessages = items.map((msg) => ({
-      message_id: msg.message_id,
-      conversation_id: msg.conversation_id,
-      sender_id: msg.sender_id,
-      sender_type: msg.sender_type || "user",
-      message_type: msg.message_type || "text",
-      content: msg.content,
-      reply_to_message_id: msg.reply_to_message_id || null,
-      status: msg.status || "sent",
-      is_read: msg.status === "seen",
-      created_at: msg.created_at,
-      updated_at: msg.updated_at || msg.created_at,
-    }));
+    // 1. Lấy danh sách attachments tương ứng từ bảng message_attachments
+    const messageIds = items.map((m) => String(m.message_id));
+    const attachments = await AttachmentModel.findByMessageIds(messageIds);
+
+    const attachmentsByMsgId = {};
+    attachments.forEach((att) => {
+      const mid = String(att.message_id);
+      if (!attachmentsByMsgId[mid]) attachmentsByMsgId[mid] = [];
+      attachmentsByMsgId[mid].push(att);
+    });
+
+    // 2. Gộp attachments vào từng tin nhắn
+    const formattedMessages = items.map((msg) => {
+      const msgAtts = attachmentsByMsgId[String(msg.message_id)] || [];
+      return formatMessageRow(msg, msgAtts);
+    });
 
     return {
       messages: formattedMessages,
@@ -92,8 +139,7 @@ export const MessageModel = {
   },
 
   /**
-   * Lấy danh sách tin nhắn theo từng khách hàng (mỗi lần 10 tin nhắn gần nhất)
-   * Phân trang qua con trỏ before khi người dùng kéo lên
+   * Lấy danh sách tin nhắn theo từng khách hàng (kèm dữ liệu từ bảng message_attachments)
    */
   findByCustomer: async (customerId, conversationIds = [], before = null, limit = 10) => {
     const fetchLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
@@ -110,38 +156,14 @@ export const MessageModel = {
 
     let query = supabase
       .from("messages")
-      .select(
-        `
-        message_id,
-        conversation_id,
-        sender_id,
-        sender_type,
-        message_type,
-        content,
-        reply_to_message_id,
-        status,
-        created_at,
-        updated_at
-      `
-      )
+      .select(MESSAGE_FIELDS)
       .in("conversation_id", conversationIds);
 
-    // Xử lý phân trang theo con trỏ before (thời gian hoặc message_id)
     if (before) {
       if (!isNaN(Date.parse(before))) {
         query = query.lt("created_at", new Date(before).toISOString());
       } else {
-        const { data: targetMsg } = await supabase
-          .from("messages")
-          .select("created_at, message_id")
-          .eq("message_id", before)
-          .maybeSingle();
-
-        if (targetMsg?.created_at) {
-          query = query.lt("created_at", targetMsg.created_at);
-        } else {
-          query = query.lt("message_id", before);
-        }
+        query = query.lt("message_id", before);
       }
     }
 
@@ -157,22 +179,27 @@ export const MessageModel = {
     const hasMore = rawMessages.length > fetchLimit;
     const items = hasMore ? rawMessages.slice(0, fetchLimit) : rawMessages;
 
-    // Đảo ngược lại theo thứ tự thời gian tăng dần (cũ -> mới)
     items.reverse();
 
-    const formattedMessages = items.map((msg) => ({
-      message_id: msg.message_id,
-      conversation_id: msg.conversation_id,
-      sender_id: msg.sender_id,
-      sender_type: msg.sender_type || (msg.sender_id === customerId ? "user" : "staff"),
-      message_type: msg.message_type || "text",
-      content: msg.content,
-      reply_to_message_id: msg.reply_to_message_id || null,
-      status: msg.status || "sent",
-      is_read: msg.status === "seen",
-      created_at: msg.created_at,
-      updated_at: msg.updated_at || msg.created_at,
-    }));
+    // Lấy attachments tương ứng từ bảng message_attachments
+    const messageIds = items.map((m) => String(m.message_id));
+    const attachments = await AttachmentModel.findByMessageIds(messageIds);
+
+    const attachmentsByMsgId = {};
+    attachments.forEach((att) => {
+      const mid = String(att.message_id);
+      if (!attachmentsByMsgId[mid]) attachmentsByMsgId[mid] = [];
+      attachmentsByMsgId[mid].push(att);
+    });
+
+    const formattedMessages = items.map((msg) => {
+      const msgAtts = attachmentsByMsgId[String(msg.message_id)] || [];
+      return formatMessageRow(
+        msg,
+        msgAtts,
+        msg.sender_id === customerId ? "user" : "staff"
+      );
+    });
 
     return {
       messages: formattedMessages,
@@ -184,13 +211,17 @@ export const MessageModel = {
   },
 
   /**
-   * Tạo tin nhắn mới vào bảng messages
+   * Tạo tin nhắn mới vào bảng messages và lưu tệp đính kèm vào bảng message_attachments
    */
   create: async ({
     messageId,
     conversationId,
     senderId,
     content,
+    fileUrl = null,
+    fileName = null,
+    fileSize = null,
+    fileType = null,
     senderType = "user",
     messageType = "text",
     replyToMessageId = null,
@@ -205,7 +236,7 @@ export const MessageModel = {
       sender_id: senderId || null,
       sender_type: senderType || "user",
       message_type: messageType || "text",
-      content: content,
+      content: content || fileName || (fileUrl ? "[Tệp đính kèm]" : "Tin nhắn"),
       reply_to_message_id: replyToMessageId || null,
       status: status || "sent",
       created_at: now,
@@ -218,7 +249,7 @@ export const MessageModel = {
       .select()
       .single();
 
-    // Dự phòng trường hợp cột message_id trong database là GENERATED ALWAYS AS IDENTITY
+    // 1. Dự phòng trường hợp cột message_id trong database là GENERATED ALWAYS AS IDENTITY
     if (error && error.message?.includes("identity column")) {
       delete insertPayload.message_id;
       const retry = await supabase
@@ -230,8 +261,62 @@ export const MessageModel = {
       error = retry.error;
     }
 
+    // 2. Dự phòng trường hợp ràng buộc CHECK (message_type = 'text') cũ trong DB
+    if (
+      error &&
+      error.message?.includes("check constraint") &&
+      (error.message?.includes("message_type") ||
+        error.message?.includes("messages_message_type_check"))
+    ) {
+      insertPayload.message_type = "text";
+      const retry = await supabase
+        .from("messages")
+        .insert([insertPayload])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) throw error;
-    return data;
+
+    // 3. NẾU CÓ TỆP ĐÍNH KÈM: Lưu vào bảng message_attachments
+    let savedAttachment = null;
+    if (fileUrl && data?.message_id) {
+      try {
+        savedAttachment = await AttachmentModel.create({
+          attachmentId: crypto.randomUUID(),
+          messageId: String(data.message_id),
+          fileUrl: fileUrl,
+          fileName: fileName || "file",
+          fileType: fileType || "application/octet-stream",
+          fileSize: fileSize ? Number(fileSize) : null,
+        });
+      } catch (attError) {
+        console.warn("[MessageModel.create] Warning saving attachment to message_attachments:", attError.message);
+        // Lưu tạm attachment dạng object trả về cho client
+        savedAttachment = {
+          attachment_id: crypto.randomUUID(),
+          message_id: String(data.message_id),
+          file_url: fileUrl,
+          file_name: fileName || "file",
+          file_type: fileType || "application/octet-stream",
+          file_size: fileSize ? Number(fileSize) : null,
+          created_at: now,
+        };
+      }
+    }
+
+    const attachmentsList = savedAttachment ? [savedAttachment] : [];
+
+    return {
+      ...data,
+      attachments: attachmentsList,
+      message_type:
+        data.message_type === "text" && messageType !== "text"
+          ? messageType
+          : data.message_type || messageType,
+    };
   },
 
   /**

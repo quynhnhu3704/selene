@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import ChatPanel from "../../components/SupportChat/ChatPanel";
 import { STATUS_LABELS } from "../../components/SupportChat/constants";
-import { getMyMessages, sendTextMessage } from "../../services/chat.service";
+import { getMyMessages, sendTextMessage, sendAttachmentMessage } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { getUser, isLoggedIn } from "../../utils/auth";
 import { toast } from "react-toastify";
@@ -27,19 +27,27 @@ function CustomerSupport() {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const socketRef = useRef(null);
 
-  // Gửi tin nhắn loại text lên server (POST /api/chat/messages/text)
+  // Gửi tin nhắn lên server (hỗ trợ text hoặc tệp đính kèm ảnh/video/file)
   const handleSendMessage = async (data) => {
-    if (!data?.content) return;
-    const content = data.content.trim();
-    if (!content) return;
+    if (!data?.content && !data?.file) return;
 
     try {
-      const payload = {
-        content,
-        conversation_id: conversation?.conversation_id || undefined,
-      };
-
-      const res = await sendTextMessage(payload);
+      let res;
+      if (data.file) {
+        const formData = new FormData();
+        formData.append("file", data.file);
+        if (data.content) formData.append("content", data.content.trim());
+        if (conversation?.conversation_id) {
+          formData.append("conversation_id", conversation.conversation_id);
+        }
+        res = await sendAttachmentMessage(formData);
+      } else {
+        const payload = {
+          content: data.content.trim(),
+          conversation_id: conversation?.conversation_id || undefined,
+        };
+        res = await sendTextMessage(payload);
+      }
       const resData = res?.data?.data;
       const createdMessage = resData?.message;
       const updatedConv = resData?.conversation;

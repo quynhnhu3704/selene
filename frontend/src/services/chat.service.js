@@ -129,9 +129,41 @@ export const sendTextMessage = async (payload) => {
   return await http.post("/chat/messages/text", payload);
 };
 
+/**
+ * Gửi tin nhắn đính kèm hình ảnh, video, tệp tin trực tiếp qua multipart/form-data
+ * @param {FormData|Object} payload - FormData chứa trường 'file' (hoặc object) và metadata
+ * @returns {Promise}
+ */
+export const sendAttachmentMessage = async (payload) => {
+  if (payload instanceof FormData) {
+    return await http.post("/chat/messages/attachment", payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+  const formData = new FormData();
+  if (payload.file) formData.append("file", payload.file);
+  if (payload.conversation_id) formData.append("conversation_id", payload.conversation_id);
+  if (payload.content) formData.append("content", payload.content);
+  if (payload.customer_id) formData.append("customer_id", payload.customer_id);
+  if (payload.reply_to_message_id) formData.append("reply_to_message_id", payload.reply_to_message_id);
+  if (payload.sender_type) formData.append("sender_type", payload.sender_type);
+  if (payload.message_type) formData.append("message_type", payload.message_type);
+
+  return await http.post("/chat/messages/attachment", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
 export const sendMessage = async (idOrPayload, data = {}) => {
+  if (idOrPayload instanceof FormData) {
+    return await sendAttachmentMessage(idOrPayload);
+  }
   if (typeof idOrPayload === "object" && idOrPayload !== null) {
+    if (idOrPayload.file) return await sendAttachmentMessage(idOrPayload);
     return await sendTextMessage(idOrPayload);
+  }
+  if (data?.file) {
+    return await sendAttachmentMessage({ conversation_id: idOrPayload, ...data });
   }
   return await sendTextMessage({
     conversation_id: idOrPayload,
@@ -142,5 +174,7 @@ export const sendMessage = async (idOrPayload, data = {}) => {
 export const readMessages = async () => ({
   data: { data: [] },
 });
+
+
 
 

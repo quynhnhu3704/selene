@@ -199,4 +199,72 @@ export const sendTextMessage = async (req, res, next) => {
   }
 };
 
+// Gửi tin nhắn đính kèm hình ảnh, video, tệp tin trực tiếp qua Multipart/Form-data
+export const sendAttachmentMessage = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const file = req.file || (req.files && req.files.length > 0 ? req.files[0] : null);
 
+    const conversationId =
+      req.params.conversationId ||
+      req.params.id ||
+      req.body.conversation_id ||
+      req.body.conversationId ||
+      null;
+
+    const {
+      content,
+      customer_id,
+      customerId,
+      reply_to_message_id,
+      replyToMessageId,
+      sender_type,
+      message_type,
+      messageType,
+      file_url,
+      fileUrl,
+      file_name,
+      fileName,
+    } = req.body;
+
+    const result = await MessageService.sendMediaMessage(user, {
+      conversation_id: conversationId,
+      customer_id: customer_id || customerId,
+      file,
+      file_url: file_url || fileUrl,
+      file_name: file_name || fileName,
+      message_type: message_type || messageType,
+      content,
+      reply_to_message_id: reply_to_message_id || replyToMessageId,
+      sender_type,
+    });
+
+    // Phát sự kiện realtime qua Socket.IO
+    const io = req.app.get("io");
+    if (io) {
+      try {
+        io.to(`conversation:${result.conversation.conversation_id}`).emit(
+          "message:new",
+          result.message
+        );
+        notifyConversation(io, result.conversation);
+      } catch (socketErr) {
+        console.warn("[sendAttachmentMessage] Socket emission warning:", socketErr.message);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: result.is_new_conversation
+        ? "Đã tạo cuộc hội thoại mới và gửi tệp tin thành công!"
+        : "Gửi tệp tin thành công!",
+      data: {
+        message: result.message,
+        conversation: result.conversation,
+        is_new_conversation: result.is_new_conversation,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
