@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import ChatPanel from "../../components/SupportChat/ChatPanel";
 import { STATUS_LABELS } from "../../components/SupportChat/constants";
-import { getMyMessages } from "../../services/chat.service";
+import { getMyMessages, sendTextMessage } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { getUser, isLoggedIn } from "../../utils/auth";
+import { toast } from "react-toastify";
 import "../../components/SupportChat/support.css";
 
 function CustomerSupport() {
@@ -24,6 +25,63 @@ function CustomerSupport() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const socketRef = useRef(null);
+
+  // Gửi tin nhắn loại text lên server (POST /api/chat/messages/text)
+  const handleSendMessage = async (data) => {
+    if (!data?.content) return;
+    const content = data.content.trim();
+    if (!content) return;
+
+    try {
+      const payload = {
+        content,
+        conversation_id: conversation?.conversation_id || undefined,
+      };
+
+      const res = await sendTextMessage(payload);
+      const resData = res?.data?.data;
+      const createdMessage = resData?.message;
+      const updatedConv = resData?.conversation;
+
+      if (createdMessage) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.message_id === createdMessage.message_id)) {
+            return prev;
+          }
+          return [...prev, createdMessage];
+        });
+      }
+
+      if (updatedConv) {
+        setConversation((prev) => ({
+          ...(prev || {}),
+          ...updatedConv,
+        }));
+
+        if (socketRef.current && updatedConv.conversation_id) {
+          socketRef.current.emit("conversation:join", updatedConv.conversation_id);
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi gửi tin nhắn:", err);
+      const errorMessage =
+        err?.response?.data?.message ||
+        "Không thể gửi tin nhắn. Vui lòng kiểm tra lại kết nối!";
+      toast.error(errorMessage);
+      throw err; // Ném lỗi để MessageInput giữ lại nội dung đang gõ của người dùng
+    }
+  };
+
+  // Mở lại cuộc trò chuyện khi đã kết thúc bằng cách gửi tin nhắn tiếp tục hỗ trợ
+  const handleReopen = async () => {
+    try {
+      await handleSendMessage({ content: "Xin chào, tôi cần được hỗ trợ tiếp ạ." });
+      toast.success("Đã mở lại cuộc trò chuyện!");
+    } catch {
+      // handleSendMessage đã bắt và thông báo lỗi
+    }
+  };
 
   // Hàm tải danh sách tin nhắn của khách hàng từ API getMyMessages
   const fetchMessages = useCallback(async (isSilent = false) => {
@@ -90,11 +148,15 @@ function CustomerSupport() {
     let socket = null;
     try {
       socket = createChatSocket();
+      socketRef.current = socket;
       if (socket) {
         if (socket.connected) setConnectionStatus("online");
 
         socket.on("connect", () => {
           setConnectionStatus("online");
+          if (conversation?.conversation_id) {
+            socket.emit("conversation:join", conversation.conversation_id);
+          }
         });
 
         socket.on("disconnect", () => {
@@ -103,6 +165,26 @@ function CustomerSupport() {
 
         socket.on("connect_error", () => {
           setConnectionStatus("offline");
+        });
+
+        // Nhận tin nhắn mới theo thời gian thực
+        socket.on("message:new", (newMsg) => {
+          if (!newMsg) return;
+          setMessages((prev) => {
+            if (prev.some((m) => m.message_id === newMsg.message_id)) {
+              return prev;
+            }
+            return [...prev, newMsg];
+          });
+          setConversation((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  last_message: newMsg.content,
+                  last_message_at: newMsg.created_at,
+                }
+              : prev
+          );
         });
 
         // Nhận sự kiện cập nhật hội thoại -> tải lại tin nhắn
@@ -127,11 +209,20 @@ function CustomerSupport() {
         socket.off("connect");
         socket.off("disconnect");
         socket.off("connect_error");
+        socket.off("message:new");
         socket.off("conversation:update");
         socket.disconnect();
       }
+      socketRef.current = null;
     };
   }, [isAuth, fetchMessages]);
+
+  // Tự động tham gia phòng hội thoại khi conversation_id thay đổi
+  useEffect(() => {
+    if (socketRef.current && conversation?.conversation_id) {
+      socketRef.current.emit("conversation:join", conversation.conversation_id);
+    }
+  }, [conversation?.conversation_id]);
 
   if (!isAuth) {
     return (
@@ -235,8 +326,10 @@ function CustomerSupport() {
           pagination={pagination}
           loadingMore={loadingMore}
           onLoadMore={handleLoadMore}
+          onSend={handleSendMessage}
+          onReopen={handleReopen}
           isClosed={currentStatus === "closed"}
-          canReply={currentStatus !== "closed"}
+          canReply={true}
         />
       </section>
     </div>

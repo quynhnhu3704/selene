@@ -24,7 +24,7 @@ export default function ChatPanel({
   const isCustomer = user?.role === "customer";
 
   const showMessages = isCustomer ? true : canShowMessages;
-  const showSendInput = isCustomer ? conversation?.status !== "closed" : canSendMessage;
+  const showSendInput = isCustomer ? true : canSendMessage;
   const checkPending = isCustomer ? false : isPending;
   const checkProcessing = isCustomer ? false : isProcessing;
   const checkAssignedToMe = isCustomer ? true : isAssignedToMe;
@@ -106,7 +106,7 @@ export default function ChatPanel({
           </div>
         )}
 
-        {isPending && (
+        {checkPending && (
           <div className="support-notice d-flex align-items-center justify-content-between py-2 px-3 flex-wrap gap-2">
             <span>
               <i className="bi bi-clock-history text-warning me-2" />
@@ -124,7 +124,7 @@ export default function ChatPanel({
           </div>
         )}
 
-        {showSendInput && !isClosed && !isPending && (
+        {showSendInput && (!isClosed || isCustomer) && !checkPending && (
           <MessageInput disabled={false} onSend={onSend} />
         )}
       </div>

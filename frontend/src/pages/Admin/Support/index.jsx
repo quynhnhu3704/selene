@@ -10,6 +10,7 @@ import {
   getConversations,
   getConversationDetails,
   reopenConversation,
+  sendTextMessage,
 } from "../../../services/chat.service";
 import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
@@ -398,37 +399,52 @@ function SupportInbox() {
   };
 
   // Gửi tin nhắn mới trong khung chat
-  const handleSendMessage = (data) => {
+  const handleSendMessage = async (data) => {
     if (!selectedId || !data?.content) return;
     const content = data.content.trim();
     if (!content) return;
 
-    const newMsg = {
-      message_id: Date.now(),
-      conversation_id: selectedId,
-      sender_id: currentUserId || 1,
-      sender_role: currentUser?.role || "admin",
-      content: content,
-      created_at: new Date().toISOString(),
-      is_read: true,
-    };
+    try {
+      const res = await sendTextMessage({
+        conversation_id: selectedId,
+        content: content,
+      });
+      const createdMsg = res?.data?.data?.message;
 
-    setDetailData((prev) => ({
-      ...prev,
-      messages: [...(prev?.messages || []), newMsg],
-    }));
+      const newMsg = createdMsg || {
+        message_id: Date.now(),
+        conversation_id: selectedId,
+        sender_id: currentUserId || 1,
+        sender_role: currentUser?.role || "admin",
+        content: content,
+        created_at: new Date().toISOString(),
+        is_read: true,
+      };
 
-    setConversations((prev) =>
-      prev.map((item) =>
-        String(item.conversation_id) === String(selectedId)
-          ? {
-            ...item,
-            last_message: content,
-            last_message_at: newMsg.created_at,
-          }
-          : item
-      )
-    );
+      setDetailData((prev) => ({
+        ...prev,
+        messages: [
+          ...(prev?.messages || []).filter((m) => m.message_id !== newMsg.message_id),
+          newMsg,
+        ],
+      }));
+
+      setConversations((prev) =>
+        prev.map((item) =>
+          String(item.conversation_id) === String(selectedId)
+            ? {
+                ...item,
+                last_message: content,
+                last_message_at: newMsg.created_at,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error("Lỗi khi gửi tin nhắn admin:", err);
+      toast.error(err?.response?.data?.message || "Không thể gửi tin nhắn!");
+      throw err;
+    }
   };
 
   // Tải thêm tin nhắn cũ hơn

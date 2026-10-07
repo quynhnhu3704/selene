@@ -51,12 +51,14 @@ export default function MessageList({
             <div className="support-bubble">
               <div>{message.content}</div>
               <small>
-                {new Date(message.created_at).toLocaleString("vi-VN", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {message.created_at && !isNaN(new Date(message.created_at).getTime())
+                  ? new Date(message.created_at).toLocaleString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "Vừa xong"}
                 {own && <span className="ms-2">{message.is_read ? "Đã xem" : "Đã gửi"}</span>}
               </small>
             </div>

@@ -119,19 +119,25 @@ export const getMyMessages = async (params = {}) => {
 export const getMyConversationMessages = getMyMessages;
 export const getCustomerMessages = getMyMessages;
 
-export const sendMessage = async (id, data) => ({
-  data: {
-    data: {
-      message_id: Date.now(),
-      conversation_id: id,
-      sender_id: 1,
-      sender_role: "admin",
-      content: data.content || "",
-      created_at: new Date().toISOString(),
-      is_read: true,
-    },
-  },
-});
+/**
+ * Gửi 1 tin nhắn loại text
+ * API: POST /api/chat/messages/text (qua Vite proxy -> http://localhost:8000/api/chat/messages/text)
+ * @param {Object} payload - { content: string, conversation_id?: string, customer_id?: string, reply_to_message_id?: string, sender_type?: string }
+ * @returns {Promise} Axios response: { success, message, data: { message, conversation, is_new_conversation } }
+ */
+export const sendTextMessage = async (payload) => {
+  return await http.post("/chat/messages/text", payload);
+};
+
+export const sendMessage = async (idOrPayload, data = {}) => {
+  if (typeof idOrPayload === "object" && idOrPayload !== null) {
+    return await sendTextMessage(idOrPayload);
+  }
+  return await sendTextMessage({
+    conversation_id: idOrPayload,
+    ...(data || {}),
+  });
+};
 
 export const readMessages = async () => ({
   data: { data: [] },

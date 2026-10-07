@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { sendMessageToBot } from "../../services/chatbot.service";
-import { getMyMessages } from "../../services/chat.service";
+import { getMyMessages, sendTextMessage } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { isLoggedIn } from "../../utils/auth";
 import defaultProduct from "../../assets/images/default-product.png";
@@ -65,6 +65,14 @@ function Chatbot() {
     try {
       socket = createChatSocket();
       if (socket) {
+        socket.on("message:new", (newMsg) => {
+          if (!newMsg) return;
+          setMessages((prev) => {
+            if (prev.some((m) => m.message_id === newMsg.message_id)) return prev;
+            return [...prev, newMsg];
+          });
+        });
+
         socket.on("conversation:update", () => {
           fetchHistory(true);
         });
@@ -75,6 +83,7 @@ function Chatbot() {
 
     return () => {
       if (socket) {
+        socket.off("message:new");
         socket.off("conversation:update");
         socket.disconnect();
       }
@@ -100,10 +109,27 @@ function Chatbot() {
     }
   };
 
-  // Chặn gửi trùng và giữ tối đa 10 tin gần nhất làm ngữ cảnh cho AI.
+  // Gửi tin nhắn loại text vào CSKH (POST /api/chat/messages/text)
   const send = async () => {
     if (!message.trim() || sendingRef.current) return;
     const text = message.trim();
+
+    if (!isLoggedIn()) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          message_id: "err-" + Date.now(),
+          role: "bot",
+          sender_role: "ai",
+          content: "Bạn vui lòng đăng nhập để gửi tin nhắn hỗ trợ nhé!",
+          text: "Bạn vui lòng đăng nhập để gửi tin nhắn hỗ trợ nhé!",
+          isError: true,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      return;
+    }
+
     const userMsg = {
       message_id: "client-" + Date.now(),
       role: "user",
@@ -112,13 +138,6 @@ function Chatbot() {
       text: text,
       created_at: new Date().toISOString(),
     };
-    const history = messages
-      .filter((item) => !item.isError)
-      .slice(-10)
-      .map(({ role, text, content, sender_role }) => ({
-        role: role || (sender_role === "customer" ? "user" : "bot"),
-        text: text || content || "",
-      }));
 
     sendingRef.current = true;
     setMessages((prev) => [...prev, userMsg]);
@@ -126,6 +145,18 @@ function Chatbot() {
     setIsSending(true);
 
     try {
+      /*
+      // =========================================================================
+      // COMMENT LẠI POST /api/chatbot 200 THEO YÊU CẦU:
+      // =========================================================================
+      const history = messages
+        .filter((item) => !item.isError)
+        .slice(-10)
+        .map(({ role, text, content, sender_role }) => ({
+          role: role || (sender_role === "customer" ? "user" : "bot"),
+          text: text || content || "",
+        }));
+
       const result = await sendMessageToBot(text, history);
       setMessages((prev) => [
         ...prev,
@@ -139,15 +170,34 @@ function Chatbot() {
           created_at: new Date().toISOString(),
         },
       ]);
-    } catch {
+      */
+
+      // Gửi tin nhắn loại text lên hệ thống CSKH: POST /api/chat/messages/text
+      const res = await sendTextMessage({ content: text });
+      const resData = res?.data?.data;
+      if (resData?.message) {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.message_id !== userMsg.message_id);
+          return [...filtered, resData.message];
+        });
+      }
+      if (resData?.conversation?.status) {
+        setConversationStatus(resData.conversation.status);
+      }
+    } catch (err) {
+      console.error("Lỗi khi gửi tin nhắn:", err);
       setMessages((prev) => [
         ...prev,
         {
           message_id: "err-" + Date.now(),
           role: "bot",
           sender_role: "ai",
-          content: "Có lỗi xảy ra, bạn thử lại nhé...",
-          text: "Có lỗi xảy ra, bạn thử lại nhé...",
+          content:
+            err?.response?.data?.message ||
+            "Có lỗi xảy ra khi gửi tin nhắn, bạn thử lại nhé...",
+          text:
+            err?.response?.data?.message ||
+            "Có lỗi xảy ra khi gửi tin nhắn, bạn thử lại nhé...",
           isError: true,
           created_at: new Date().toISOString(),
         },
