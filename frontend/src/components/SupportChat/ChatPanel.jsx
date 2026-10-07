@@ -12,6 +12,7 @@ export default function ChatPanel({
   onLoadMore,
   onSend,
   onAssign,
+  assigning = false,
   onReopen,
   canShowMessages = false,
   canSendMessage = false,
@@ -115,10 +116,12 @@ export default function ChatPanel({
             {onAssign && (
               <button
                 type="button"
-                className="btn btn-dark btn-sm"
+                className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
                 onClick={onAssign}
+                disabled={assigning}
               >
-                Nhận xử lý
+                {assigning && <span className="spinner-border spinner-border-sm me-1" role="status" />}
+                <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
               </button>
             )}
           </div>

@@ -9,6 +9,8 @@ import CustomerInfo from "./components/CustomerInfo";
 import {
   getConversations,
   getConversationDetails,
+  assignConversation,
+  closeConversation,
   reopenConversation,
   sendTextMessage,
   sendAttachmentMessage,
@@ -77,6 +79,8 @@ function SupportInbox() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [assigning, setAssigning] = useState(false);
+  const socketRef = useRef(null);
 
   // Chi tiết tin nhắn & dữ liệu cuộc hội thoại đang chọn
   const [detailData, setDetailData] = useState(null);
@@ -187,13 +191,20 @@ function SupportInbox() {
     let socket = null;
     try {
       socket = createChatSocket();
+      socketRef.current = socket;
       if (socket) {
         if (socket.connected) {
           setConnectionStatus("online");
+          if (selectedIdRef.current) {
+            socket.emit("conversation:join", selectedIdRef.current);
+          }
         }
 
         socket.on("connect", () => {
           setConnectionStatus("online");
+          if (selectedIdRef.current) {
+            socket.emit("conversation:join", selectedIdRef.current);
+          }
         });
 
         socket.on("disconnect", () => {
@@ -202,6 +213,23 @@ function SupportInbox() {
 
         socket.on("connect_error", () => {
           setConnectionStatus("offline");
+        });
+
+        // Nhận tin nhắn mới theo thời gian thực
+        socket.on("message:new", (newMsg) => {
+          if (!newMsg) return;
+          if (String(newMsg.conversation_id) === String(selectedIdRef.current)) {
+            setDetailData((prev) => {
+              if (!prev) return prev;
+              if (prev.messages?.some((m) => m.message_id === newMsg.message_id)) {
+                return prev;
+              }
+              return {
+                ...prev,
+                messages: [...(prev.messages || []), newMsg],
+              };
+            });
+          }
         });
 
         // Nhận sự kiện có cập nhật cuộc trò chuyện -> cập nhật lại danh sách âm thầm
@@ -232,11 +260,20 @@ function SupportInbox() {
         socket.off("connect");
         socket.off("disconnect");
         socket.off("connect_error");
+        socket.off("message:new");
         socket.off("conversation:update");
         socket.disconnect();
       }
+      socketRef.current = null;
     };
   }, [fetchList, fetchDetail]);
+
+  // Tham gia phòng Socket khi đổi cuộc hội thoại được chọn
+  useEffect(() => {
+    if (socketRef.current && selectedId) {
+      socketRef.current.emit("conversation:join", selectedId);
+    }
+  }, [selectedId]);
 
   const selected = selectedId
     ? conversations.find((item) => String(item.conversation_id) === String(selectedId)) || null
@@ -307,35 +344,100 @@ function SupportInbox() {
     fetchDetail(selectedId);
   }, [selectedId, selected?.status, selected?.assigned_staff_id, currentUserId, fetchDetail]);
 
-  // Xử lý gán xử lý hội thoại
-  const handleAssign = () => {
-    if (!selectedId) return;
-    const staffId = currentUserId || 1;
-    setConversations((prev) =>
-      prev.map((item) =>
-        String(item.conversation_id) === String(selectedId)
-          ? {
-            ...item,
-            status: "processing",
-            assigned_staff_id: staffId,
+  // Xử lý nhận xử lý cuộc trò chuyện
+  const handleAssign = async () => {
+    if (!selectedId || assigning) return;
+    setAssigning(true);
+
+    try {
+      const staffName = currentUser?.full_name || currentUser?.username;
+      const res = await assignConversation(selectedId, {
+        staff_name: staffName,
+      });
+
+      const resData = res?.data?.data;
+      const updatedConv = resData?.conversation;
+      const greetingMsg = resData?.message;
+
+      toast.success(res?.data?.message || "Đã nhận xử lý cuộc trò chuyện thành công!");
+
+      // 1. Cập nhật danh sách cuộc hội thoại
+      setConversations((prev) =>
+        prev.map((item) => {
+          if (String(item.conversation_id) === String(selectedId)) {
+            return {
+              ...item,
+              status: updatedConv?.status || "active",
+              assigned_staff_id: updatedConv?.assigned_staff_id || currentUserId,
+              last_message: greetingMsg?.content || item.last_message,
+              last_message_at: greetingMsg?.created_at || new Date().toISOString(),
+            };
           }
-          : item
-      )
-    );
+          return item;
+        })
+      );
 
-    setSummary((prev) => ({
-      ...prev,
-      waitingCount: Math.max(0, (prev.waitingCount || 0) - 1),
-      processingCount: (prev.processingCount || 0) + 1,
-    }));
+      // 2. Cập nhật tóm tắt số lượng trên các tab
+      setSummary((prev) => ({
+        ...prev,
+        waitingCount: Math.max(0, (prev.waitingCount || 0) - 1),
+        processingCount: (prev.processingCount || 0) + 1,
+      }));
 
-    // Tải tin nhắn và thông tin chi tiết ngay khi nhận xử lý
-    fetchDetail(selectedId);
+      // 3. Cập nhật chi tiết hội thoại hiện tại
+      setDetailData((prev) => {
+        if (!prev) return prev;
+        const currentMsgs = prev.messages || [];
+        const hasMsg =
+          greetingMsg &&
+          currentMsgs.some((m) => m.message_id === greetingMsg.message_id);
+        const updatedMsgs = hasMsg
+          ? currentMsgs
+          : greetingMsg
+          ? [...currentMsgs, greetingMsg]
+          : currentMsgs;
+
+        return {
+          ...prev,
+          status: updatedConv?.status || "active",
+          assigned_staff_id: updatedConv?.assigned_staff_id || currentUserId,
+          messages: updatedMsgs,
+        };
+      });
+
+      // 4. Nếu đang ở tab 'Chờ hỗ trợ' (waiting/pending), chuyển mượt mà sang tab 'Đang xử lý'
+      if (status === "waiting" || status === "pending") {
+        setStatus("processing");
+      }
+
+      // 5. Tham gia phòng socket và tải lại thông tin chi tiết đầy đủ
+      if (socketRef.current) {
+        socketRef.current.emit("conversation:join", selectedId);
+      }
+      await fetchDetail(selectedId);
+    } catch (err) {
+      console.error("Lỗi khi nhận xử lý cuộc trò chuyện:", err);
+      toast.error(
+        err?.response?.data?.message ||
+          "Không thể nhận xử lý cuộc trò chuyện. Vui lòng thử lại!"
+      );
+    } finally {
+      setAssigning(false);
+    }
   };
 
   // Xử lý đóng hội thoại
-  const handleClose = () => {
+  const handleClose = async () => {
     if (!selectedId) return;
+    try {
+      if (typeof closeConversation === "function") {
+        await closeConversation(selectedId);
+      }
+      toast.info("Đã đóng cuộc trò chuyện!");
+    } catch (err) {
+      console.error("Lỗi khi đóng hội thoại:", err);
+    }
+
     setConversations((prev) =>
       prev.map((item) =>
         String(item.conversation_id) === String(selectedId)
@@ -351,7 +453,6 @@ function SupportInbox() {
     }));
 
     setDetailData((prev) => (prev ? { ...prev, status: "closed" } : prev));
-    toast.info("Đã đóng cuộc trò chuyện!");
   };
 
   // Xử lý mở lại hội thoại đã đóng
@@ -775,10 +876,14 @@ function SupportInbox() {
                   {isPending && (
                     <button
                       type="button"
-                      className="btn btn-dark btn-sm"
+                      className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
                       onClick={handleAssign}
+                      disabled={assigning}
                     >
-                      Nhận xử lý
+                      {assigning && (
+                        <span className="spinner-border spinner-border-sm me-1" role="status" />
+                      )}
+                      <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
                     </button>
                   )}
                   {!isClosed && !isPending && (
@@ -815,6 +920,7 @@ function SupportInbox() {
                 onLoadMore={handleLoadMore}
                 onSend={handleSendMessage}
                 onAssign={handleAssign}
+                assigning={assigning}
                 onReopen={handleReopen}
                 canShowMessages={canShowMessages}
                 canSendMessage={canSendMessage}

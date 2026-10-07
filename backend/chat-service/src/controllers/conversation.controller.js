@@ -268,3 +268,102 @@ export const sendAttachmentMessage = async (req, res, next) => {
     next(error);
   }
 };
+
+// Nhận xử lý cuộc trò chuyện và tự động gửi tin nhắn chào loại text
+export const assignConversation = async (req, res, next) => {
+  try {
+    const conversationId =
+      req.params.conversationId ||
+      req.params.id ||
+      req.body.conversation_id ||
+      req.body.conversationId;
+    const { staff_name, staffName, content } = req.body;
+    const user = req.user;
+
+    const result = await ConversationService.assignConversation(user, conversationId, {
+      staff_name: staff_name || staffName,
+      content,
+    });
+
+    // Phát sự kiện realtime qua Socket.IO
+    const io = req.app.get("io");
+    if (io) {
+      try {
+        io.to(`conversation:${result.conversation.conversation_id}`).emit(
+          "message:new",
+          result.message
+        );
+        notifyConversation(io, result.conversation);
+      } catch (socketErr) {
+        console.warn("[assignConversation] Socket emission warning:", socketErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Nhận xử lý cuộc trò chuyện và gửi tin nhắn chào thành công!",
+      data: {
+        conversation: result.conversation,
+        message: result.message,
+        staff_name: result.staff_name,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Đóng cuộc trò chuyện
+export const closeConversation = async (req, res, next) => {
+  try {
+    const conversationId = req.params.conversationId || req.params.id;
+    const user = req.user;
+
+    const updated = await ConversationService.closeConversation(user, conversationId);
+
+    const io = req.app.get("io");
+    if (io) {
+      try {
+        notifyConversation(io, updated);
+      } catch (socketErr) {
+        console.warn("[closeConversation] Socket emission warning:", socketErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã đóng cuộc trò chuyện thành công!",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mở lại cuộc trò chuyện
+export const reopenConversation = async (req, res, next) => {
+  try {
+    const conversationId = req.params.conversationId || req.params.id;
+    const user = req.user;
+
+    const updated = await ConversationService.reopenConversation(user, conversationId);
+
+    const io = req.app.get("io");
+    if (io) {
+      try {
+        notifyConversation(io, updated);
+      } catch (socketErr) {
+        console.warn("[reopenConversation] Socket emission warning:", socketErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã mở lại cuộc trò chuyện thành công!",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -7,6 +7,9 @@ import {
   getMyMessages,
   sendTextMessage,
   sendAttachmentMessage,
+  assignConversation,
+  closeConversation,
+  reopenConversation,
 } from "../controllers/conversation.controller.js";
 
 const router = Router();
@@ -39,5 +42,35 @@ router.post("/messages/text", sendTextMessage);
 
 // 5. Gửi tin nhắn đính kèm file/hình ảnh/video trực tiếp (multipart/form-data)
 router.post("/messages/attachment", chatUpload.any(), sendAttachmentMessage);
+
+// =========================================================
+// CÁC ROUTE QUẢN LÝ TIẾP NHẬN / TRẠNG THÁI HỘI THOẠI
+// =========================================================
+
+// 6. Nhận xử lý cuộc trò chuyện (Admin / Staff với quyền 'chat:assign')
+router.post(
+  "/manage/conversations/:conversationId/assign",
+  verifyPermission("chat:assign"),
+  assignConversation
+);
+router.put(
+  "/manage/conversations/:conversationId/assign",
+  verifyPermission("chat:assign"),
+  assignConversation
+);
+
+// 7. Đóng cuộc trò chuyện (Admin / Staff với quyền 'chat:close')
+router.post(
+  "/manage/conversations/:conversationId/close",
+  verifyPermission("chat:close"),
+  closeConversation
+);
+
+// 8. Mở lại cuộc trò chuyện (Admin / Staff với quyền 'chat:assign')
+router.post(
+  "/manage/conversations/:conversationId/reopen",
+  verifyPermission("chat:assign"),
+  reopenConversation
+);
 
 export default router;

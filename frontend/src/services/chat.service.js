@@ -73,23 +73,30 @@ export const getConversation = async (id) => ({
   },
 });
 
-export const assignConversation = async (id) => ({
-  data: {
-    data: { conversation_id: id, status: "open", assigned_staff_id: 1 },
-  },
-});
+/**
+ * Nhận xử lý cuộc trò chuyện (tự động gửi tin nhắn chào và chuyển trạng thái)
+ * @param {string} conversationId
+ * @param {Object} payload - { staff_name, content }
+ */
+export const assignConversation = async (conversationId, payload = {}) => {
+  return await http.post(`/chat/manage/conversations/${conversationId}/assign`, payload);
+};
 
-export const closeConversation = async (id) => ({
-  data: {
-    data: { conversation_id: id, status: "closed" },
-  },
-});
+/**
+ * Đóng cuộc trò chuyện
+ * @param {string} conversationId
+ */
+export const closeConversation = async (conversationId) => {
+  return await http.post(`/chat/manage/conversations/${conversationId}/close`);
+};
 
-export const reopenConversation = async (id) => ({
-  data: {
-    data: { conversation_id: id, status: "processing" },
-  },
-});
+/**
+ * Mở lại cuộc trò chuyện
+ * @param {string} conversationId
+ */
+export const reopenConversation = async (conversationId) => {
+  return await http.post(`/chat/manage/conversations/${conversationId}/reopen`);
+};
 
 
 /**

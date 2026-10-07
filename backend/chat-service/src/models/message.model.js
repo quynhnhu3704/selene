@@ -278,6 +278,18 @@ export const MessageModel = {
       error = retry.error;
     }
 
+    // 3. Dự phòng trường hợp DB yêu cầu client_id NOT NULL
+    if (error && error.message?.includes("client_id") && error.message?.includes("null")) {
+      insertPayload.client_id = crypto.randomUUID();
+      const retry = await supabase
+        .from("messages")
+        .insert([insertPayload])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) throw error;
 
     // 3. NẾU CÓ TỆP ĐÍNH KÈM: Lưu vào bảng message_attachments

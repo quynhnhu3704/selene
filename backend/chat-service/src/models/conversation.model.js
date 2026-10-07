@@ -351,15 +351,48 @@ export const ConversationModel = {
 
   // Cập nhật thông tin cuộc trò chuyện
   update: async (conversationId, updates) => {
-    const { data, error } = await supabase
+    let payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    let { data, error } = await supabase
       .from("conversations")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq("conversation_id", conversationId)
       .select()
       .single();
+
+    // 1. Dự phòng trường hợp DB không có cột assigned_staff_id
+    if (
+      error &&
+      payload.assigned_staff_id &&
+      (error.message?.includes("assigned_staff_id") || error.message?.includes("column"))
+    ) {
+      delete payload.assigned_staff_id;
+      const retry = await supabase
+        .from("conversations")
+        .update(payload)
+        .eq("conversation_id", conversationId)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    // 2. Dự phòng trường hợp ràng buộc CHECK (status) giữa 'active' và 'processing'
+    if (error && error.message?.includes("conversations_status_check")) {
+      if (payload.status === "active") payload.status = "processing";
+      else if (payload.status === "processing") payload.status = "active";
+      const retry = await supabase
+        .from("conversations")
+        .update(payload)
+        .eq("conversation_id", conversationId)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) throw error;
     return data;
