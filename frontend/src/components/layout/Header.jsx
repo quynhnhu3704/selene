@@ -12,7 +12,6 @@ import { useCart } from "../../context/CartContext";
 import { getUser } from "../../utils/auth";
 import { getProducts } from "../../services/product.service";
 import defaultImage from "../../assets/images/default-product.png";
-import UnreadBadge from "../SupportChat/UnreadBadge";
 
 const HISTORY_LIMIT = 8;
 const getHistoryKey = () => {
@@ -547,10 +546,6 @@ export default function Header() {
               VỀ SELENE<i className="bi bi-caret-down ms-2 icon-down"></i>
               <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
-            <NavLink to="/ho-tro" className={navClass}>
-              HỖ TRỢ
-              <UnreadBadge />
-            </NavLink>
             <NavLink
               to="/khuyen-mai"
               className={({ isActive }) =>
@@ -610,6 +605,11 @@ export default function Header() {
                     <Link className="dropdown-item" to="/tai-khoan">
                       <i className="bi bi-person-bounding-box me-1"></i> Tài
                       khoản
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/ho-tro">
+                      <i className="bi bi-chat-dots me-1"></i> Hỗ trợ &amp; Tin nhắn
                     </Link>
                   </li>
                   {admin && (
@@ -722,6 +722,11 @@ export default function Header() {
                       khoản
                     </Link>
                   </li>
+                  <li>
+                    <Link className="dropdown-item" to="/ho-tro">
+                      <i className="bi bi-chat-dots me-1"></i> Hỗ trợ &amp; Tin nhắn
+                    </Link>
+                  </li>
                   {admin && (
                     <>
                       <li>
@@ -790,9 +795,6 @@ export default function Header() {
           </li>
           <li>
             <Link to="/ve-chung-toi">VỀ SELENE</Link>
-          </li>
-          <li>
-            <Link to="/ho-tro">HỖ TRỢ</Link>
           </li>
           <li>
             <Link to="/" className="promo">

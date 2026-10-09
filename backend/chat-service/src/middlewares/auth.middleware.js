@@ -51,7 +51,18 @@ export const verifyToken = (req, res, next) => {
 
 export const verifyPermission = (requiredPermissions) => {
   return (req, res, next) => {
-    if (!req.user || !Array.isArray(req.user.permissions)) {
+    if (!req.user) {
+      return res.status(403).json({
+        status: 403,
+        message: "Không thể xác thực quyền truy cập!",
+      });
+    }
+
+    if (req.user.role === "admin") {
+      return next();
+    }
+
+    if (!Array.isArray(req.user.permissions)) {
       return res.status(403).json({
         status: 403,
         message: "Không thể xác thực quyền truy cập!",

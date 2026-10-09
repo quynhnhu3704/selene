@@ -29,4 +29,7 @@ export const config = {
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseKey: process.env.SUPABASE_KEY,
+  rabbitMqUrl:
+    process.env.RABBITMQ_URL ||
+    "amqps://xisaobuz:nel4L1FL6Ei7IKK18lWnaStkH7efpILq@capybara.lmq.cloudamqp.com/xisaobuz",
 };

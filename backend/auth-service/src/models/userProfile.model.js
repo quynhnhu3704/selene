@@ -73,12 +73,16 @@ export const UserProfileModel = {
     return data;
   },
 
+  getAccountByAccountId: async (accountId) => {
+    return UserProfileModel.getAccountById(accountId);
+  },
+
   // LẤY GIÁ TRỊ BAN ĐẦU của profile theo account_id
   getProfileByAccountId: async (accountId) => {
     const { data, error } = await supabase
       .from("user_profiles")
       .select(
-        "profile_id, full_name, phone_number, identity_card, avatar_url, gender, dob, address, status",
+        "profile_id, full_name, phone_number, identity_card, avatar_url, gender, dob, address, status, created_at, updated_at",
       )
       .eq("account_id", accountId)
       .single();

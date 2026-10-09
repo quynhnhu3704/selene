@@ -6,16 +6,21 @@ import { config } from "./configs/index.js";
 import chatRoutes from "./routes/chat.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { createChatSocket } from "./socket.js";
+import { connectRabbitMQ } from "./configs/rabbitmq.js";
 
 const app = express();
 const server = createServer(app);
 app.set("io", createChatSocket(server));
 app.use(cors({ origin: config.frontendUrl, credentials: true }));
-app.use(express.json({ limit: "16kb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(morgan("dev"));
 app.get("/health", (req, res) => res.json({ service: "chat", status: "UP" }));
 app.use("/", chatRoutes);
 app.use(errorHandler);
-server.listen(config.port, () =>
-  console.log(`Chat Service running on port ${config.port}`),
-);
+server.listen(config.port, () => {
+  console.log(`Chat Service running on port ${config.port}`);
+  connectRabbitMQ().catch((err) => {
+    console.error("Error connecting to RabbitMQ in chat-service:", err.message);
+  });
+});

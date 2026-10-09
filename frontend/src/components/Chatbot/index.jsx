@@ -1,6 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { sendMessageToBot } from "../../services/chatbot.service";
+import { getMyMessages, sendTextMessage } from "../../services/chat.service";
+import { createChatSocket } from "../../socket/chat.socket";
+import { isLoggedIn } from "../../utils/auth";
 import defaultProduct from "../../assets/images/default-product.png";
 
 import BOT_AVATAR from "../../assets/images/default-chatbot.png";
@@ -11,6 +14,10 @@ function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [open, setOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [pagination, setPagination] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [conversationStatus, setConversationStatus] = useState("open");
   const messagesEndRef = useRef(null);
   const sendingRef = useRef(false);
 
@@ -22,14 +29,115 @@ function Chatbot() {
     });
   }, [messages, isSending, open]);
 
-  // Chặn gửi trùng và giữ tối đa 10 tin gần nhất làm ngữ cảnh cho AI.
+  // Tải danh sách tin nhắn của khách hàng từ getMyMessages
+  const fetchHistory = useCallback(async (isSilent = false) => {
+    if (!isLoggedIn()) return;
+    if (!isSilent) setIsLoadingMessages(true);
+
+    try {
+      const res = await getMyMessages({ limit: 10 });
+      const data = res?.data?.data;
+      if (data) {
+        if (data.status) setConversationStatus(data.status);
+        if (data.pagination) setPagination(data.pagination);
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages);
+        }
+      }
+    } catch (err) {
+      console.warn("Chưa thể tải lịch sử tin nhắn:", err);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, []);
+
+  // Khi mở cửa sổ chat, tự động tải tin nhắn từ API getMyMessages
+  useEffect(() => {
+    if (open) {
+      fetchHistory(false);
+    }
+  }, [open, fetchHistory]);
+
+  // Lắng nghe cập nhật realtime qua Socket.IO
+  useEffect(() => {
+    if (!isLoggedIn()) return;
+    let socket = null;
+    try {
+      socket = createChatSocket();
+      if (socket) {
+        socket.on("message:new", (newMsg) => {
+          if (!newMsg) return;
+          setMessages((prev) => {
+            if (prev.some((m) => m.message_id === newMsg.message_id)) return prev;
+            return [...prev, newMsg];
+          });
+        });
+
+        socket.on("conversation:update", () => {
+          fetchHistory(true);
+        });
+      }
+    } catch (err) {
+      console.warn("Lỗi socket chatbot:", err);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("message:new");
+        socket.off("conversation:update");
+        socket.disconnect();
+      }
+    };
+  }, [fetchHistory]);
+
+  // Tải thêm tin nhắn cũ hơn
+  const handleLoadMore = async () => {
+    const cursor = pagination?.next_cursor || pagination?.oldest_message_id;
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await getMyMessages({ before: cursor, limit: 10 });
+      const data = res?.data?.data;
+      if (data?.messages) {
+        setMessages((prev) => [...data.messages, ...prev]);
+        setPagination(data.pagination || null);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải thêm tin nhắn cũ:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Gửi tin nhắn loại text vào CSKH (POST /api/chat/messages/text)
   const send = async () => {
     if (!message.trim() || sendingRef.current) return;
-    const userMsg = { role: "user", text: message.trim() };
-    const history = messages
-      .filter((item) => !item.isError)
-      .slice(-10)
-      .map(({ role, text }) => ({ role, text }));
+    const text = message.trim();
+
+    if (!isLoggedIn()) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          message_id: "err-" + Date.now(),
+          role: "bot",
+          sender_role: "ai",
+          content: "Bạn vui lòng đăng nhập để gửi tin nhắn hỗ trợ nhé!",
+          text: "Bạn vui lòng đăng nhập để gửi tin nhắn hỗ trợ nhé!",
+          isError: true,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      return;
+    }
+
+    const userMsg = {
+      message_id: "client-" + Date.now(),
+      role: "user",
+      sender_role: "customer",
+      content: text,
+      text: text,
+      created_at: new Date().toISOString(),
+    };
 
     sendingRef.current = true;
     setMessages((prev) => [...prev, userMsg]);
@@ -37,22 +145,61 @@ function Chatbot() {
     setIsSending(true);
 
     try {
-      const result = await sendMessageToBot(userMsg.text, history);
+      /*
+      // =========================================================================
+      // COMMENT LẠI POST /api/chatbot 200 THEO YÊU CẦU:
+      // =========================================================================
+      const history = messages
+        .filter((item) => !item.isError)
+        .slice(-10)
+        .map(({ role, text, content, sender_role }) => ({
+          role: role || (sender_role === "customer" ? "user" : "bot"),
+          text: text || content || "",
+        }));
+
+      const result = await sendMessageToBot(text, history);
       setMessages((prev) => [
         ...prev,
         {
+          message_id: "bot-" + Date.now(),
           role: "bot",
+          sender_role: "ai",
+          content: result.data.reply,
           text: result.data.reply,
           products: result.data.products,
+          created_at: new Date().toISOString(),
         },
       ]);
-    } catch {
+      */
+
+      // Gửi tin nhắn loại text lên hệ thống CSKH: POST /api/chat/messages/text
+      const res = await sendTextMessage({ content: text });
+      const resData = res?.data?.data;
+      if (resData?.message) {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.message_id !== userMsg.message_id);
+          return [...filtered, resData.message];
+        });
+      }
+      if (resData?.conversation?.status) {
+        setConversationStatus(resData.conversation.status);
+      }
+    } catch (err) {
+      console.error("Lỗi khi gửi tin nhắn:", err);
       setMessages((prev) => [
         ...prev,
         {
+          message_id: "err-" + Date.now(),
           role: "bot",
-          text: "Có lỗi xảy ra, bạn thử lại nhé...",
+          sender_role: "ai",
+          content:
+            err?.response?.data?.message ||
+            "Có lỗi xảy ra khi gửi tin nhắn, bạn thử lại nhé...",
+          text:
+            err?.response?.data?.message ||
+            "Có lỗi xảy ra khi gửi tin nhắn, bạn thử lại nhé...",
           isError: true,
+          created_at: new Date().toISOString(),
         },
       ]);
     } finally {
@@ -96,93 +243,137 @@ function Chatbot() {
               </div>
               <div className="header-info">
                 <h5 className="fw-semibold mb-0">Trợ lý ảo Selene</h5>
-                <span className="status">Online</span>
+                <span className="status">
+                  {conversationStatus === "processing"
+                    ? "Đang hỗ trợ"
+                    : conversationStatus === "waiting"
+                    ? "Chờ hỗ trợ"
+                    : "Online"}
+                </span>
               </div>
             </div>
-            <button
-              type="button"
-              className="close-btn"
-              onClick={() => setOpen(false)}
-              aria-label="Đóng chatbot"
-            >
-              <i className="bi bi-x"></i>
-            </button>
+            <div className="header-actions">
+              <button
+                type="button"
+                className="refresh-btn"
+                onClick={() => fetchHistory(false)}
+                disabled={isLoadingMessages}
+                title="Tải lại tin nhắn"
+              >
+                <i className={`bi bi-arrow-clockwise${isLoadingMessages ? " spin" : ""}`} />
+              </button>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setOpen(false)}
+                aria-label="Đóng chatbot"
+              >
+                <i className="bi bi-x"></i>
+              </button>
+            </div>
           </div>
 
-          <Link
-            to="/ho-tro"
-            className="btn btn-light btn-sm rounded-0"
-            onClick={() => setOpen(false)}
-          >
-            <i className="bi bi-headset me-2" />
-            Chat với nhân viên
-          </Link>
           <div
             className="chatbot-messages"
             role="log"
             aria-live="polite"
             aria-relevant="additions"
           >
-            {messages.length === 0 && (
-              <div className="welcome-message">
-                <p>Xin chào! 👋</p>
-                <p>Bạn đang tìm trang phục nào ạ? Mình giúp được ngay nè!</p>
+            {pagination?.has_more && (
+              <button
+                type="button"
+                className="btn-load-more"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                <i className="bi bi-clock-history" />
+                {loadingMore ? "Đang tải..." : "Xem tin nhắn cũ hơn"}
+              </button>
+            )}
+
+            {isLoadingMessages && messages.length === 0 && (
+              <div className="text-center py-5 text-muted">
+                <div className="spinner-border spinner-border-sm mb-2" role="status" />
+                <p style={{ fontSize: "13px" }}>Đang tải lịch sử tin nhắn...</p>
               </div>
             )}
 
-            {messages.map((msg, index) => (
-              <div key={index} className={`message-row ${msg.role}`}>
-                {msg.role === "bot" && (
-                  <div className="bot-avatar">
-                    <img src={BOT_AVATAR} alt="" />
-                  </div>
+            {messages.length === 0 && !isLoadingMessages && (
+              <div className="welcome-message">
+                <p>Xin chào! 👋</p>
+                <p>Bạn đang tìm trang phục nào ạ? Mình giúp được ngay nè!</p>
+                {!isLoggedIn() && (
+                  <p className="mt-2 text-muted" style={{ fontSize: "12px" }}>
+                    (Vui lòng đăng nhập để xem lịch sử tin nhắn hỗ trợ)
+                  </p>
                 )}
-                <div className={`bubble ${msg.role}`}>
-                  <div className="bubble-content">{msg.text}</div>
-                  {msg.products?.length > 0 && (
-                    <div className="chatbot-products">
-                      {msg.products.map((product) => (
-                        <Link
-                          className="chatbot-product"
-                          key={product.product_id}
-                          to={`/san-pham/${encodeURIComponent(product.product_id)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <img
-                            src={product.image_url || defaultProduct}
-                            alt=""
-                          />
-                          <div className="chatbot-product-info">
-                            <div className="chatbot-product-name">
-                              {product.product_name}
-                            </div>
-                            <div className="chatbot-product-price">
-                              {Number(
-                                product.discount_price ??
-                                  product.original_price ??
-                                  0,
-                              ).toLocaleString("vi-VN")}
-                              đ
-                              {product.original_price >
-                                (product.discount_price ??
-                                  product.original_price) && (
-                                <span className="chatbot-product-original">
-                                  {Number(
-                                    product.original_price,
-                                  ).toLocaleString("vi-VN")}
-                                  đ
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
+              </div>
+            )}
+
+            {messages.map((msg, index) => {
+              const isCustomer = msg.sender_role === "customer" || msg.role === "user";
+              const isStaff = msg.sender_role === "staff";
+              const isAi = msg.sender_role === "ai" || msg.role === "bot";
+              const textContent = msg.content || msg.text || "";
+              const timeString = msg.created_at
+                ? new Date(msg.created_at).toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "";
+
+              return (
+                <div
+                  key={msg.message_id || index}
+                  className={`message-row ${isCustomer ? "user" : "bot"}`}
+                >
+                  {!isCustomer && (
+                    <div className="bot-avatar">
+                      <img src={BOT_AVATAR} alt="" />
                     </div>
                   )}
+                  <div className={`bubble ${isCustomer ? "user" : "bot"}`}>
+                    {isStaff && (
+                      <span className="sender-badge">
+                        <i className="bi bi-person-badge me-1" />
+                        Nhân viên hỗ trợ
+                      </span>
+                    )}
+                    <div className="bubble-content">{textContent}</div>
+                    {timeString && <div className="bubble-time">{timeString}</div>}
+                    {msg.products?.length > 0 && (
+                      <div className="chatbot-products">
+                        {msg.products.map((product) => (
+                          <Link
+                            className="chatbot-product"
+                            key={product.product_id}
+                            to={`/san-pham/${encodeURIComponent(product.product_id)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={product.image_url || defaultProduct}
+                              alt=""
+                            />
+                            <div className="chatbot-product-info">
+                              <div className="chatbot-product-name">
+                                {product.product_name}
+                              </div>
+                              <div className="chatbot-product-price">
+                                {Number(product.discount_price ?? product.original_price ?? 0).toLocaleString("vi-VN")}đ
+                                {product.original_price > (product.discount_price ?? product.original_price) && (
+                                  <span className="chatbot-product-original">{Number(product.original_price).toLocaleString("vi-VN")}đ</span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {isSending && (
               <div className="message-row bot">
@@ -510,10 +701,71 @@ const CHATBOT_STYLES = `
   box-shadow: none;
 }
 
-.selene-chatbot .send-btn svg {
-  width: 22px;
-  height: 22px;
+.selene-chatbot .bubble-time {
+  font-size: 10px;
+  margin-top: 4px;
+  opacity: 0.75;
+  text-align: right;
+  line-height: 1;
 }
+.selene-chatbot .bubble.user .bubble-time {
+  color: rgba(255, 255, 255, 0.85);
+}
+.selene-chatbot .bubble.bot .bubble-time {
+  color: #777;
+}
+.selene-chatbot .sender-badge {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #871b1b;
+  display: block;
+}
+.selene-chatbot .btn-load-more {
+  background: #fff;
+  border: 1px solid #e0dcd9;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+.selene-chatbot .btn-load-more:hover {
+  background: #f0eeeb;
+  color: #111;
+}
+.selene-chatbot .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.selene-chatbot .refresh-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+.selene-chatbot .refresh-btn:hover {
+  opacity: 1;
+}
+.selene-chatbot .spin {
+  animation: selene-spin 1s linear infinite;
+}
+@keyframes selene-spin {
+  100% { transform: rotate(360deg); }
+}
+
 .selene-chatbot .chatbot-window {
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 124px);

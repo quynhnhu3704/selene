@@ -6,6 +6,7 @@ import { config } from "./configs/index.js";
 import authRoutes from "./routes/auth.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
+import { connectRabbitMQ } from "./configs/rabbitmq.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.get("/health", (req, res) => {
 // Error Handling
 app.use(errorHandler);
 
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
   console.log(`Auth Service running on port ${config.port}`);
+  await connectRabbitMQ();
 });
