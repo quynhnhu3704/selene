@@ -16,7 +16,8 @@ export const handleUpdateCustomerProfile = async (req, res) => {
       });
     }
 
-    const { full_name, phone_number, gender, dob, identity_card, address } = req.body;
+    const { full_name, phone_number, gender, dob, identity_card, address } =
+      req.body;
     const avatarFile = req.file;
 
     const result = await userService.updateCustomerProfile(
@@ -186,7 +187,8 @@ export const handleUpdateStaffProfile = async (req, res) => {
 // Thêm khách hàng từ trang quản trị
 export const handleCreateCustomer = async (req, res) => {
   try {
-    const { email, phone, full_name, identity_card, gender, dob, address } = req.body;
+    const { email, phone, full_name, identity_card, gender, dob, address } =
+      req.body;
     const result = await userService.createCustomer(
       { email, phone, full_name, identity_card, gender, dob, address },
       req.file,

@@ -34,35 +34,37 @@ export const COMMITS = [
   { icon: "bi-shield-check", text1: "Cam kết bảo mật", text2: "thông tin khách hàng" },
 ];
 
-export const SIZE_GUIDE_IMAGE = "https://deltasport.vn/wp-content/uploads/2025/07/San-pham-nu-moi.png";
+export const SIZE_GUIDE_IMAGE =
+  "https://deltasport.vn/wp-content/uploads/2025/07/San-pham-nu-moi.png";
 
 const COLORS = {
-  "đen": blackColor,
-  "trắng": whiteColor,
-  "đỏ": redColor,
-  "cam": orangeColor,
-  "hồng": pinkColor,
-  "nâu": brownColor,
-  "tím": purpleColor,
-  "vàng": yellowColor,
-  "xám": grayColor,
-  "ghi": grayColor,
-  "xanh": blueColor,
+  đen: blackColor,
+  trắng: whiteColor,
+  đỏ: redColor,
+  cam: orangeColor,
+  hồng: pinkColor,
+  nâu: brownColor,
+  tím: purpleColor,
+  vàng: yellowColor,
+  xám: grayColor,
+  ghi: grayColor,
+  xanh: blueColor,
   "xanh dương": blueColor,
   "xanh lá": greenColor,
   "xanh lá cây": greenColor,
   "xanh than": blueColor,
   "xanh navy": blueColor,
-  "be": brownColor,
-  "kem": whiteColor,
+  be: brownColor,
+  kem: whiteColor,
   "hỗn hợp": mixedColor,
-  "kẻ": stripeColor,
+  kẻ: stripeColor,
   "kẻ sọc": stripeColor,
 };
 
 export function getColorImage(color) {
   const name = (color || "").normalize("NFC").trim().toLocaleLowerCase("vi-VN");
-  const match = Object.keys(COLORS).sort((a, b) => b.length - a.length)
+  const match = Object.keys(COLORS)
+    .sort((a, b) => b.length - a.length)
     .find((key) => name.includes(key));
   return COLORS[name] || COLORS[match] || mixedColor;
 }

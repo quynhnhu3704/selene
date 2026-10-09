@@ -199,7 +199,10 @@ export default function Payment() {
           ]}
         />
 
-        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+        <div
+          className="d-flex align-items-center justify-content-center"
+          style={{ minHeight: "60vh" }}
+        >
           <Loading text="Đang tải thanh toán..." />
         </div>
       </>

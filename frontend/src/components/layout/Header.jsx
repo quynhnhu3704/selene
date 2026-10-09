@@ -1,3 +1,4 @@
+import ProductLink from "../common/ProductLink";
 // frontend\src\components\layout\Header.jsx
 import Loading from "../common/Loading";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
@@ -49,7 +50,11 @@ export default function Header() {
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() =>
+    location.pathname === "/san-pham"
+      ? new URLSearchParams(location.search).get("q") || ""
+      : "",
+  );
   const [isLogin, setIsLogin] = useState(isLoggedIn());
   const [admin, setAdmin] = useState(isAdmin());
   const [historyKey, setHistoryKey] = useState(getHistoryKey);
@@ -143,10 +148,15 @@ export default function Header() {
     return () => document.removeEventListener("pointerdown", closeSearch);
   }, []);
 
-  useEffect(() => {
+  const routeKey = JSON.stringify([location.pathname, location.search]);
+  const searchContext = JSON.stringify([routeKey, compact]);
+  const [previousSearchContext, setPreviousSearchContext] =
+    useState(searchContext);
+  if (previousSearchContext !== searchContext) {
+    setPreviousSearchContext(searchContext);
     setSuggestionsOpen(false);
     setSearchOpen(false);
-  }, [location.pathname, location.search, compact]);
+  }
 
   const navClass = ({ isActive }) =>
     isActive ? "rb-navlink rb-active" : "rb-navlink";
@@ -174,11 +184,13 @@ export default function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    if (location.pathname !== "/san-pham") return;
-
-    setSearchQuery(new URLSearchParams(location.search).get("q") || "");
-  }, [location.pathname, location.search]);
+  const [previousRouteKey, setPreviousRouteKey] = useState(routeKey);
+  if (previousRouteKey !== routeKey) {
+    setPreviousRouteKey(routeKey);
+    if (location.pathname === "/san-pham") {
+      setSearchQuery(new URLSearchParams(location.search).get("q") || "");
+    }
+  }
 
   // Đo cả khi đang thu gọn để có thể trở lại desktop khi đủ chỗ.
   useLayoutEffect(() => {
@@ -393,10 +405,10 @@ export default function Header() {
                     </div>
                   ) : (
                     searchResult.products.map((product) => (
-                      <Link
+                      <ProductLink
                         className="rb-search-product"
                         key={product.product_id}
-                        to={`/san-pham/${product.product_id}`}
+                        productId={product.product_id}
                         onClick={() => {
                           saveSearch(keyword);
                           setSuggestionsOpen(false);
@@ -437,7 +449,7 @@ export default function Header() {
                           </div>
                         </div>
                         <i className="bi bi-arrow-up-right rb-search-product-arrow" />
-                      </Link>
+                      </ProductLink>
                     ))
                   )}
                 </div>
@@ -549,7 +561,10 @@ export default function Header() {
 
         {/* CỘT 3: ICONS */}
         <div className="rb-topicons">
-          <Link to="/yeu-thich" className="rb-icon-wrap text-decoration-none text-dark">
+          <Link
+            to="/yeu-thich"
+            className="rb-icon-wrap text-decoration-none text-dark"
+          >
             <div className="rb-icon-rel">
               <i className="bi bi-suit-heart fs-5" />
               <span className="rb-bdot">{wl}</span>
@@ -666,7 +681,11 @@ export default function Header() {
 
         {/* PHẢI: icons */}
         <div className="rb-mob-right">
-          <Link to="/yeu-thich" className="rb-mob-icon text-decoration-none" aria-label="Yêu thích">
+          <Link
+            to="/yeu-thich"
+            className="rb-mob-icon text-decoration-none"
+            aria-label="Yêu thích"
+          >
             <i className="bi bi-heart" />
             <span className="rb-mob-bdot">{wl}</span>
           </Link>

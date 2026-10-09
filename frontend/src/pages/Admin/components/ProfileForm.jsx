@@ -1,5 +1,6 @@
 // frontend/src/pages/Admin/components/ProfileForm.jsx
 import { Link } from "react-router-dom";
+import AdminSelect from "./AdminSelect";
 import { toast } from "react-toastify";
 
 export default function ProfileForm({
@@ -27,11 +28,7 @@ export default function ProfileForm({
         <div className="row g-4">
           <div className="col-12">
             {profile.avatar_url && (
-              <img
-                src={profile.avatar_url}
-                alt=""
-                className="adm-thumb mb-3"
-              />
+              <img src={profile.avatar_url} alt="" className="adm-thumb mb-3" />
             )}
             {!readOnly && (
               <>
@@ -101,16 +98,13 @@ export default function ProfileForm({
             </label>
             {readOnly ? (
               <div>
-                {{ male: "Nam", female: "Nữ", other: "Khác" }[
-                  profile.gender
-                ] ||
+                {{ male: "Nam", female: "Nữ", other: "Khác" }[profile.gender] ||
                   profile.gender ||
                   "—"}
               </div>
             ) : (
-              <select
+              <AdminSelect
                 id="gender"
-                className="form-select"
                 value={profile.gender || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, gender: e.target.value })
@@ -120,7 +114,7 @@ export default function ProfileForm({
                 <option value="Nam">Nam</option>
                 <option value="Nữ">Nữ</option>
                 <option value="Khác">Khác</option>
-              </select>
+              </AdminSelect>
             )}
           </div>
         </div>

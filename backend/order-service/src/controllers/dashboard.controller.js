@@ -11,7 +11,10 @@ export const handleGetDashboardStatistics = async (req, res) => {
   } catch (error) {
     res.status(error.status || 500).json({
       success: false,
-      message: error.status === 400 ? error.message : "Không thể tải thống kê. Vui lòng thử lại!",
+      message:
+        error.status === 400
+          ? error.message
+          : "Không thể tải thống kê. Vui lòng thử lại!",
     });
   }
 };

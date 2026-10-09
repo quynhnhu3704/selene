@@ -22,7 +22,8 @@ export const verifyToken = (req, res, next) => {
     // Khu vực quản trị chỉ dành cho chủ cửa hàng và nhân viên.
     if (
       /^\/manage(?:\/|$)/i.test(req.path) &&
-      (Number(decoded.role_id) === 3 || !["admin", "staff"].includes(decoded.role))
+      (Number(decoded.role_id) === 3 ||
+        !["admin", "staff"].includes(decoded.role))
     ) {
       return res.status(403).json({
         status: 403,

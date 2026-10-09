@@ -1,10 +1,13 @@
 // frontend\src\pages\ProductDetail.jsx
-import Loading from "../../components/common/Loading";
+import ProductDetailSkeleton from "./Skeleton";
 import { useState, useEffect, useLayoutEffect, useContext } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
-import { getProductById } from "../../services/product.service";
+import {
+  getProductById,
+  getCachedProductById,
+} from "../../services/product.service";
 import { CartContext } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { FAQS, COMMITS, SIZE_GUIDE_IMAGE, getColorImage } from "./constants";
@@ -26,6 +29,10 @@ export default function ProductDetail() {
 }
 
 function ProductDetailContent({ id }) {
+  const { state } = useLocation();
+  const parentBreadcrumb = state?.from === "/yeu-thich"
+    ? { label: "Yêu thích", path: "/yeu-thich" }
+    : { label: "Sản phẩm", path: "/san-pham" };
   const { isFavorite, toggleWishlist } = useWishlist();
   const [modal, setModal] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -36,8 +43,10 @@ function ProductDetailContent({ id }) {
   const [showMore, setShowMore] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(
+    () => getCachedProductById(id)?.data ?? null,
+  );
+  const [loading, setLoading] = useState(() => !getCachedProductById(id)?.data);
   const { addToCart } = useContext(CartContext);
 
   useEffect(() => {
@@ -45,8 +54,6 @@ function ProductDetailContent({ id }) {
     const fetchProduct = async () => {
       try {
         const res = await getProductById(id);
-
-        console.log(res.data);
 
         if (active) setProduct(res.data);
       } catch (err) {
@@ -58,7 +65,9 @@ function ProductDetailContent({ id }) {
     };
 
     fetchProduct();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const copySku = () => {
@@ -68,14 +77,7 @@ function ProductDetailContent({ id }) {
   };
 
   if (loading) {
-    return (
-      <div
-        className="d-flex align-items-center justify-content-center"
-        style={{ minHeight: "60vh" }}
-      >
-        <Loading text="Đang tải sản phẩm..." />
-      </div>
-    );
+    return <ProductDetailSkeleton parentBreadcrumb={parentBreadcrumb} />;
   }
 
   if (!product) {
@@ -91,7 +93,8 @@ function ProductDetailContent({ id }) {
     sku: product.product_id,
 
     images: (Array.isArray(product.images) ? product.images : []).filter(
-      (src) => typeof src === "string" && src.trim() && !failedImages.includes(src),
+      (src) =>
+        typeof src === "string" && src.trim() && !failedImages.includes(src),
     ),
     faqs: FAQS,
     commits: COMMITS,
@@ -119,7 +122,9 @@ function ProductDetailContent({ id }) {
 
   const activeImg = Math.max(0, PRODUCT.images.indexOf(selectedImage));
   const hideFailedImage = (src) => {
-    setFailedImages((previous) => previous.includes(src) ? previous : [...previous, src]);
+    setFailedImages((previous) =>
+      previous.includes(src) ? previous : [...previous, src],
+    );
   };
   const selectedColor = PRODUCT.colors[activeColor]?.label;
   const selectedSize = PRODUCT.sizes[activeSize];
@@ -139,13 +144,13 @@ function ProductDetailContent({ id }) {
       </Helmet>
 
       <div className="pd-breadcrumb">
-      <Breadcrumb
-        items={[
-          { label: "Trang chủ", path: "/" },
-          { label: "Sản phẩm", path: "/san-pham" },
-          { label: PRODUCT.name },
-        ]}
-      />
+        <Breadcrumb
+          items={[
+            { label: "Trang chủ", path: "/" },
+            parentBreadcrumb,
+            { label: PRODUCT.name },
+          ]}
+        />
       </div>
 
       <style>{`
@@ -206,33 +211,6 @@ function ProductDetailContent({ id }) {
           width: 100%; aspect-ratio: 3/4;
           object-fit: cover; object-position: top; display: block;
         }
-
-        /* sale banner */
-        .pd-sale-banner {
-          position: absolute; bottom: 0; left: 0; right: 0;
-          background: #871B1B; padding: 10px 20px;
-          display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .pd-sale-banner span { font-size: 16px; font-weight: 700; color: #fff; text-transform: uppercase; }
-        .pd-sale-banner .pd-sale-badge {
-          background: #fff; color: #871B1B;
-          font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px;
-        }
-
-        /* arrows */
-        .pd-arrow {
-          position: absolute; top: 50%; transform: translateY(-50%);
-          background: #fff; border: 1px solid #ddd; border-radius: 50%;
-          width: 42px; height: 42px;
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; font-size: 15px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.12); color: #333;
-          transition: box-shadow 0.15s;
-        }
-        .pd-arrow:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .pd-arrow.prev { left: 12px; }
-        .pd-arrow.next { right: 12px; }
-        .pd-arrow:disabled { opacity: 0.35; cursor: default; }
 
         /* ════════════════════
            RIGHT PANEL
@@ -344,7 +322,7 @@ function ProductDetailContent({ id }) {
 
         .pd-wishlist, .pd-zoom { display: flex; align-items: center; justify-content: center; background: #fff; color: #871B1B; border: 1px solid #e5cccc; border-radius: 50%; width: 48px; height: 48px; flex-shrink: 0; font-size: 20px; }
         .pd-wishlist:hover, .pd-wishlist.active { background: #fcf2f2; border-color: #871B1B; }
-        .pd-zoom { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; box-shadow: 0 2px 12px #0001; }
+        .pd-zoom { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; background: rgba(252, 242, 242, 0.5); border: 0; }
         .pd-image-modal { position: fixed; inset: 0; margin: auto; border: none; border-radius: 14px; padding: 0; width: min(900px, 94vw); max-height: 90vh; max-height: 90dvh; overflow: auto; background: #fff; color: #212529; box-shadow: 0 16px 60px #0003; }
         .pd-image-modal::backdrop { background: rgba(20, 12, 12, 0.7); }
         .pd-modal-content { padding: 20px; }
@@ -395,80 +373,97 @@ function ProductDetailContent({ id }) {
           .pd-qty { height: 44px; }
           .pd-qty-btn { width: 30px; }
           .pd-btn-cart { font-size: 13px; min-width: 145px; }
-          .pd-sale-banner { padding: 10px; gap: 6px; }
-          .pd-sale-banner span { font-size: 11px; }
           .pd-thumb  { width: 70px; height: 90px; }
         }
       `}</style>
 
       {modal && (modal === "size" || PRODUCT.images.length > 0) && (
-        <ImageModal title={modal === "size" ? "Hướng dẫn chọn size" : PRODUCT.name}
+        <ImageModal
+          title={modal === "size" ? "Hướng dẫn chọn size" : PRODUCT.name}
           fullscreen={modal === "zoom"}
           src={modal === "size" ? SIZE_GUIDE_IMAGE : PRODUCT.images[activeImg]}
           alt=""
-          onError={modal === "zoom" ? () => hideFailedImage(PRODUCT.images[activeImg]) : undefined}
-          note={modal === "size" ? "Bảng size tham khảo. Liên hệ tư vấn để chọn kích thước phù hợp với sản phẩm." : undefined}
-          onClose={() => setModal(null)} />
+          onError={
+            modal === "zoom"
+              ? () => hideFailedImage(PRODUCT.images[activeImg])
+              : undefined
+          }
+          note={
+            modal === "size"
+              ? "Bảng size tham khảo. Liên hệ tư vấn để chọn kích thước phù hợp với sản phẩm."
+              : undefined
+          }
+          onClose={() => setModal(null)}
+        />
       )}
       <div className="pd-page">
         <div className="pd-layout">
           {/* ════════════ CỘT TRÁI ════════════ */}
           <div className="pd-left">
             {/* GALLERY */}
-            {PRODUCT.images.length > 0 && <div className="pd-gallery">
-              <div className="pd-thumbs">
-                {PRODUCT.images.map((img, i) => (
+            {PRODUCT.images.length > 0 && (
+              <div className="pd-gallery">
+                <div className="pd-thumbs">
+                  {PRODUCT.images.map((img, i) => (
+                    <img
+                      key={img}
+                      src={img}
+                      alt=""
+                      className={`pd-thumb${activeImg === i ? " active" : ""}`}
+                      onClick={() => setSelectedImage(img)}
+                      onError={() => hideFailedImage(img)}
+                    />
+                  ))}
+                </div>
+
+                <div className="pd-main-img-wrap">
                   <img
-                    key={img}
-                    src={img}
+                    key={PRODUCT.images[activeImg]}
+                    src={PRODUCT.images[activeImg]}
+                    onError={() => hideFailedImage(PRODUCT.images[activeImg])}
                     alt=""
-                    className={`pd-thumb${activeImg === i ? " active" : ""}`}
-                    onClick={() => setSelectedImage(img)}
-                    onError={() => hideFailedImage(img)}
+                    className="pd-main-img"
                   />
-                ))}
-              </div>
 
-              <div className="pd-main-img-wrap">
-                <img
-                  key={PRODUCT.images[activeImg]}
-                  src={PRODUCT.images[activeImg]}
-                  onError={() => hideFailedImage(PRODUCT.images[activeImg])}
-                  alt=""
-                  className="pd-main-img"
-                />
+                  <button
+                    className="slider-arrow prev"
+                    aria-label="Ảnh trước"
+                    disabled={PRODUCT.images.length < 2}
+                    onClick={() =>
+                      setSelectedImage(
+                        PRODUCT.images[
+                          (activeImg - 1 + PRODUCT.images.length) %
+                            PRODUCT.images.length
+                        ],
+                      )
+                    }
+                  >
+                    <i className="bi bi-caret-left" aria-hidden="true" />
+                  </button>
+                  <button
+                    className="slider-arrow next"
+                    aria-label="Ảnh tiếp theo"
+                    disabled={PRODUCT.images.length < 2}
+                    onClick={() =>
+                      setSelectedImage(
+                        PRODUCT.images[(activeImg + 1) % PRODUCT.images.length],
+                      )
+                    }
+                  >
+                    <i className="bi bi-caret-right" aria-hidden="true" />
+                  </button>
 
-                <button
-                  className="pd-arrow prev"
-                  aria-label="Ảnh trước"
-                  disabled={PRODUCT.images.length < 2}
-                  onClick={() =>
-                    setSelectedImage(
-                      PRODUCT.images[(activeImg - 1 + PRODUCT.images.length) % PRODUCT.images.length],
-                    )
-                  }
-                >
-                  <i className="bi bi-chevron-left" />
-                </button>
-                <button
-                  className="pd-arrow next"
-                  aria-label="Ảnh tiếp theo"
-                  disabled={PRODUCT.images.length < 2}
-                  onClick={() =>
-                    setSelectedImage(PRODUCT.images[(activeImg + 1) % PRODUCT.images.length])
-                  }
-                >
-                  <i className="bi bi-chevron-right" />
-                </button>
-
-                <button type="button" className="pd-zoom" onClick={() => setModal("zoom")} aria-label="Phóng to ảnh sản phẩm"><i className="bi bi-zoom-in" /></button>
-                <div className="pd-sale-banner">
-                  <i className="bi bi-tag text-white" />
-                  <span>Giá độc quyền website</span>
-                  <span className="pd-sale-badge">SALE</span>
+                  <button
+                    type="button"
+                    className="pd-zoom"
+                    onClick={() => setModal("zoom")}
+                    aria-label="Phóng to ảnh sản phẩm"
+                  >
+                    <i className="bi bi-zoom-in" />
+                  </button>
                 </div>
               </div>
-            </div>}
+            )}
 
             {/* CHI TIẾT SẢN PHẨM */}
             <div className="pd-section-card">
@@ -592,11 +587,7 @@ function ProductDetailContent({ id }) {
                   aria-label={c.label}
                   aria-pressed={activeColor === i}
                 >
-                  <img
-                    className="pd-color-swatch"
-                    src={c.image}
-                    alt=""
-                  />
+                  <img className="pd-color-swatch" src={c.image} alt="" />
                 </button>
               ))}
             </div>
@@ -606,7 +597,11 @@ function ProductDetailContent({ id }) {
               <div className="pd-section-label mb-0">
                 Kích thước: <strong>{PRODUCT.sizes[activeSize]}</strong>
               </div>
-              <button type="button" className="pd-guide-link" onClick={() => setModal("size")}>
+              <button
+                type="button"
+                className="pd-guide-link"
+                onClick={() => setModal("size")}
+              >
                 Hướng dẫn chọn size
               </button>
             </div>
@@ -687,17 +682,30 @@ function ProductDetailContent({ id }) {
                 Thêm vào giỏ&nbsp;
                 <i className="bi bi-handbag" />
               </button>
-              <button type="button" className={`pd-wishlist${isFavorite(product.product_id) ? " active" : ""}`}
-                onClick={() => toggleWishlist(product)} aria-pressed={isFavorite(product.product_id)}
-                aria-label={isFavorite(product.product_id) ? "Bỏ yêu thích" : "Thêm vào yêu thích"}>
-                <i className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-heart"}`} />
+              <button
+                type="button"
+                className={`pd-wishlist${isFavorite(product.product_id) ? " active" : ""}`}
+                onClick={() => toggleWishlist(product)}
+                aria-pressed={isFavorite(product.product_id)}
+                aria-label={
+                  isFavorite(product.product_id)
+                    ? "Bỏ yêu thích"
+                    : "Thêm vào yêu thích"
+                }
+              >
+                <i
+                  className={`bi ${isFavorite(product.product_id) ? "bi-suit-heart-fill" : "bi-suit-heart"}`}
+                />
               </button>
             </div>
 
             {/* Cam kết */}
             <div className="pd-commit-title">
               <span>SELENE cam kết</span>
-              <i className="bi bi-patch-check" style={{ color: "#871B1B", fontSize: 20 }} />
+              <i
+                className="bi bi-patch-check"
+                style={{ color: "#871B1B", fontSize: 20 }}
+              />
             </div>
             <div className="pd-commit-grid">
               {(PRODUCT.commits || []).map((c, i) => (

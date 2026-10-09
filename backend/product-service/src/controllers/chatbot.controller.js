@@ -10,12 +10,13 @@ export const handleSendChatbotMessage = async (req, res) => {
     message.length > 2000 ||
     !Array.isArray(history) ||
     history.length > 10 ||
-    history.some((item) =>
-      !item ||
-      !["user", "bot"].includes(item.role) ||
-      typeof item.text !== "string" ||
-      !item.text.trim() ||
-      item.text.length > 4000,
+    history.some(
+      (item) =>
+        !item ||
+        !["user", "bot"].includes(item.role) ||
+        typeof item.text !== "string" ||
+        !item.text.trim() ||
+        item.text.length > 4000,
     )
   ) {
     return res.status(400).json({
@@ -39,7 +40,8 @@ export const handleSendChatbotMessage = async (req, res) => {
     console.error("Lỗi tại handleSendChatbotMessage:", error.message);
     return res.status(503).json({
       status: 503,
-      message: "Trợ lý ảo Selene đang tạm thời không hoạt động. Vui lòng thử lại sau.",
+      message:
+        "Trợ lý ảo Selene đang tạm thời không hoạt động. Vui lòng thử lại sau.",
     });
   }
 };

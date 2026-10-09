@@ -7,25 +7,27 @@ const generateId = () => {
 };
 
 // Helper kiểm tra xung đột sản phẩm đã được áp dụng trong chương trình khuyến mãi active khác
-const verifyNoActivePromotionConflicts = async (productIds, excludePromotionId = null) => {
+const verifyNoActivePromotionConflicts = async (
+  productIds,
+  excludePromotionId = null,
+) => {
   if (!productIds || productIds.length === 0) return;
   const conflicts = await PromotionModel.checkProductActivePromotionConflicts(
     productIds,
-    excludePromotionId
+    excludePromotionId,
   );
   if (conflicts && conflicts.length > 0) {
     const details = conflicts
       .map(
         (c) =>
-          `Sản phẩm '${c.product_name}' (Mã SP: ${c.product_id}) đang được áp dụng trong chương trình khuyến mãi '${c.promotion_name}' (Mã KM: ${c.promotion_id})`
+          `Sản phẩm '${c.product_name}' (Mã SP: ${c.product_id}) đang được áp dụng trong chương trình khuyến mãi '${c.promotion_name}' (Mã KM: ${c.promotion_id})`,
       )
       .join("; ");
     throw new Error(
-      `Không thể thực hiện! ${details}. Mỗi sản phẩm chỉ được áp dụng 1 chương trình khuyến mãi ở trạng thái active!`
+      `Không thể thực hiện! ${details}. Mỗi sản phẩm chỉ được áp dụng 1 chương trình khuyến mãi ở trạng thái active!`,
     );
   }
 };
-
 
 // Tạo mới 1 chương trình khuyến mãi
 export const createPromotion = async (promotionInput) => {
@@ -45,7 +47,9 @@ export const createPromotion = async (promotionInput) => {
 
     // 1. Kiểm tra các trường bắt buộc
     if (!name || name.trim() === "") {
-      throw new Error("Tên chương trình khuyến mãi là bắt buộc và không được để trống!");
+      throw new Error(
+        "Tên chương trình khuyến mãi là bắt buộc và không được để trống!",
+      );
     }
 
     if (!discount_type) {
@@ -54,11 +58,19 @@ export const createPromotion = async (promotionInput) => {
 
     const validDiscountTypes = ["percentage", "fixed_amount"];
     if (!validDiscountTypes.includes(discount_type)) {
-      throw new Error("Loại giảm giá không hợp lệ! (Chấp nhận 'percentage' hoặc 'fixed_amount')");
+      throw new Error(
+        "Loại giảm giá không hợp lệ! (Chấp nhận 'percentage' hoặc 'fixed_amount')",
+      );
     }
 
-    if (discount_value === undefined || discount_value === null || isNaN(Number(discount_value))) {
-      throw new Error("Giá trị giảm giá (discount_value) phải là một số hợp lệ!");
+    if (
+      discount_value === undefined ||
+      discount_value === null ||
+      isNaN(Number(discount_value))
+    ) {
+      throw new Error(
+        "Giá trị giảm giá (discount_value) phải là một số hợp lệ!",
+      );
     }
 
     const numericDiscountValue = Number(discount_value);
@@ -82,37 +94,54 @@ export const createPromotion = async (promotionInput) => {
     const endDateObj = new Date(end_date);
 
     if (isNaN(startDateObj.getTime())) {
-      throw new Error("Thời gian bắt đầu (start_date) không đúng định dạng ngày tháng!");
+      throw new Error(
+        "Thời gian bắt đầu (start_date) không đúng định dạng ngày tháng!",
+      );
     }
 
     if (isNaN(endDateObj.getTime())) {
-      throw new Error("Thời gian kết thúc (end_date) không đúng định dạng ngày tháng!");
+      throw new Error(
+        "Thời gian kết thúc (end_date) không đúng định dạng ngày tháng!",
+      );
     }
 
     if (endDateObj <= startDateObj) {
-      throw new Error("Thời gian kết thúc (end_date) phải lớn hơn thời gian bắt đầu (start_date)!");
+      throw new Error(
+        "Thời gian kết thúc (end_date) phải lớn hơn thời gian bắt đầu (start_date)!",
+      );
     }
 
     // 2. Kiểm tra trùng tên khuyến mãi
     const isNameExists = await PromotionModel.checkNameExists(name.trim());
     if (isNameExists) {
-      throw new Error(`Chương trình khuyến mãi với tên '${name.trim()}' đã tồn tại!`);
+      throw new Error(
+        `Chương trình khuyến mãi với tên '${name.trim()}' đã tồn tại!`,
+      );
     }
 
     // 3. Xử lý danh sách sản phẩm áp dụng (product_ids)
     const rawProductIds = product_ids || productIds || [];
     const targetProductIds = Array.isArray(rawProductIds)
-      ? [...new Set(rawProductIds.map((id) => String(id).trim()).filter(Boolean))]
+      ? [
+          ...new Set(
+            rawProductIds.map((id) => String(id).trim()).filter(Boolean),
+          ),
+        ]
       : [];
 
     let existingProducts = [];
     if (targetProductIds.length > 0) {
-      existingProducts = await PromotionModel.checkProductsExist(targetProductIds);
+      existingProducts =
+        await PromotionModel.checkProductsExist(targetProductIds);
       const foundIds = existingProducts.map((p) => p.product_id);
-      const missingIds = targetProductIds.filter((id) => !foundIds.includes(id));
+      const missingIds = targetProductIds.filter(
+        (id) => !foundIds.includes(id),
+      );
 
       if (missingIds.length > 0) {
-        throw new Error(`Các sản phẩm sau không tồn tại trong hệ thống: ${missingIds.join(", ")}`);
+        throw new Error(
+          `Các sản phẩm sau không tồn tại trong hệ thống: ${missingIds.join(", ")}`,
+        );
       }
     }
 
@@ -164,7 +193,9 @@ export const createPromotion = async (promotionInput) => {
 
       // Kết hợp thông tin chi tiết sản phẩm cho kết quả trả về
       createdItems = createdItems.map((item) => {
-        const prodInfo = existingProducts.find((p) => p.product_id === item.product_id);
+        const prodInfo = existingProducts.find(
+          (p) => p.product_id === item.product_id,
+        );
         return {
           ...item,
           product: prodInfo || null,
@@ -198,7 +229,11 @@ export const getAllPromotions = async (options = {}) => {
       q: options.q,
     };
 
-    const { data, count } = await PromotionModel.getPromotionsWithPagination(from, to, filters);
+    const { data, count } = await PromotionModel.getPromotionsWithPagination(
+      from,
+      to,
+      filters,
+    );
     const totalPages = Math.ceil((count || 0) / limit);
 
     return {
@@ -230,7 +265,10 @@ export const getPromotionDetail = async (promotionId) => {
 
     return promotion;
   } catch (error) {
-    console.error("Lỗi tại getPromotionDetail Service:", error.message || error);
+    console.error(
+      "Lỗi tại getPromotionDetail Service:",
+      error.message || error,
+    );
     throw error;
   }
 };
@@ -262,21 +300,38 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
         .map((item) => item.product_id);
 
       if (activeItemProductIds.length > 0) {
-        await verifyNoActivePromotionConflicts(activeItemProductIds, promotion_id);
+        await verifyNoActivePromotionConflicts(
+          activeItemProductIds,
+          promotion_id,
+        );
       }
     }
 
     const updated_at = new Date().toISOString();
-    const updated = await PromotionModel.updateStatus(promotion_id, targetStatus, updated_at);
+    const updated = await PromotionModel.updateStatus(
+      promotion_id,
+      targetStatus,
+      updated_at,
+    );
 
     // Nếu cập nhật promotion thành inactive, out_of_stock hoặc expired -> Cập nhật tất cả promotion_items thành inactive
     // Nếu thành active -> status của promotion_items giữ nguyên không thay đổi
-    if (targetStatus === "inactive" || targetStatus === "out_of_stock" || targetStatus === "expired") {
-      await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", updated_at);
+    if (
+      targetStatus === "inactive" ||
+      targetStatus === "out_of_stock" ||
+      targetStatus === "expired"
+    ) {
+      await PromotionModel.updatePromotionItemsStatus(
+        promotion_id,
+        "inactive",
+        updated_at,
+      );
     }
 
     // Tự động tính toán lại discount_price trong bảng products cho các sản phẩm liên quan
-    const affectedProductIds = (existingPromo?.promotion_items || []).map((item) => item.product_id);
+    const affectedProductIds = (existingPromo?.promotion_items || []).map(
+      (item) => item.product_id,
+    );
     if (affectedProductIds.length > 0) {
       await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
     }
@@ -292,7 +347,8 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
 export const updatePromotion = async (promotion_id, updateInput) => {
   try {
     // 1. Kiểm tra chương trình khuyến mãi có tồn tại không
-    const existingPromotion = await PromotionModel.getPromotionById(promotion_id);
+    const existingPromotion =
+      await PromotionModel.getPromotionById(promotion_id);
     if (!existingPromotion) {
       throw new Error("Không tìm thấy chương trình khuyến mãi yêu cầu!");
     }
@@ -318,9 +374,14 @@ export const updatePromotion = async (promotion_id, updateInput) => {
         throw new Error("Tên chương trình khuyến mãi không được để trống!");
       }
 
-      const isNameDup = await PromotionModel.checkNameExistsForUpdate(name.trim(), promotion_id);
+      const isNameDup = await PromotionModel.checkNameExistsForUpdate(
+        name.trim(),
+        promotion_id,
+      );
       if (isNameDup) {
-        throw new Error(`Tên chương trình khuyến mãi '${name.trim()}' đã được sử dụng!`);
+        throw new Error(
+          `Tên chương trình khuyến mãi '${name.trim()}' đã được sử dụng!`,
+        );
       }
       updateData.name = name.trim();
     }
@@ -332,12 +393,16 @@ export const updatePromotion = async (promotion_id, updateInput) => {
     // 3. Loại và giá trị giảm giá
     const targetType = discount_type || existingPromotion.discount_type;
     const targetValue =
-      discount_value !== undefined ? Number(discount_value) : Number(existingPromotion.discount_value);
+      discount_value !== undefined
+        ? Number(discount_value)
+        : Number(existingPromotion.discount_value);
 
     if (discount_type !== undefined) {
       const validDiscountTypes = ["percentage", "fixed_amount"];
       if (!validDiscountTypes.includes(discount_type)) {
-        throw new Error("Loại giảm giá không hợp lệ! (Chấp nhận 'percentage' hoặc 'fixed_amount')");
+        throw new Error(
+          "Loại giảm giá không hợp lệ! (Chấp nhận 'percentage' hoặc 'fixed_amount')",
+        );
       }
       updateData.discount_type = discount_type;
     }
@@ -365,15 +430,21 @@ export const updatePromotion = async (promotion_id, updateInput) => {
     }
 
     if (endDateObj <= startDateObj) {
-      throw new Error("Thời gian kết thúc (end_date) phải lớn hơn thời gian bắt đầu (start_date)!");
+      throw new Error(
+        "Thời gian kết thúc (end_date) phải lớn hơn thời gian bắt đầu (start_date)!",
+      );
     }
 
-    if (start_date !== undefined) updateData.start_date = startDateObj.toISOString();
+    if (start_date !== undefined)
+      updateData.start_date = startDateObj.toISOString();
     if (end_date !== undefined) updateData.end_date = endDateObj.toISOString();
 
     // 5. Giới hạn số lượng
     if (quantity_limit !== undefined) {
-      updateData.quantity_limit = Math.max(0, parseInt(quantity_limit, 10) || 0);
+      updateData.quantity_limit = Math.max(
+        0,
+        parseInt(quantity_limit, 10) || 0,
+      );
     }
 
     // 6. Trạng thái
@@ -386,13 +457,16 @@ export const updatePromotion = async (promotion_id, updateInput) => {
     }
 
     // Kiểm tra xung đột khi khuyến mãi ở (hoặc được cập nhật thành) trạng thái active
-    const targetStatus = status !== undefined ? status : existingPromotion.status;
+    const targetStatus =
+      status !== undefined ? status : existingPromotion.status;
     const rawProductIds = product_ids || productIds;
     let targetProductIds = [];
 
     if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
       targetProductIds = [
-        ...new Set(rawProductIds.map((id) => String(id).trim()).filter(Boolean)),
+        ...new Set(
+          rawProductIds.map((id) => String(id).trim()).filter(Boolean),
+        ),
       ];
     } else {
       targetProductIds = (existingPromotion?.promotion_items || [])
@@ -415,12 +489,17 @@ export const updatePromotion = async (promotion_id, updateInput) => {
     // 7. Cập nhật danh sách sản phẩm áp dụng (promotion_items)
     if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
       if (targetProductIds.length > 0) {
-        const existingProducts = await PromotionModel.checkProductsExist(targetProductIds);
+        const existingProducts =
+          await PromotionModel.checkProductsExist(targetProductIds);
         const foundIds = existingProducts.map((p) => p.product_id);
-        const missingIds = targetProductIds.filter((id) => !foundIds.includes(id));
+        const missingIds = targetProductIds.filter(
+          (id) => !foundIds.includes(id),
+        );
 
         if (missingIds.length > 0) {
-          throw new Error(`Các sản phẩm sau không tồn tại trong hệ thống: ${missingIds.join(", ")}`);
+          throw new Error(
+            `Các sản phẩm sau không tồn tại trong hệ thống: ${missingIds.join(", ")}`,
+          );
         }
 
         // Xóa sản phẩm cũ và thêm lại danh sách mới
@@ -439,15 +518,26 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       } else {
         await PromotionModel.deletePromotionItems(promotion_id);
       }
-    } else if (status === "inactive" || status === "out_of_stock" || status === "expired") {
-      await PromotionModel.updatePromotionItemsStatus(promotion_id, "inactive", currentTime);
+    } else if (
+      status === "inactive" ||
+      status === "out_of_stock" ||
+      status === "expired"
+    ) {
+      await PromotionModel.updatePromotionItemsStatus(
+        promotion_id,
+        "inactive",
+        currentTime,
+      );
     }
 
     // Trả về đối tượng khuyến mãi sau khi đã cập nhật hoàn chỉnh
-    const updatedPromotion = await PromotionModel.getPromotionById(promotion_id);
+    const updatedPromotion =
+      await PromotionModel.getPromotionById(promotion_id);
 
     // Tự động tính toán lại discount_price trong bảng products cho tất cả sản phẩm thuộc khuyến mãi này
-    const affectedProductIds = (updatedPromotion?.promotion_items || []).map((item) => item.product_id);
+    const affectedProductIds = (updatedPromotion?.promotion_items || []).map(
+      (item) => item.product_id,
+    );
     if (affectedProductIds.length > 0) {
       await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
     }
@@ -463,48 +553,65 @@ export const updatePromotion = async (promotion_id, updateInput) => {
 export const addProductsToPromotion = async (promotion_id, inputData = {}) => {
   try {
     // 1. Kiểm tra chương trình khuyến mãi có tồn tại không
-    const existingPromotion = await PromotionModel.getPromotionById(promotion_id);
+    const existingPromotion =
+      await PromotionModel.getPromotionById(promotion_id);
     if (!existingPromotion) {
       throw new Error("Không tìm thấy chương trình khuyến mãi yêu cầu!");
     }
 
     const rawProductIds =
-      inputData.product_ids || inputData.productIds || inputData.product_id || inputData.productId;
+      inputData.product_ids ||
+      inputData.productIds ||
+      inputData.product_id ||
+      inputData.productId;
 
     if (!rawProductIds) {
-      throw new Error("Danh sách sản phẩm thêm vào khuyến mãi không được để trống!");
+      throw new Error(
+        "Danh sách sản phẩm thêm vào khuyến mãi không được để trống!",
+      );
     }
 
     // Chuẩn hóa thành mảng các ID sản phẩm duy nhất
-    const productIdsArray = Array.isArray(rawProductIds) ? rawProductIds : [rawProductIds];
+    const productIdsArray = Array.isArray(rawProductIds)
+      ? rawProductIds
+      : [rawProductIds];
     const targetProductIds = [
-      ...new Set(productIdsArray.map((id) => String(id).trim()).filter(Boolean)),
+      ...new Set(
+        productIdsArray.map((id) => String(id).trim()).filter(Boolean),
+      ),
     ];
 
     if (targetProductIds.length === 0) {
-      throw new Error("Danh sách sản phẩm thêm vào khuyến mãi không được để trống!");
+      throw new Error(
+        "Danh sách sản phẩm thêm vào khuyến mãi không được để trống!",
+      );
     }
 
     // 2. Kiểm tra các sản phẩm có tồn tại trong hệ thống (bảng products) không
-    const existingProducts = await PromotionModel.checkProductsExist(targetProductIds);
+    const existingProducts =
+      await PromotionModel.checkProductsExist(targetProductIds);
     const foundIds = existingProducts.map((p) => p.product_id);
     const missingIds = targetProductIds.filter((id) => !foundIds.includes(id));
 
     if (missingIds.length > 0) {
-      throw new Error(`Các sản phẩm sau không tồn tại trong hệ thống: ${missingIds.join(", ")}`);
+      throw new Error(
+        `Các sản phẩm sau không tồn tại trong hệ thống: ${missingIds.join(", ")}`,
+      );
     }
 
     // 3. Lọc ra các sản phẩm CHƯA có trong chương trình khuyến mãi này
     const currentItemProductIds = (existingPromotion.promotion_items || []).map(
-      (item) => item.product_id
+      (item) => item.product_id,
     );
 
     const newIdsToInsert = targetProductIds.filter(
-      (pid) => !currentItemProductIds.includes(pid)
+      (pid) => !currentItemProductIds.includes(pid),
     );
 
     if (newIdsToInsert.length === 0) {
-      throw new Error("Tất cả sản phẩm gửi lên đều đã tồn tại trong chương trình khuyến mãi này!");
+      throw new Error(
+        "Tất cả sản phẩm gửi lên đều đã tồn tại trong chương trình khuyến mãi này!",
+      );
     }
 
     // Nếu khuyến mãi đang ở trạng thái active -> Kiểm tra các sản phẩm mới có thuộc khuyến mãi active khác không
@@ -532,7 +639,8 @@ export const addProductsToPromotion = async (promotion_id, inputData = {}) => {
     await PromotionModel.recalculateProductsDiscountPrice(newIdsToInsert);
 
     // 5. Trả về thông tin khuyến mãi sau khi đã cập nhật thêm sản phẩm
-    const updatedPromotion = await PromotionModel.getPromotionById(promotion_id);
+    const updatedPromotion =
+      await PromotionModel.getPromotionById(promotion_id);
     return updatedPromotion;
   } catch (error) {
     console.error("Lỗi tại addProductsToPromotion Service:", error.message);
@@ -541,14 +649,20 @@ export const addProductsToPromotion = async (promotion_id, inputData = {}) => {
 };
 
 // Cập nhật trạng thái của 1 sản phẩm khuyến mãi (promotion_item)
-export const updatePromotionItemStatus = async (promotion_item_id, statusInput) => {
+export const updatePromotionItemStatus = async (
+  promotion_item_id,
+  statusInput,
+) => {
   try {
-    const existingItem = await PromotionModel.getPromotionItemById(promotion_item_id);
+    const existingItem =
+      await PromotionModel.getPromotionItemById(promotion_item_id);
     if (!existingItem) {
       throw new Error("Không tìm thấy sản phẩm khuyến mãi yêu cầu!");
     }
 
-    const parentPromo = await PromotionModel.getPromotionById(existingItem.promotion_id);
+    const parentPromo = await PromotionModel.getPromotionById(
+      existingItem.promotion_id,
+    );
     if (!parentPromo) {
       throw new Error("Không tìm thấy chương trình khuyến mãi tương ứng!");
     }
@@ -571,13 +685,13 @@ export const updatePromotionItemStatus = async (promotion_item_id, statusInput) 
     if (targetStatus === "active") {
       if (parentPromo.status !== "active") {
         throw new Error(
-          "Không thể kích hoạt sản phẩm khuyến mãi khi chương trình khuyến mãi không ở trạng thái 'active'!"
+          "Không thể kích hoạt sản phẩm khuyến mãi khi chương trình khuyến mãi không ở trạng thái 'active'!",
         );
       }
       if (existingItem.product_id) {
         await verifyNoActivePromotionConflicts(
           [existingItem.product_id],
-          existingItem.promotion_id
+          existingItem.promotion_id,
         );
       }
     }
@@ -586,12 +700,14 @@ export const updatePromotionItemStatus = async (promotion_item_id, statusInput) 
     const updatedItem = await PromotionModel.updateSinglePromotionItemStatus(
       promotion_item_id,
       targetStatus,
-      currentTime
+      currentTime,
     );
 
     // Tự động tính toán lại discount_price của sản phẩm liên quan
     if (existingItem.product_id) {
-      await PromotionModel.recalculateProductsDiscountPrice([existingItem.product_id]);
+      await PromotionModel.recalculateProductsDiscountPrice([
+        existingItem.product_id,
+      ]);
     }
 
     return updatedItem;
@@ -604,7 +720,8 @@ export const updatePromotionItemStatus = async (promotion_item_id, statusInput) 
 // Cập nhật số lượng đã dùng (used_quantity) của chương trình khuyến mãi khi đơn hàng được tạo thành công
 export const updatePromotionUsedQuantityOnOrder = async (orderItems) => {
   try {
-    if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) return;
+    if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0)
+      return;
 
     // 1. Tổng hợp số lượng mua theo product_id cho các sản phẩm có quantity > 0
     const productQtyMap = {};
@@ -687,17 +804,25 @@ export const updatePromotionUsedQuantityOnOrder = async (orderItems) => {
         });
 
         // Cập nhật tất cả các promotion_items thuộc khuyến mãi này thành inactive
-        await PromotionModel.updatePromotionItemsStatus(promoId, "inactive", currentTime);
+        await PromotionModel.updatePromotionItemsStatus(
+          promoId,
+          "inactive",
+          currentTime,
+        );
 
         // Lấy danh sách sản phẩm thuộc khuyến mãi để tính toán lại discount_price trong bảng products
         const fullPromo = await PromotionModel.getPromotionById(promoId);
-        const affectedProductIds = (fullPromo?.promotion_items || []).map((item) => item.product_id);
+        const affectedProductIds = (fullPromo?.promotion_items || []).map(
+          (item) => item.product_id,
+        );
         if (affectedProductIds.length > 0) {
-          await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
+          await PromotionModel.recalculateProductsDiscountPrice(
+            affectedProductIds,
+          );
         }
 
         console.log(
-          `[+] Chương trình khuyến mãi ${promoId} đã sử dụng hết suất (${newUsedQuantity}/${limit}). Đã chuyển status thành 'out_of_stock', promotion_items thành 'inactive' và tính lại discount_price.`
+          `[+] Chương trình khuyến mãi ${promoId} đã sử dụng hết suất (${newUsedQuantity}/${limit}). Đã chuyển status thành 'out_of_stock', promotion_items thành 'inactive' và tính lại discount_price.`,
         );
       } else {
         // Cập nhật used_quantity mới
@@ -707,12 +832,15 @@ export const updatePromotionUsedQuantityOnOrder = async (orderItems) => {
         });
 
         console.log(
-          `[+] Chương trình khuyến mãi ${promoId} đã cập nhật used_quantity: ${currentUsed} -> ${newUsedQuantity} / ${limit || "không giới hạn"}.`
+          `[+] Chương trình khuyến mãi ${promoId} đã cập nhật used_quantity: ${currentUsed} -> ${newUsedQuantity} / ${limit || "không giới hạn"}.`,
         );
       }
     }
   } catch (error) {
-    console.error("Lỗi tại updatePromotionUsedQuantityOnOrder:", error.message || error);
+    console.error(
+      "Lỗi tại updatePromotionUsedQuantityOnOrder:",
+      error.message || error,
+    );
   }
 };
 
@@ -728,7 +856,10 @@ export const checkAndUpdateExpiredPromotions = async () => {
       .eq("status", "active");
 
     if (error) {
-      console.error("[Scheduler] Lỗi khi kiểm tra khuyến mãi hết hạn:", error.message);
+      console.error(
+        "[Scheduler] Lỗi khi kiểm tra khuyến mãi hết hạn:",
+        error.message,
+      );
       return;
     }
 
@@ -743,7 +874,9 @@ export const checkAndUpdateExpiredPromotions = async () => {
 
     if (expiredPromos.length === 0) return;
 
-    console.log(`[Scheduler] Phát hiện ${expiredPromos.length} chương trình khuyến mãi đã hết hạn.`);
+    console.log(
+      `[Scheduler] Phát hiện ${expiredPromos.length} chương trình khuyến mãi đã hết hạn.`,
+    );
 
     for (const promo of expiredPromos) {
       const promoId = promo.promotion_id;
@@ -753,28 +886,41 @@ export const checkAndUpdateExpiredPromotions = async () => {
       await PromotionModel.updateStatus(promoId, "expired", currentTime);
 
       // Cập nhật tất cả các promotion_items thuộc khuyến mãi này thành inactive
-      await PromotionModel.updatePromotionItemsStatus(promoId, "inactive", currentTime);
+      await PromotionModel.updatePromotionItemsStatus(
+        promoId,
+        "inactive",
+        currentTime,
+      );
 
       // Lấy danh sách sản phẩm liên quan để tính toán lại discount_price
       const fullPromo = await PromotionModel.getPromotionById(promoId);
-      const affectedProductIds = (fullPromo?.promotion_items || []).map((item) => item.product_id);
+      const affectedProductIds = (fullPromo?.promotion_items || []).map(
+        (item) => item.product_id,
+      );
 
       if (affectedProductIds.length > 0) {
-        await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
+        await PromotionModel.recalculateProductsDiscountPrice(
+          affectedProductIds,
+        );
       }
 
       console.log(
-        `[+] Khuyến mãi '${promo.name}' (${promoId}) đã hết hạn (kết thúc: ${promo.end_date}). Đã tự động cập nhật status thành 'expired', items thành 'inactive' và tính lại giá sản phẩm.`
+        `[+] Khuyến mãi '${promo.name}' (${promoId}) đã hết hạn (kết thúc: ${promo.end_date}). Đã tự động cập nhật status thành 'expired', items thành 'inactive' và tính lại giá sản phẩm.`,
       );
     }
   } catch (err) {
-    console.error("Lỗi tại checkAndUpdateExpiredPromotions:", err.message || err);
+    console.error(
+      "Lỗi tại checkAndUpdateExpiredPromotions:",
+      err.message || err,
+    );
   }
 };
 
 // Khởi chạy trình lên lịch (Scheduler) kiểm tra khuyến mãi hết hạn định kỳ
 export const startPromotionScheduler = (intervalMs = 60000) => {
-  console.log(`[Scheduler] Đã khởi chạy Promotion Scheduler (quét định kỳ mỗi ${intervalMs / 1000}s)...`);
+  console.log(
+    `[Scheduler] Đã khởi chạy Promotion Scheduler (quét định kỳ mỗi ${intervalMs / 1000}s)...`,
+  );
 
   // Thực hiện quét ngay khi khởi động
   checkAndUpdateExpiredPromotions();

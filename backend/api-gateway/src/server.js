@@ -36,25 +36,34 @@ const chatSocketProxy = createProxyMiddleware({
   changeOrigin: true,
 });
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api/chat/socket.io")) return chatSocketProxy(req, res, next);
+  if (req.path.startsWith("/api/chat/socket.io"))
+    return chatSocketProxy(req, res, next);
   next();
 });
-app.use("/api/chat", createProxyMiddleware({
-  target: CHAT_SERVICE_URL,
-  changeOrigin: true,
-  pathRewrite: { "^/api/chat": "" },
-  on: {
-    error: (err, req, res) => {
-      console.error("Proxy Error (Chat):", err.message);
-      res.writeHead(502, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: 502, message: "Chat CSKH tạm thời không khả dụng." }));
+app.use(
+  "/api/chat",
+  createProxyMiddleware({
+    target: CHAT_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: { "^/api/chat": "" },
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Chat):", err.message);
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            status: 502,
+            message: "Chat CSKH tạm thời không khả dụng.",
+          }),
+        );
+      },
     },
-  },
-}));
+  }),
+);
 
-if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL) {
+if (!AUTH_SERVICE_URL || !ORDER_SERVICE_URL || !PRODUCT_SERVICE_URL) {
   console.error(
-    "Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL).",
+    "Missing required environment variables (AUTH_SERVICE_URL, ORDER_SERVICE_URL, PRODUCT_SERVICE_URL).",
   );
   process.exit(1);
 }
@@ -73,11 +82,15 @@ app.use(
   createProxyMiddleware({
     target: PRODUCT_SERVICE_URL,
     changeOrigin: true,
-    onError: (err, req, res) => {
-      console.error("Proxy Error (Product):", err);
-      res
-        .status(502)
-        .json({ success: false, message: "Product Service Unavailable" });
+    proxyTimeout: 30000,
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Product):", err.message);
+        if (res.headersSent || res.destroyed) return;
+        const status = ["ETIMEDOUT", "ECONNRESET"].includes(err.code) ? 504 : 502;
+        res.writeHead(status, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: "Product Service Unavailable" }));
+      },
     },
   }),
 );
@@ -94,10 +107,12 @@ app.use(
       error: (err, req, res) => {
         console.error("Proxy Error (Chatbot):", err.message);
         res.writeHead(502, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          status: 502,
-          message: "Trợ lý ảo Selene đang tạm thời không hoạt động.",
-        }));
+        res.end(
+          JSON.stringify({
+            status: 502,
+            message: "Trợ lý ảo Selene đang tạm thời không hoạt động.",
+          }),
+        );
       },
     },
   }),
@@ -108,11 +123,15 @@ app.use(
   createProxyMiddleware({
     target: ORDER_SERVICE_URL,
     changeOrigin: true,
-    onError: (err, req, res) => {
-      console.error("Proxy Error (Order):", err);
-      res
-        .status(502)
-        .json({ success: false, message: "Order Service Unavailable" });
+    proxyTimeout: 30000,
+    on: {
+      error: (err, req, res) => {
+        console.error("Proxy Error (Order):", err.message);
+        if (res.headersSent || res.destroyed) return;
+        const status = ["ETIMEDOUT", "ECONNRESET"].includes(err.code) ? 504 : 502;
+        res.writeHead(status, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: "Order Service Unavailable" }));
+      },
     },
   }),
 );
@@ -162,6 +181,7 @@ const server = app.listen(PORT, () => {
   console.log(`Routing /api/orders to ${ORDER_SERVICE_URL}`);
 });
 server.on("upgrade", (req, socket, head) => {
-  if (req.url.startsWith("/api/chat/socket.io")) chatSocketProxy.upgrade(req, socket, head);
+  if (req.url.startsWith("/api/chat/socket.io"))
+    chatSocketProxy.upgrade(req, socket, head);
   else socket.destroy();
 });

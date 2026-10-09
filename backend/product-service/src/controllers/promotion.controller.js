@@ -95,7 +95,10 @@ export const handleGetPromotionDetail = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Lỗi tại handleGetPromotionDetail Controller:", error.message);
+    console.error(
+      "Lỗi tại handleGetPromotionDetail Controller:",
+      error.message,
+    );
 
     const isNotFound = error.message.includes("Không tìm thấy");
 
@@ -112,7 +115,10 @@ export const handleUpdatePromotionStatus = async (req, res) => {
     const { promotionId } = req.params;
     const { status } = req.body;
 
-    const result = await promotionService.updatePromotionStatus(promotionId, status);
+    const result = await promotionService.updatePromotionStatus(
+      promotionId,
+      status,
+    );
 
     return res.status(200).json({
       status: 200,
@@ -120,7 +126,10 @@ export const handleUpdatePromotionStatus = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Lỗi tại handleUpdatePromotionStatus Controller:", error.message);
+    console.error(
+      "Lỗi tại handleUpdatePromotionStatus Controller:",
+      error.message,
+    );
 
     const isClientError =
       error.message.includes("không hợp lệ") ||
@@ -140,7 +149,10 @@ export const handleUpdatePromotion = async (req, res) => {
   try {
     const { promotionId } = req.params;
 
-    const result = await promotionService.updatePromotion(promotionId, req.body);
+    const result = await promotionService.updatePromotion(
+      promotionId,
+      req.body,
+    );
 
     return res.status(200).json({
       status: 200,
@@ -181,7 +193,10 @@ export const handleAddProductsToPromotion = async (req, res) => {
       message: "Thêm sản phẩm vào chương trình khuyến mãi thành công!",
     });
   } catch (error) {
-    console.error("Lỗi tại handleAddProductsToPromotion Controller:", error.message);
+    console.error(
+      "Lỗi tại handleAddProductsToPromotion Controller:",
+      error.message,
+    );
 
     const isClientError =
       error.message.includes("không được để trống") ||
@@ -204,7 +219,10 @@ export const handleUpdatePromotionItemStatus = async (req, res) => {
     const { promotionItemId } = req.params;
     const { status } = req.body;
 
-    const result = await promotionService.updatePromotionItemStatus(promotionItemId, status);
+    const result = await promotionService.updatePromotionItemStatus(
+      promotionItemId,
+      status,
+    );
 
     return res.status(200).json({
       status: 200,
@@ -212,7 +230,10 @@ export const handleUpdatePromotionItemStatus = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Lỗi tại handleUpdatePromotionItemStatus Controller:", error.message);
+    console.error(
+      "Lỗi tại handleUpdatePromotionItemStatus Controller:",
+      error.message,
+    );
 
     const isClientError =
       error.message.includes("không hợp lệ") ||

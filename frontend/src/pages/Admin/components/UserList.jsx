@@ -115,7 +115,7 @@ export default function UserList({
             onChange={(e) => onSearch(e.target.value, composing.current)}
           />
         </div>
-        <div className="dropdown" ref={sortRef} style={{ minWidth: 240 }}>
+        <div className="dropdown" ref={sortRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"
@@ -291,13 +291,15 @@ export default function UserList({
                       </Link>
                       <button
                         className={`adm-action-btn ${user.status === "active" ? "lock" : "unlock"}`}
-                        disabled={user.is_self || updatingId === user.account_id}
+                        disabled={
+                          user.is_self || updatingId === user.account_id
+                        }
                         title={
                           user.is_self
                             ? "Không thể khóa tài khoản của chính mình"
                             : user.status === "active"
-                            ? "Khóa tài khoản"
-                            : "Mở khóa tài khoản"
+                              ? "Khóa tài khoản"
+                              : "Mở khóa tài khoản"
                         }
                         onClick={() => onLock(user)}
                       >

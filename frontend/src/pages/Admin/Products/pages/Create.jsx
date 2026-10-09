@@ -1,5 +1,6 @@
 // frontend\src\pages\Admin\Products\pages\Create.jsx
 import { useRef, useState } from "react";
+import AdminSelect from "../../components/AdminSelect";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Helmet } from "react-helmet-async";
@@ -395,8 +396,8 @@ export default function CreateProduct() {
               <div className="col-12 col-md-6">
                 <label className="cp-label">Discount Type</label>
                 <div className="cp-cat-select-wrap">
-                  <select
-                    className="cp-select"
+                  <AdminSelect
+                    aria-label="Discount Type"
                     value={form.discountType}
                     onChange={(e) => set("discountType", e.target.value)}
                   >
@@ -405,13 +406,7 @@ export default function CreateProduct() {
                         {dt}
                       </option>
                     ))}
-                  </select>
-                  <div className="cp-cat-dropdown-icon">
-                    <i
-                      className="bi bi-chevron-down"
-                      style={{ fontSize: 10 }}
-                    />
-                  </div>
+                  </AdminSelect>
                 </div>
               </div>
             </div>
@@ -486,8 +481,8 @@ export default function CreateProduct() {
 
             {/* Select */}
             <div className="cp-cat-select-wrap mb-3">
-              <select
-                className="cp-select"
+              <AdminSelect
+                aria-label="Product Category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -499,10 +494,7 @@ export default function CreateProduct() {
                     {c}
                   </option>
                 ))}
-              </select>
-              <div className="cp-cat-dropdown-icon">
-                <i className="bi bi-chevron-down" style={{ fontSize: 10 }} />
-              </div>
+              </AdminSelect>
             </div>
 
             {/* Custom input */}

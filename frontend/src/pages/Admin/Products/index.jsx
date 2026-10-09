@@ -160,9 +160,12 @@ export default function AdminProducts() {
     }
   }, []);
 
-  useEffect(() => {
+  // Reset only when the URL query changes; preserve the local typing draft.
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (previousQuery !== q) {
+    setPreviousQuery(q);
     setSearchValue(q);
-  }, [q]);
+  }
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -382,11 +385,7 @@ export default function AdminProducts() {
         </div>
 
         {/* Filter: Danh mục */}
-        <div
-          className="dropdown"
-          ref={categoryRef}
-          style={{ width: "17.5%", minWidth: 190 }}
-        >
+        <div className="dropdown" ref={categoryRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"
@@ -436,11 +435,7 @@ export default function AdminProducts() {
         </div>
 
         {/* Filter: Sắp xếp */}
-        <div
-          className="dropdown"
-          ref={sortRef}
-          style={{ width: "17.5%", minWidth: 190 }}
-        >
+        <div className="dropdown" ref={sortRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"

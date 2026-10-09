@@ -74,7 +74,8 @@ export const updateCustomerProfile = async (
 
   if (isValidValue(full_name)) updateData.full_name = full_name.trim();
   if (isValidValue(phone_number)) updateData.phone_number = phone_number.trim();
-  if (gender !== undefined) updateData.gender = isValidValue(gender) ? gender : null;
+  if (gender !== undefined)
+    updateData.gender = isValidValue(gender) ? gender : null;
   if (dob !== undefined) updateData.dob = isValidValue(dob) ? dob : null;
   if (avatarUrl) updateData.avatar_url = avatarUrl;
   updateData.updated_at = new Date();
@@ -91,7 +92,10 @@ export const updateCustomerProfile = async (
   const responseData = {
     full_name: updateData.full_name || existingProfile.full_name,
     phone_number: updateData.phone_number || existingProfile.phone_number,
-    gender: updateData.gender !== undefined ? updateData.gender : existingProfile.gender,
+    gender:
+      updateData.gender !== undefined
+        ? updateData.gender
+        : existingProfile.gender,
     dob: updateData.dob !== undefined ? updateData.dob : existingProfile.dob,
     avatar_url: avatarUrl || existingProfile.avatar_url,
   };
@@ -225,7 +229,11 @@ export const updateStaffProfile = async (
   }
 
   if (avatarFile) {
-    avatarUrl = await uploadAvatar(`_${getRoleName(existingAccount.role_id)}`, accountId, avatarFile);
+    avatarUrl = await uploadAvatar(
+      `_${getRoleName(existingAccount.role_id)}`,
+      accountId,
+      avatarFile,
+    );
   }
 
   const updateData = {};
@@ -276,10 +284,19 @@ export const updateStaffProfile = async (
     full_name: updateData.full_name || existingProfile.full_name,
     email: accountUpdateData.email || existingAccount.email,
     phone_number: updateData.phone_number || existingProfile.phone_number,
-    identity_card: updateData.identity_card !== undefined ? updateData.identity_card : existingProfile.identity_card,
-    gender: updateData.gender !== undefined ? updateData.gender : existingProfile.gender,
+    identity_card:
+      updateData.identity_card !== undefined
+        ? updateData.identity_card
+        : existingProfile.identity_card,
+    gender:
+      updateData.gender !== undefined
+        ? updateData.gender
+        : existingProfile.gender,
     dob: updateData.dob !== undefined ? updateData.dob : existingProfile.dob,
-    address: updateData.address !== undefined ? updateData.address : existingProfile.address,
+    address:
+      updateData.address !== undefined
+        ? updateData.address
+        : existingProfile.address,
     avatar_url: avatarUrl || existingProfile.avatar_url,
   };
 
@@ -691,13 +708,21 @@ export const getAdminUsers = async (
 };
 
 // Cập nhật hồ sơ khách hàng hoặc nhân viên từ trang quản trị
-export const updateProfileAll = async (accountId, data, avatarFile, currentAccountId) => {
+export const updateProfileAll = async (
+  accountId,
+  data,
+  avatarFile,
+  currentAccountId,
+) => {
   validateAdminProfile(data);
   const account = await AccountModel.findById(accountId);
   if (
     !account ||
     (![ROLE_IDS.customer, ROLE_IDS.staff].includes(Number(account.role_id)) &&
-      !(accountId === currentAccountId && Number(account.role_id) === ROLE_IDS.admin))
+      !(
+        accountId === currentAccountId &&
+        Number(account.role_id) === ROLE_IDS.admin
+      ))
   ) {
     throw new Error("Không tìm thấy người dùng hợp lệ!");
   }
@@ -744,10 +769,10 @@ const validateAdminProfile = (data) => {
 // Chuẩn hóa từ khóa tìm kiếm tiếng Việt
 const normalizeSearchValue = (value) => {
   return String(value || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
     .toLowerCase();
 };
 
@@ -755,7 +780,10 @@ const normalizeSearchValue = (value) => {
 const sortAdminUsers = (users, sort) => {
   const collator = new Intl.Collator("vi", { sensitivity: "base" });
   const getGivenName = (fullName) => {
-    return String(fullName || "").trim().split(/\s+/).at(-1);
+    return String(fullName || "")
+      .trim()
+      .split(/\s+/)
+      .at(-1);
   };
 
   users.sort((firstUser, secondUser) => {
@@ -770,11 +798,13 @@ const sortAdminUsers = (users, sort) => {
         collator.compare(firstUser.full_name || "", secondUser.full_name || "");
       if (sort === "za") result *= -1;
     } else if (sort === "orders_asc" || sort === "orders_desc") {
-      result = (firstUser.order_count - secondUser.order_count) *
+      result =
+        (firstUser.order_count - secondUser.order_count) *
         (sort === "orders_desc" ? -1 : 1);
     } else {
       result =
-        (new Date(firstUser.created_at || 0) - new Date(secondUser.created_at || 0)) *
+        (new Date(firstUser.created_at || 0) -
+          new Date(secondUser.created_at || 0)) *
         (sort === "newest" ? -1 : 1);
     }
 

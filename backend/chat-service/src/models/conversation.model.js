@@ -28,7 +28,11 @@ export const ConversationModel = {
     if (status && status !== "all") {
       if (isWaitingFilter) {
         query = query.in("status", ["pending", "waiting"]);
-      } else if (normalized === "processing" || normalized === "open" || normalized === "active") {
+      } else if (
+        normalized === "processing" ||
+        normalized === "open" ||
+        normalized === "active"
+      ) {
         query = query.in("status", ["processing", "open", "active"]);
       } else {
         query = query.eq("status", normalized);
@@ -96,7 +100,7 @@ export const ConversationModel = {
         (item) =>
           item.customer_name?.toLowerCase().includes(q) ||
           item.last_message?.toLowerCase().includes(q) ||
-          item.conversation_id?.toLowerCase().includes(q)
+          item.conversation_id?.toLowerCase().includes(q),
       );
     }
 

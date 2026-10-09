@@ -4,7 +4,7 @@ import { getAccessToken, saveAccessToken, logout } from "../utils/auth";
 
 const http = axios.create({
   baseURL: import.meta.env.DEV ? "/api" : import.meta.env.VITE_API_URL,
-  timeout: 10000,
+  timeout: 35000,
   withCredentials: true,
 });
 

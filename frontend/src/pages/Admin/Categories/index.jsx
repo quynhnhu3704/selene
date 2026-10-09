@@ -160,9 +160,12 @@ export default function AdminCategories() {
     }
   }, []);
 
-  useEffect(() => {
+  // Reset only when the URL query changes; preserve the local typing draft.
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (previousQuery !== q) {
+    setPreviousQuery(q);
     setSearchValue(q);
-  }, [q]);
+  }
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -359,11 +362,7 @@ export default function AdminCategories() {
         </div>
 
         {/* Filter: Sắp xếp */}
-        <div
-          className="dropdown"
-          ref={sortRef}
-          style={{ width: "17.5%", minWidth: 190 }}
-        >
+        <div className="dropdown" ref={sortRef}>
           <button
             type="button"
             className="form-control text-start d-flex justify-content-between align-items-center"

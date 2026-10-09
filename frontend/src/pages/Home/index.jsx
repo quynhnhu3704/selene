@@ -54,51 +54,37 @@ export default function Home() {
   const [categoryLoading, setCategoryLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
+    const { signal } = controller;
 
-    const fetchHomeData = async () => {
+    const loadSection = async (request, setData, selectData, setBusy) => {
+      setBusy(true);
       try {
-        setLoading(true);
-
-        const [productRes, filterRes] = await Promise.all([
-          getProducts({
-            q: "",
-            categories: [],
-            sizes: [],
-            colors: [],
-            minPrice: null,
-            maxPrice: null,
-            sort: "default",
-            page: 1,
-            limit: 20,
-          }),
-          getProductFilterOptions(),
-        ]);
-
-        if (isMounted) {
-          setProducts(productRes.data || []);
-          setCategories(filterRes.data?.categories || []);
-        }
+        const response = await request();
+        if (!signal.aborted) setData(selectData(response));
       } catch (error) {
-        console.error("Không thể tải dữ liệu trang chủ:", error);
-
-        if (isMounted) {
-          setProducts([]);
-          setCategories([]);
+        if (!signal.aborted) {
+          console.error("Không thể tải dữ liệu trang chủ:", error);
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-          setCategoryLoading(false);
-        }
+        if (!signal.aborted) setBusy(false);
       }
     };
 
-    fetchHomeData();
+    void loadSection(
+      () => getProducts({ limit: 20 }, 12, { signal }),
+      setProducts,
+      (response) => response.data || [],
+      setLoading,
+    );
+    void loadSection(
+      () => getProductFilterOptions({ signal }),
+      setCategories,
+      (response) => response.data?.categories || [],
+      setCategoryLoading,
+    );
 
-    return () => {
-      isMounted = false;
-    };
+    return () => controller.abort();
   }, []);
 
   /*

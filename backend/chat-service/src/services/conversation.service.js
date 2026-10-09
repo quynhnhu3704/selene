@@ -7,13 +7,17 @@ import { getCustomerOrders } from "./order.service.js";
 export const hasPermission = (user, permission) => {
   if (!user) return false;
   if (user.role === "admin" || user.role === "staff") return true;
-  if (Array.isArray(user.permissions) && user.permissions.includes(permission)) return true;
+  if (Array.isArray(user.permissions) && user.permissions.includes(permission))
+    return true;
   return false;
 };
 
 export const requirePermission = (user, permission) => {
   if (!hasPermission(user, permission)) {
-    throw { status: 403, message: "Bạn không có quyền thực hiện thao tác này!" };
+    throw {
+      status: 403,
+      message: "Bạn không có quyền thực hiện thao tác này!",
+    };
   }
 };
 

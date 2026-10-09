@@ -1,0 +1,88 @@
+.pd-skeleton {
+  padding: 0 75px 64px;
+}
+.pd-skeleton > .container {
+  max-width: none;
+  margin: 0 !important;
+}
+.pd-skeleton-layout {
+  display: flex;
+  gap: 40px;
+  padding-top: 28px;
+}
+.pd-placeholder {
+  background: #f2f1f0;
+  border-radius: 8px;
+}
+.pd-skeleton-gallery {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 52%;
+}
+.pd-skeleton-thumbs {
+  flex: 0 0 92px;
+}
+.pd-skeleton-thumbs > div {
+  height: 116px;
+  margin-bottom: 8px;
+}
+.pd-skeleton-image {
+  flex: 1;
+  aspect-ratio: 3 / 4;
+}
+.pd-skeleton-info {
+  flex: 1;
+  min-width: 0;
+}
+.pd-skeleton-price {
+  width: 35%;
+  height: 32px;
+  margin-bottom: 12px;
+}
+.pd-skeleton-title {
+  width: 85%;
+  height: 24px;
+  margin-bottom: 12px;
+}
+.pd-skeleton-sku {
+  width: 25%;
+  height: 16px;
+  margin-bottom: 28px;
+}
+.pd-skeleton-options {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.pd-skeleton-options > div {
+  width: 64px;
+  height: 42px;
+}
+.pd-skeleton-action {
+  height: 48px;
+  border-radius: 50px;
+  margin-bottom: 28px;
+}
+.pd-skeleton-commits {
+  height: 140px;
+}
+@media (max-width: 1000px) {
+  .pd-skeleton {
+    padding: 0 24px 40px;
+  }
+  .pd-skeleton-layout {
+    flex-direction: column;
+  }
+  .pd-skeleton-gallery,
+  .pd-skeleton-info {
+    width: 100%;
+  }
+}
+@media (max-width: 640px) {
+  .pd-skeleton {
+    padding: 0 16px 40px;
+  }
+  .pd-skeleton-thumbs {
+    display: none;
+  }
+}

@@ -183,11 +183,9 @@ export const handleExportCategoriesToExcel = async (req, res) => {
     );
     return res.send(buffer);
   } catch (error) {
-    return res
-      .status(500)
-      .json({
-        status: 500,
-        message: error.message || "Không thể xuất dữ liệu danh mục!",
-      });
+    return res.status(500).json({
+      status: 500,
+      message: error.message || "Không thể xuất dữ liệu danh mục!",
+    });
   }
 };

@@ -1,8 +1,26 @@
 import { getAllProduct } from "./product.service.js";
 
 const CHATBOT_STOP_WORDS = new Set([
-  "tôi", "mình", "bạn", "ơi", "có", "bán", "không", "ko", "cho", "xem",
-  "tìm", "muốn", "mua", "giúp", "với", "nhé", "ạ", "các", "những", "nào",
+  "tôi",
+  "mình",
+  "bạn",
+  "ơi",
+  "có",
+  "bán",
+  "không",
+  "ko",
+  "cho",
+  "xem",
+  "tìm",
+  "muốn",
+  "mua",
+  "giúp",
+  "với",
+  "nhé",
+  "ạ",
+  "các",
+  "những",
+  "nào",
 ]);
 
 // Chuẩn hóa câu hỏi thành từ khóa tìm sản phẩm, không xóa ký tự giữa tên riêng.

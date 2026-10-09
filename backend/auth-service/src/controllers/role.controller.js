@@ -13,7 +13,10 @@ export const handleToggleRoleStatus = async (req, res) => {
       });
     }
 
-    const result = await roleService.toggleRoleStatus(roleId, req.user?.accountId);
+    const result = await roleService.toggleRoleStatus(
+      roleId,
+      req.user?.accountId,
+    );
 
     return res.status(200).json({
       status: 200,

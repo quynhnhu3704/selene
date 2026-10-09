@@ -6,5 +6,8 @@ export const ROLE_IDS = {
 };
 
 export const getRoleName = (roleId) => {
-  return Object.keys(ROLE_IDS).find((role) => ROLE_IDS[role] === Number(roleId)) || null;
+  return (
+    Object.keys(ROLE_IDS).find((role) => ROLE_IDS[role] === Number(roleId)) ||
+    null
+  );
 };

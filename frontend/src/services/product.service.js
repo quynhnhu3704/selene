@@ -1,7 +1,7 @@
 // frontend/src/services/product.service.js
 import http from "./http";
 
-export const getProducts = async (filters = {}, fallbackLimit = 12) => {
+export const getProducts = async (filters = {}, fallbackLimit = 12, { signal } = {}) => {
   const normalizedFilters =
     typeof filters === "number"
       ? { page: filters, limit: fallbackLimit }
@@ -33,6 +33,7 @@ export const getProducts = async (filters = {}, fallbackLimit = 12) => {
   if (Number(page) > 1) params.page = page;
 
   const res = await http.get("/products/product-list", {
+    signal,
     params,
     withCredentials: false,
   });
@@ -41,20 +42,64 @@ export const getProducts = async (filters = {}, fallbackLimit = 12) => {
 };
 
 // Lấy dữ liệu thật để dựng sidebar filter cho customer
-export const getProductFilterOptions = async () => {
+export const getProductFilterOptions = async ({ signal } = {}) => {
   const res = await http.get("/products/product-filters", {
+    signal,
     withCredentials: false,
   });
 
   return res.data;
 };
 
-export const getProductById = async (id) => {
-  const res = await http.get(`/products/product-detail/${id}`, {
-    withCredentials: false,
-  });
+const productCache = new Map();
+const pendingProducts = new Map();
+const PRODUCT_CACHE_TTL = 60_000;
+const PRODUCT_CACHE_LIMIT = 40;
 
-  return res.data;
+export const getCachedProductById = (id) => {
+  const key = String(id);
+  const entry = productCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    productCache.delete(key);
+    return null;
+  }
+  return entry.value;
+};
+
+export const getProductById = (id) => {
+  const key = String(id);
+  const cached = getCachedProductById(key);
+  if (cached) return Promise.resolve(cached);
+  if (pendingProducts.has(key)) return pendingProducts.get(key);
+
+  const request = http
+    .get(`/products/product-detail/${encodeURIComponent(key)}`, {
+      withCredentials: false,
+    })
+    .then((res) => {
+      if (res.data?.data) {
+        productCache.delete(key);
+        productCache.set(key, {
+          value: res.data,
+          expiresAt: Date.now() + PRODUCT_CACHE_TTL,
+        });
+        if (productCache.size > PRODUCT_CACHE_LIMIT) {
+          productCache.delete(productCache.keys().next().value);
+        }
+      }
+      return res.data;
+    })
+    .finally(() => pendingProducts.delete(key));
+
+  pendingProducts.set(key, request);
+  return request;
+};
+
+export const prefetchProduct = (id) => {
+  if (id == null) return;
+  // A failed speculative request must not interrupt navigation; the page retries.
+  void getProductById(id).catch(() => {});
 };
 
 // Lấy danh sách sản phẩm cho Admin
