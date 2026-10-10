@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/common/EmptyState";
 import { Link } from "react-router-dom";
 
 const ORDER_STATUSES = {
@@ -32,7 +33,9 @@ export default function CustomerInfo({ customer, canViewOrder }) {
         </p>
       )}
       {!customer?.orders_error && !customer?.orders?.length && (
-        <p className="text-muted mt-3">Chưa có đơn hàng.</p>
+        <>
+          <EmptyState text="Không có đơn hàng nào để hiển thị" />
+        </>
       )}
       {customer?.orders?.map((order) => (
         <div className="support-order" key={order.order_id}>

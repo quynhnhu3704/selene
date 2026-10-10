@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 import { useEffect, useRef, useState } from "react";
 import AdminSelect from "../components/AdminSelect";
 import { Helmet } from "react-helmet-async";
@@ -277,8 +278,7 @@ export default function AdminPermissions() {
                 setGroup("");
               }}
             >
-              <i className="bi bi-arrow-counterclockwise me-1" />
-              Đặt lại
+              <i className="bi bi-arrow-counterclockwise me-1" /> Đặt lại
             </button>
           </div>
           <div
@@ -404,12 +404,7 @@ export default function AdminPermissions() {
                 <tbody>
                   <tr>
                     <td colSpan={roles.length + 1} className="page-empty py-5">
-                      <i className="bi bi-shield page-empty-icon" />
-                      <p className="mb-0">
-                        {permissions.length
-                          ? "Không tìm thấy quyền phù hợp."
-                          : "Chưa có quyền nào trong hệ thống."}
-                      </p>
+                      <EmptyState text="Không có quyền nào để hiển thị" />
                     </td>
                   </tr>
                 </tbody>

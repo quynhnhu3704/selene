@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="col-12 col-lg-4">
           <h5>SELENE STUDIO</h5>
           <address className="mb-1">
-            54 Trần Quang Diệu, Phường Nhiêu Lộc, TP. HCM
+            48 Trần Quang Diệu, Phường Nhiêu Lộc, TP. HCM
           </address>
           <p>
             <strong>Điện thoại:</strong>{" "}

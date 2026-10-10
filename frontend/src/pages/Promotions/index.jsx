@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 // frontend\src\pages\Promotions\index.jsx
 import Loading from "../../components/common/Loading";
 import { useEffect, useState } from "react";
@@ -98,10 +99,7 @@ export default function Promotions() {
           </div>
         ) : vouchers.length === 0 ? (
           <div className="text-center py-5">
-            <i className="bi bi-ticket-perforated fs-1 text-secondary" />
-            <p className="mt-3">
-              Chưa có mã khuyến mãi phù hợp với giỏ hàng của bạn.
-            </p>
+            <EmptyState text="Không có mã khuyến mãi nào để hiển thị" />
             <Link to="/san-pham" className="btn btn-dark rounded-pill px-4">
               Tiếp tục mua sắm
             </Link>

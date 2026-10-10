@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 // frontend\src\pages\Checkout\VoucherPicker.jsx
 import Loading from "../../components/common/Loading";
 import { useEffect, useRef, useState } from "react";
@@ -172,11 +173,13 @@ export default function VoucherPicker({
         <Loading text="Đang tải mã khuyến mãi..." />
       ) : (
         <>
-          <p className="small text-muted">
-            {vouchers.length
-              ? "Chọn một mã phù hợp với các sản phẩm thanh toán."
-              : "Chưa có mã khuyến mãi phù hợp với đơn hàng này."}
-          </p>
+          {vouchers.length ? (
+            <p className="small text-muted">Chọn một mã phù hợp với các sản phẩm thanh toán.</p>
+          ) : (
+            <>
+              <EmptyState text="Không có mã khuyến mãi nào để hiển thị" />
+            </>
+          )}
           <VoucherList
             vouchers={vouchers}
             selectedCode={voucher?.code || ""}

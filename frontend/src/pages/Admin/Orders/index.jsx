@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/Orders/index.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -226,8 +227,7 @@ export default function AdminOrders() {
             updateOrderQuery({ q: "", sort: "", status: "", page: 1 });
           }}
         >
-          <i className="bi bi-arrow-counterclockwise me-1" />
-          Đặt lại
+          <i className="bi bi-arrow-counterclockwise me-1" /> Đặt lại
         </button>
       </div>
       <div className="adm-table-wrap table-responsive">
@@ -261,13 +261,7 @@ export default function AdminOrders() {
                     </>
                   ) : (
                     <>
-                      <i className="bi bi-inbox page-empty-icon" />
-                      <p className="mt-3 mb-1 fw-semibold text-secondary">
-                        Không tìm thấy đơn hàng
-                      </p>
-                      <p className="text-muted">
-                        Thử lại với từ khóa hoặc bộ lọc khác!
-                      </p>
+                      <EmptyState text="Không có đơn hàng nào để hiển thị" />
                     </>
                   )}
                 </td>

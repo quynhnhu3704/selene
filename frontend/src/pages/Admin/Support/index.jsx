@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 import { useEffect, useState, useCallback, useRef } from "react";
 import ChatPanel from "../../../components/SupportChat/ChatPanel";
 import {
@@ -773,13 +774,7 @@ function SupportInbox() {
             {/* Trạng thái rỗng */}
             {!loading && !error && sortedConversations.length === 0 && (
               <div className="support-empty py-5">
-                <i className="bi bi-chat-left-dots" />
-                <h5>Không có cuộc trò chuyện</h5>
-                <p>
-                  {search
-                    ? `Không tìm thấy kết quả phù hợp với "${search}"`
-                    : "Chưa có cuộc trò chuyện nào trong trạng thái này."}
-                </p>
+                <EmptyState text="Không có cuộc trò chuyện nào để hiển thị" />
                 {search && (
                   <button
                     type="button"

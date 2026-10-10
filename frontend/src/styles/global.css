@@ -295,7 +295,7 @@
 }
 .rb-search-heading {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
   color: #871b1b;
@@ -2481,13 +2481,16 @@
   width: calc(100% - 150px);
   margin: 0 75px;
 }
+.pl-wishlist-page > .container {
+  max-width: none;
+}
 .pl-layout {
   display: flex;
   align-items: flex-start;
   gap: 0;
   padding: 0 0 60px;
   background: #fff;
-  min-height: 80vh;
+  min-height: 65vh;
 }
 
 /* ════════════
@@ -2702,7 +2705,12 @@
 .pl-main {
   flex: 1 1 0;
   min-width: 0;
-  padding: 28px 0 0 36px;
+  padding: 28px 0 0;
+}
+
+.pl-sidebar + .pl-main {
+  --pl-grid-columns: 3;
+  padding-left: 36px;
 }
 
 .pl-main > .spinner-loading {
@@ -2723,7 +2731,7 @@
 /* ── PRODUCT GRID ── */
 .pl-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--pl-grid-columns, 4), 1fr);
   gap: 24px 20px;
   margin-bottom: 40px;
 }
@@ -2854,7 +2862,7 @@
     flex: 0 0 220px;
     width: 220px;
   }
-  .pl-main {
+  .pl-sidebar + .pl-main {
     padding-left: 20px;
   }
 }
@@ -2862,7 +2870,7 @@
   .pl-sidebar {
     display: none;
   }
-  .pl-main {
+  .pl-sidebar + .pl-main {
     padding-left: 0;
   }
   .pl-grid {
@@ -3079,4 +3087,18 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* Shared empty-state artwork and message; buttons and loading keep their styles. */
+img.empty-state-image {
+  display: block;
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+body p.empty-state-text {
+  font-size: 14px;
+  text-align: center;
+  color: #6c757d;
 }

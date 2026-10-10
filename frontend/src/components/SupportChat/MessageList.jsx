@@ -1,3 +1,4 @@
+import EmptyState from "../common/EmptyState";
 import Loading from "../common/Loading";
 import { useEffect, useRef } from "react";
 
@@ -124,9 +125,7 @@ export default function MessageList({
       )}
       {!messages.length && (
         <div className="support-empty">
-          <i className="bi bi-chat-dots" />
-          <h5>Chưa có tin nhắn</h5>
-          <p>Cuộc hội thoại này hiện chưa có tin nhắn trao đổi.</p>
+          <EmptyState text="Không có tin nhắn nào để hiển thị" />
         </div>
       )}
       {messages.map((message) => {

@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 // frontend\src\pages\Admin\Categories\index.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -451,16 +452,7 @@ export default function AdminCategories() {
             ) : categories.length === 0 ? (
               <tr>
                 <td colSpan={6} className="page-empty py-5">
-                  <i className="bi bi-inbox page-empty-icon" />
-                  <p
-                    className="mt-3 mb-1 fw-semibold text-secondary"
-                    style={{ fontSize: 16 }}
-                  >
-                    Không tìm thấy danh mục
-                  </p>
-                  <p className="text-muted mb-3" style={{ fontSize: 14 }}>
-                    Thử lại với từ khóa hoặc bộ lọc khác!
-                  </p>
+                  <EmptyState text="Không có danh mục nào để hiển thị" />
                 </td>
               </tr>
             ) : (

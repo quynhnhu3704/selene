@@ -12,7 +12,7 @@ export default function Contact() {
     content: "",
   });
   const [sent, setSent] = useState(false);
-  const address = "54 Trần Quang Diệu, Phường Nhiêu Lộc, TP. HCM";
+  const address = "48 Trần Quang Diệu, Phường Nhiêu Lộc, TP. HCM";
   const mapQuery = encodeURIComponent(address);
 
   const handleChange = (e) => {
