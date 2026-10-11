@@ -589,8 +589,7 @@ export default function Header() {
                 <>
                   <li>
                     <Link className="dropdown-item" to="/tai-khoan/dang-nhap">
-                      <i className="bi bi-box-arrow-in-right me-1"></i> Đăng
-                      nhập
+                      <i className="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
                     </Link>
                   </li>
                   <li>
@@ -603,13 +602,12 @@ export default function Header() {
                 <>
                   <li>
                     <Link className="dropdown-item" to="/tai-khoan">
-                      <i className="bi bi-person-bounding-box me-1"></i> Tài
-                      khoản
+                      <i className="bi bi-person-bounding-box me-1"></i> Tài khoản
                     </Link>
                   </li>
                   <li>
                     <Link className="dropdown-item" to="/ho-tro">
-                      <i className="bi bi-chat-dots me-1"></i> Hỗ trợ &amp; Tin nhắn
+                      <i className="bi bi-chat-dots me-1"></i> Chat hỗ trợ
                     </Link>
                   </li>
                   {admin && (
@@ -621,8 +619,7 @@ export default function Header() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <i className="bi bi-speedometer2 me-1"></i>
-                          Trang quản trị
+                          <i className="bi bi-speedometer2 me-1"></i> Trang quản trị
                         </Link>
                       </li>
                     </>

@@ -1098,8 +1098,8 @@
 
 .rb-scroll-top {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 5.5em;
+  right: 36px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -1894,6 +1894,12 @@
 @media (max-width: 575.98px) {
   .adm-wrap .adm-sidebar {
     width: 64px;
+  }
+  .adm-wrap .adm-logo-row {
+    justify-content: center;
+  }
+  .adm-wrap .adm-logo-left {
+    gap: 0;
   }
   .adm-wrap .adm-logo-text,
   .adm-wrap .adm-logo-caret,

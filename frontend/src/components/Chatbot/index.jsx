@@ -7,6 +7,7 @@ import { isLoggedIn } from "../../utils/auth";
 import defaultProduct from "../../assets/images/default-product.png";
 
 import BOT_AVATAR from "../../assets/images/default-chatbot.png";
+import CHATBOT_ICON from "../../assets/images/chatbot.png";
 
 // Giữ giao diện chat mẫu, nhận văn bản và sản phẩm riêng từ API của Selene.
 function Chatbot() {
@@ -225,7 +226,11 @@ function Chatbot() {
         aria-controls="selene-chatbot-window"
       >
         <span className="fab-icon">
-          <i className={open ? "bi bi-x" : "bi bi-robot"}></i>
+          {open ? (
+            <i className="bi bi-x"></i>
+          ) : (
+            <img src={CHATBOT_ICON} alt="" />
+          )}
         </span>
       </button>
 
@@ -464,6 +469,13 @@ const CHATBOT_STYLES = `
   font-weight: bold;
   line-height: 1;
   transition: transform 0.3s ease;
+}
+
+.selene-chatbot .chatbot-fab .fab-icon img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .selene-chatbot .chatbot-fab.open .fab-icon {
