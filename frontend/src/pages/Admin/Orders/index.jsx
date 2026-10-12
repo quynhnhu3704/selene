@@ -17,11 +17,24 @@ import {
   SORT_OPTIONS,
   getOrderStatus,
   fmtVND,
-  formatDate,
 } from "./constants";
 
 const ORDERS_PER_PAGE = 12;
 const TABS = [{ key: "", label: "Tất cả" }, ...ORDER_STATUSES];
+
+const formatPhone = (phone) =>
+  String(phone || "").replace(/^(\d{4})(\d{3})(\d{3})$/, "$1.$2.$3") || "—";
+
+const formatDate = (value) => {
+  const date = new Date(value);
+  return !value || Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+};
 
 export default function AdminOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -230,17 +243,23 @@ export default function AdminOrders() {
           <i className="bi bi-arrow-counterclockwise me-1" /> Đặt lại
         </button>
       </div>
-      <div className="adm-table-wrap table-responsive">
-        <table className="table adm-table mb-0">
+      <div className="adm-table-wrap table-responsive overflow-x-auto">
+        <table className="table adm-table mb-0" style={{ minWidth: 1000 }}>
           <thead>
             <tr>
-              <th>Mã đơn</th>
-              <th>Khách hàng</th>
-              <th className="text-center">Sản phẩm</th>
-              <th className="text-end">Tổng tiền</th>
-              <th className="text-center">Ngày đặt</th>
-              <th className="text-center">Trạng thái</th>
-              <th className="text-center">Thao tác</th>
+              <th className="text-center" style={{ width: "5%" }}></th>
+              <th style={{ width: "19%" }}>Đơn hàng</th>
+              <th style={{ width: "24%" }}>Khách hàng</th>
+              <th className="text-end" style={{ width: "15%" }}>
+                Tổng tiền
+              </th>
+              <th className="text-center" style={{ width: "17%" }}>
+                Trạng thái
+              </th>
+              <th className="text-center" style={{ width: "14%" }}>
+                Ngày đặt
+              </th>
+              <th className="text-center" style={{ width: "6%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -267,63 +286,47 @@ export default function AdminOrders() {
                 </td>
               </tr>
             ) : (
-              orders.map((order) => {
+              orders.map((order, index) => {
                 const state = getOrderStatus(order.status);
-                const quantity = Number(order.total_quantity || 0);
-                // Ít: đỏ, vừa: vàng, nhiều: xanh, dùng badge sẵn có của trang quản lý.
-                const color =
-                  quantity >= 5
-                    ? "success"
-                    : quantity >= 3
-                      ? "warning"
-                      : "danger";
+                const stt = (pagination.page - 1) * pagination.limit + index + 1;
                 const detail = `/admin/don-hang/${encodeURIComponent(order.order_id)}`;
                 return (
                   <tr key={order.order_id}>
+                    <td className="text-center">
+                      <span className="adm-stt">{stt}</span>
+                    </td>
                     <td>
                       <Link
-                        className="adm-link fw-semibold text-break"
+                        className="adm-link"
                         to={`${detail}?returnUrl=${returnUrl}`}
                       >
-                        {order.order_code}
+                        <div className="adm-name text-break">
+                          {order.order_code}
+                        </div>
                       </Link>
                     </td>
                     <td>
                       <div className="adm-name">{order.recipient_name}</div>
                       <div className="adm-sub">
-                        {order.recipient_phone || "—"}
+                        {formatPhone(order.recipient_phone)}
                       </div>
-                    </td>
-                    <td className="text-center">
-                      <span
-                        className={`adm-stock rounded-pill text-${color} bg-${color}-subtle`}
-                      >
-                        {quantity.toLocaleString("vi-VN")}
-                      </span>
                     </td>
                     <td className="text-end fw-semibold">
                       {fmtVND(order.final_amount)}
                     </td>
                     <td className="text-center">
-                      {formatDate(order.created_at)}
-                    </td>
-                    <td className="text-center">
                       <span
-                        className={`adm-status rounded-pill w-auto text-${state.color} bg-${state.color}-subtle`}
+                        className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
+                        style={{ width: "8rem" }}
                       >
                         {state.label}
                       </span>
                     </td>
+                    <td className="text-center text-nowrap">
+                      {formatDate(order.created_at)}
+                    </td>
                     <td className="text-center">
                       <div className="d-flex gap-1 justify-content-center">
-                        <Link
-                          className="adm-action-btn"
-                          title="Xem chi tiết"
-                          aria-label={`Xem đơn ${order.order_code}`}
-                          to={`${detail}?returnUrl=${returnUrl}`}
-                        >
-                          <i className="bi bi-eye" />
-                        </Link>
                         {canEdit && (
                           <Link
                             className="adm-action-btn"
