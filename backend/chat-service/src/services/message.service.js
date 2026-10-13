@@ -164,14 +164,21 @@ export const MessageService = {
     } else {
       // 5. NẾU ĐÃ CÓ CUỘC HỘI THOẠI:
       // - Nếu hội thoại đã đóng mà khách hàng nhắn tiếp -> mở lại trạng thái pending
-      if (conversation.status === "closed" && isCustomer) {
-        try {
-          await ConversationModel.update(conversation.conversation_id, {
-            status: "pending",
-          });
-          conversation.status = "pending";
-        } catch (err) {
-          console.warn("[MessageService] Warning reopening closed conversation:", err.message);
+      if (conversation.status === "closed") {
+        if (isCustomer) {
+          try {
+            await ConversationModel.update(conversation.conversation_id, {
+              status: "pending",
+            });
+            conversation.status = "pending";
+          } catch (err) {
+            console.warn("[MessageService] Warning reopening closed conversation:", err.message);
+          }
+        } else {
+          throw {
+            status: 400,
+            message: "Cuộc trò chuyện đã đóng! Vui lòng mở lại cuộc trò chuyện trước khi gửi tin nhắn.",
+          };
         }
       }
 
@@ -408,12 +415,19 @@ export const MessageService = {
         }
       }
     } else {
-      if (conversation.status === "closed" && isCustomer) {
-        try {
-          await ConversationModel.update(conversation.conversation_id, { status: "pending" });
-          conversation.status = "pending";
-        } catch (err) {
-          console.warn("[MessageService] Warning reopening closed conversation:", err.message);
+      if (conversation.status === "closed") {
+        if (isCustomer) {
+          try {
+            await ConversationModel.update(conversation.conversation_id, { status: "pending" });
+            conversation.status = "pending";
+          } catch (err) {
+            console.warn("[MessageService] Warning reopening closed conversation:", err.message);
+          }
+        } else {
+          throw {
+            status: 400,
+            message: "Cuộc trò chuyện đã đóng! Vui lòng mở lại cuộc trò chuyện trước khi gửi tệp tin.",
+          };
         }
       }
 

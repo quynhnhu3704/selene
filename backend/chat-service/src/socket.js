@@ -36,6 +36,7 @@ export const notifyConversation = (io, conversation) => {
     .to(`conversation:${conversation.conversation_id}`)
     .emit("conversation:update", {
       conversation_id: conversation.conversation_id,
+      status: conversation.status,
     });
 };
 

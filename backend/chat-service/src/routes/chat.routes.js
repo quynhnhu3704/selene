@@ -48,11 +48,6 @@ router.post("/messages/attachment", chatUpload.any(), sendAttachmentMessage);
 // =========================================================
 
 // 6. Nhận xử lý cuộc trò chuyện (Admin / Staff với quyền 'chat:assign')
-router.post(
-  "/manage/conversations/:conversationId/assign",
-  verifyPermission("chat:assign"),
-  assignConversation
-);
 router.put(
   "/manage/conversations/:conversationId/assign",
   verifyPermission("chat:assign"),
@@ -60,7 +55,7 @@ router.put(
 );
 
 // 7. Đóng cuộc trò chuyện (Admin / Staff với quyền 'chat:close')
-router.post(
+router.put(
   "/manage/conversations/:conversationId/close",
   verifyPermission("chat:close"),
   closeConversation
@@ -72,5 +67,5 @@ router.post(
   verifyPermission("chat:assign"),
   reopenConversation
 );
-
 export default router;
+

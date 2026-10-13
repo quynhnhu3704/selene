@@ -58,7 +58,7 @@ export const verifyPermission = (requiredPermissions) => {
       });
     }
 
-    if (req.user.role === "admin") {
+    if (req.user.role === "admin" || req.user.role === "staff") {
       return next();
     }
 

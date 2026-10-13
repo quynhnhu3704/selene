@@ -316,7 +316,13 @@ export const assignConversation = async (req, res, next) => {
 // Đóng cuộc trò chuyện
 export const closeConversation = async (req, res, next) => {
   try {
-    const conversationId = req.params.conversationId || req.params.id;
+    const conversationId =
+      req.params.conversationId ||
+      req.params.id ||
+      req.body?.conversation_id ||
+      req.body?.conversationId ||
+      req.query?.conversation_id ||
+      req.query?.conversationId;
     const user = req.user;
 
     const updated = await ConversationService.closeConversation(user, conversationId);
@@ -324,6 +330,14 @@ export const closeConversation = async (req, res, next) => {
     const io = req.app.get("io");
     if (io) {
       try {
+        io.to(`conversation:${updated.conversation_id}`)
+          .to(`customer:${updated.customer_id}`)
+          .to("support:staff")
+          .emit("conversation:closed", {
+            conversation_id: updated.conversation_id,
+            customer_id: updated.customer_id,
+            status: "closed",
+          });
         notifyConversation(io, updated);
       } catch (socketErr) {
         console.warn("[closeConversation] Socket emission warning:", socketErr.message);
@@ -343,7 +357,13 @@ export const closeConversation = async (req, res, next) => {
 // Mở lại cuộc trò chuyện
 export const reopenConversation = async (req, res, next) => {
   try {
-    const conversationId = req.params.conversationId || req.params.id;
+    const conversationId =
+      req.params.conversationId ||
+      req.params.id ||
+      req.body?.conversation_id ||
+      req.body?.conversationId ||
+      req.query?.conversation_id ||
+      req.query?.conversationId;
     const user = req.user;
 
     const updated = await ConversationService.reopenConversation(user, conversationId);
@@ -351,6 +371,14 @@ export const reopenConversation = async (req, res, next) => {
     const io = req.app.get("io");
     if (io) {
       try {
+        io.to(`conversation:${updated.conversation_id}`)
+          .to(`customer:${updated.customer_id}`)
+          .to("support:staff")
+          .emit("conversation:reopened", {
+            conversation_id: updated.conversation_id,
+            customer_id: updated.customer_id,
+            status: updated.status || "processing",
+          });
         notifyConversation(io, updated);
       } catch (socketErr) {
         console.warn("[reopenConversation] Socket emission warning:", socketErr.message);
@@ -366,4 +394,5 @@ export const reopenConversation = async (req, res, next) => {
     next(error);
   }
 };
+
 

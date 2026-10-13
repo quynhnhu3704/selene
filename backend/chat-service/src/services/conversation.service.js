@@ -241,18 +241,18 @@ export const ConversationService = {
         ? content.trim()
         : `Chào bạn, mình là ${staffName} xin được hỗ trợ bạn`;
 
-    // 3. Cập nhật trạng thái cuộc hội thoại thành 'active' (hoặc 'processing') và gán assigned_staff_id
+    // 3. Cập nhật trạng thái cuộc hội thoại thành 'processing' (hoặc 'active') và gán assigned_staff_id
     let updatedConv = null;
     try {
       updatedConv = await ConversationModel.update(conversation.conversation_id, {
-        status: "active",
+        status: "processing",
         assigned_staff_id: staffId,
       });
     } catch (err) {
-      console.warn("[assignConversation] Active status failed, retrying with processing:", err.message);
+      console.warn("[assignConversation] Processing status failed, retrying with active:", err.message);
       try {
         updatedConv = await ConversationModel.update(conversation.conversation_id, {
-          status: "processing",
+          status: "active",
           assigned_staff_id: staffId,
         });
       } catch (err2) {
@@ -342,7 +342,7 @@ export const ConversationService = {
     const finalConversation = {
       ...(conversation || {}),
       ...(updatedConv || {}),
-      status: updatedConv?.status || "active",
+      status: updatedConv?.status || "processing",
       assigned_staff_id: staffId,
       last_message_id: createdMessage.message_id,
       last_message: greetingText,
@@ -356,26 +356,87 @@ export const ConversationService = {
     };
   },
 
-  // Đóng cuộc trò chuyện
+  // Đóng cuộc trò chuyện (chuyển trạng thái sang 'closed')
   closeConversation: async (user, conversationId) => {
     requirePermission(user, "chat:close");
-    const conversation = await ConversationService.getAccessible(user, conversationId);
-    const updated = await ConversationModel.update(conversation.conversation_id, {
-      status: "closed",
-    });
-    return updated;
+
+    if (!conversationId || typeof conversationId !== "string" || !conversationId.trim()) {
+      throw { status: 400, message: "Mã cuộc trò chuyện không hợp lệ!" };
+    }
+    const cleanId = conversationId.trim();
+
+    const conversation = await ConversationService.getAccessible(user, cleanId);
+    if (!conversation) {
+      throw { status: 404, message: "Không tìm thấy cuộc trò chuyện!" };
+    }
+
+    // Nếu cuộc trò chuyện đã đóng thì trả về hội thoại hiện tại một cách an toàn (idempotent)
+    if (conversation.status === "closed") {
+      const fullExisting = await ConversationModel.findById(conversation.conversation_id);
+      return fullExisting || conversation;
+    }
+
+    // Cập nhật trạng thái cuộc hội thoại sang 'closed'
+    const now = new Date().toISOString();
+    let updated = null;
+    try {
+      updated = await ConversationModel.update(conversation.conversation_id, {
+        status: "closed",
+      });
+    } catch (err) {
+      console.error("[closeConversation] Error updating status to closed:", err.message);
+      throw { status: 500, message: "Không thể cập nhật trạng thái đóng cuộc trò chuyện!" };
+    }
+
+    // Lấy lại đầy đủ thông tin chi tiết cuộc hội thoại sau khi cập nhật
+    const fullConversation = await ConversationModel.findById(conversation.conversation_id);
+
+    return (
+      fullConversation || {
+        ...conversation,
+        ...(updated || {}),
+        status: "closed",
+        updated_at: now,
+      }
+    );
   },
 
-  // Mở lại cuộc trò chuyện đã đóng
+  // Mở lại cuộc trò chuyện đã đóng (chuyển sang 'processing')
   reopenConversation: async (user, conversationId) => {
     requirePermission(user, "chat:assign");
-    const conversation = await ConversationService.getAccessible(user, conversationId);
+
+    if (!conversationId || typeof conversationId !== "string" || !conversationId.trim()) {
+      throw { status: 400, message: "Mã cuộc trò chuyện không hợp lệ!" };
+    }
+    const cleanId = conversationId.trim();
+
+    const conversation = await ConversationService.getAccessible(user, cleanId);
+    if (!conversation) {
+      throw { status: 404, message: "Không tìm thấy cuộc trò chuyện!" };
+    }
+
     const staffId = String(user?.accountId || user?.account_id || user?.id || "");
-    const updated = await ConversationModel.update(conversation.conversation_id, {
-      status: "active",
-      assigned_staff_id: staffId || conversation.assigned_staff_id,
-    });
-    return updated;
+    let updated = null;
+    try {
+      updated = await ConversationModel.update(conversation.conversation_id, {
+        status: "processing",
+        assigned_staff_id: staffId || conversation.assigned_staff_id,
+      });
+    } catch (err) {
+      console.warn("[reopenConversation] Processing status failed, retrying with active:", err.message);
+      try {
+        updated = await ConversationModel.update(conversation.conversation_id, {
+          status: "active",
+          assigned_staff_id: staffId || conversation.assigned_staff_id,
+        });
+      } catch (err2) {
+        console.error("[reopenConversation] Failed to reopen conversation:", err2.message);
+        throw { status: 500, message: "Không thể mở lại cuộc trò chuyện!" };
+      }
+    }
+
+    const fullConversation = await ConversationModel.findById(conversation.conversation_id);
+    return fullConversation || updated;
   },
 };
 
