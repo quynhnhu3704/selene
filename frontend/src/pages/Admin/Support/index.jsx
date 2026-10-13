@@ -12,7 +12,6 @@ import {
   getConversationDetails,
   assignConversation,
   closeConversation,
-  reopenConversation,
   sendTextMessage,
   sendAttachmentMessage,
 } from "../../../services/chat.service";
@@ -83,7 +82,6 @@ function SupportInbox() {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [assigning, setAssigning] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [reopening, setReopening] = useState(false);
   const socketRef = useRef(null);
 
   // Chi tiết tin nhắn & dữ liệu cuộc hội thoại đang chọn
@@ -282,20 +280,6 @@ function SupportInbox() {
             fetchDetail(payload.conversation_id, true);
           }
         });
-
-        // Nhận sự kiện mở lại cuộc hội thoại realtime
-        socket.on("conversation:reopened", (payload) => {
-          fetchList(statusRef.current, searchRef.current, true);
-          if (
-            payload?.conversation_id &&
-            String(payload.conversation_id) === String(selectedIdRef.current)
-          ) {
-            setDetailData((prev) =>
-              prev ? { ...prev, status: payload?.status || "processing" } : prev
-            );
-            fetchDetail(payload.conversation_id, true);
-          }
-        });
       } else {
         setConnectionStatus("offline");
       }
@@ -320,7 +304,6 @@ function SupportInbox() {
         socket.off("message:new");
         socket.off("conversation:update");
         socket.off("conversation:closed");
-        socket.off("conversation:reopened");
         socket.disconnect();
       }
       socketRef.current = null;
@@ -439,9 +422,18 @@ function SupportInbox() {
       );
 
       // 2. Cập nhật tóm tắt số lượng trên các tab
+      const prevStatus = (detailData?.status || selected?.status || "").toLowerCase();
+      const isFromClosed = prevStatus === "closed";
+      const isFromWaiting = prevStatus === "waiting" || prevStatus === "pending";
+
       setSummary((prev) => ({
         ...prev,
-        waitingCount: Math.max(0, (prev.waitingCount || 0) - 1),
+        waitingCount: isFromWaiting
+          ? Math.max(0, (prev.waitingCount || 0) - 1)
+          : prev.waitingCount,
+        closedCount: isFromClosed
+          ? Math.max(0, (prev.closedCount || 0) - 1)
+          : prev.closedCount,
         processingCount: (prev.processingCount || 0) + 1,
       }));
 
@@ -460,14 +452,14 @@ function SupportInbox() {
 
         return {
           ...prev,
-          status: updatedConv?.status || "active",
+          status: updatedConv?.status || "processing",
           assigned_staff_id: updatedConv?.assigned_staff_id || currentUserId,
           messages: updatedMsgs,
         };
       });
 
-      // 4. Nếu đang ở tab 'Chờ hỗ trợ' (waiting/pending), chuyển mượt mà sang tab 'Đang xử lý'
-      if (status === "waiting" || status === "pending") {
+      // 4. Nếu đang ở tab 'Chờ hỗ trợ' hoặc 'Đã đóng', chuyển mượt mà sang tab 'Đang xử lý'
+      if (status === "waiting" || status === "pending" || status === "closed") {
         setStatus("processing");
       }
 
@@ -563,59 +555,6 @@ function SupportInbox() {
     }
   };
 
-  // Xử lý mở lại hội thoại đã đóng
-  const handleReopen = async () => {
-    if (!selectedId || reopening) return;
-    setReopening(true);
-    const staffId = currentUserId || 1;
-
-    try {
-      const res = await reopenConversation(selectedId);
-      toast.success(res?.data?.message || "Đã mở lại cuộc trò chuyện thành công!");
-
-      setConversations((prev) =>
-        prev.map((item) =>
-          String(item.conversation_id) === String(selectedId)
-            ? {
-                ...item,
-                status: "processing",
-                assigned_staff_id: staffId,
-              }
-            : item
-        )
-      );
-
-      setSummary((prev) => ({
-        ...prev,
-        closedCount: Math.max(0, (prev.closedCount || 0) - 1),
-        processingCount: (prev.processingCount || 0) + 1,
-      }));
-
-      setDetailData((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "processing",
-              assigned_staff_id: staffId,
-            }
-          : prev
-      );
-
-      if (status === "closed") {
-        setStatus("processing");
-      }
-
-      await fetchDetail(selectedId, true);
-    } catch (err) {
-      console.error("Lỗi khi mở lại hội thoại:", err);
-      toast.error(
-        err?.response?.data?.message ||
-          "Không thể mở lại cuộc trò chuyện. Vui lòng thử lại!"
-      );
-    } finally {
-      setReopening(false);
-    }
-  };
 
   // Gửi tin nhắn mới trong khung chat (text hoặc file đính kèm)
   const handleSendMessage = async (data) => {
@@ -1033,15 +972,13 @@ function SupportInbox() {
                     <button
                       type="button"
                       className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
-                      onClick={handleReopen}
-                      disabled={reopening}
+                      onClick={handleAssign}
+                      disabled={assigning}
                     >
-                      {reopening ? (
+                      {assigning && (
                         <span className="spinner-border spinner-border-sm me-1" role="status" />
-                      ) : (
-                        <i className="bi bi-arrow-counterclockwise" />
                       )}
-                      <span>{reopening ? "Đang mở lại..." : "Mở lại hội thoại"}</span>
+                      <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
                     </button>
                   )}
                 </div>
@@ -1062,8 +999,6 @@ function SupportInbox() {
                 assigning={assigning}
                 onClose={handleClose}
                 closing={closing}
-                onReopen={handleReopen}
-                reopening={reopening}
                 canShowMessages={canShowMessages}
                 canSendMessage={canSendMessage}
                 isPending={isPending}

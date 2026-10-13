@@ -90,14 +90,6 @@ export const closeConversation = async (conversationId) => {
   return await http.put(`/chat/manage/conversations/${conversationId}/close`);
 };
 
-/**
- * Mở lại cuộc trò chuyện
- * @param {string} conversationId
- */
-export const reopenConversation = async (conversationId) => {
-  return await http.post(`/chat/manage/conversations/${conversationId}/reopen`);
-};
-
 
 /**
  * Lấy danh sách tin nhắn và thông tin chi tiết cuộc trò chuyện (khách hàng, đơn hàng)

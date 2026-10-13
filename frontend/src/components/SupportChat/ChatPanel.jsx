@@ -95,9 +95,11 @@ export default function ChatPanel({
           <div className="support-notice d-flex align-items-center justify-content-between py-2 px-3 flex-wrap gap-2">
             <span>
               <i className="bi bi-info-circle text-secondary me-2" />
-              Cuộc trò chuyện đã kết thúc. Bạn có thể mở lại để tiếp tục hỗ trợ.
+              {isCustomer
+                ? "Cuộc trò chuyện đã kết thúc. Bạn có thể mở lại để tiếp tục hỗ trợ."
+                : "Cuộc trò chuyện đã kết thúc."}
             </span>
-            {onReopen && (
+            {isCustomer && onReopen && (
               <button
                 type="button"
                 className="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1"

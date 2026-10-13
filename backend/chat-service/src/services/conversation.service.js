@@ -400,43 +400,5 @@ export const ConversationService = {
       }
     );
   },
-
-  // Mở lại cuộc trò chuyện đã đóng (chuyển sang 'processing')
-  reopenConversation: async (user, conversationId) => {
-    requirePermission(user, "chat:assign");
-
-    const cleanId = String(conversationId || "").trim();
-    if (!cleanId) {
-      throw { status: 400, message: "Mã cuộc trò chuyện không hợp lệ!" };
-    }
-
-    const conversation = await ConversationService.getAccessible(user, cleanId);
-    if (!conversation) {
-      throw { status: 404, message: "Không tìm thấy cuộc trò chuyện!" };
-    }
-
-    const staffId = String(user?.accountId || user?.account_id || user?.id || "");
-    let updated = null;
-    try {
-      updated = await ConversationModel.update(conversation.conversation_id, {
-        status: "processing",
-        assigned_staff_id: staffId || conversation.assigned_staff_id,
-      });
-    } catch (err) {
-      console.warn("[reopenConversation] Processing status failed, retrying with active:", err.message);
-      try {
-        updated = await ConversationModel.update(conversation.conversation_id, {
-          status: "active",
-          assigned_staff_id: staffId || conversation.assigned_staff_id,
-        });
-      } catch (err2) {
-        console.error("[reopenConversation] Failed to reopen conversation:", err2.message);
-        throw { status: 500, message: "Không thể mở lại cuộc trò chuyện!" };
-      }
-    }
-
-    const fullConversation = await ConversationModel.findById(conversation.conversation_id);
-    return fullConversation || updated;
-  },
 };
 

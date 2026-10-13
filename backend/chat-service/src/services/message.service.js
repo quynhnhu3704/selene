@@ -177,7 +177,7 @@ export const MessageService = {
         } else {
           throw {
             status: 400,
-            message: "Cuộc trò chuyện đã đóng! Vui lòng mở lại cuộc trò chuyện trước khi gửi tin nhắn.",
+            message: "Cuộc trò chuyện đã đóng! Vui lòng nhận xử lý cuộc trò chuyện trước khi gửi tin nhắn.",
           };
         }
       }
@@ -426,7 +426,7 @@ export const MessageService = {
         } else {
           throw {
             status: 400,
-            message: "Cuộc trò chuyện đã đóng! Vui lòng mở lại cuộc trò chuyện trước khi gửi tệp tin.",
+            message: "Cuộc trò chuyện đã đóng! Vui lòng nhận xử lý cuộc trò chuyện trước khi gửi tệp tin.",
           };
         }
       }

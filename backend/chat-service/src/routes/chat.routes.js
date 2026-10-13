@@ -9,7 +9,6 @@ import {
   sendAttachmentMessage,
   assignConversation,
   closeConversation,
-  reopenConversation,
 } from "../controllers/conversation.controller.js";
 
 const router = Router();
@@ -61,11 +60,5 @@ router.put(
   closeConversation
 );
 
-// 8. Mở lại cuộc trò chuyện (Admin / Staff với quyền 'chat:assign')
-router.post(
-  "/manage/conversations/:conversationId/reopen",
-  verifyPermission("chat:assign"),
-  reopenConversation
-);
 export default router;
 

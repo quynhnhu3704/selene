@@ -354,45 +354,4 @@ export const closeConversation = async (req, res, next) => {
   }
 };
 
-// Mở lại cuộc trò chuyện
-export const reopenConversation = async (req, res, next) => {
-  try {
-    const conversationId =
-      req.params.conversationId ||
-      req.params.id ||
-      req.body?.conversation_id ||
-      req.body?.conversationId ||
-      req.query?.conversation_id ||
-      req.query?.conversationId;
-    const user = req.user;
-
-    const updated = await ConversationService.reopenConversation(user, conversationId);
-
-    const io = req.app.get("io");
-    if (io) {
-      try {
-        io.to(`conversation:${updated.conversation_id}`)
-          .to(`customer:${updated.customer_id}`)
-          .to("support:staff")
-          .emit("conversation:reopened", {
-            conversation_id: updated.conversation_id,
-            customer_id: updated.customer_id,
-            status: updated.status || "processing",
-          });
-        notifyConversation(io, updated);
-      } catch (socketErr) {
-        console.warn("[reopenConversation] Socket emission warning:", socketErr.message);
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Đã mở lại cuộc trò chuyện thành công!",
-      data: updated,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 
