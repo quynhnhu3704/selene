@@ -181,6 +181,10 @@ const server = app.listen(PORT, () => {
   console.log(`Routing /api/orders to ${ORDER_SERVICE_URL}`);
 });
 server.on("upgrade", (req, socket, head) => {
+  socket.on("error", (err) => {
+    if (["ECONNRESET", "ECONNABORTED"].includes(err.code)) return;
+    console.error("Gateway socket upgrade error:", err.message);
+  });
   if (req.url.startsWith("/api/chat/socket.io"))
     chatSocketProxy.upgrade(req, socket, head);
   else socket.destroy();

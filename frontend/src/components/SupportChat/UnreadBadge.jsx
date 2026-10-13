@@ -44,6 +44,7 @@ export default function UnreadBadge({ admin = false }) {
       clearInterval(interval);
       if (socket) {
         socket.off("conversation:update", fetchWaiting);
+        socket.disconnect();
       }
     };
   }, [admin]);
