@@ -11,7 +11,7 @@
     "dev:order": "npm run dev --prefix backend/order-service",
     "dev:product": "npm run dev --prefix backend/product-service",
     "dev:notify": "npm run dev --prefix backend/notify-service",
-    "dev": "NODE_TLS_REJECT_UNAUTHORIZED=0 concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:notify\" \"npm run dev:chat\"",
+    "dev": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:notify\" \"npm run dev:chat\"",
     "dev:chat": "npm run dev --prefix backend/chat-service"
   },
   "dependencies": {
@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "cross-env": "^10.1.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0"
   }
