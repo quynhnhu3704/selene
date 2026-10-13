@@ -79,7 +79,7 @@ export const getConversation = async (id) => ({
  * @param {Object} payload - { staff_name, content }
  */
 export const assignConversation = async (conversationId, payload = {}) => {
-  return await http.post(`/chat/manage/conversations/${conversationId}/assign`, payload);
+  return await http.put(`/chat/manage/conversations/${conversationId}/assign`, payload);
 };
 
 /**
@@ -87,7 +87,7 @@ export const assignConversation = async (conversationId, payload = {}) => {
  * @param {string} conversationId
  */
 export const closeConversation = async (conversationId) => {
-  return await http.post(`/chat/manage/conversations/${conversationId}/close`);
+  return await http.put(`/chat/manage/conversations/${conversationId}/close`);
 };
 
 /**

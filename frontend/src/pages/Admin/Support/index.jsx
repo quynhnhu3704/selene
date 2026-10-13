@@ -19,6 +19,7 @@ import {
 import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import "../../../components/SupportChat/support.css";
 
 // Helper định dạng thời gian thân thiện cho danh sách hội thoại
@@ -81,6 +82,8 @@ function SupportInbox() {
   const [error, setError] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [assigning, setAssigning] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const socketRef = useRef(null);
 
   // Chi tiết tin nhắn & dữ liệu cuộc hội thoại đang chọn
@@ -267,6 +270,32 @@ function SupportInbox() {
             fetchDetail(payload.conversation_id, true);
           }
         });
+
+        // Nhận sự kiện đóng cuộc hội thoại realtime
+        socket.on("conversation:closed", (payload) => {
+          fetchList(statusRef.current, searchRef.current, true);
+          if (
+            payload?.conversation_id &&
+            String(payload.conversation_id) === String(selectedIdRef.current)
+          ) {
+            setDetailData((prev) => (prev ? { ...prev, status: "closed" } : prev));
+            fetchDetail(payload.conversation_id, true);
+          }
+        });
+
+        // Nhận sự kiện mở lại cuộc hội thoại realtime
+        socket.on("conversation:reopened", (payload) => {
+          fetchList(statusRef.current, searchRef.current, true);
+          if (
+            payload?.conversation_id &&
+            String(payload.conversation_id) === String(selectedIdRef.current)
+          ) {
+            setDetailData((prev) =>
+              prev ? { ...prev, status: payload?.status || "processing" } : prev
+            );
+            fetchDetail(payload.conversation_id, true);
+          }
+        });
       } else {
         setConnectionStatus("offline");
       }
@@ -290,6 +319,8 @@ function SupportInbox() {
         socket.off("connect_error");
         socket.off("message:new");
         socket.off("conversation:update");
+        socket.off("conversation:closed");
+        socket.off("conversation:reopened");
         socket.disconnect();
       }
       socketRef.current = null;
@@ -456,78 +487,134 @@ function SupportInbox() {
     }
   };
 
-  // Xử lý đóng hội thoại
+  // Xử lý đóng hội thoại với xác nhận Swal và thông báo
   const handleClose = async () => {
-    if (!selectedId) return;
+    if (!selectedId || closing) return;
+
+    const currentCustomerName =
+      detailData?.customer_name ||
+      detailData?.customer?.full_name ||
+      selected?.customer_name ||
+      "khách hàng";
+
+    const confirmation = await Swal.fire({
+      title: "Đóng cuộc trò chuyện?",
+      text: `Bạn có chắc chắn muốn kết thúc và đóng cuộc trò chuyện với "${currentCustomerName}" (Mã: #${selectedId})?`,
+      showCancelButton: true,
+      confirmButtonText: "Đóng hội thoại",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+      focusCancel: true,
+      buttonsStyling: false,
+      customClass: {
+        popup: "se-swal-popup",
+        title: "se-swal-title",
+        htmlContainer: "se-swal-text",
+        confirmButton: "se-btn-confirm se-btn-danger",
+        cancelButton: "se-btn-cancel",
+        actions: "se-swal-actions",
+      },
+    });
+
+    if (!confirmation.isConfirmed) return;
+
+    setClosing(true);
     try {
-      if (typeof closeConversation === "function") {
-        await closeConversation(selectedId);
+      const res = await closeConversation(selectedId);
+      toast.success(res?.data?.message || "Đã đóng cuộc trò chuyện thành công!");
+
+      const prevStatus = (detailData?.status || selected?.status || "").toLowerCase();
+      const isFromWaiting = prevStatus === "waiting" || prevStatus === "pending";
+
+      setConversations((prev) =>
+        prev.map((item) =>
+          String(item.conversation_id) === String(selectedId)
+            ? { ...item, status: "closed" }
+            : item
+        )
+      );
+
+      setSummary((prev) => ({
+        ...prev,
+        waitingCount: isFromWaiting
+          ? Math.max(0, (prev.waitingCount || 0) - 1)
+          : prev.waitingCount,
+        processingCount: !isFromWaiting
+          ? Math.max(0, (prev.processingCount || 0) - 1)
+          : prev.processingCount,
+        closedCount: (prev.closedCount || 0) + 1,
+      }));
+
+      setDetailData((prev) => (prev ? { ...prev, status: "closed" } : prev));
+
+      if (status === "processing" || status === "waiting" || status === "pending") {
+        setStatus("closed");
       }
-      toast.info("Đã đóng cuộc trò chuyện!");
+
+      await fetchDetail(selectedId, true);
     } catch (err) {
       console.error("Lỗi khi đóng hội thoại:", err);
+      toast.error(
+        err?.response?.data?.message ||
+          "Không thể đóng cuộc trò chuyện. Vui lòng thử lại!"
+      );
+    } finally {
+      setClosing(false);
     }
-
-    setConversations((prev) =>
-      prev.map((item) =>
-        String(item.conversation_id) === String(selectedId)
-          ? { ...item, status: "closed" }
-          : item
-      )
-    );
-
-    setSummary((prev) => ({
-      ...prev,
-      processingCount: Math.max(0, (prev.processingCount || 0) - 1),
-      closedCount: (prev.closedCount || 0) + 1,
-    }));
-
-    setDetailData((prev) => (prev ? { ...prev, status: "closed" } : prev));
   };
 
   // Xử lý mở lại hội thoại đã đóng
   const handleReopen = async () => {
-    if (!selectedId) return;
+    if (!selectedId || reopening) return;
+    setReopening(true);
     const staffId = currentUserId || 1;
 
     try {
-      if (typeof reopenConversation === "function") {
-        await reopenConversation(selectedId);
-      }
-    } catch (err) {
-      console.error("Lỗi khi mở lại hội thoại:", err);
-    }
+      const res = await reopenConversation(selectedId);
+      toast.success(res?.data?.message || "Đã mở lại cuộc trò chuyện thành công!");
 
-    setConversations((prev) =>
-      prev.map((item) =>
-        String(item.conversation_id) === String(selectedId)
+      setConversations((prev) =>
+        prev.map((item) =>
+          String(item.conversation_id) === String(selectedId)
+            ? {
+                ...item,
+                status: "processing",
+                assigned_staff_id: staffId,
+              }
+            : item
+        )
+      );
+
+      setSummary((prev) => ({
+        ...prev,
+        closedCount: Math.max(0, (prev.closedCount || 0) - 1),
+        processingCount: (prev.processingCount || 0) + 1,
+      }));
+
+      setDetailData((prev) =>
+        prev
           ? {
-              ...item,
+              ...prev,
               status: "processing",
               assigned_staff_id: staffId,
             }
-          : item
-      )
-    );
+          : prev
+      );
 
-    setSummary((prev) => ({
-      ...prev,
-      closedCount: Math.max(0, (prev.closedCount || 0) - 1),
-      processingCount: (prev.processingCount || 0) + 1,
-    }));
+      if (status === "closed") {
+        setStatus("processing");
+      }
 
-    setDetailData((prev) =>
-      prev
-        ? {
-            ...prev,
-            status: "processing",
-            assigned_staff_id: staffId,
-          }
-        : prev
-    );
-
-    toast.success("Đã mở lại cuộc trò chuyện thành công!");
-    fetchDetail(selectedId, true);
+      await fetchDetail(selectedId, true);
+    } catch (err) {
+      console.error("Lỗi khi mở lại hội thoại:", err);
+      toast.error(
+        err?.response?.data?.message ||
+          "Không thể mở lại cuộc trò chuyện. Vui lòng thử lại!"
+      );
+    } finally {
+      setReopening(false);
+    }
   };
 
   // Gửi tin nhắn mới trong khung chat (text hoặc file đính kèm)
@@ -898,25 +985,48 @@ function SupportInbox() {
 
                 <div className="d-flex gap-2">
                   {isPending && (
-                    <button
-                      type="button"
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
-                      onClick={handleAssign}
-                      disabled={assigning}
-                    >
-                      {assigning && (
-                        <span className="spinner-border spinner-border-sm me-1" role="status" />
-                      )}
-                      <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
+                        onClick={handleAssign}
+                        disabled={assigning || closing}
+                      >
+                        {assigning && (
+                          <span className="spinner-border spinner-border-sm me-1" role="status" />
+                        )}
+                        <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+                        onClick={handleClose}
+                        disabled={assigning || closing}
+                        title="Đóng cuộc trò chuyện này"
+                      >
+                        {closing ? (
+                          <span className="spinner-border spinner-border-sm me-1" role="status" />
+                        ) : (
+                          <i className="bi bi-x-circle text-danger" />
+                        )}
+                        <span>{closing ? "Đang đóng..." : "Đóng"}</span>
+                      </button>
+                    </>
                   )}
                   {!isClosed && !isPending && (
                     <button
                       type="button"
-                      className="btn btn-outline-secondary btn-sm"
+                      className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
                       onClick={handleClose}
+                      disabled={closing}
+                      title="Kết thúc và đóng cuộc trò chuyện này"
                     >
-                      Đóng hội thoại
+                      {closing ? (
+                        <span className="spinner-border spinner-border-sm me-1" role="status" />
+                      ) : (
+                        <i className="bi bi-check2-circle" />
+                      )}
+                      <span>{closing ? "Đang đóng..." : "Đóng hội thoại"}</span>
                     </button>
                   )}
                   {isClosed && (
@@ -924,9 +1034,14 @@ function SupportInbox() {
                       type="button"
                       className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
                       onClick={handleReopen}
+                      disabled={reopening}
                     >
-                      <i className="bi bi-arrow-counterclockwise" />
-                      <span>Mở lại hội thoại</span>
+                      {reopening ? (
+                        <span className="spinner-border spinner-border-sm me-1" role="status" />
+                      ) : (
+                        <i className="bi bi-arrow-counterclockwise" />
+                      )}
+                      <span>{reopening ? "Đang mở lại..." : "Mở lại hội thoại"}</span>
                     </button>
                   )}
                 </div>
@@ -945,7 +1060,10 @@ function SupportInbox() {
                 onSend={handleSendMessage}
                 onAssign={handleAssign}
                 assigning={assigning}
+                onClose={handleClose}
+                closing={closing}
                 onReopen={handleReopen}
+                reopening={reopening}
                 canShowMessages={canShowMessages}
                 canSendMessage={canSendMessage}
                 isPending={isPending}

@@ -360,10 +360,10 @@ export const ConversationService = {
   closeConversation: async (user, conversationId) => {
     requirePermission(user, "chat:close");
 
-    if (!conversationId || typeof conversationId !== "string" || !conversationId.trim()) {
+    const cleanId = String(conversationId || "").trim();
+    if (!cleanId) {
       throw { status: 400, message: "Mã cuộc trò chuyện không hợp lệ!" };
     }
-    const cleanId = conversationId.trim();
 
     const conversation = await ConversationService.getAccessible(user, cleanId);
     if (!conversation) {
@@ -405,10 +405,10 @@ export const ConversationService = {
   reopenConversation: async (user, conversationId) => {
     requirePermission(user, "chat:assign");
 
-    if (!conversationId || typeof conversationId !== "string" || !conversationId.trim()) {
+    const cleanId = String(conversationId || "").trim();
+    if (!cleanId) {
       throw { status: 400, message: "Mã cuộc trò chuyện không hợp lệ!" };
     }
-    const cleanId = conversationId.trim();
 
     const conversation = await ConversationService.getAccessible(user, cleanId);
     if (!conversation) {

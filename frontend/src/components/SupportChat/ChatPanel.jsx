@@ -13,7 +13,10 @@ export default function ChatPanel({
   onSend,
   onAssign,
   assigning = false,
+  onClose,
+  closing = false,
   onReopen,
+  reopening = false,
   canShowMessages = false,
   canSendMessage = false,
   isPending = false,
@@ -99,9 +102,14 @@ export default function ChatPanel({
                 type="button"
                 className="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1"
                 onClick={onReopen}
+                disabled={reopening}
               >
-                <i className="bi bi-arrow-counterclockwise" />
-                <span>Mở lại hội thoại</span>
+                {reopening ? (
+                  <span className="spinner-border spinner-border-sm me-1" role="status" />
+                ) : (
+                  <i className="bi bi-arrow-counterclockwise" />
+                )}
+                <span>{reopening ? "Đang mở lại..." : "Mở lại hội thoại"}</span>
               </button>
             )}
           </div>
