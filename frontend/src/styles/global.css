@@ -663,8 +663,8 @@
   top: 0;
   left: -100%;
   width: 78vw;
-  max-width: 300px;
-  height: 100vh;
+  max-width: 280px;
+  height: 100dvh;
   background: white;
   z-index: 10000;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
@@ -681,43 +681,108 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid #eee;
+  padding: 16px 24px 12px;
 }
 .rb-mob-drawer-head img {
-  height: 44px;
+  height: 42px;
 }
 .rb-mob-close {
   background: none;
   border: none;
-  font-size: 22px;
+  font-size: 18px;
   cursor: pointer;
   color: #212529;
   line-height: 1;
 }
 .rb-mob-menu-list {
   list-style: none;
-  padding: 10px 0;
+  padding: 4px 14px 20px;
   margin: 0;
   flex: 1;
 }
-.rb-mob-menu-list li a {
-  display: block;
-  padding: 13px 24px;
-  font-size: 13.5px;
-  font-weight: 700;
-  text-transform: uppercase;
+.rb-mob-menu-list a {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
   text-decoration: none;
   color: #212529;
-  letter-spacing: 0.6px;
-  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  list-style: none;
 }
-.rb-mob-menu-list li a:hover,
-.rb-mob-menu-list li a.active {
-  color: #871b1b;
+.rb-mob-menu-list span {
+  flex: 1;
 }
-.rb-mob-menu-list li a.promo {
+.rb-mob-menu-list > li {
+  margin-bottom: 5px;
+}
+.rb-mob-menu-list > li > a > i:first-child,
+.rb-mob-product-row > a > i:first-child {
+  font-size: 18px;
+}
+.rb-mob-menu-list .bi-caret-right,
+.rb-mob-menu-list .bi-caret-down,
+.rb-mob-menu-list .bi-caret-up {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+.rb-mob-menu-list .bi-caret-right::before,
+.rb-mob-menu-list .bi-caret-down::before,
+.rb-mob-menu-list .bi-caret-up::before {
+  display: block;
+}
+.rb-mob-product-row {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+}
+.rb-mob-product-row > a {
+  flex: 1;
+  color: inherit;
+}
+.rb-mob-product-row > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+}
+.rb-mob-menu-list a:not(.rb-mob-product-row > a):hover,
+.rb-mob-menu-list a.active,
+.rb-mob-product-row:hover,
+.rb-mob-product-row:focus-within,
+.rb-mob-product-row.active {
   color: #871b1b;
+  background: #f8eded;
+  /* background: #fffafa; */
+}
+.rb-mob-menu-list a.promo {
+  color: #871b1b;
+  font-weight: 600;
+}
+.rb-mob-submenu {
+  list-style: none;
+  margin: 4px 0;
+  padding-left: 40px;
+}
+.rb-mob-submenu a,
+.rb-mob-submenu li[role="status"] {
+  padding: 5px 10px;
+  font-size: 13.5px;
+  font-weight: 400;
+}
+.rb-mob-submenu .rb-mob-submenu {
+  padding-left: 12px;
 }
 
 /* Overlay mờ khi drawer mở */
