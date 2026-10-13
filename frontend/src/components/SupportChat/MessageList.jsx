@@ -227,9 +227,7 @@ export default function MessageList({
 
               <small>
                 {message.created_at && !isNaN(new Date(message.created_at).getTime())
-                  ? new Date(message.created_at).toLocaleString("vi-VN", {
-                      day: "2-digit",
-                      month: "2-digit",
+                  ? new Date(message.created_at).toLocaleTimeString("vi-VN", {
                       hour: "2-digit",
                       minute: "2-digit",
                     })

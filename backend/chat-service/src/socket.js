@@ -17,7 +17,7 @@ export const emitConversation = async (io, conversation, event, data) => {
         const user = await authenticate(socket.handshake.auth.token);
         if (
           (user.role === "customer" &&
-            user.accountId === conversation.customer_id) ||
+            String(user.accountId) === String(conversation.customer_id)) ||
           hasPermission(user, "chat:view")
         ) {
           socket.emit(event, data);
@@ -33,6 +33,7 @@ export const notifyConversation = (io, conversation) => {
   // Inbox chỉ nhận tín hiệu tải lại; dữ liệu được kiểm tra quyền qua REST.
   io.to("support:staff")
     .to(`customer:${conversation.customer_id}`)
+    .to(`conversation:${conversation.conversation_id}`)
     .emit("conversation:update", {
       conversation_id: conversation.conversation_id,
     });

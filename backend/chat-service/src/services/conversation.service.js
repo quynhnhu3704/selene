@@ -59,7 +59,7 @@ export const ConversationService = {
       throw { status: 404, message: "Không tìm thấy hội thoại của khách hàng này!" };
     }
 
-    if (user.role === "customer" && conversation.customer_id !== user.accountId) {
+    if (user.role === "customer" && String(conversation.customer_id) !== String(user.accountId)) {
       throw { status: 403, message: "Bạn không được truy cập hội thoại này!" };
     }
     return conversation;

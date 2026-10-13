@@ -30,8 +30,8 @@ export default function ChatPanel({
   const checkProcessing = isCustomer ? false : isProcessing;
   const checkAssignedToMe = isCustomer ? true : isAssignedToMe;
 
-  // 1. Trạng thái đang tải tin nhắn
-  if (loading) {
+  // 1. Trạng thái đang tải tin nhắn (chỉ hiện màn hình chờ khi chưa có tin nhắn nào)
+  if (loading && (!messages || messages.length === 0)) {
     return (
       <div className="support-chat-panel">
         <div className="support-empty py-5">

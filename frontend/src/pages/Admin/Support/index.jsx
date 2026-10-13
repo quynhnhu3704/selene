@@ -170,21 +170,45 @@ function SupportInbox() {
   selectedIdRef.current = selectedId;
 
   // Lấy chi tiết cuộc trò chuyện và danh sách tin nhắn từ API
-  const fetchDetail = useCallback(async (conversationId) => {
+  const fetchDetail = useCallback(async (conversationId, isSilent = false) => {
     if (!conversationId) return;
-    setDetailLoading(true);
+    if (!isSilent) setDetailLoading(true);
     setDetailError("");
     try {
       const res = await getConversationDetails(conversationId);
       const data = res?.data?.data || null;
-      setDetailData(data);
+      if (data) {
+        setDetailData((prev) => {
+          if (!prev || String(prev.conversation_id) !== String(conversationId)) {
+            return data;
+          }
+          const prevMsgs = prev.messages || [];
+          const newMsgs = data.messages || [];
+          const map = new Map();
+          prevMsgs.forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          newMsgs.forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+          );
+          return {
+            ...data,
+            messages: merged,
+          };
+        });
+      }
     } catch (err) {
       console.error("Lỗi khi tải chi tiết tin nhắn:", err);
-      setDetailError(
-        err?.response?.data?.message || "Không thể tải danh sách tin nhắn của cuộc trò chuyện."
-      );
+      if (!isSilent) {
+        setDetailError(
+          err?.response?.data?.message || "Không thể tải danh sách tin nhắn của cuộc trò chuyện."
+        );
+      }
     } finally {
-      setDetailLoading(false);
+      if (!isSilent) setDetailLoading(false);
     }
   }, []);
 
@@ -216,13 +240,13 @@ function SupportInbox() {
           setConnectionStatus("offline");
         });
 
-        // Nhận tin nhắn mới theo thời gian thực
+        // Nhận tin nhắn mới theo thời gian thực mượt mà
         socket.on("message:new", (newMsg) => {
           if (!newMsg) return;
           if (String(newMsg.conversation_id) === String(selectedIdRef.current)) {
             setDetailData((prev) => {
               if (!prev) return prev;
-              if (prev.messages?.some((m) => m.message_id === newMsg.message_id)) {
+              if (prev.messages?.some((m) => String(m.message_id) === String(newMsg.message_id))) {
                 return prev;
               }
               return {
@@ -233,14 +257,14 @@ function SupportInbox() {
           }
         });
 
-        // Nhận sự kiện có cập nhật cuộc trò chuyện -> cập nhật lại danh sách âm thầm
+        // Nhận sự kiện có cập nhật cuộc trò chuyện -> cập nhật lại danh sách và tin nhắn âm thầm (mượt mà không hiện loading)
         socket.on("conversation:update", (payload) => {
           fetchList(statusRef.current, searchRef.current, true);
           if (
             payload?.conversation_id &&
             String(payload.conversation_id) === String(selectedIdRef.current)
           ) {
-            fetchDetail(payload.conversation_id);
+            fetchDetail(payload.conversation_id, true);
           }
         });
       } else {
@@ -250,10 +274,13 @@ function SupportInbox() {
       setConnectionStatus("offline");
     }
 
-    // Polling định kỳ mỗi 25s phòng trường hợp mất kết nối socket
+    // Polling định kỳ âm thầm mỗi 4s phòng trường hợp mất kết nối socket
     const interval = setInterval(() => {
       fetchList(statusRef.current, searchRef.current, true);
-    }, 25000);
+      if (selectedIdRef.current) {
+        fetchDetail(selectedIdRef.current, true);
+      }
+    }, 4000);
 
     return () => {
       clearInterval(interval);
@@ -342,7 +369,9 @@ function SupportInbox() {
     }
 
     // Tải tin nhắn cho cuộc trò chuyện (pending, closed, hoặc processing)
-    fetchDetail(selectedId);
+    // Nếu đã có dữ liệu tin nhắn của hội thoại này rồi thì tải âm thầm để giao diện mượt mà
+    const isAlreadyLoaded = detailData && String(detailData.conversation_id) === String(selectedId);
+    fetchDetail(selectedId, isAlreadyLoaded);
   }, [selectedId, selected?.status, selected?.assigned_staff_id, currentUserId, fetchDetail]);
 
   // Xử lý nhận xử lý cuộc trò chuyện
@@ -415,7 +444,7 @@ function SupportInbox() {
       if (socketRef.current) {
         socketRef.current.emit("conversation:join", selectedId);
       }
-      await fetchDetail(selectedId);
+      await fetchDetail(selectedId, true);
     } catch (err) {
       console.error("Lỗi khi nhận xử lý cuộc trò chuyện:", err);
       toast.error(
@@ -498,7 +527,7 @@ function SupportInbox() {
     );
 
     toast.success("Đã mở lại cuộc trò chuyện thành công!");
-    fetchDetail(selectedId);
+    fetchDetail(selectedId, true);
   };
 
   // Gửi tin nhắn mới trong khung chat (text hoặc file đính kèm)

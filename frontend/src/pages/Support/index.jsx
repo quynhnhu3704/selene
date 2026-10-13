@@ -111,15 +111,31 @@ function CustomerSupport() {
           customer_name: data.customer_name || currentUser.full_name,
           status: data.status || "waiting",
         });
-        setMessages(data.messages || []);
+        if (Array.isArray(data.messages)) {
+          setMessages((prev) => {
+            if (!prev || prev.length === 0) return data.messages;
+            const map = new Map();
+            prev.forEach((m) => {
+              if (m.message_id) map.set(String(m.message_id), m);
+            });
+            data.messages.forEach((m) => {
+              if (m.message_id) map.set(String(m.message_id), m);
+            });
+            return Array.from(map.values()).sort(
+              (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+            );
+          });
+        }
         setPagination(data.pagination || null);
       }
     } catch (err) {
       console.error("Lỗi khi tải danh sách tin nhắn khách hàng:", err);
-      setError(
-        err?.response?.data?.message ||
-          "Không thể tải danh sách tin nhắn. Vui lòng thử lại sau."
-      );
+      if (!isSilent) {
+        setError(
+          err?.response?.data?.message ||
+            "Không thể tải danh sách tin nhắn. Vui lòng thử lại sau."
+        );
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -196,7 +212,10 @@ function CustomerSupport() {
         });
 
         // Nhận sự kiện cập nhật hội thoại -> tải lại tin nhắn
-        socket.on("conversation:update", () => {
+        socket.on("conversation:update", (payload) => {
+          if (payload?.conversation_id && socketRef.current) {
+            socketRef.current.emit("conversation:join", payload.conversation_id);
+          }
           fetchMessages(true);
         });
       } else {
@@ -206,10 +225,10 @@ function CustomerSupport() {
       setConnectionStatus("offline");
     }
 
-    // Polling định kỳ mỗi 30s phòng mất kết nối
+    // Polling định kỳ mỗi 4s phòng mất kết nối
     const interval = setInterval(() => {
       fetchMessages(true);
-    }, 30000);
+    }, 4000);
 
     return () => {
       clearInterval(interval);
