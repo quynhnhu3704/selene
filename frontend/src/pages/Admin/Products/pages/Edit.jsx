@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/common/EmptyState";
 // frontend\src\pages\Admin\Products\pages\Edit.jsx
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -636,16 +637,7 @@ export default function EditProduct() {
                 className="text-center text-muted py-4"
                 style={{ fontSize: 14 }}
               >
-                <i
-                  className="bi bi-grid-3x3-gap"
-                  style={{
-                    fontSize: 28,
-                    display: "block",
-                    marginBottom: 8,
-                    opacity: 0.3,
-                  }}
-                />
-                Chưa có biến thể nào
+                <EmptyState text="Không có biến thể nào để hiển thị" />
               </div>
             ) : (
               <div className="table-responsive">

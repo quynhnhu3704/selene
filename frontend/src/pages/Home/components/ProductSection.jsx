@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 // frontend\src\pages\Home\components\ProductSection.jsx
 import ProductImage from "../../../components/common/ProductImage";
 import ProductLink from "../../../components/common/ProductLink";
@@ -87,7 +88,9 @@ export default function ProductSection({
           </div>
         </div>
       ) : products.length === 0 ? (
-        <div className="pl-home-state">Chưa có sản phẩm.</div>
+        <div className="pl-home-state">
+          <EmptyState text="Không có sản phẩm nào để hiển thị" />
+        </div>
       ) : (
         <div className="pl-home-slider-wrap">
           <div className="pl-home-slider" ref={sliderRef}>

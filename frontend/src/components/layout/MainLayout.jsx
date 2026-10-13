@@ -21,7 +21,6 @@ export default function MainLayout() {
       {/* Scroll to top button */}
       <button
         className="rb-scroll-top"
-        style={{ right: 104 }}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       >
         <i className="bi bi-chevron-double-up"></i>

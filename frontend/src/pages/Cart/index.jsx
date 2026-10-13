@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 import ProductLink from "../../components/common/ProductLink";
 // frontend\src\pages\Cart\index.jsx
 // frontend\src\pages\Cart\index.jsx
@@ -128,21 +129,7 @@ export default function Cart() {
             background: "#fff",
           }}
         >
-          <i
-            className="bi bi-bag-x"
-            style={{
-              fontSize: 64,
-              color: "#e0e0e0",
-              display: "block",
-              marginBottom: 20,
-            }}
-          />
-          <h4 style={{ fontWeight: 800, color: "#212529", marginBottom: 8 }}>
-            Giỏ hàng đang trống
-          </h4>
-          <p style={{ color: "#6c757d", fontSize: 15, marginBottom: 28 }}>
-            Khám phá bộ sưu tập và chọn ngay những món đồ yêu thích!
-          </p>
+          <EmptyState text="Không có sản phẩm nào để hiển thị" />
           <Link
             to="/san-pham"
             className="btn btn-dark fw-semibold px-5 form-btn"

@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 // frontend\src\pages\ProductDetail.jsx
 import ProductDetailSkeleton from "./Skeleton";
 import { useState, useEffect, useLayoutEffect, useContext } from "react";
@@ -81,7 +82,11 @@ function ProductDetailContent({ id }) {
   }
 
   if (!product) {
-    return <div style={{ padding: 40 }}>Không tìm thấy sản phẩm</div>;
+    return (
+      <div style={{ padding: 40 }}>
+        <EmptyState text="Không có sản phẩm nào để hiển thị" />
+      </div>
+    );
   }
 
   const PRODUCT = {

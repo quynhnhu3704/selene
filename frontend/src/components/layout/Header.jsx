@@ -10,7 +10,7 @@ import Swal from "sweetalert2";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
 import { getUser } from "../../utils/auth";
-import { getProducts } from "../../services/product.service";
+import { getProducts, getProductFilterOptions } from "../../services/product.service";
 import defaultImage from "../../assets/images/default-product.png";
 
 const HISTORY_LIMIT = 8;
@@ -49,6 +49,10 @@ export default function Header() {
   const wl = wishlist.length;
   const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [productMenuOpen, setProductMenuOpen] = useState(false);
+  const [openMenuCategories, setOpenMenuCategories] = useState({});
+  const [menuCategories, setMenuCategories] = useState(null);
+  const [menuCategoryError, setMenuCategoryError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(() =>
     location.pathname === "/san-pham"
@@ -72,6 +76,24 @@ export default function Header() {
   const desktopSearchRef = useRef(null);
   const mobileSearchRef = useRef(null);
   const keyword = searchQuery.trim();
+
+  useEffect(() => {
+    if (!menuOpen || menuCategories) return;
+    let isMounted = true;
+    getProductFilterOptions()
+      .then((response) => {
+        if (isMounted) {
+          setMenuCategories(response.data.categories);
+          setMenuCategoryError("");
+        }
+      })
+      .catch(() => {
+        if (isMounted) setMenuCategoryError("Không thể tải danh mục. Vui lòng mở lại menu.");
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [menuOpen, menuCategories]);
 
   const updateHistory = (items) => {
     const key = getHistoryKey();
@@ -589,8 +611,7 @@ export default function Header() {
                 <>
                   <li>
                     <Link className="dropdown-item" to="/tai-khoan/dang-nhap">
-                      <i className="bi bi-box-arrow-in-right me-1"></i> Đăng
-                      nhập
+                      <i className="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
                     </Link>
                   </li>
                   <li>
@@ -603,13 +624,12 @@ export default function Header() {
                 <>
                   <li>
                     <Link className="dropdown-item" to="/tai-khoan">
-                      <i className="bi bi-person-bounding-box me-1"></i> Tài
-                      khoản
+                      <i className="bi bi-person-bounding-box me-1"></i> Tài khoản
                     </Link>
                   </li>
                   <li>
                     <Link className="dropdown-item" to="/ho-tro">
-                      <i className="bi bi-chat-dots me-1"></i> Hỗ trợ &amp; Tin nhắn
+                      <i className="bi bi-chat-dots me-1"></i> Chat hỗ trợ
                     </Link>
                   </li>
                   {admin && (
@@ -621,8 +641,7 @@ export default function Header() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <i className="bi bi-speedometer2 me-1"></i>
-                          Trang quản trị
+                          <i className="bi bi-speedometer2 me-1"></i> Trang quản trị
                         </Link>
                       </li>
                     </>
@@ -771,36 +790,110 @@ export default function Header() {
       />
 
       {/* Drawer menu */}
-      <div className={`rb-mob-drawer${menuOpen ? " open" : ""}`}>
+      <div className={`rb-mob-drawer${menuOpen ? " open" : ""}`} inert={!menuOpen} aria-label="Menu mobile">
         <div className="rb-mob-drawer-head">
           <img src={logo} alt="" />
-          <button className="rb-mob-close" onClick={() => setMenuOpen(false)}>
+          <button className="rb-mob-close" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}>
             <i className="bi bi-x-lg" />
           </button>
         </div>
-        <ul className="rb-mob-menu-list">
+        <ul className="rb-mob-menu-list" onClick={(event) => {
+          if (event.target.closest("a")) setMenuOpen(false);
+        }}>
           <li>
-            <Link to="/" className="active">
-              TRANG CHỦ
-            </Link>
+            <NavLink to="/" end>
+              <i className="bi bi-house-door" />
+              <span>Trang chủ</span>
+            </NavLink>
           </li>
           <li>
-            <Link to="/san-pham">SẢN PHẨM</Link>
+            <div className={`rb-mob-product-row${productMenuOpen || location.pathname === "/san-pham" ? " active" : ""}`}>
+              <Link to="/san-pham">
+                <i className="bi bi-handbag" />
+                <span>Sản phẩm</span>
+              </Link>
+              <button
+                type="button"
+                aria-label={productMenuOpen ? "Thu gọn danh mục" : "Mở danh mục"}
+                aria-expanded={productMenuOpen}
+                aria-controls="rb-mob-categories"
+                onClick={() => setProductMenuOpen((open) => !open)}
+              >
+                <i className={`bi bi-caret-${productMenuOpen ? "up" : "down"}`} />
+              </button>
+            </div>
+              <ul className="rb-mob-submenu" id="rb-mob-categories" hidden={!productMenuOpen}>
+                {!menuCategories && (
+                  <li role="status">{menuCategoryError || "Đang tải danh mục..."}</li>
+                )}
+                {menuCategories?.map((category) => (
+                  <li key={category.category_id}>
+                    {category.children?.length > 0 ? (
+                      <>
+                        <div className="rb-mob-product-row">
+                          <Link to={`/san-pham?category=${category.category_id}`}>
+                            {category.name}
+                          </Link>
+                          <button
+                            type="button"
+                            aria-label={`${openMenuCategories[category.category_id] ? "Thu gọn" : "Mở"} danh mục ${category.name}`}
+                            aria-expanded={!!openMenuCategories[category.category_id]}
+                            aria-controls={`rb-mob-category-${category.category_id}`}
+                            onClick={() => setOpenMenuCategories((previous) => ({
+                              ...previous,
+                              [category.category_id]: !previous[category.category_id],
+                            }))}
+                          >
+                            <i className={`bi bi-caret-${openMenuCategories[category.category_id] ? "up" : "down"}`} />
+                          </button>
+                        </div>
+                        <ul
+                          className="rb-mob-submenu"
+                          id={`rb-mob-category-${category.category_id}`}
+                          hidden={!openMenuCategories[category.category_id]}
+                        >
+                          {category.children.map((child) => (
+                            <li key={child.category_id}>
+                              <Link to={`/san-pham?category=${child.category_id}`}>
+                                {child.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <Link to={`/san-pham?category=${category.category_id}`}>
+                        {category.name}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
           </li>
           <li>
-            <Link to="/">BỘ SƯU TẬP</Link>
+            <NavLink to="/bo-suu-tap">
+              <i className="bi bi-grid" />
+              <span>Bộ sưu tập</span>
+              <i className="bi bi-caret-right" />
+            </NavLink>
           </li>
           <li>
-            <Link to="/">TIN TỨC</Link>
+            <NavLink to="/tin-tuc">
+              <i className="bi bi-file-text" />
+              <span>Tin tức</span>
+            </NavLink>
           </li>
           <li>
-            <Link to="/ve-chung-toi">VỀ SELENE</Link>
+            <NavLink to="/ve-chung-toi">
+              <i className="bi bi-leaf" />
+              <span>Về Selene</span>
+            </NavLink>
           </li>
           <li>
-            <Link to="/" className="promo">
-              <i className="bi bi-gift-fill me-2" />
-              KHUYẾN MÃI
-            </Link>
+            <NavLink to="/khuyen-mai" className={({ isActive }) => isActive ? "promo active" : "promo"}>
+              <i className="bi bi-gift" />
+              <span>Khuyến mãi</span>
+            </NavLink>
           </li>
         </ul>
       </div>

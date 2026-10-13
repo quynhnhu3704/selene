@@ -10,7 +10,7 @@ import UnreadBadge from "../../components/SupportChat/UnreadBadge";
 const MENU_ITEMS = [
   {
     key: "support",
-    label: "Hỗ trợ khách hàng",
+    label: "Chat hỗ trợ",
     icon: "bi-chat-dots",
     path: "/admin/ho-tro",
     enabled: true,
@@ -25,7 +25,7 @@ const MENU_ITEMS = [
   {
     key: "orders",
     label: "Đơn hàng",
-    icon: "bi-list-ul",
+    icon: "bi-receipt",
     path: "/admin/don-hang",
     enabled: true,
   },
@@ -53,7 +53,7 @@ const MENU_ITEMS = [
   {
     key: "discounts",
     label: "Danh mục",
-    icon: "bi-percent",
+    icon: "bi-tags",
     path: "/admin/danh-muc",
     enabled: true,
   },
@@ -242,10 +242,10 @@ export default function AdminLayout() {
         }
 
         .adm-logo-row {
-          height: 64px; display: flex; align-items: center; justify-content: space-between;
+          height: 64px; display: flex; align-items: center; justify-content: ${collapsed ? "center" : "space-between"};
           padding: 0 16px; flex-shrink: 0;
         }
-        .adm-logo-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .adm-logo-left { display: flex; align-items: center; gap: ${collapsed ? "0" : "9px"}; min-width: 0; }
         .adm-logo-icon {
           width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
@@ -271,20 +271,18 @@ export default function AdminLayout() {
         .adm-nav-scroll::-webkit-scrollbar { display: none; }
         
         .adm-nav-item {
-          display: flex; align-items: center; gap: 11px;
+          display: flex; align-items: center; gap: ${collapsed ? "0" : "11px"};
           padding: ${collapsed ? "9px 0" : "9px 12px"};
           justify-content: ${collapsed ? "center" : "flex-start"};
           font-size: 13.5px; font-weight: 600; color: #444;
           text-decoration: none; cursor: pointer;
-          border-radius: 10px; margin-bottom: 2px;
-          transition: all 0.15s; white-space: nowrap; position: relative;
+          border: 0; border-radius: 10px; margin-bottom: 8px;
+          transition: color 0.15s, background-color 0.15s, box-shadow 0.15s; white-space: nowrap; position: relative;
         }
         .adm-nav-item i:not(.adm-nav-chevron) { font-size: 16px; flex-shrink: 0; width: 16px; text-align: center; }
         .adm-nav-item:hover:not(.disabled) { color: #17151F; background: rgba(0,0,0,0.03); }
         .adm-nav-item.active {
           color: #17151F; background: #fff;
-          border: 1px solid #ECEBF2;
-          box-shadow: 0 1px 3px rgba(17,15,31,0.06);
           font-weight: 800;
         }
         .adm-nav-item.disabled { color: #C7C5D2; cursor: not-allowed; }

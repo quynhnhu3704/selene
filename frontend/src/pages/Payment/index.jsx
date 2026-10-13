@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 // frontend\src\pages\Payment\index.jsx
 import Loading from "../../components/common/Loading";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -234,34 +235,7 @@ export default function Payment() {
             background: "#fff",
           }}
         >
-          <i
-            className="bi bi-exclamation-circle"
-            style={{
-              fontSize: 64,
-              color: "#e0e0e0",
-              display: "block",
-              marginBottom: 20,
-            }}
-          />
-
-          <h4
-            style={{
-              fontWeight: 800,
-              color: "#212529",
-              marginBottom: 8,
-            }}
-          >
-            Không tìm thấy thông tin thanh toán
-          </h4>
-
-          <p
-            style={{
-              color: "#6c757d",
-              marginBottom: 28,
-            }}
-          >
-            Phiên thanh toán không hợp lệ hoặc đã hết hạn.
-          </p>
+          <EmptyState text="Không có thông tin thanh toán nào để hiển thị" />
 
           <button
             className="btn btn-dark rounded-pill px-5"

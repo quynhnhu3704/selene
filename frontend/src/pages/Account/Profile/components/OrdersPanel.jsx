@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/common/EmptyState";
 // frontend\src\pages\Account\Profile\components\OrdersPanel.jsx
 import Loading from "../../../../components/common/Loading";
 import { useEffect, useState } from "react";
@@ -111,13 +112,7 @@ export default function OrdersPanel() {
         </div>
       ) : orders.length === 0 ? (
         <div className="page-empty">
-          <i className="bi bi-bag-x page-empty-icon" />
-          <p className="mt-3 mb-1 fw-semibold text-secondary">
-            Bạn chưa có đơn hàng nào
-          </p>
-          <p className="text-muted" style={{ fontSize: 14 }}>
-            Khám phá sản phẩm và đặt hàng ngay!
-          </p>
+          <EmptyState text="Không có đơn hàng nào để hiển thị" />
           <Link
             to="/san-pham"
             className="btn btn-dark mt-3 px-4 form-btn fw-semibold"

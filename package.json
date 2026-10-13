@@ -11,7 +11,7 @@
     "dev:order": "npm run dev --prefix backend/order-service",
     "dev:product": "npm run dev --prefix backend/product-service",
     "dev:notify": "npm run dev --prefix backend/notify-service",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:notify\" \"npm run dev:chat\"",
+    "dev": "NODE_TLS_REJECT_UNAUTHORIZED=0 concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:notify\" \"npm run dev:chat\"",
     "dev:chat": "npm run dev --prefix backend/chat-service"
   },
   "dependencies": {

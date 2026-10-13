@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 // frontend\src\pages\Checkout\index.jsx
 import { useContext, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -202,35 +203,7 @@ export default function Checkout() {
             background: "#fff",
           }}
         >
-          <i
-            className="bi bi-cart-x"
-            style={{
-              fontSize: 64,
-              color: "#e0e0e0",
-              display: "block",
-              marginBottom: 20,
-            }}
-          />
-
-          <h4
-            style={{
-              fontWeight: 800,
-              color: "#212529",
-              marginBottom: 8,
-            }}
-          >
-            Không có sản phẩm để thanh toán
-          </h4>
-
-          <p
-            style={{
-              color: "#6c757d",
-              fontSize: 15,
-              marginBottom: 28,
-            }}
-          >
-            Vui lòng quay lại giỏ hàng và chọn sản phẩm.
-          </p>
+          <EmptyState text="Không có sản phẩm nào để hiển thị" />
 
           <Link
             to="/gio-hang"

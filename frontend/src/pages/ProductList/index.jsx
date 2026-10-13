@@ -1,3 +1,4 @@
+import EmptyState from "../../components/common/EmptyState";
 import ProductCard from "../../components/common/ProductCard";
 // frontend\src\pages\ProductList.jsx
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -506,7 +507,10 @@ export default function ProductList() {
       : ((selectedMaxPrice - priceMin) / (priceMax - priceMin)) * 100;
 
   return (
-    <div className="pl-page">
+    <div className="pl-page pl-product-list-page">
+      <style>{`
+        .pl-product-list-page > .container { max-width: none; }
+      `}</style>
       <Helmet>
         <title>
           {searchQuery
@@ -809,26 +813,7 @@ export default function ProductList() {
             <div className="pl-state error">{productError}</div>
           ) : products.length === 0 ? (
             <div className="page-empty" role="status">
-              <i className="bi bi-search page-empty-icon" aria-hidden="true" />
-              <p className="mt-3 mb-1 fw-semibold text-secondary">
-                Không tìm thấy sản phẩm
-              </p>
-              <p className="text-muted" style={{ fontSize: 14 }}>
-                Thử lại với từ khóa hoặc bộ lọc khác!
-              </p>
-              {selectedFilters.length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-dark mt-3 px-4 form-btn fw-semibold"
-                  onClick={clearAllFilters}
-                >
-                  <i
-                    className="bi bi-arrow-counterclockwise me-2"
-                    aria-hidden="true"
-                  />
-                  Đặt lại
-                </button>
-              )}
+              <EmptyState text="Không có sản phẩm nào để hiển thị" />
             </div>
           ) : (
             <>

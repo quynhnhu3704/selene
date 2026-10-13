@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/components/UserList.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -151,8 +152,7 @@ export default function UserList({
           className="form-btn btn btn-outline-dark fw-semibold mb-0 px-4"
           onClick={onReset}
         >
-          <i className="bi bi-arrow-counterclockwise me-1" />
-          Đặt lại
+          <i className="bi bi-arrow-counterclockwise me-1" /> Đặt lại
         </button>
         <div className="adm-tabs">
           {[
@@ -196,13 +196,7 @@ export default function UserList({
                   ) : (
                     error || (
                       <>
-                        <i className="bi bi-inbox page-empty-icon" />
-                        <p className="mt-3 mb-1 fw-semibold text-secondary">
-                          Không tìm thấy người dùng
-                        </p>
-                        <p className="text-muted">
-                          Thử lại với từ khóa hoặc bộ lọc khác!
-                        </p>
+                        <EmptyState text="Không có người dùng nào để hiển thị" />
                       </>
                     )
                   )}

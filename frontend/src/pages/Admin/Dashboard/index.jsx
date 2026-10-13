@@ -1,3 +1,4 @@
+import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/Dashboard/index.jsx
 import Loading from "../../../components/common/Loading";
 import AdminSelect from "../components/AdminSelect";
@@ -161,16 +162,6 @@ function ChartCard({
       </div>
       {children}
     </section>
-  );
-}
-
-function EmptyChart({ text = "Chưa có dữ liệu trong khoảng thời gian này" }) {
-  return (
-    <div className="dash-empty">
-      <i className="bi bi-bar-chart" />
-      <strong>{text}</strong>
-      <span>Thử chọn một khoảng thời gian khác để xem thống kê.</span>
-    </div>
   );
 }
 
@@ -825,7 +816,7 @@ export default function Dashboard() {
                       </div>
                     </>
                   ) : (
-                    <EmptyChart />
+                    <EmptyState className="dash-empty" text="Không có dữ liệu nào để hiển thị" />
                   )}
                 </ChartCard>
               </div>
@@ -943,7 +934,7 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <EmptyChart text="Chưa có sản phẩm từ đơn ghi nhận" />
+                    <EmptyState className="dash-empty" text="Không có sản phẩm nào để hiển thị" />
                   )}
                   <div className="dash-chart-foot">
                     Tiền hàng = đơn giá × số lượng, trước giảm giá cấp đơn và
@@ -1018,7 +1009,7 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <EmptyChart />
+                    <EmptyState className="dash-empty" text="Không có dữ liệu nào để hiển thị" />
                   )}
                 </ChartCard>
               </div>
@@ -1120,7 +1111,7 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <EmptyChart text="Chưa có dữ liệu kích cỡ" />
+                    <EmptyState className="dash-empty" text="Không có dữ liệu kích cỡ nào để hiển thị" />
                   )}
                 </ChartCard>
               </div>
@@ -1207,7 +1198,7 @@ export default function Dashboard() {
                   </table>
                 </div>
               ) : (
-                <EmptyChart text="Chưa có đơn hàng trong kỳ" />
+                <EmptyState className="dash-empty" text="Không có đơn hàng nào để hiển thị" />
               )}
             </ChartCard>
             <footer className="dash-footer">
