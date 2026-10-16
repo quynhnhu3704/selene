@@ -127,11 +127,181 @@
 .support-chat-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #e9e7e5; flex-wrap: wrap; background: #fff; }
 .support-chat-panel { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .support-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 20px; background: #fcfbfa; }
-.support-message-row { display: flex; margin-bottom: 14px; }
-.support-message-row.own { justify-content: flex-end; }
+.support-message-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.support-message-row.own {
+  justify-content: flex-end;
+}
 .support-bubble { max-width: 80%; padding: 11px 14px; border-radius: 14px 14px 14px 3px; background: #eceae7; color: #252525; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
 .support-bubble small { display: block; margin-top: 6px; font-size: 10px; opacity: .7; }
 .support-message-row.own .support-bubble { background: #292724; color: #fff; border-radius: 14px 14px 3px 14px; }
+
+/* Action buttons beside message bubble on hover (như ảnh mẫu) */
+.support-msg-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: scale(0.92);
+  flex-shrink: 0;
+  user-select: none;
+}
+.support-message-row:hover .support-msg-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.support-msg-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 13px;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+.support-msg-action-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+.support-msg-action-btn.reply-btn {
+  color: #0084ff;
+}
+.support-msg-action-btn.reply-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #0066cc;
+}
+
+/* Reply quote inside message bubble */
+.support-reply-quote {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid #0084ff;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+.support-reply-quote:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+.support-message-row.own .support-reply-quote {
+  background: rgba(255, 255, 255, 0.12);
+  border-left-color: #60a5fa;
+  color: #fff;
+}
+.support-message-row.own .support-reply-quote:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.support-reply-quote-sender {
+  font-weight: 600;
+  font-size: 11.5px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  color: #0084ff;
+}
+.support-message-row.own .support-reply-quote-sender {
+  color: #93c5fd;
+}
+.support-reply-quote-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.88;
+  line-height: 1.35;
+}
+
+/* Flash highlight animation when clicking on a reply quote */
+@keyframes bubblePulse {
+  0% { box-shadow: 0 0 0 4px rgba(0, 132, 255, 0.55); }
+  100% { box-shadow: none; }
+}
+.support-bubble-highlight {
+  animation: bubblePulse 1.5s ease-out;
+}
+
+/* Reply banner above composer input (như ảnh mẫu) */
+.support-reply-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #f0f2f5;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin: 10px 18px 0 18px;
+  border-left: 3.5px solid #0084ff;
+  gap: 12px;
+  animation: replyBannerSlideIn 0.18s ease-out;
+}
+@keyframes replyBannerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.support-reply-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.support-reply-banner-title {
+  display: flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+.support-reply-banner-text {
+  font-size: 13px;
+  color: #4b5563;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+.support-reply-banner-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.support-reply-banner-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
 .support-composer { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid #e9e7e5; background: #fff; }
 .support-composer textarea { flex: 1; min-width: 0; border: 1px solid #e4e1de; border-radius: 10px; padding: 10px; resize: none; font-size: 13.5px; outline: none; }
 .support-composer textarea:focus { border-color: #17151f; }

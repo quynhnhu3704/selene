@@ -96,15 +96,60 @@ export default function MessageList({
   messages,
   accountId,
   isCustomer = false,
+  customerName = "Khách hàng",
   hasMore,
   loadingMore,
   onLoadMore,
+  onReply,
 }) {
   const bottomRef = useRef(null);
   const lastId = messages.at(-1)?.message_id;
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "nearest" });
   }, [lastId]);
+
+  // Cuộn mượt đến tin nhắn gốc khi bấm vào trích dẫn reply
+  const scrollToMessage = (targetMessageId) => {
+    if (!targetMessageId) return;
+    const element = document.getElementById(`msg-${targetMessageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      const bubble = element.querySelector(".support-bubble");
+      if (bubble) {
+        bubble.classList.add("support-bubble-highlight");
+        setTimeout(() => {
+          bubble.classList.remove("support-bubble-highlight");
+        }, 1500);
+      }
+    }
+  };
+
+  const getReplySenderName = (replyObj) => {
+    if (!replyObj) return "Tin nhắn";
+    if (replyObj.sender_role === "customer" || replyObj.sender_type === "customer") {
+      return customerName || "Khách hàng";
+    }
+    if (replyObj.sender_role === "staff" || replyObj.sender_role === "admin") {
+      return "Nhân viên hỗ trợ";
+    }
+    if (replyObj.sender_type === "ai") return "Selene AI";
+    return customerName || "Người dùng";
+  };
+
+  const getReplyText = (replyObj) => {
+    if (!replyObj) return "";
+    if (replyObj.message_type === "image") {
+      return replyObj.content && replyObj.content !== "[Hình ảnh]" ? `[Hình ảnh] ${replyObj.content}` : "[Hình ảnh]";
+    }
+    if (replyObj.message_type === "video") {
+      return replyObj.content && replyObj.content !== "[Video]" ? `[Video] ${replyObj.content}` : "[Video]";
+    }
+    if (replyObj.message_type === "audio") return "[Âm thanh]";
+    if (replyObj.attachments && replyObj.attachments.length > 0) {
+      return `[Tệp đính kèm] ${replyObj.attachments[0].file_name || ""}`;
+    }
+    return replyObj.content || "Tin nhắn";
+  };
 
   return (
     <div className="support-messages" role="log" aria-label="Tin nhắn hỗ trợ" aria-live="polite">
@@ -140,9 +185,57 @@ export default function MessageList({
 
         const { fileUrl, fileName, fileSize, messageType, displayCaption } = resolveMedia(message);
 
+        // Nút trả lời hiển thị khi rơ chuột vào tin nhắn
+        const actionButtons = (
+          <div className="support-msg-actions">
+            <button
+              type="button"
+              className="support-msg-action-btn reply-btn"
+              title="Trả lời tin nhắn"
+              onClick={() => onReply && onReply(message)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#0084ff">
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+              </svg>
+            </button>
+          </div>
+        );
+
         return (
-          <div key={message.message_id} className={`support-message-row${own ? " own" : ""}`}>
+          <div
+            id={`msg-${message.message_id}`}
+            key={message.message_id}
+            className={`support-message-row${own ? " own" : ""}`}
+          >
+            {/* Nếu là tin nhắn của chính mình: nút hành động xuất hiện bên trái */}
+            {own && actionButtons}
+
             <div className="support-bubble">
+              {/* Hiển thị trích dẫn tin nhắn gốc nếu đây là tin nhắn reply */}
+              {message.reply_to && (
+                <div
+                  className="support-reply-quote"
+                  onClick={() => scrollToMessage(message.reply_to.message_id)}
+                  title="Nhấp để cuộn đến tin nhắn được trả lời"
+                >
+                  <div className="support-reply-quote-sender">
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="me-1"
+                    >
+                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                    </svg>
+                    <span>{getReplySenderName(message.reply_to)}</span>
+                  </div>
+                  <div className="support-reply-quote-text">
+                    {getReplyText(message.reply_to)}
+                  </div>
+                </div>
+              )}
+
               {/* 1. Tin nhắn Hình ảnh */}
               {fileUrl && messageType === "image" && (
                 <div className="support-media-box">
@@ -235,6 +328,9 @@ export default function MessageList({
                 {own && <span className="ms-2">{message.is_read ? "Đã xem" : "Đã gửi"}</span>}
               </small>
             </div>
+
+            {/* Nếu là tin nhắn của đối phương: nút hành động xuất hiện bên phải */}
+            {!own && actionButtons}
           </div>
         );
       })}

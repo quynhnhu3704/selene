@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
 export default function ChatPanel({
   conversation,
+  customerName = "Khách hàng",
   user,
   messages = [],
   loading = false,
@@ -24,6 +26,13 @@ export default function ChatPanel({
   isClosed = false,
   isAssignedToMe = false,
 }) {
+  const [replyingTo, setReplyingTo] = useState(null);
+
+  // Tự động hủy trạng thái reply khi chuyển sang cuộc hội thoại khác
+  useEffect(() => {
+    setReplyingTo(null);
+  }, [conversation?.conversation_id]);
+
   const currentAccountId = user?.accountId || user?.account_id || user?.id || 1;
   const isCustomer = user?.role === "customer";
 
@@ -86,9 +95,11 @@ export default function ChatPanel({
           messages={messages}
           accountId={currentAccountId}
           isCustomer={isCustomer}
+          customerName={customerName}
           hasMore={pagination?.has_more}
           loadingMore={loadingMore}
           onLoadMore={onLoadMore}
+          onReply={(msg) => setReplyingTo(msg)}
         />
 
         {isClosed && (
@@ -127,7 +138,13 @@ export default function ChatPanel({
         )}
 
         {showSendInput && (!isClosed || isCustomer) && !checkPending && (
-          <MessageInput disabled={false} onSend={onSend} />
+          <MessageInput
+            disabled={false}
+            onSend={onSend}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+            customerName={customerName}
+          />
         )}
       </div>
     );

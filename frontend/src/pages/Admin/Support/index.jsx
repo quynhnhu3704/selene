@@ -14,6 +14,7 @@ import {
   closeConversation,
   sendTextMessage,
   sendAttachmentMessage,
+  replyMessage,
 } from "../../../services/chat.service";
 import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
@@ -563,7 +564,21 @@ function SupportInbox() {
 
     try {
       let res;
-      if (data.file) {
+      if (data?.reply_to_message_id) {
+        if (data.file) {
+          const formData = new FormData();
+          formData.append("file", data.file);
+          if (content) formData.append("content", content);
+          formData.append("reply_to_message_id", data.reply_to_message_id);
+          formData.append("conversation_id", selectedId);
+          res = await replyMessage(data.reply_to_message_id, formData);
+        } else {
+          res = await replyMessage(data.reply_to_message_id, {
+            content,
+            conversation_id: selectedId,
+          });
+        }
+      } else if (data.file) {
         const formData = new FormData();
         formData.append("file", data.file);
         if (content) formData.append("content", content);
@@ -583,6 +598,7 @@ function SupportInbox() {
         sender_id: currentUserId || 1,
         sender_role: currentUser?.role || "admin",
         content: content || (data.file ? data.file.name : ""),
+        reply_to_message_id: data?.reply_to_message_id || null,
         created_at: new Date().toISOString(),
         is_read: true,
       };
@@ -958,6 +974,12 @@ function SupportInbox() {
               <ChatPanel
                 key={selected.conversation_id}
                 conversation={selected}
+                customerName={
+                  detailData?.customer_name ||
+                  detailData?.customer?.full_name ||
+                  selected.customer_name ||
+                  "Khách hàng"
+                }
                 user={currentUser}
                 messages={detailData?.messages || []}
                 loading={detailLoading}

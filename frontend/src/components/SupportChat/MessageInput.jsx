@@ -1,16 +1,29 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
-export default function MessageInput({ disabled, onSend }) {
+export default function MessageInput({
+  disabled,
+  onSend,
+  replyingTo = null,
+  onCancelReply,
+  customerName = "",
+}) {
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
   const busyRef = useRef(false);
+
+  // Tự động focus vào textarea khi người dùng bấm reply
+  useEffect(() => {
+    if (replyingTo) {
+      textareaRef.current?.focus();
+    }
+  }, [replyingTo]);
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      // Giới hạn 50MB
       if (selected.size > 50 * 1024 * 1024) {
         alert("Kích thước tệp tin không được vượt quá 50MB!");
         e.target.value = "";
@@ -25,8 +38,24 @@ export default function MessageInput({ disabled, onSend }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Trích xuất text xem trước của tin nhắn đang được reply
+  const getReplyPreview = (msg) => {
+    if (!msg) return "";
+    if (msg.message_type === "image") {
+      return msg.content && msg.content !== "[Hình ảnh]" ? `[Hình ảnh] ${msg.content}` : "[Hình ảnh]";
+    }
+    if (msg.message_type === "video") {
+      return msg.content && msg.content !== "[Video]" ? `[Video] ${msg.content}` : "[Video]";
+    }
+    if (msg.message_type === "audio") return "[Âm thanh]";
+    if (msg.attachments && msg.attachments.length > 0) {
+      return `[Tệp đính kèm] ${msg.attachments[0].file_name || ""}`;
+    }
+    return msg.content || "Tin nhắn";
+  };
+
   const submit = async (event) => {
-    event.preventDefault();
+    if (event) event.preventDefault();
     if (disabled || busyRef.current || (!content.trim() && !file)) return;
     busyRef.current = true;
     setSending(true);
@@ -34,6 +63,7 @@ export default function MessageInput({ disabled, onSend }) {
     const payload = {
       content: content.trim(),
       file: file || null,
+      reply_to_message_id: replyingTo?.message_id || null,
       client_id: crypto.randomUUID(),
     };
 
@@ -41,16 +71,61 @@ export default function MessageInput({ disabled, onSend }) {
       await onSend(payload);
       setContent("");
       removeFile();
+      if (onCancelReply) onCancelReply();
     } catch {
-      // Giữ bản nháp và mã gửi để có thể thử lại
+      // Giữ bản nháp để có thể thử lại
     } finally {
       busyRef.current = false;
       setSending(false);
     }
   };
 
+  // Xác định placeholder theo tên khách hàng như trong thiết kế
+  const inputPlaceholder = disabled
+    ? "Chưa thể gửi tin nhắn"
+    : file
+    ? "Thêm chú thích cho tệp tin (tùy chọn)..."
+    : replyingTo
+    ? `Trả lời tin nhắn...`
+    : customerName
+    ? `Nhập @, tin nhắn tới ${customerName}`
+    : "Nhập tin nhắn của bạn...";
+
   return (
     <div className="support-composer-wrapper">
+      {/* 1. Thanh hiển thị tin nhắn đang được Reply (như hình mẫu) */}
+      {replyingTo && (
+        <div className="support-reply-banner">
+          <div className="support-reply-banner-body">
+            <div className="support-reply-banner-title">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="#0084ff"
+                className="me-1.5"
+                style={{ display: "inline-block", verticalAlign: "-2px" }}
+              >
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+              </svg>
+              <span>Trả lời</span>
+            </div>
+            <div className="support-reply-banner-text" title={getReplyPreview(replyingTo)}>
+              {getReplyPreview(replyingTo)}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="support-reply-banner-close"
+            onClick={onCancelReply}
+            title="Hủy trả lời"
+          >
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+      )}
+
+      {/* 2. Thanh xem trước tệp đính kèm nếu có */}
       {file && (
         <div className="support-file-preview-bar">
           <i className="bi bi-paperclip text-primary" />
@@ -68,6 +143,8 @@ export default function MessageInput({ disabled, onSend }) {
           </button>
         </div>
       )}
+
+      {/* 3. Form nhập liệu tin nhắn */}
       <form className="support-composer" onSubmit={submit}>
         <input
           type="file"
@@ -88,21 +165,18 @@ export default function MessageInput({ disabled, onSend }) {
         </button>
 
         <textarea
+          ref={textareaRef}
           aria-label="Nội dung tin nhắn"
-          placeholder={
-            disabled
-              ? "Chưa thể gửi tin nhắn"
-              : file
-              ? "Thêm chú thích cho tệp tin (tùy chọn)..."
-              : "Nhập tin nhắn của bạn..."
-          }
+          placeholder={inputPlaceholder}
           rows={2}
           maxLength={2000}
           value={content}
           disabled={disabled || sending}
           onChange={(event) => setContent(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+            if (event.key === "Escape" && replyingTo) {
+              onCancelReply?.();
+            } else if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
               submit(event);
             }
           }}
@@ -113,6 +187,7 @@ export default function MessageInput({ disabled, onSend }) {
           type="submit"
           disabled={disabled || sending || (!content.trim() && !file)}
           aria-label="Gửi tin nhắn"
+          title="Gửi tin nhắn (Enter)"
         >
           {sending ? (
             <span className="spinner-border spinner-border-sm" />
