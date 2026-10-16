@@ -5,6 +5,7 @@ import {
   getMyMessages,
   sendTextMessage,
   sendAttachmentMessage,
+  replyMessage,
 } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { isLoggedIn } from "../../utils/auth";
@@ -112,13 +113,66 @@ function Chatbot() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [replyingTo, setReplyingTo] = useState(null);
 
   const messagesEndRef = useRef(null);
   const sendingRef = useRef(false);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
   const socketRef = useRef(null);
   const conversationIdRef = useRef(null);
   const openRef = useRef(open);
+
+  // Tự động focus ô nhập khi người dùng bấm reply
+  useEffect(() => {
+    if (replyingTo) {
+      inputRef.current?.focus();
+    }
+  }, [replyingTo]);
+
+  // Trích xuất text xem trước của tin nhắn reply
+  const getReplyPreview = (msg) => {
+    if (!msg) return "";
+    if (msg.message_type === "image") {
+      return msg.content && msg.content !== "[Hình ảnh]" ? `[Hình ảnh] ${msg.content}` : "[Hình ảnh]";
+    }
+    if (msg.message_type === "video") {
+      return msg.content && msg.content !== "[Video]" ? `[Video] ${msg.content}` : "[Video]";
+    }
+    if (msg.message_type === "audio") return "[Âm thanh]";
+    if (msg.attachments && msg.attachments.length > 0) {
+      return `[Tệp đính kèm] ${msg.attachments[0].file_name || ""}`;
+    }
+    return msg.content || msg.text || "Tin nhắn";
+  };
+
+  // Xác định tên người gửi của tin nhắn được reply
+  const getReplySenderName = (replyObj) => {
+    if (!replyObj) return "Tin nhắn";
+    if (replyObj.sender_role === "customer" || replyObj.role === "user") {
+      return "Bạn";
+    }
+    if (replyObj.sender_role === "staff" || replyObj.sender_role === "admin") {
+      return "Nhân viên hỗ trợ";
+    }
+    return "Selene AI";
+  };
+
+  // Cuộn mượt đến tin nhắn gốc khi bấm vào trích dẫn reply
+  const scrollToMessage = (targetMessageId) => {
+    if (!targetMessageId) return;
+    const element = document.getElementById(`chatbot-msg-${targetMessageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      const bubble = element.querySelector(".bubble");
+      if (bubble) {
+        bubble.classList.add("chatbot-bubble-highlight");
+        setTimeout(() => {
+          bubble.classList.remove("chatbot-bubble-highlight");
+        }, 1500);
+      }
+    }
+  };
 
   useEffect(() => {
     openRef.current = open;
@@ -304,11 +358,12 @@ function Chatbot() {
     }
   };
 
-  // Gửi tin nhắn loại text hoặc đính kèm tệp tin (ảnh/video/file) vào CSKH
+  // Gửi tin nhắn loại text hoặc đính kèm tệp tin (ảnh/video/file) vào CSKH, có hỗ trợ reply
   const send = async () => {
     if ((!message.trim() && !selectedFile) || sendingRef.current) return;
     const text = message.trim();
     const fileToSend = selectedFile;
+    const replying = replyingTo;
 
     if (!isLoggedIn()) {
       setMessages((prev) => [
@@ -343,18 +398,37 @@ function Chatbot() {
           ? "video"
           : "file"
         : "text",
+      reply_to_message_id: replying?.message_id || null,
+      reply_to: replying || null,
       created_at: new Date().toISOString(),
     };
 
     sendingRef.current = true;
     setMessages((prev) => [...prev, optimisticMsg]);
     setMessage("");
+    setReplyingTo(null);
     removeSelectedFile();
     setIsSending(true);
 
     try {
       let res;
-      if (fileToSend) {
+      if (replying?.message_id) {
+        if (fileToSend) {
+          const formData = new FormData();
+          formData.append("file", fileToSend);
+          if (text) formData.append("content", text);
+          formData.append("reply_to_message_id", replying.message_id);
+          if (conversationIdRef.current) {
+            formData.append("conversation_id", conversationIdRef.current);
+          }
+          res = await replyMessage(replying.message_id, formData);
+        } else {
+          res = await replyMessage(replying.message_id, {
+            content: text,
+            conversation_id: conversationIdRef.current || undefined,
+          });
+        }
+      } else if (fileToSend) {
         const formData = new FormData();
         formData.append("file", fileToSend);
         if (text) formData.append("content", text);
@@ -542,17 +616,59 @@ function Chatbot() {
                   })
                 : "";
 
+              const actionButtons = (
+                <div className="chatbot-msg-actions">
+                  <button
+                    type="button"
+                    className="chatbot-msg-action-btn reply-btn"
+                    title="Trả lời tin nhắn"
+                    onClick={() => setReplyingTo(msg)}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="#0084ff">
+                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                    </svg>
+                  </button>
+                </div>
+              );
+
               return (
                 <div
+                  id={`chatbot-msg-${msg.message_id}`}
                   key={msg.message_id || index}
                   className={`message-row ${isCustomer ? "user" : "bot"}`}
                 >
+                  {isCustomer && actionButtons}
                   {!isCustomer && (
                     <div className="bot-avatar">
                       <img src={BOT_AVATAR} alt="" />
                     </div>
                   )}
                   <div className={`bubble ${isCustomer ? "user" : "bot"}`}>
+                    {/* Trích dẫn tin nhắn reply nếu có */}
+                    {msg.reply_to && (
+                      <div
+                        className="chatbot-reply-quote"
+                        onClick={() => scrollToMessage(msg.reply_to.message_id)}
+                        title="Bấm để cuộn đến tin nhắn gốc"
+                      >
+                        <div className="chatbot-reply-quote-sender">
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="me-1"
+                          >
+                            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                          </svg>
+                          <span>{getReplySenderName(msg.reply_to)}</span>
+                        </div>
+                        <div className="chatbot-reply-quote-text">
+                          {getReplyPreview(msg.reply_to)}
+                        </div>
+                      </div>
+                    )}
+
                     {isStaff && (
                       <span className="sender-badge">
                         <i className="bi bi-person-badge me-1" />
@@ -675,6 +791,7 @@ function Chatbot() {
                       </div>
                     )}
                   </div>
+                  {!isCustomer && actionButtons}
                 </div>
               );
             })}
@@ -727,6 +844,38 @@ function Chatbot() {
             </div>
           )}
 
+          {/* Thanh hiển thị tin nhắn đang được Reply */}
+          {replyingTo && (
+            <div className="chatbot-reply-banner">
+              <div className="chatbot-reply-banner-body">
+                <div className="chatbot-reply-banner-title">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="#0084ff"
+                    className="me-1"
+                    style={{ display: "inline-block", verticalAlign: "-2px" }}
+                  >
+                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                  </svg>
+                  <span>Trả lời</span>
+                </div>
+                <div className="chatbot-reply-banner-text" title={getReplyPreview(replyingTo)}>
+                  {getReplyPreview(replyingTo)}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="chatbot-reply-banner-close"
+                onClick={() => setReplyingTo(null)}
+                title="Hủy trả lời (Esc)"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+          )}
+
           <div className="chatbot-input-area">
             <input
               type="file"
@@ -748,17 +897,22 @@ function Chatbot() {
             </button>
 
             <input
+              ref={inputRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={
                 selectedFile
                   ? "Thêm chú thích cho tệp tin (tùy chọn)..."
+                  : replyingTo
+                  ? "Trả lời tin nhắn..."
                   : "Hỏi về trang phục, so sánh, giá tốt..."
               }
               aria-label="Tin nhắn cho trợ lý Selene"
               maxLength={2000}
               onKeyDown={(e) => {
-                if (
+                if (e.key === "Escape" && replyingTo) {
+                  setReplyingTo(null);
+                } else if (
                   e.key === "Enter" &&
                   !e.shiftKey &&
                   !e.nativeEvent.isComposing
@@ -1412,6 +1566,153 @@ const CHATBOT_STYLES = `
   color: #999;
   text-decoration: line-through;
   margin-left: 6px;
+}
+
+/* Nút hành động Reply khi hover tin nhắn trong chatbot */
+.selene-chatbot .chatbot-msg-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: scale(0.9);
+  flex-shrink: 0;
+  user-select: none;
+}
+.selene-chatbot .message-row:hover .chatbot-msg-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.selene-chatbot .chatbot-msg-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #0084ff;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+.selene-chatbot .chatbot-msg-action-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Trích dẫn tin nhắn Reply trong bong bóng chat */
+.selene-chatbot .chatbot-reply-quote {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 9px;
+  background: rgba(0, 0, 0, 0.06);
+  border-left: 3px solid #0084ff;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+.selene-chatbot .chatbot-reply-quote:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+.selene-chatbot .bubble.user .chatbot-reply-quote {
+  background: rgba(255, 255, 255, 0.15);
+  border-left-color: #93c5fd;
+  color: #fff;
+}
+.selene-chatbot .bubble.user .chatbot-reply-quote:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.selene-chatbot .chatbot-reply-quote-sender {
+  font-weight: 600;
+  font-size: 11px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  color: #0084ff;
+}
+.selene-chatbot .bubble.user .chatbot-reply-quote-sender {
+  color: #bfdbfe;
+}
+.selene-chatbot .chatbot-reply-quote-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.9;
+  font-size: 11.5px;
+}
+
+/* Thanh hiển thị tin nhắn đang Reply phía trên ô nhập liệu */
+.selene-chatbot .chatbot-reply-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #f0f2f5;
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin: 8px 12px 0 12px;
+  border-left: 3.5px solid #0084ff;
+  gap: 10px;
+  animation: chatbotReplySlide 0.18s ease-out;
+}
+@keyframes chatbotReplySlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.selene-chatbot .chatbot-reply-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.selene-chatbot .chatbot-reply-banner-title {
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+.selene-chatbot .chatbot-reply-banner-text {
+  font-size: 12px;
+  color: #4b5563;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.selene-chatbot .chatbot-reply-banner-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.selene-chatbot .chatbot-reply-banner-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+/* Hiệu ứng nhấp nháy làm nổi bật tin nhắn gốc khi click vào quote */
+.selene-chatbot .chatbot-bubble-highlight {
+  animation: chatbotPulse 1.5s ease-out;
+}
+@keyframes chatbotPulse {
+  0% { box-shadow: 0 0 0 4px rgba(0, 132, 255, 0.6); }
+  100% { box-shadow: none; }
 }
 `;
 

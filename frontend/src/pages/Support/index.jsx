@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import ChatPanel from "../../components/SupportChat/ChatPanel";
 import { STATUS_LABELS } from "../../components/SupportChat/constants";
-import { getMyMessages, sendTextMessage, sendAttachmentMessage } from "../../services/chat.service";
+import {
+  getMyMessages,
+  sendTextMessage,
+  sendAttachmentMessage,
+  replyMessage,
+} from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { getUser, isLoggedIn } from "../../utils/auth";
 import { toast } from "react-toastify";
@@ -33,7 +38,23 @@ function CustomerSupport() {
 
     try {
       let res;
-      if (data.file) {
+      if (data?.reply_to_message_id) {
+        if (data.file) {
+          const formData = new FormData();
+          formData.append("file", data.file);
+          if (data.content) formData.append("content", data.content.trim());
+          formData.append("reply_to_message_id", data.reply_to_message_id);
+          if (conversation?.conversation_id) {
+            formData.append("conversation_id", conversation.conversation_id);
+          }
+          res = await replyMessage(data.reply_to_message_id, formData);
+        } else {
+          res = await replyMessage(data.reply_to_message_id, {
+            content: data.content.trim(),
+            conversation_id: conversation?.conversation_id || undefined,
+          });
+        }
+      } else if (data.file) {
         const formData = new FormData();
         formData.append("file", data.file);
         if (data.content) formData.append("content", data.content.trim());
@@ -346,6 +367,7 @@ function CustomerSupport() {
         <ChatPanel
           key={conversation?.conversation_id || "my-conversation"}
           conversation={conversation || { conversation_id: null, status: "waiting" }}
+          customerName="Selene Support"
           user={currentUser}
           messages={messages}
           loading={loading}
@@ -356,7 +378,6 @@ function CustomerSupport() {
           onSend={handleSendMessage}
           onReopen={handleReopen}
           isClosed={currentStatus === "closed"}
-          canReply={true}
         />
       </section>
     </div>

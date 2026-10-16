@@ -126,14 +126,25 @@ export default function MessageList({
 
   const getReplySenderName = (replyObj) => {
     if (!replyObj) return "Tin nhắn";
-    if (replyObj.sender_role === "customer" || replyObj.sender_type === "customer") {
-      return customerName || "Khách hàng";
-    }
-    if (replyObj.sender_role === "staff" || replyObj.sender_role === "admin") {
+    const isReplySenderCustomer =
+      replyObj.sender_role === "customer" || replyObj.sender_type === "customer";
+
+    if (isCustomer) {
+      if (isReplySenderCustomer || (accountId && String(replyObj.sender_id) === String(accountId))) {
+        return "Bạn";
+      }
+      if (replyObj.sender_type === "ai") return "Selene AI";
+      return "Nhân viên hỗ trợ";
+    } else {
+      if (isReplySenderCustomer) {
+        return customerName || "Khách hàng";
+      }
+      if (replyObj.sender_type === "ai") return "Selene AI";
+      if (accountId && String(replyObj.sender_id) === String(accountId)) {
+        return "Bạn";
+      }
       return "Nhân viên hỗ trợ";
     }
-    if (replyObj.sender_type === "ai") return "Selene AI";
-    return customerName || "Người dùng";
   };
 
   const getReplyText = (replyObj) => {

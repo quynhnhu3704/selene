@@ -144,6 +144,7 @@ export default function ChatPanel({
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
             customerName={customerName}
+            isCustomer={isCustomer}
           />
         )}
       </div>

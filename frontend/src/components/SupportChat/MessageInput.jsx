@@ -6,6 +6,7 @@ export default function MessageInput({
   replyingTo = null,
   onCancelReply,
   customerName = "",
+  isCustomer = false,
 }) {
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
@@ -80,14 +81,14 @@ export default function MessageInput({
     }
   };
 
-  // Xác định placeholder theo tên khách hàng như trong thiết kế
+  // Xác định placeholder: Admin hiển thị gợi ý tag tên khách hàng, Khách hàng hiển thị placeholder thân thiện
   const inputPlaceholder = disabled
     ? "Chưa thể gửi tin nhắn"
     : file
     ? "Thêm chú thích cho tệp tin (tùy chọn)..."
     : replyingTo
     ? `Trả lời tin nhắn...`
-    : customerName
+    : !isCustomer && customerName
     ? `Nhập @, tin nhắn tới ${customerName}`
     : "Nhập tin nhắn của bạn...";
 
