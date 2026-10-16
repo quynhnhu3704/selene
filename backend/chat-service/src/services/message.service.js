@@ -4,6 +4,7 @@ import { ConversationModel } from "../models/conversation.model.js";
 import { CustomerModel } from "../models/customer.model.js";
 import { ConversationService, requirePermission } from "./conversation.service.js";
 import { uploadChatFile, getMessageTypeFromMime } from "./storage.service.js";
+import { ReactionService } from "./reaction.service.js";
 
 export const MessageService = {
   // Lấy danh sách tin nhắn theo cuộc trò chuyện
@@ -816,5 +817,22 @@ export const MessageService = {
     const conversation = await ConversationService.getAccessible(user, id);
     const readerId = user.accountId || user.account_id || user.id;
     return MessageModel.markRead(conversation.conversation_id, readerId);
+  },
+
+  // Nghiệp vụ reaction tin nhắn
+  reactToMessage: async (user, messageId, reaction) => {
+    return ReactionService.reactToMessage(user, messageId, reaction);
+  },
+
+  removeReaction: async (user, messageId) => {
+    return ReactionService.removeReaction(user, messageId);
+  },
+
+  getMessageReaction: async (user, messageId) => {
+    return ReactionService.getMessageReactions(user, messageId);
+  },
+
+  getMessageReactions: async (user, messageId) => {
+    return ReactionService.getMessageReactions(user, messageId);
   },
 };

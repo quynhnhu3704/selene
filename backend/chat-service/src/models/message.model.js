@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { supabase } from "../configs/supabase.js";
 import { AttachmentModel } from "./attachment.model.js";
+import { ReactionModel } from "./reaction.model.js";
 
 const MESSAGE_FIELDS = `
   message_id,
@@ -18,7 +19,7 @@ const MESSAGE_FIELDS = `
 /**
  * Chuẩn hóa 1 bản ghi tin nhắn từ database kết hợp danh sách attachments
  */
-const formatMessageRow = (msg, attachments = [], defaultSenderRole = null) => {
+const formatMessageRow = (msg, attachments = [], defaultSenderRole = null, reactions = []) => {
   const firstAtt = attachments && attachments.length > 0 ? attachments[0] : null;
 
   let fileUrl = firstAtt?.file_url || null;
@@ -58,6 +59,8 @@ const formatMessageRow = (msg, attachments = [], defaultSenderRole = null) => {
     }
   }
 
+  const reactionsList = Array.isArray(reactions) ? reactions : (reactions ? [reactions] : []);
+
   return {
     message_id: msg.message_id,
     conversation_id: msg.conversation_id,
@@ -66,6 +69,8 @@ const formatMessageRow = (msg, attachments = [], defaultSenderRole = null) => {
     message_type: messageType,
     content: displayContent,
     attachments: attachments,
+    reactions: reactionsList,
+    reaction_summary: ReactionModel.buildSummary(reactionsList),
     reply_to_message_id: msg.reply_to_message_id || null,
     status: msg.status || "sent",
     is_read: msg.status === "seen",
@@ -196,21 +201,34 @@ export const MessageModel = {
     // Đảo ngược lại theo thứ tự thời gian tăng dần (cũ -> mới) cho khung chat
     items.reverse();
 
-    // 1. Lấy danh sách attachments tương ứng từ bảng message_attachments
+    // 1. Lấy danh sách attachments và reactions tương ứng
     const messageIds = items.map((m) => String(m.message_id));
-    const attachments = await AttachmentModel.findByMessageIds(messageIds);
+    const [attachments = [], reactions = []] = await Promise.all([
+      AttachmentModel.findByMessageIds(messageIds),
+      ReactionModel.findByMessageIds(messageIds),
+    ]);
 
     const attachmentsByMsgId = {};
-    attachments.forEach((att) => {
+    (attachments || []).forEach((att) => {
       const mid = String(att.message_id);
       if (!attachmentsByMsgId[mid]) attachmentsByMsgId[mid] = [];
       attachmentsByMsgId[mid].push(att);
     });
 
-    // 2. Gộp attachments vào từng tin nhắn
+    const reactionsByMsgId = {};
+    (reactions || []).forEach((r) => {
+      if (r && r.message_id) {
+        const mid = String(r.message_id);
+        if (!reactionsByMsgId[mid]) reactionsByMsgId[mid] = [];
+        reactionsByMsgId[mid].push(r);
+      }
+    });
+
+    // 2. Gộp attachments và reactions vào từng tin nhắn (1 tin nhắn có thể có nhiều reaction từ nhiều tài khoản)
     const formattedMessages = items.map((msg) => {
       const msgAtts = attachmentsByMsgId[String(msg.message_id)] || [];
-      return formatMessageRow(msg, msgAtts);
+      const msgReactions = reactionsByMsgId[String(msg.message_id)] || [];
+      return formatMessageRow(msg, msgAtts, null, msgReactions);
     });
 
     // 3. Gắn thông tin tin nhắn được reply (nếu có)
@@ -268,23 +286,37 @@ export const MessageModel = {
 
     items.reverse();
 
-    // Lấy attachments tương ứng từ bảng message_attachments
+    // Lấy attachments và reactions tương ứng từ cơ sở dữ liệu
     const messageIds = items.map((m) => String(m.message_id));
-    const attachments = await AttachmentModel.findByMessageIds(messageIds);
+    const [attachments = [], reactions = []] = await Promise.all([
+      AttachmentModel.findByMessageIds(messageIds),
+      ReactionModel.findByMessageIds(messageIds),
+    ]);
 
     const attachmentsByMsgId = {};
-    attachments.forEach((att) => {
+    (attachments || []).forEach((att) => {
       const mid = String(att.message_id);
       if (!attachmentsByMsgId[mid]) attachmentsByMsgId[mid] = [];
       attachmentsByMsgId[mid].push(att);
     });
 
+    const reactionsByMsgId = {};
+    (reactions || []).forEach((r) => {
+      if (r && r.message_id) {
+        const mid = String(r.message_id);
+        if (!reactionsByMsgId[mid]) reactionsByMsgId[mid] = [];
+        reactionsByMsgId[mid].push(r);
+      }
+    });
+
     const formattedMessages = items.map((msg) => {
       const msgAtts = attachmentsByMsgId[String(msg.message_id)] || [];
+      const msgReactions = reactionsByMsgId[String(msg.message_id)] || [];
       return formatMessageRow(
         msg,
         msgAtts,
-        msg.sender_id === customerId ? "user" : "staff"
+        msg.sender_id === customerId ? "user" : "staff",
+        msgReactions
       );
     });
 
@@ -430,6 +462,8 @@ export const MessageModel = {
     return {
       ...data,
       attachments: attachmentsList,
+      reactions: [],
+      reaction_summary: ReactionModel.buildSummary([]),
       reply_to_message_id: data.reply_to_message_id || replyToMessageId || null,
       message_type:
         data.message_type === "text" && messageType !== "text"
@@ -457,11 +491,17 @@ export const MessageModel = {
     if (!data) return null;
 
     let attachments = [];
+    let reactions = [];
     try {
-      attachments = await AttachmentModel.findByMessageIds([String(data.message_id)]);
+      const [atts, reacts] = await Promise.all([
+        AttachmentModel.findByMessageIds([String(data.message_id)]),
+        ReactionModel.findByMessageId(String(data.message_id)),
+      ]);
+      attachments = atts || [];
+      reactions = reacts || [];
     } catch {}
 
-    return formatMessageRow(data, attachments);
+    return formatMessageRow(data, attachments, null, reactions);
   },
 
   /**
@@ -484,8 +524,14 @@ export const MessageModel = {
 
     const rows = data || [];
     let attachments = [];
+    let reactions = [];
     try {
-      attachments = await AttachmentModel.findByMessageIds(validIds);
+      const [atts, reacts] = await Promise.all([
+        AttachmentModel.findByMessageIds(validIds),
+        ReactionModel.findByMessageIds(validIds),
+      ]);
+      attachments = atts;
+      reactions = reacts;
     } catch {}
 
     const attachmentsByMsgId = {};
@@ -495,9 +541,19 @@ export const MessageModel = {
       attachmentsByMsgId[mid].push(att);
     });
 
+    const reactionsByMsgId = {};
+    (reactions || []).forEach((r) => {
+      if (r && r.message_id) {
+        const mid = String(r.message_id);
+        if (!reactionsByMsgId[mid]) reactionsByMsgId[mid] = [];
+        reactionsByMsgId[mid].push(r);
+      }
+    });
+
     return rows.map((msg) => {
       const msgAtts = attachmentsByMsgId[String(msg.message_id)] || [];
-      return formatMessageRow(msg, msgAtts);
+      const msgReactions = reactionsByMsgId[String(msg.message_id)] || [];
+      return formatMessageRow(msg, msgAtts, null, msgReactions);
     });
   },
 

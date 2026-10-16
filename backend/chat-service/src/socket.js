@@ -5,6 +5,7 @@ import {
   ConversationService,
   hasPermission,
 } from "./services/conversation.service.js";
+import { ReactionService } from "./services/reaction.service.js";
 
 // Chỉ phát nội dung đến các socket còn quyền đọc ở thời điểm phát tin.
 export const emitConversation = async (io, conversation, event, data) => {
@@ -79,6 +80,42 @@ export const createChatSocket = (server) => {
     });
     socket.on("conversation:leave", (id) => {
       if (typeof id === "string") socket.leave(`conversation:${id}`);
+    });
+    socket.on("message:reaction", async (payload, ack) => {
+      try {
+        const user = await authenticate(socket.handshake.auth.token);
+        const { message_id, messageId, reaction, emoji } = payload || {};
+        const targetMsgId = message_id || messageId;
+        const result = await ReactionService.reactToMessage(
+          user,
+          targetMsgId,
+          reaction || emoji
+        );
+
+        io.to(`conversation:${result.conversation_id}`).emit("message:reaction", {
+          action: result.action,
+          message_id: result.message_id,
+          conversation_id: result.conversation_id,
+          account_id: result.account_id,
+          reaction: result.reaction,
+          reaction_id: result.reaction_id,
+          reactions: result.reactions,
+          summary: result.summary,
+        });
+
+        if (result.conversation) {
+          notifyConversation(io, result.conversation);
+        }
+
+        if (typeof ack === "function") ack({ success: true, data: result });
+      } catch (error) {
+        if (typeof ack === "function") {
+          ack({
+            success: false,
+            message: error.status ? error.message : (error.message || "Không thể thực hiện reaction!"),
+          });
+        }
+      }
     });
   });
   return io;

@@ -218,6 +218,38 @@ export const replyMessage = async (messageIdOrPayload, data = {}) => {
   return await http.post(`/chat/messages/${messageId}/reply`, payload);
 };
 
+/**
+ * Thả / Đổi / Bật tắt reaction cho tin nhắn
+ * (1 tin nhắn có thể có nhiều reaction từ nhiều tài khoản, mỗi tài khoản được thả 1 reaction)
+ * @param {string|number} messageId
+ * @param {string} reaction - Ví dụ: ❤️, 👍, 😂, 😮, 😢, 😡
+ * @returns {Promise} Axios response: { success, message, data: { action, message_id, conversation_id, account_id, reaction, reactions, summary } }
+ */
+export const reactToMessage = async (messageId, reaction) => {
+  return await http.post(`/chat/messages/${messageId}/reaction`, { reaction });
+};
+
+/**
+ * Hủy reaction của tài khoản hiện tại trên tin nhắn
+ * @param {string|number} messageId
+ * @returns {Promise}
+ */
+export const removeReaction = async (messageId) => {
+  return await http.delete(`/chat/messages/${messageId}/reaction`);
+};
+
+/**
+ * Lấy danh sách toàn bộ biểu cảm của một tin nhắn
+ * @param {string|number} messageId
+ * @returns {Promise}
+ */
+export const getMessageReaction = async (messageId) => {
+  return await http.get(`/chat/messages/${messageId}/reaction`);
+};
+
+export const getMessageReactions = getMessageReaction;
+
+
 
 
 

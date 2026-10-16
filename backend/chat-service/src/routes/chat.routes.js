@@ -11,6 +11,11 @@ import {
   assignConversation,
   closeConversation,
 } from "../controllers/conversation.controller.js";
+import {
+  reactToMessage,
+  removeReaction,
+  getMessageReactions,
+} from "../controllers/reaction.controller.js";
 
 const router = Router();
 
@@ -49,6 +54,19 @@ router.post("/messages/attachment", chatUpload.any(), sendAttachmentMessage);
 
 // 6. Trả lời một tin nhắn cụ thể (hỗ trợ text, emoji và file/ảnh đính kèm)
 router.post("/messages/:messageId/reply", chatUpload.any(), replyMessage);
+
+// =========================================================
+// ROUTE REACTION (BIỂU CẢM) TIN NHẮN
+// =========================================================
+
+// 7. Thả / Thay đổi / Bật tắt reaction cho tin nhắn
+router.post("/messages/:messageId/reaction", reactToMessage);
+
+// 8. Hủy reaction của người dùng trên tin nhắn
+router.delete("/messages/:messageId/reaction", removeReaction);
+
+// 9. Lấy danh sách các reaction của một tin nhắn
+router.get("/messages/:messageId/reaction", getMessageReactions);
 
 // =========================================================
 // CÁC ROUTE QUẢN LÝ TIẾP NHẬN / TRẠNG THÁI HỘI THOẠI
