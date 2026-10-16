@@ -26,6 +26,8 @@ export default function ChatPanel({
   isProcessing = false,
   isClosed = false,
   isAssignedToMe = false,
+  onReact,
+  onRemoveReaction,
 }) {
   const [replyingTo, setReplyingTo] = useState(null);
 
@@ -102,6 +104,8 @@ export default function ChatPanel({
           onLoadMore={onLoadMore}
           onJumpToMessage={onJumpToMessage}
           onReply={(msg) => setReplyingTo(msg)}
+          onReact={onReact}
+          onRemoveReaction={onRemoveReaction}
         />
 
         {isClosed && (

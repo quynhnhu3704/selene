@@ -7,6 +7,8 @@ import {
   sendTextMessage,
   sendAttachmentMessage,
   replyMessage,
+  reactToMessage,
+  removeReaction,
 } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { getUser, isLoggedIn } from "../../utils/auth";
@@ -104,6 +106,135 @@ function CustomerSupport() {
         "Không thể gửi tin nhắn. Vui lòng kiểm tra lại kết nối!";
       toast.error(errorMessage);
       throw err; // Ném lỗi để MessageInput giữ lại nội dung đang gõ của người dùng
+    }
+  };
+
+  // Thả / Đổi / Gỡ biểu cảm tin nhắn (Reaction)
+  const handleReactToMessage = async (messageId, reactionEmoji) => {
+    if (!messageId || !reactionEmoji) return;
+    const currentIdStr = String(currentUser.accountId || "");
+    const prevMessages = messages;
+
+    // Optimistic Update
+    setMessages((prev) => {
+      if (!prev) return prev;
+      return prev.map((m) => {
+        if (String(m.message_id) !== String(messageId)) return m;
+
+        const currentReactions = Array.isArray(m.reactions) ? [...m.reactions] : [];
+        const existingIdx = currentReactions.findIndex(
+          (r) => String(r.account_id) === currentIdStr
+        );
+
+        if (existingIdx >= 0) {
+          if (currentReactions[existingIdx].reaction === reactionEmoji) {
+            currentReactions.splice(existingIdx, 1);
+          } else {
+            currentReactions[existingIdx] = {
+              ...currentReactions[existingIdx],
+              reaction: reactionEmoji,
+            };
+          }
+        } else {
+          currentReactions.push({
+            reaction_id: `temp-${Date.now()}`,
+            message_id: messageId,
+            account_id: currentIdStr,
+            reaction: reactionEmoji,
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        const counts = {};
+        currentReactions.forEach((r) => {
+          if (r.reaction) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+        });
+
+        return {
+          ...m,
+          reactions: currentReactions,
+          reaction_summary: {
+            total: currentReactions.length,
+            ...counts,
+          },
+        };
+      });
+    });
+
+    try {
+      const res = await reactToMessage(messageId, reactionEmoji);
+      const resData = res?.data?.data;
+      if (resData) {
+        setMessages((prev) => {
+          if (!prev) return prev;
+          return prev.map((m) => {
+            if (String(m.message_id) === String(messageId)) {
+              return {
+                ...m,
+                reactions: resData.reactions || m.reactions,
+                reaction_summary: resData.summary || m.reaction_summary,
+              };
+            }
+            return m;
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi khi thả biểu cảm:", err);
+      setMessages(prevMessages);
+      toast.error(err?.response?.data?.message || "Không thể thả biểu cảm tin nhắn!");
+    }
+  };
+
+  const handleRemoveReaction = async (messageId) => {
+    if (!messageId) return;
+    const currentIdStr = String(currentUser.accountId || "");
+    const prevMessages = messages;
+
+    setMessages((prev) => {
+      if (!prev) return prev;
+      return prev.map((m) => {
+        if (String(m.message_id) !== String(messageId)) return m;
+        const currentReactions = (m.reactions || []).filter(
+          (r) => String(r.account_id) !== currentIdStr
+        );
+        const counts = {};
+        currentReactions.forEach((r) => {
+          if (r.reaction) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+        });
+        return {
+          ...m,
+          reactions: currentReactions,
+          reaction_summary: {
+            total: currentReactions.length,
+            ...counts,
+          },
+        };
+      });
+    });
+
+    try {
+      const res = await removeReaction(messageId);
+      const resData = res?.data?.data;
+      if (resData) {
+        setMessages((prev) => {
+          if (!prev) return prev;
+          return prev.map((m) => {
+            if (String(m.message_id) === String(messageId)) {
+              return {
+                ...m,
+                reactions: resData.reactions || m.reactions,
+                reaction_summary: resData.summary || m.reaction_summary,
+              };
+            }
+            return m;
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi khi gỡ biểu cảm:", err);
+      setMessages(prevMessages);
+      toast.error(err?.response?.data?.message || "Không thể gỡ biểu cảm!");
     }
   };
 
@@ -403,6 +534,27 @@ function CustomerSupport() {
           }
           fetchMessages(true);
         });
+
+        // Nhận sự kiện biểu cảm tin nhắn realtime
+        socket.on("message:reaction", (payload) => {
+          if (!payload?.message_id) return;
+          setMessages((prev) => {
+            if (!prev) return prev;
+            return prev.map((m) => {
+              if (String(m.message_id) === String(payload.message_id)) {
+                return {
+                  ...m,
+                  reactions: payload.reactions || [],
+                  reaction_summary:
+                    payload.summary || {
+                      total: (payload.reactions || []).length,
+                    },
+                };
+              }
+              return m;
+            });
+          });
+        });
       } else {
         setConnectionStatus("offline");
       }
@@ -423,6 +575,7 @@ function CustomerSupport() {
         socket.off("connect_error");
         socket.off("message:new");
         socket.off("conversation:update");
+        socket.off("message:reaction");
         socket.disconnect();
       }
       socketRef.current = null;
@@ -543,6 +696,8 @@ function CustomerSupport() {
           onSend={handleSendMessage}
           onReopen={handleReopen}
           isClosed={currentStatus === "closed"}
+          onReact={handleReactToMessage}
+          onRemoveReaction={handleRemoveReaction}
         />
       </section>
     </div>

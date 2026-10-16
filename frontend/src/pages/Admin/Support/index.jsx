@@ -15,6 +15,8 @@ import {
   sendTextMessage,
   sendAttachmentMessage,
   replyMessage,
+  reactToMessage,
+  removeReaction,
 } from "../../../services/chat.service";
 import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
@@ -284,6 +286,35 @@ function SupportInbox() {
             fetchDetail(payload.conversation_id, true);
           }
         });
+
+        // Nhận sự kiện cập nhật biểu cảm tin nhắn (Reaction) realtime
+        socket.on("message:reaction", (payload) => {
+          if (!payload?.message_id) return;
+          if (
+            !payload.conversation_id ||
+            String(payload.conversation_id) === String(selectedIdRef.current)
+          ) {
+            setDetailData((prev) => {
+              if (!prev || !prev.messages) return prev;
+              return {
+                ...prev,
+                messages: prev.messages.map((m) => {
+                  if (String(m.message_id) === String(payload.message_id)) {
+                    return {
+                      ...m,
+                      reactions: payload.reactions || [],
+                      reaction_summary:
+                        payload.summary || {
+                          total: (payload.reactions || []).length,
+                        },
+                    };
+                  }
+                  return m;
+                }),
+              };
+            });
+          }
+        });
       } else {
         setConnectionStatus("offline");
       }
@@ -308,6 +339,7 @@ function SupportInbox() {
         socket.off("message:new");
         socket.off("conversation:update");
         socket.off("conversation:closed");
+        socket.off("message:reaction");
         socket.disconnect();
       }
       socketRef.current = null;
@@ -638,6 +670,153 @@ function SupportInbox() {
       console.error("Lỗi khi gửi tin nhắn admin:", err);
       toast.error(err?.response?.data?.message || "Không thể gửi tin nhắn!");
       throw err;
+    }
+  };
+
+  // Thả / Đổi / Gỡ biểu cảm tin nhắn (Reaction)
+  const handleReactToMessage = async (messageId, reactionEmoji) => {
+    if (!messageId || !reactionEmoji) return;
+    const currentIdStr = String(currentUserId || 1);
+    const prevMessages = detailData?.messages || [];
+
+    // Optimistic Update: cập nhật phản ứng tức thì trên giao diện
+    setDetailData((prev) => {
+      if (!prev || !prev.messages) return prev;
+      return {
+        ...prev,
+        messages: prev.messages.map((m) => {
+          if (String(m.message_id) !== String(messageId)) return m;
+
+          const currentReactions = Array.isArray(m.reactions) ? [...m.reactions] : [];
+          const existingIdx = currentReactions.findIndex(
+            (r) => String(r.account_id) === currentIdStr
+          );
+
+          if (existingIdx >= 0) {
+            if (currentReactions[existingIdx].reaction === reactionEmoji) {
+              // Bấm lại đúng biểu cảm -> Gỡ bỏ (toggle off)
+              currentReactions.splice(existingIdx, 1);
+            } else {
+              // Chọn biểu cảm khác -> Cập nhật sang icon mới
+              currentReactions[existingIdx] = {
+                ...currentReactions[existingIdx],
+                reaction: reactionEmoji,
+              };
+            }
+          } else {
+            // Thêm mới biểu cảm
+            currentReactions.push({
+              reaction_id: `temp-${Date.now()}`,
+              message_id: messageId,
+              account_id: currentIdStr,
+              reaction: reactionEmoji,
+              created_at: new Date().toISOString(),
+            });
+          }
+
+          // Tính lại tổng số lượng biểu cảm
+          const counts = {};
+          currentReactions.forEach((r) => {
+            if (r.reaction) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+          });
+
+          return {
+            ...m,
+            reactions: currentReactions,
+            reaction_summary: {
+              total: currentReactions.length,
+              ...counts,
+            },
+          };
+        }),
+      };
+    });
+
+    try {
+      const res = await reactToMessage(messageId, reactionEmoji);
+      const resData = res?.data?.data;
+      if (resData) {
+        setDetailData((prev) => {
+          if (!prev || !prev.messages) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((m) => {
+              if (String(m.message_id) === String(messageId)) {
+                return {
+                  ...m,
+                  reactions: resData.reactions || m.reactions,
+                  reaction_summary: resData.summary || m.reaction_summary,
+                };
+              }
+              return m;
+            }),
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi khi thả biểu cảm:", err);
+      // Revert lại dữ liệu cũ nếu lỗi
+      setDetailData((prev) => (prev ? { ...prev, messages: prevMessages } : prev));
+      toast.error(err?.response?.data?.message || "Không thể thả biểu cảm tin nhắn!");
+    }
+  };
+
+  // Gỡ biểu cảm của chính mình
+  const handleRemoveReaction = async (messageId) => {
+    if (!messageId) return;
+    const currentIdStr = String(currentUserId || 1);
+    const prevMessages = detailData?.messages || [];
+
+    setDetailData((prev) => {
+      if (!prev || !prev.messages) return prev;
+      return {
+        ...prev,
+        messages: prev.messages.map((m) => {
+          if (String(m.message_id) !== String(messageId)) return m;
+          const currentReactions = (m.reactions || []).filter(
+            (r) => String(r.account_id) !== currentIdStr
+          );
+          const counts = {};
+          currentReactions.forEach((r) => {
+            if (r.reaction) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+          });
+          return {
+            ...m,
+            reactions: currentReactions,
+            reaction_summary: {
+              total: currentReactions.length,
+              ...counts,
+            },
+          };
+        }),
+      };
+    });
+
+    try {
+      const res = await removeReaction(messageId);
+      const resData = res?.data?.data;
+      if (resData) {
+        setDetailData((prev) => {
+          if (!prev || !prev.messages) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((m) => {
+              if (String(m.message_id) === String(messageId)) {
+                return {
+                  ...m,
+                  reactions: resData.reactions || m.reactions,
+                  reaction_summary: resData.summary || m.reaction_summary,
+                };
+              }
+              return m;
+            }),
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi khi gỡ biểu cảm:", err);
+      setDetailData((prev) => (prev ? { ...prev, messages: prevMessages } : prev));
+      toast.error(err?.response?.data?.message || "Không thể gỡ biểu cảm!");
     }
   };
 
@@ -1171,6 +1350,8 @@ function SupportInbox() {
                 isProcessing={isProcessing}
                 isClosed={isClosed}
                 isAssignedToMe={isAssignedToMe}
+                onReact={handleReactToMessage}
+                onRemoveReaction={handleRemoveReaction}
               />
             </>
           ) : (

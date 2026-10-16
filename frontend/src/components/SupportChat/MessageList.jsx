@@ -1,6 +1,11 @@
 import EmptyState from "../common/EmptyState";
 import Loading from "../common/Loading";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ReactionPicker,
+  ReactionBadge,
+  ReactionDetailModal,
+} from "./MessageReaction";
 
 // Định dạng kích thước tệp tin (KB, MB)
 function formatFileSize(bytes) {
@@ -102,7 +107,11 @@ export default function MessageList({
   onLoadMore,
   onJumpToMessage,
   onReply,
+  onReact,
+  onRemoveReaction,
 }) {
+  const [activePickerMessageId, setActivePickerMessageId] = useState(null);
+  const [detailModalMessageId, setDetailModalMessageId] = useState(null);
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
   const isAtBottomRef = useRef(true);
@@ -223,9 +232,50 @@ export default function MessageList({
 
         const { fileUrl, fileName, fileSize, messageType, displayCaption } = resolveMedia(message);
 
-        // Nút trả lời hiển thị khi rơ chuột vào tin nhắn
+        const hasReactions =
+          Boolean(message.reaction_summary?.total > 0) ||
+          Boolean(Array.isArray(message.reactions) && message.reactions.length > 0);
+
+        const myReaction = Array.isArray(message.reactions)
+          ? message.reactions.find((r) => String(r.account_id) === String(accountId))
+          : null;
+        const myReactionEmoji = myReaction?.reaction || null;
+
+        // Nút hành động hiển thị khi rê chuột vào tin nhắn (Reaction + Reply)
         const actionButtons = (
           <div className="support-msg-actions">
+            {/* Nút thả biểu cảm (Reaction) */}
+            <button
+              type="button"
+              className={`support-msg-action-btn react-btn${
+                activePickerMessageId === message.message_id ? " active" : ""
+              }`}
+              title="Bày tỏ cảm xúc"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActivePickerMessageId((prev) =>
+                  prev === message.message_id ? null : message.message_id
+                );
+              }}
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                <line x1="9" y1="9" x2="9.01" y2="9" />
+                <line x1="15" y1="9" x2="15.01" y2="9" />
+              </svg>
+            </button>
+
+            {/* Nút trả lời tin nhắn (Reply) */}
             <button
               type="button"
               className="support-msg-action-btn reply-btn"
@@ -243,12 +293,34 @@ export default function MessageList({
           <div
             id={`msg-${message.message_id}`}
             key={message.message_id}
-            className={`support-message-row${own ? " own" : ""}`}
+            className={`support-message-row${own ? " own" : ""}${
+              hasReactions ? " has-reactions" : ""
+            }`}
           >
             {/* Nếu là tin nhắn của chính mình: nút hành động xuất hiện bên trái */}
             {own && actionButtons}
 
-            <div className="support-bubble">
+            <div className={`support-bubble${hasReactions ? " has-reactions" : ""}`}>
+              {/* Thanh chọn biểu cảm nổi bên trên tin nhắn (Capsule pill theo mẫu) */}
+              {activePickerMessageId === message.message_id && (
+                <ReactionPicker
+                  currentReaction={myReactionEmoji}
+                  onSelectReaction={(emoji) => {
+                    setActivePickerMessageId(null);
+                    onReact?.(message.message_id, emoji);
+                  }}
+                  onRemoveReaction={() => {
+                    setActivePickerMessageId(null);
+                    if (onRemoveReaction) {
+                      onRemoveReaction(message.message_id);
+                    } else if (onReact && myReactionEmoji) {
+                      onReact(message.message_id, myReactionEmoji);
+                    }
+                  }}
+                  onClose={() => setActivePickerMessageId(null)}
+                />
+              )}
+
               {/* Hiển thị trích dẫn tin nhắn gốc nếu đây là tin nhắn reply */}
               {message.reply_to && (
                 <div
@@ -365,6 +437,18 @@ export default function MessageList({
                   : "Vừa xong"}
                 {own && <span className="ms-2">{message.is_read ? "Đã xem" : "Đã gửi"}</span>}
               </small>
+
+              {/* Huy hiệu tổng hợp cảm xúc gắn ở chân tin nhắn (như trong ảnh mẫu) */}
+              {hasReactions && (
+                <ReactionBadge
+                  messageId={message.message_id}
+                  reactions={message.reactions}
+                  summary={message.reaction_summary}
+                  currentAccountId={accountId}
+                  own={own}
+                  onClick={() => setDetailModalMessageId(message.message_id)}
+                />
+              )}
             </div>
 
             {/* Nếu là tin nhắn của đối phương: nút hành động xuất hiện bên phải */}
@@ -372,6 +456,29 @@ export default function MessageList({
           </div>
         );
       })}
+
+      {/* Modal chi tiết danh sách người thả cảm xúc */}
+      {detailModalMessageId && (
+        <ReactionDetailModal
+          messageId={detailModalMessageId}
+          isOpen={Boolean(detailModalMessageId)}
+          onClose={() => setDetailModalMessageId(null)}
+          currentAccountId={accountId}
+          onRemoveMyReaction={(msgId) => {
+            if (onRemoveReaction) {
+              onRemoveReaction(msgId);
+            } else if (onReact) {
+              const targetMsg = messages.find(
+                (m) => String(m.message_id) === String(msgId)
+              );
+              const myR = targetMsg?.reactions?.find(
+                (r) => String(r.account_id) === String(accountId)
+              );
+              if (myR) onReact(msgId, myR.reaction);
+            }
+          }}
+        />
+      )}
       <div ref={bottomRef} />
     </div>
   );

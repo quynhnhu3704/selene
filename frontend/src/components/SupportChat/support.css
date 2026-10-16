@@ -137,7 +137,7 @@
 .support-message-row.own {
   justify-content: flex-end;
 }
-.support-bubble { max-width: 80%; padding: 11px 14px; border-radius: 14px 14px 14px 3px; background: #eceae7; color: #252525; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
+.support-bubble { position: relative; max-width: 80%; padding: 11px 14px; border-radius: 14px 14px 14px 3px; background: #eceae7; color: #252525; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
 .support-bubble small { display: block; margin-top: 6px; font-size: 10px; opacity: .7; }
 .support-message-row.own .support-bubble { background: #292724; color: #fff; border-radius: 14px 14px 3px 14px; }
 
@@ -554,5 +554,379 @@
   .support-title { font-size: 20px; }
   .support-messages { padding: 12px; }
   .support-bubble { max-width: 90%; }
+}
+
+/* ==========================================================================
+   Message Reaction Feature Styles (Khung biểu cảm tin nhắn & Huy hiệu cảm xúc)
+   ========================================================================== */
+
+/* Nút mở bảng biểu cảm cạnh tin nhắn */
+.support-msg-action-btn.react-btn {
+  color: #f59e0b;
+  font-size: 15px;
+}
+.support-msg-action-btn.react-btn:hover,
+.support-msg-action-btn.react-btn.active {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+/* Khoảng cách hàng tin nhắn khi có gắn huy hiệu reaction */
+.support-message-row.has-reactions {
+  margin-bottom: 22px;
+}
+
+/* 1. ReactionPicker: Thanh chọn biểu cảm nổi tròn dài (Capsule/Pill bar) như ảnh mẫu */
+.support-reaction-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 120;
+  animation: reactionPickerPop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transform-origin: bottom center;
+  user-select: none;
+}
+.support-message-row:not(.own) .support-reaction-picker {
+  left: 0;
+}
+.support-message-row.own .support-reaction-picker {
+  right: 0;
+}
+
+@keyframes reactionPickerPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.support-reaction-picker-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Từng biểu cảm trong thanh chọn */
+.support-reaction-item-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.support-reaction-item-btn:hover {
+  transform: scale(1.36) translateY(-5px);
+  z-index: 5;
+}
+.support-reaction-item-btn.selected {
+  background: #f1f5f9;
+}
+.support-reaction-item-btn.selected::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+
+/* Nhãn hiển thị khi hover vào từng biểu cảm */
+.support-reaction-item-label {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.88);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.support-reaction-item-btn:hover .support-reaction-item-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Nút Đóng / Gỡ (✕) ở cuối thanh theo đúng ảnh mẫu */
+.support-reaction-close-btn {
+  border: 1px solid #e2e8f0;
+  background: transparent;
+  color: #64748b;
+  width: 28px;
+  height: 28px;
+  margin-left: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.support-reaction-close-btn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: scale(1.08);
+}
+.support-reaction-close-btn.has-reaction:hover {
+  color: #ef4444;
+  background: #fef2f2;
+  border-color: #fca5a5;
+  transform: scale(1.1);
+}
+.support-reaction-close-btn:hover .support-reaction-item-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* 2. ReactionBadge: Huy hiệu tổng hợp gắn dưới chân tin nhắn (như ảnh mẫu) */
+.support-reaction-badge {
+  position: absolute;
+  bottom: -12px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 2px 7px;
+  height: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.support-message-row:not(.own) .support-reaction-badge {
+  right: 12px;
+}
+.support-message-row.own .support-reaction-badge {
+  right: 12px;
+}
+.support-reaction-badge:hover {
+  transform: scale(1.06);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Trường hợp chỉ có 1 biểu cảm duy nhất: dạng tròn nhỏ như bên phải ảnh mẫu */
+.support-reaction-badge.single {
+  padding: 2px 5px;
+  min-width: 25px;
+  justify-content: center;
+}
+
+/* Trạng thái nếu tài khoản của mình đã thả biểu cảm */
+.support-reaction-badge.has-my-reaction {
+  border-color: #93c5fd;
+  background: #f0f7ff;
+}
+
+/* Icon trong badge */
+.support-reaction-badge-icons {
+  display: inline-flex;
+  align-items: center;
+}
+.support-reaction-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: -3px;
+}
+.support-reaction-badge-icon:last-child {
+  margin-right: 0;
+}
+
+/* Số lượng tổng phản ứng */
+.support-reaction-badge-count {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #334155;
+  margin-left: 4px;
+  line-height: 1;
+}
+
+/* 3. ReactionDetailModal: Modal hiển thị danh sách người thả biểu cảm */
+.support-reaction-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease;
+}
+.support-reaction-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  animation: modalScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+@keyframes modalScaleUp {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.support-reaction-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.support-reaction-modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+}
+.support-reaction-modal-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.support-reaction-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.support-reaction-modal-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafaf9;
+  overflow-x: auto;
+}
+.support-reaction-modal-tab {
+  border: none;
+  background: transparent;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.support-reaction-modal-tab:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.support-reaction-modal-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.support-reaction-modal-body {
+  padding: 8px 16px;
+  overflow-y: auto;
+  max-height: 380px;
+}
+.support-reaction-user-list {
+  display: flex;
+  flex-direction: column;
+}
+.support-reaction-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f8fafc;
+}
+.support-reaction-user-row:last-child {
+  border-bottom: none;
+}
+.support-reaction-user-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.support-reaction-avatar {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: #475569;
+  flex-shrink: 0;
+}
+.support-reaction-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.support-reaction-avatar-icon {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  background: #ffffff;
+  border-radius: 50%;
+  padding: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.support-reaction-info {
+  display: flex;
+  flex-direction: column;
+}
+.support-reaction-name {
+  font-size: 13px;
+  color: #0f172a;
+}
+.support-reaction-role {
+  font-size: 11px;
+  color: #94a3b8;
 }
 
