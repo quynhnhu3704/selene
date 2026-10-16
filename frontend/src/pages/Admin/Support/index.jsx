@@ -167,9 +167,12 @@ function SupportInbox() {
   const statusRef = useRef(status);
   const searchRef = useRef(debouncedSearch);
   const selectedIdRef = useRef(selectedId);
+  const detailDataRef = useRef(detailData);
   statusRef.current = status;
   searchRef.current = debouncedSearch;
   selectedIdRef.current = selectedId;
+  detailDataRef.current = detailData;
+  const jumpingRef = useRef(false);
 
   // Lấy chi tiết cuộc trò chuyện và danh sách tin nhắn từ API
   const fetchDetail = useCallback(async (conversationId, isSilent = false) => {
@@ -648,11 +651,26 @@ function SupportInbox() {
       const res = await getConversationDetails(selectedId, { before: beforeCursor });
       const newData = res?.data?.data;
       if (newData?.messages?.length) {
-        setDetailData((prev) => ({
-          ...prev,
-          messages: [...newData.messages, ...(prev?.messages || [])],
-          pagination: newData.pagination,
-        }));
+        setDetailData((prev) => {
+          if (!prev) return prev;
+          const prevMsgs = prev.messages || [];
+          const newMsgs = newData.messages || [];
+          const map = new Map();
+          newMsgs.forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          prevMsgs.forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+          );
+          return {
+            ...prev,
+            messages: merged,
+            pagination: newData.pagination,
+          };
+        });
       }
     } catch (err) {
       console.error("Lỗi khi tải thêm tin nhắn cũ:", err);
@@ -660,6 +678,160 @@ function SupportInbox() {
       setLoadingMore(false);
     }
   };
+
+  // Tự động tải tiếp tin nhắn cũ hơn và cuộn đến tin nhắn gốc khi bấm vào trích dẫn reply
+  const handleJumpToMessage = useCallback(
+    async (targetMessageId) => {
+      if (!targetMessageId) return;
+
+      // 1. Nếu tin nhắn đã hiển thị sẵn trong DOM, cuộn mượt và highlight ngay lập tức
+      const existingEl = document.getElementById(`msg-${targetMessageId}`);
+      if (existingEl) {
+        existingEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        const bubble = existingEl.querySelector(".support-bubble");
+        if (bubble) {
+          bubble.classList.add("support-bubble-highlight");
+          setTimeout(() => bubble.classList.remove("support-bubble-highlight"), 1800);
+        }
+        return;
+      }
+
+      // 2. Nếu tin nhắn đã có sẵn trong state messages nhưng vừa mới render vào DOM
+      const currentDetail = detailDataRef.current;
+      const currentMessages = currentDetail?.messages || [];
+      const isAlreadyInState = currentMessages.some(
+        (m) => String(m.message_id) === String(targetMessageId)
+      );
+
+      if (isAlreadyInState) {
+        let retries = 0;
+        const tryScroll = () => {
+          const el = document.getElementById(`msg-${targetMessageId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const bubble = el.querySelector(".support-bubble");
+            if (bubble) {
+              bubble.classList.add("support-bubble-highlight");
+              setTimeout(() => bubble.classList.remove("support-bubble-highlight"), 1800);
+            }
+          } else if (retries < 8) {
+            retries += 1;
+            setTimeout(tryScroll, 60);
+          }
+        };
+        tryScroll();
+        return;
+      }
+
+      // 3. Nếu đang có một tiến trình tìm/tải tin nhắn khác, tránh gọi lặp lại
+      if (jumpingRef.current) return;
+
+      const currentConvId = selectedIdRef.current;
+      if (!currentConvId) return;
+
+      let hasMore = currentDetail?.pagination?.has_more !== false;
+      let cursor =
+        currentDetail?.pagination?.next_cursor || currentMessages[0]?.created_at;
+
+      // Nếu không còn tin nhắn cũ hơn để tải
+      if (!hasMore) {
+        toast.info("Không tìm thấy tin nhắn gốc trong lịch sử cuộc trò chuyện.");
+        return;
+      }
+
+      jumpingRef.current = true;
+      setLoadingMore(true);
+
+      try {
+        let found = false;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 15; // Tải tối đa 15 đợt (30 tin/đợt = 450 tin)
+
+        while (!found && hasMore && attempts < MAX_ATTEMPTS) {
+          attempts += 1;
+          const res = await getConversationDetails(currentConvId, {
+            before: cursor,
+            limit: 30,
+          });
+
+          // Nếu người dùng đã chuyển sang cuộc trò chuyện khác trong khi đang tải
+          if (String(selectedIdRef.current) !== String(currentConvId)) {
+            return;
+          }
+
+          const newData = res?.data?.data;
+          const batchMessages = newData?.messages || [];
+
+          if (batchMessages.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          hasMore = Boolean(newData?.pagination?.has_more);
+          cursor = newData?.pagination?.next_cursor || batchMessages[0]?.created_at;
+
+          // Cập nhật messages vào detailData ngay đợt này
+          setDetailData((prev) => {
+            if (!prev || String(prev.conversation_id) !== String(currentConvId)) return prev;
+            const prevMsgs = prev.messages || [];
+            const map = new Map();
+            batchMessages.forEach((m) => {
+              if (m.message_id) map.set(String(m.message_id), m);
+            });
+            prevMsgs.forEach((m) => {
+              if (m.message_id) map.set(String(m.message_id), m);
+            });
+            const merged = Array.from(map.values()).sort(
+              (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+            );
+            return {
+              ...prev,
+              messages: merged,
+              pagination: {
+                ...(prev.pagination || {}),
+                has_more: hasMore,
+                next_cursor: cursor,
+              },
+            };
+          });
+
+          // Kiểm tra xem tin nhắn cần tìm đã xuất hiện trong batch mới tải chưa
+          if (batchMessages.some((m) => String(m.message_id) === String(targetMessageId))) {
+            found = true;
+            break;
+          }
+        }
+
+        if (found) {
+          let retryCount = 0;
+          const tryScroll = () => {
+            const el = document.getElementById(`msg-${targetMessageId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              const bubble = el.querySelector(".support-bubble");
+              if (bubble) {
+                bubble.classList.add("support-bubble-highlight");
+                setTimeout(() => bubble.classList.remove("support-bubble-highlight"), 1800);
+              }
+            } else if (retryCount < 10) {
+              retryCount += 1;
+              setTimeout(tryScroll, 60);
+            }
+          };
+          setTimeout(tryScroll, 80);
+        } else {
+          toast.info("Không tìm thấy tin nhắn gốc trong lịch sử cuộc trò chuyện.");
+        }
+      } catch (err) {
+        console.error("Lỗi khi tự động tải tin nhắn cũ:", err);
+        toast.error("Không thể tải tin nhắn cũ. Vui lòng thử lại!");
+      } finally {
+        jumpingRef.current = false;
+        setLoadingMore(false);
+      }
+    },
+    []
+  );
   const totalCount =
     (summary.waitingCount || 0) +
     (summary.processingCount || 0) +
@@ -987,6 +1159,7 @@ function SupportInbox() {
                 pagination={detailData?.pagination}
                 loadingMore={loadingMore}
                 onLoadMore={handleLoadMore}
+                onJumpToMessage={handleJumpToMessage}
                 onSend={handleSendMessage}
                 onAssign={handleAssign}
                 assigning={assigning}

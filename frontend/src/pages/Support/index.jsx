@@ -31,6 +31,11 @@ function CustomerSupport() {
   const [error, setError] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const socketRef = useRef(null);
+  const messagesRef = useRef(messages);
+  const paginationRef = useRef(pagination);
+  messagesRef.current = messages;
+  paginationRef.current = pagination;
+  const jumpingRef = useRef(false);
 
   // Gửi tin nhắn lên server (hỗ trợ text hoặc tệp đính kèm ảnh/video/file)
   const handleSendMessage = async (data) => {
@@ -174,7 +179,18 @@ function CustomerSupport() {
       const data = res?.data?.data;
       if (data) {
         const olderMessages = data.messages || [];
-        setMessages((prev) => [...olderMessages, ...prev]);
+        setMessages((prev) => {
+          const map = new Map();
+          olderMessages.forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          (prev || []).forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          return Array.from(map.values()).sort(
+            (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+          );
+        });
         setPagination(data.pagination || null);
       }
     } catch (err) {
@@ -183,6 +199,125 @@ function CustomerSupport() {
       setLoadingMore(false);
     }
   };
+
+  // Tự động tải tiếp tin nhắn cũ hơn và cuộn đến tin nhắn gốc khi bấm vào trích dẫn reply
+  const handleJumpToMessage = useCallback(async (targetMessageId) => {
+    if (!targetMessageId) return;
+
+    // 1. Nếu tin nhắn đã hiển thị sẵn trong DOM, cuộn mượt và highlight ngay lập tức
+    const existingEl = document.getElementById(`msg-${targetMessageId}`);
+    if (existingEl) {
+      existingEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      const bubble = existingEl.querySelector(".support-bubble");
+      if (bubble) {
+        bubble.classList.add("support-bubble-highlight");
+        setTimeout(() => bubble.classList.remove("support-bubble-highlight"), 1800);
+      }
+      return;
+    }
+
+    // 2. Nếu tin nhắn đã có sẵn trong state messages nhưng chưa render kịp
+    const currentMsgs = messagesRef.current || [];
+    if (currentMsgs.some((m) => String(m.message_id) === String(targetMessageId))) {
+      let retries = 0;
+      const tryScroll = () => {
+        const el = document.getElementById(`msg-${targetMessageId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const bubble = el.querySelector(".support-bubble");
+          if (bubble) {
+            bubble.classList.add("support-bubble-highlight");
+            setTimeout(() => bubble.classList.remove("support-bubble-highlight"), 1800);
+          }
+        } else if (retries < 8) {
+          retries += 1;
+          setTimeout(tryScroll, 60);
+        }
+      };
+      tryScroll();
+      return;
+    }
+
+    if (jumpingRef.current) return;
+
+    let hasMore = paginationRef.current?.has_more !== false;
+    let cursor = paginationRef.current?.next_cursor || paginationRef.current?.oldest_message_id || currentMsgs[0]?.created_at;
+
+    if (!hasMore) {
+      toast.info("Không tìm thấy tin nhắn gốc trong lịch sử trò chuyện.");
+      return;
+    }
+
+    jumpingRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      let found = false;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 15;
+
+      while (!found && hasMore && attempts < MAX_ATTEMPTS) {
+        attempts += 1;
+        const res = await getMyMessages({ before: cursor, limit: 30 });
+        const data = res?.data?.data;
+        const batchMessages = data?.messages || [];
+
+        if (batchMessages.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        hasMore = Boolean(data?.pagination?.has_more);
+        cursor = data?.pagination?.next_cursor || data?.pagination?.oldest_message_id || batchMessages[0]?.created_at;
+
+        setMessages((prev) => {
+          const map = new Map();
+          batchMessages.forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          (prev || []).forEach((m) => {
+            if (m.message_id) map.set(String(m.message_id), m);
+          });
+          return Array.from(map.values()).sort(
+            (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+          );
+        });
+        setPagination(data?.pagination || null);
+
+        if (batchMessages.some((m) => String(m.message_id) === String(targetMessageId))) {
+          found = true;
+          break;
+        }
+      }
+
+      if (found) {
+        let retries = 0;
+        const tryScroll = () => {
+          const el = document.getElementById(`msg-${targetMessageId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const bubble = el.querySelector(".support-bubble");
+            if (bubble) {
+              bubble.classList.add("support-bubble-highlight");
+              setTimeout(() => bubble.classList.remove("support-bubble-highlight"), 1800);
+            }
+          } else if (retries < 10) {
+            retries += 1;
+            setTimeout(tryScroll, 60);
+          }
+        };
+        setTimeout(tryScroll, 80);
+      } else {
+        toast.info("Không tìm thấy tin nhắn gốc trong lịch sử trò chuyện.");
+      }
+    } catch (err) {
+      console.error("Lỗi khi tự động tải tin nhắn cũ:", err);
+      toast.error("Không thể tải tin nhắn cũ. Vui lòng thử lại!");
+    } finally {
+      jumpingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, []);
 
   // Khởi tạo và lắng nghe realtime socket
   useEffect(() => {
@@ -375,6 +510,7 @@ function CustomerSupport() {
           pagination={pagination}
           loadingMore={loadingMore}
           onLoadMore={handleLoadMore}
+          onJumpToMessage={handleJumpToMessage}
           onSend={handleSendMessage}
           onReopen={handleReopen}
           isClosed={currentStatus === "closed"}

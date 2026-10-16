@@ -159,7 +159,7 @@ function Chatbot() {
   };
 
   // Cuộn mượt đến tin nhắn gốc khi bấm vào trích dẫn reply
-  const scrollToMessage = (targetMessageId) => {
+  const scrollToMessage = async (targetMessageId) => {
     if (!targetMessageId) return;
     const element = document.getElementById(`chatbot-msg-${targetMessageId}`);
     if (element) {
@@ -169,7 +169,72 @@ function Chatbot() {
         bubble.classList.add("chatbot-bubble-highlight");
         setTimeout(() => {
           bubble.classList.remove("chatbot-bubble-highlight");
-        }, 1500);
+        }, 1800);
+      }
+      return;
+    }
+
+    // Nếu tin nhắn nằm ở phần cũ hơn chưa tải
+    if (pagination?.has_more !== false && !loadingMore) {
+      setLoadingMore(true);
+      try {
+        let found = false;
+        let cursor = pagination?.next_cursor || pagination?.oldest_message_id;
+        let hasMore = true;
+        let attempts = 0;
+
+        while (!found && hasMore && attempts < 10) {
+          attempts += 1;
+          const res = await getMyMessages({ before: cursor, limit: 25 });
+          const data = res?.data?.data;
+          const batch = data?.messages || [];
+          if (!batch.length) break;
+
+          hasMore = Boolean(data?.pagination?.has_more);
+          cursor = data?.pagination?.next_cursor || data?.pagination?.oldest_message_id;
+
+          setMessages((prev) => {
+            const map = new Map();
+            batch.forEach((m) => {
+              if (m.message_id) map.set(String(m.message_id), m);
+            });
+            (prev || []).forEach((m) => {
+              if (m.message_id) map.set(String(m.message_id), m);
+            });
+            return Array.from(map.values()).sort(
+              (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+            );
+          });
+          setPagination(data?.pagination || null);
+
+          if (batch.some((m) => String(m.message_id) === String(targetMessageId))) {
+            found = true;
+            break;
+          }
+        }
+
+        if (found) {
+          let retry = 0;
+          const scroll = () => {
+            const el = document.getElementById(`chatbot-msg-${targetMessageId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              const bubble = el.querySelector(".bubble");
+              if (bubble) {
+                bubble.classList.add("chatbot-bubble-highlight");
+                setTimeout(() => bubble.classList.remove("chatbot-bubble-highlight"), 1800);
+              }
+            } else if (retry < 10) {
+              retry += 1;
+              setTimeout(scroll, 60);
+            }
+          };
+          setTimeout(scroll, 80);
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải tin nhắn cũ trong chatbot:", err);
+      } finally {
+        setLoadingMore(false);
       }
     }
   };

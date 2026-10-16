@@ -100,6 +100,7 @@ export default function MessageList({
   hasMore,
   loadingMore,
   onLoadMore,
+  onJumpToMessage,
   onReply,
 }) {
   const bottomRef = useRef(null);
@@ -109,7 +110,7 @@ export default function MessageList({
   }, [lastId]);
 
   // Cuộn mượt đến tin nhắn gốc khi bấm vào trích dẫn reply
-  const scrollToMessage = (targetMessageId) => {
+  const scrollToMessage = (targetMessageId, targetMessage = null) => {
     if (!targetMessageId) return;
     const element = document.getElementById(`msg-${targetMessageId}`);
     if (element) {
@@ -119,8 +120,14 @@ export default function MessageList({
         bubble.classList.add("support-bubble-highlight");
         setTimeout(() => {
           bubble.classList.remove("support-bubble-highlight");
-        }, 1500);
+        }, 1800);
       }
+      return;
+    }
+
+    // Nếu tin nhắn nằm ở phần cũ hơn chưa tải vào danh sách
+    if (onJumpToMessage) {
+      onJumpToMessage(targetMessageId, targetMessage);
     }
   };
 
@@ -226,7 +233,7 @@ export default function MessageList({
               {message.reply_to && (
                 <div
                   className="support-reply-quote"
-                  onClick={() => scrollToMessage(message.reply_to.message_id)}
+                  onClick={() => scrollToMessage(message.reply_to.message_id, message.reply_to)}
                   title="Nhấp để cuộn đến tin nhắn được trả lời"
                 >
                   <div className="support-reply-quote-sender">

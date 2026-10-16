@@ -235,11 +235,20 @@
 
 /* Flash highlight animation when clicking on a reply quote */
 @keyframes bubblePulse {
-  0% { box-shadow: 0 0 0 4px rgba(0, 132, 255, 0.55); }
-  100% { box-shadow: none; }
+  0% {
+    box-shadow: 0 0 0 4.5px rgba(0, 132, 255, 0.65), 0 4px 16px rgba(0, 132, 255, 0.35);
+    filter: brightness(1.08);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.4), 0 2px 8px rgba(0, 132, 255, 0.2);
+  }
+  100% {
+    box-shadow: none;
+    filter: none;
+  }
 }
 .support-bubble-highlight {
-  animation: bubblePulse 1.5s ease-out;
+  animation: bubblePulse 1.8s ease-out;
 }
 
 /* Reply banner above composer input (như ảnh mẫu) */

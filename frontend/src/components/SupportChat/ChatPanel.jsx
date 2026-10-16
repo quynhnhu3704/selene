@@ -12,6 +12,7 @@ export default function ChatPanel({
   pagination = null,
   loadingMore = false,
   onLoadMore,
+  onJumpToMessage,
   onSend,
   onAssign,
   assigning = false,
@@ -99,6 +100,7 @@ export default function ChatPanel({
           hasMore={pagination?.has_more}
           loadingMore={loadingMore}
           onLoadMore={onLoadMore}
+          onJumpToMessage={onJumpToMessage}
           onReply={(msg) => setReplyingTo(msg)}
         />
 
