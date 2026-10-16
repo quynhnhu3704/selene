@@ -6,9 +6,18 @@ import {
   sendTextMessage,
   sendAttachmentMessage,
   replyMessage,
+  reactToMessage,
+  removeReaction,
 } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
-import { isLoggedIn } from "../../utils/auth";
+import { getUser, isLoggedIn } from "../../utils/auth";
+import {
+  ReactionPicker,
+  ReactionBadge,
+  ReactionDetailModal,
+} from "../SupportChat/MessageReaction";
+import "../SupportChat/support.css";
+import { toast } from "react-toastify";
 import defaultProduct from "../../assets/images/default-product.png";
 
 import BOT_AVATAR from "../../assets/images/default-chatbot.png";
@@ -114,6 +123,13 @@ function Chatbot() {
   const [filePreviewUrl, setFilePreviewUrl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [replyingTo, setReplyingTo] = useState(null);
+
+  // Biểu cảm tin nhắn (Reaction)
+  const [activePickerMessageId, setActivePickerMessageId] = useState(null);
+  const [detailModalMessageId, setDetailModalMessageId] = useState(null);
+
+  const currentUser = getUser();
+  const currentAccountId = currentUser?.accountId || currentUser?.account_id || currentUser?.id;
 
   const [showScrollBottom, setShowScrollBottom] = useState(false);
 
@@ -469,6 +485,27 @@ function Chatbot() {
           }
           fetchHistory(true);
         });
+
+        // Nhận sự kiện reaction tin nhắn realtime
+        socket.on("message:reaction", (payload) => {
+          if (!payload?.message_id) return;
+          setMessages((prev) => {
+            if (!prev) return prev;
+            return prev.map((m) => {
+              if (String(m.message_id) === String(payload.message_id)) {
+                return {
+                  ...m,
+                  reactions: payload.reactions || [],
+                  reaction_summary:
+                    payload.summary || {
+                      total: (payload.reactions || []).length,
+                    },
+                };
+              }
+              return m;
+            });
+          });
+        });
       }
     } catch (err) {
       console.warn("Lỗi socket chatbot:", err);
@@ -479,6 +516,7 @@ function Chatbot() {
         socket.off("connect");
         socket.off("message:new");
         socket.off("conversation:update");
+        socket.off("message:reaction");
         socket.disconnect();
       }
       socketRef.current = null;
@@ -516,6 +554,135 @@ function Chatbot() {
       console.error("Lỗi khi tải thêm tin nhắn cũ:", err);
     } finally {
       setLoadingMore(false);
+    }
+  };
+
+  // Thả / Đổi / Gỡ biểu cảm tin nhắn (Reaction)
+  const handleReactToMessage = async (messageId, reactionEmoji) => {
+    if (!messageId || !reactionEmoji) return;
+    const currentIdStr = String(currentAccountId || "");
+    const prevMessages = messages;
+
+    // Optimistic Update
+    setMessages((prev) => {
+      if (!prev) return prev;
+      return prev.map((m) => {
+        if (String(m.message_id) !== String(messageId)) return m;
+
+        const currentReactions = Array.isArray(m.reactions) ? [...m.reactions] : [];
+        const existingIdx = currentReactions.findIndex(
+          (r) => String(r.account_id) === currentIdStr
+        );
+
+        if (existingIdx >= 0) {
+          if (currentReactions[existingIdx].reaction === reactionEmoji) {
+            currentReactions.splice(existingIdx, 1);
+          } else {
+            currentReactions[existingIdx] = {
+              ...currentReactions[existingIdx],
+              reaction: reactionEmoji,
+            };
+          }
+        } else {
+          currentReactions.push({
+            reaction_id: `temp-${Date.now()}`,
+            message_id: messageId,
+            account_id: currentIdStr,
+            reaction: reactionEmoji,
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        const counts = {};
+        currentReactions.forEach((r) => {
+          if (r.reaction) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+        });
+
+        return {
+          ...m,
+          reactions: currentReactions,
+          reaction_summary: {
+            total: currentReactions.length,
+            ...counts,
+          },
+        };
+      });
+    });
+
+    try {
+      const res = await reactToMessage(messageId, reactionEmoji);
+      const resData = res?.data?.data;
+      if (resData) {
+        setMessages((prev) => {
+          if (!prev) return prev;
+          return prev.map((m) => {
+            if (String(m.message_id) === String(messageId)) {
+              return {
+                ...m,
+                reactions: resData.reactions || m.reactions,
+                reaction_summary: resData.summary || m.reaction_summary,
+              };
+            }
+            return m;
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi khi thả biểu cảm:", err);
+      setMessages(prevMessages);
+      toast.error(err?.response?.data?.message || "Không thể thả biểu cảm tin nhắn!");
+    }
+  };
+
+  const handleRemoveReaction = async (messageId) => {
+    if (!messageId) return;
+    const currentIdStr = String(currentAccountId || "");
+    const prevMessages = messages;
+
+    setMessages((prev) => {
+      if (!prev) return prev;
+      return prev.map((m) => {
+        if (String(m.message_id) !== String(messageId)) return m;
+        const currentReactions = (m.reactions || []).filter(
+          (r) => String(r.account_id) !== currentIdStr
+        );
+        const counts = {};
+        currentReactions.forEach((r) => {
+          if (r.reaction) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+        });
+        return {
+          ...m,
+          reactions: currentReactions,
+          reaction_summary: {
+            total: currentReactions.length,
+            ...counts,
+          },
+        };
+      });
+    });
+
+    try {
+      const res = await removeReaction(messageId);
+      const resData = res?.data?.data;
+      if (resData) {
+        setMessages((prev) => {
+          if (!prev) return prev;
+          return prev.map((m) => {
+            if (String(m.message_id) === String(messageId)) {
+              return {
+                ...m,
+                reactions: resData.reactions || m.reactions,
+                reaction_summary: resData.summary || m.reaction_summary,
+              };
+            }
+            return m;
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi khi gỡ biểu cảm:", err);
+      setMessages(prevMessages);
+      toast.error(err?.response?.data?.message || "Không thể gỡ biểu cảm!");
     }
   };
 
@@ -782,8 +949,49 @@ function Chatbot() {
                   })
                 : "";
 
-              const actionButtons = (
+              const hasReactions =
+                Boolean(msg.reaction_summary?.total > 0) ||
+                Boolean(Array.isArray(msg.reactions) && msg.reactions.length > 0);
+
+              const myReaction = Array.isArray(msg.reactions)
+                ? msg.reactions.find((r) => String(r.account_id) === String(currentAccountId))
+                : null;
+              const myReactionEmoji = myReaction?.reaction || null;
+
+              const actionButtons = msg.message_id ? (
                 <div className="chatbot-msg-actions">
+                  {/* Nút thả biểu cảm (Reaction) */}
+                  <button
+                    type="button"
+                    className={`chatbot-msg-action-btn react-btn${
+                      activePickerMessageId === msg.message_id ? " active" : ""
+                    }`}
+                    title="Bày tỏ cảm xúc"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePickerMessageId((prev) =>
+                        prev === msg.message_id ? null : msg.message_id
+                      );
+                    }}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                      <line x1="9" y1="9" x2="9.01" y2="9" />
+                      <line x1="15" y1="9" x2="15.01" y2="9" />
+                    </svg>
+                  </button>
+
+                  {/* Nút trả lời tin nhắn (Reply) */}
                   <button
                     type="button"
                     className="chatbot-msg-action-btn reply-btn"
@@ -795,13 +1003,15 @@ function Chatbot() {
                     </svg>
                   </button>
                 </div>
-              );
+              ) : null;
 
               return (
                 <div
                   id={`chatbot-msg-${msg.message_id}`}
                   key={msg.message_id || index}
-                  className={`message-row ${isCustomer ? "user" : "bot"}`}
+                  className={`message-row ${isCustomer ? "user" : "bot"}${
+                    hasReactions ? " has-reactions" : ""
+                  }`}
                 >
                   {isCustomer && actionButtons}
                   {!isCustomer && (
@@ -809,7 +1019,23 @@ function Chatbot() {
                       <img src={BOT_AVATAR} alt="" />
                     </div>
                   )}
-                  <div className={`bubble ${isCustomer ? "user" : "bot"}`}>
+                  <div className={`bubble ${isCustomer ? "user" : "bot"}${hasReactions ? " has-reactions" : ""}`}>
+                    {/* Thanh chọn biểu cảm nổi bên trên tin nhắn */}
+                    {activePickerMessageId === msg.message_id && (
+                      <ReactionPicker
+                        currentReaction={myReactionEmoji}
+                        onSelectReaction={(emoji) => {
+                          setActivePickerMessageId(null);
+                          handleReactToMessage(msg.message_id, emoji);
+                        }}
+                        onRemoveReaction={() => {
+                          setActivePickerMessageId(null);
+                          handleRemoveReaction(msg.message_id);
+                        }}
+                        onClose={() => setActivePickerMessageId(null)}
+                      />
+                    )}
+
                     {/* Trích dẫn tin nhắn reply nếu có */}
                     {msg.reply_to && (
                       <div
@@ -956,11 +1182,33 @@ function Chatbot() {
                         ))}
                       </div>
                     )}
+                    {/* Huy hiệu tổng hợp cảm xúc gắn ở chân tin nhắn (như ảnh mẫu) */}
+                    {hasReactions && (
+                      <ReactionBadge
+                        messageId={msg.message_id}
+                        reactions={msg.reactions}
+                        summary={msg.reaction_summary}
+                        currentAccountId={currentAccountId}
+                        own={isCustomer}
+                        onClick={() => setDetailModalMessageId(msg.message_id)}
+                      />
+                    )}
                   </div>
                   {!isCustomer && actionButtons}
                 </div>
               );
             })}
+
+            {/* Modal chi tiết danh sách người thả cảm xúc */}
+            {detailModalMessageId && (
+              <ReactionDetailModal
+                messageId={detailModalMessageId}
+                isOpen={Boolean(detailModalMessageId)}
+                onClose={() => setDetailModalMessageId(null)}
+                currentAccountId={currentAccountId}
+                onRemoveMyReaction={(mId) => handleRemoveReaction(mId)}
+              />
+            )}
 
             {isSending && (
               <div className="message-row bot">
@@ -1918,6 +2166,45 @@ const CHATBOT_STYLES = `
   background: #fdf2f2;
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(135, 27, 27, 0.25);
+}
+
+/* ==========================================================================
+   Chatbot Reaction Styles (Biểu cảm tin nhắn trong Chatbot)
+   ========================================================================== */
+
+.selene-chatbot .message-row.has-reactions {
+  margin-bottom: 22px;
+}
+
+.selene-chatbot .chatbot-msg-action-btn.react-btn {
+  color: #f59e0b;
+}
+.selene-chatbot .chatbot-msg-action-btn.react-btn:hover,
+.selene-chatbot .chatbot-msg-action-btn.react-btn.active {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.selene-chatbot .bubble .support-reaction-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 120;
+}
+.selene-chatbot .bubble.user .support-reaction-picker {
+  right: 0;
+  left: auto;
+}
+.selene-chatbot .bubble.bot .support-reaction-picker {
+  left: 0;
+  right: auto;
+}
+
+.selene-chatbot .bubble .support-reaction-badge {
+  position: absolute;
+  bottom: -12px;
+  right: 12px;
+  z-index: 8;
 }
 `;
 
