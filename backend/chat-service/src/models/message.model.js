@@ -346,4 +346,38 @@ export const MessageModel = {
     if (error) throw error;
     return data;
   },
+
+  /**
+   * Lấy tin nhắn mới nhất trong cuộc trò chuyện
+   */
+  findLatestByConversation: async (conversationId) => {
+    if (!conversationId) return null;
+    const { data, error } = await supabase
+      .from("messages")
+      .select("message_id, conversation_id, sender_id, sender_type, message_type, content, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data || null;
+  },
+
+  /**
+   * Kiểm tra xem trong cuộc trò chuyện đã có tin nhắn với nội dung tương ứng chưa
+   */
+  existsWithContent: async (conversationId, content) => {
+    if (!conversationId || typeof content !== "string" || !content.trim()) return false;
+    const { data, error } = await supabase
+      .from("messages")
+      .select("message_id")
+      .eq("conversation_id", conversationId)
+      .eq("content", content.trim())
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return Boolean(data);
+  },
 };

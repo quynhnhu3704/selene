@@ -241,6 +241,24 @@ export const ConversationService = {
         ? content.trim()
         : `Chào bạn, mình là ${staffName} xin được hỗ trợ bạn`;
 
+    const cleanGreeting = greetingText.trim().toLowerCase();
+
+    // 2.1 Kiểm tra xem tin nhắn mới nhất có trùng với tin nhắn xin chào này không
+    let isDuplicateGreeting = false;
+    try {
+      const latestMsg = await MessageModel.findLatestByConversation(conversation.conversation_id);
+      if (latestMsg?.content) {
+        isDuplicateGreeting = latestMsg.content.trim().toLowerCase() === cleanGreeting;
+      } else if (conversation.last_message) {
+        isDuplicateGreeting = conversation.last_message.trim().toLowerCase() === cleanGreeting;
+      }
+    } catch (err) {
+      console.warn("[assignConversation] Could not check latest message:", err.message);
+      if (conversation.last_message) {
+        isDuplicateGreeting = conversation.last_message.trim().toLowerCase() === cleanGreeting;
+      }
+    }
+
     // 3. Cập nhật trạng thái cuộc hội thoại thành 'processing' (hoặc 'active') và gán assigned_staff_id
     let updatedConv = null;
     try {
@@ -273,86 +291,96 @@ export const ConversationService = {
       console.warn("[assignConversation] Warning upserting participant:", err.message);
     }
 
-    // 5. Tạo tin nhắn chào loại text vào bảng messages
-    const messageId = crypto.randomUUID();
-    let createdMessage = null;
-    try {
-      createdMessage = await MessageModel.create({
-        messageId,
-        conversationId: conversation.conversation_id,
-        senderId: staffId,
-        senderType: "user",
-        messageType: "text",
-        content: greetingText,
-        status: "sent",
-      });
-    } catch (err) {
-      console.error("[assignConversation] Error creating greeting message:", err.message);
-      throw { status: 500, message: "Không thể tạo tin nhắn chào tự động!" };
-    }
+    let formattedMessage = null;
+    let messageCreatedAt = now;
 
-    const messageCreatedAt = createdMessage?.created_at || now;
-
-    // 6. Cập nhật last_message, last_message_id, last_message_at vào cuộc hội thoại
-    try {
-      await ConversationModel.update(conversation.conversation_id, {
-        last_message_id: createdMessage.message_id,
-        last_message: greetingText,
-        last_message_at: messageCreatedAt,
-      });
-      if (updatedConv) {
-        updatedConv.last_message_id = createdMessage.message_id;
-        updatedConv.last_message = greetingText;
-        updatedConv.last_message_at = messageCreatedAt;
+    // 5. Nếu tin nhắn xin chào không bị trùng lặp, tiến hành gửi tin nhắn chào mặc định
+    if (!isDuplicateGreeting) {
+      const messageId = crypto.randomUUID();
+      let createdMessage = null;
+      try {
+        createdMessage = await MessageModel.create({
+          messageId,
+          conversationId: conversation.conversation_id,
+          senderId: staffId,
+          senderType: "user",
+          messageType: "text",
+          content: greetingText,
+          status: "sent",
+        });
+      } catch (err) {
+        console.error("[assignConversation] Error creating greeting message:", err.message);
+        throw { status: 500, message: "Không thể tạo tin nhắn chào tự động!" };
       }
-    } catch (err) {
-      console.warn("[assignConversation] Warning updating conversation last_message:", err.message);
-    }
 
-    // 7. Cập nhật tin nhắn đã đọc gần nhất cho nhân viên
-    try {
-      await ConversationModel.upsertParticipant({
+      messageCreatedAt = createdMessage?.created_at || now;
+
+      // 6. Cập nhật last_message, last_message_id, last_message_at vào cuộc hội thoại
+      try {
+        await ConversationModel.update(conversation.conversation_id, {
+          last_message_id: createdMessage.message_id,
+          last_message: greetingText,
+          last_message_at: messageCreatedAt,
+        });
+        if (updatedConv) {
+          updatedConv.last_message_id = createdMessage.message_id;
+          updatedConv.last_message = greetingText;
+          updatedConv.last_message_at = messageCreatedAt;
+        }
+      } catch (err) {
+        console.warn("[assignConversation] Warning updating conversation last_message:", err.message);
+      }
+
+      // 7. Cập nhật tin nhắn đã đọc gần nhất cho nhân viên
+      try {
+        await ConversationModel.upsertParticipant({
+          conversation_id: conversation.conversation_id,
+          account_id: staffId,
+          role: user.role === "admin" ? "admin" : "staff",
+          last_read_message_id: createdMessage.message_id,
+          last_read_at: messageCreatedAt,
+        });
+      } catch (err) {
+        console.warn("[assignConversation] Warning updating staff last_read:", err.message);
+      }
+
+      // 8. Định dạng dữ liệu tin nhắn trả về
+      formattedMessage = {
+        message_id: createdMessage.message_id,
         conversation_id: conversation.conversation_id,
-        account_id: staffId,
-        role: user.role === "admin" ? "admin" : "staff",
-        last_read_message_id: createdMessage.message_id,
-        last_read_at: messageCreatedAt,
-      });
-    } catch (err) {
-      console.warn("[assignConversation] Warning updating staff last_read:", err.message);
+        sender_id: staffId,
+        sender_type: "user",
+        sender_role: user.role === "admin" ? "admin" : "staff",
+        message_type: "text",
+        content: greetingText,
+        attachments: [],
+        reply_to_message_id: null,
+        status: "sent",
+        is_read: true,
+        created_at: messageCreatedAt,
+        updated_at: messageCreatedAt,
+      };
     }
-
-    // 8. Định dạng dữ liệu tin nhắn trả về
-    const formattedMessage = {
-      message_id: createdMessage.message_id,
-      conversation_id: conversation.conversation_id,
-      sender_id: staffId,
-      sender_type: "user",
-      sender_role: user.role === "admin" ? "admin" : "staff",
-      message_type: "text",
-      content: greetingText,
-      attachments: [],
-      reply_to_message_id: null,
-      status: "sent",
-      is_read: true,
-      created_at: messageCreatedAt,
-      updated_at: messageCreatedAt,
-    };
 
     const finalConversation = {
       ...(conversation || {}),
       ...(updatedConv || {}),
       status: updatedConv?.status || "processing",
       assigned_staff_id: staffId,
-      last_message_id: createdMessage.message_id,
-      last_message: greetingText,
-      last_message_at: messageCreatedAt,
+      ...(formattedMessage
+        ? {
+            last_message_id: formattedMessage.message_id,
+            last_message: greetingText,
+            last_message_at: messageCreatedAt,
+          }
+        : {}),
     };
 
     return {
       conversation: finalConversation,
       message: formattedMessage,
       staff_name: staffName,
+      is_duplicate_greeting: isDuplicateGreeting,
     };
   },
 

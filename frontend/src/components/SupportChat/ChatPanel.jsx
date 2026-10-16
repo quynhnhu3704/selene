@@ -118,22 +118,11 @@ export default function ChatPanel({
         )}
 
         {checkPending && (
-          <div className="support-notice d-flex align-items-center justify-content-between py-2 px-3 flex-wrap gap-2">
+          <div className="support-notice d-flex align-items-center py-2 px-3 flex-wrap gap-2">
             <span>
               <i className="bi bi-clock-history text-warning me-2" />
               Cuộc trò chuyện đang chờ hỗ trợ. Vui lòng nhận xử lý để trả lời khách hàng.
             </span>
-            {onAssign && (
-              <button
-                type="button"
-                className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
-                onClick={onAssign}
-                disabled={assigning}
-              >
-                {assigning && <span className="spinner-border spinner-border-sm me-1" role="status" />}
-                <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
-              </button>
-            )}
           </div>
         )}
 

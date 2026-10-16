@@ -414,7 +414,7 @@ function SupportInbox() {
               status: updatedConv?.status || "active",
               assigned_staff_id: updatedConv?.assigned_staff_id || currentUserId,
               last_message: greetingMsg?.content || item.last_message,
-              last_message_at: greetingMsg?.created_at || new Date().toISOString(),
+              last_message_at: greetingMsg?.created_at || item.last_message_at,
             };
           }
           return item;
@@ -923,34 +923,18 @@ function SupportInbox() {
                 </div>
 
                 <div className="d-flex gap-2">
-                  {isPending && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
-                        onClick={handleAssign}
-                        disabled={assigning || closing}
-                      >
-                        {assigning && (
-                          <span className="spinner-border spinner-border-sm me-1" role="status" />
-                        )}
-                        <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
-                        onClick={handleClose}
-                        disabled={assigning || closing}
-                        title="Đóng cuộc trò chuyện này"
-                      >
-                        {closing ? (
-                          <span className="spinner-border spinner-border-sm me-1" role="status" />
-                        ) : (
-                          <i className="bi bi-x-circle text-danger" />
-                        )}
-                        <span>{closing ? "Đang đóng..." : "Đóng"}</span>
-                      </button>
-                    </>
+                  {(isPending || isClosed) && (
+                    <button
+                      type="button"
+                      className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
+                      onClick={handleAssign}
+                      disabled={assigning || closing}
+                    >
+                      {assigning && (
+                        <span className="spinner-border spinner-border-sm me-1" role="status" />
+                      )}
+                      <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
+                    </button>
                   )}
                   {!isClosed && !isPending && (
                     <button
@@ -966,19 +950,6 @@ function SupportInbox() {
                         <i className="bi bi-check2-circle" />
                       )}
                       <span>{closing ? "Đang đóng..." : "Đóng hội thoại"}</span>
-                    </button>
-                  )}
-                  {isClosed && (
-                    <button
-                      type="button"
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
-                      onClick={handleAssign}
-                      disabled={assigning}
-                    >
-                      {assigning && (
-                        <span className="spinner-border spinner-border-sm me-1" role="status" />
-                      )}
-                      <span>{assigning ? "Đang xử lý..." : "Nhận xử lý"}</span>
                     </button>
                   )}
                 </div>

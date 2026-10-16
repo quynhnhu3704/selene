@@ -289,10 +289,12 @@ export const assignConversation = async (req, res, next) => {
     const io = req.app.get("io");
     if (io) {
       try {
-        io.to(`conversation:${result.conversation.conversation_id}`).emit(
-          "message:new",
-          result.message
-        );
+        if (result.message) {
+          io.to(`conversation:${result.conversation.conversation_id}`).emit(
+            "message:new",
+            result.message
+          );
+        }
         notifyConversation(io, result.conversation);
       } catch (socketErr) {
         console.warn("[assignConversation] Socket emission warning:", socketErr.message);
@@ -301,10 +303,12 @@ export const assignConversation = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Nhận xử lý cuộc trò chuyện và gửi tin nhắn chào thành công!",
+      message: result.message
+        ? "Nhận xử lý cuộc trò chuyện và gửi tin nhắn chào thành công!"
+        : "Nhận xử lý cuộc trò chuyện thành công!",
       data: {
         conversation: result.conversation,
-        message: result.message,
+        message: result.message || null,
         staff_name: result.staff_name,
       },
     });
