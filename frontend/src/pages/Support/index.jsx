@@ -140,6 +140,35 @@ function CustomerSupport() {
         if (Array.isArray(data.messages)) {
           setMessages((prev) => {
             if (!prev || prev.length === 0) return data.messages;
+
+            const prevIds = new Set(prev.map((m) => String(m.message_id)));
+            const hasNewMessages = data.messages.some(
+              (m) => m.message_id && !prevIds.has(String(m.message_id))
+            );
+
+            let hasModified = false;
+            if (!hasNewMessages) {
+              const prevMap = new Map(prev.map((m) => [String(m.message_id), m]));
+              for (const m of data.messages) {
+                if (!m.message_id) continue;
+                const existing = prevMap.get(String(m.message_id));
+                if (
+                  existing &&
+                  (existing.content !== m.content ||
+                    existing.status !== m.status ||
+                    existing.message_type !== m.message_type ||
+                    existing.reply_to?.message_id !== m.reply_to?.message_id)
+                ) {
+                  hasModified = true;
+                  break;
+                }
+              }
+            }
+
+            if (!hasNewMessages && !hasModified) {
+              return prev;
+            }
+
             const map = new Map();
             prev.forEach((m) => {
               if (m.message_id) map.set(String(m.message_id), m);

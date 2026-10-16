@@ -104,14 +104,27 @@ export default function MessageList({
   onReply,
 }) {
   const bottomRef = useRef(null);
+  const containerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
   const lastId = messages.at(-1)?.message_id;
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isAtBottomRef.current = distanceToBottom <= 80;
+  };
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "nearest" });
+    if (isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ block: "nearest" });
+    }
   }, [lastId]);
 
   // Cuộn mượt đến tin nhắn gốc khi bấm vào trích dẫn reply
   const scrollToMessage = (targetMessageId, targetMessage = null) => {
     if (!targetMessageId) return;
+    isAtBottomRef.current = false;
     const element = document.getElementById(`msg-${targetMessageId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -170,7 +183,14 @@ export default function MessageList({
   };
 
   return (
-    <div className="support-messages" role="log" aria-label="Tin nhắn hỗ trợ" aria-live="polite">
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="support-messages"
+      role="log"
+      aria-label="Tin nhắn hỗ trợ"
+      aria-live="polite"
+    >
       {loadingMore ? (
         <Loading text="Đang tải tin nhắn..." />
       ) : (

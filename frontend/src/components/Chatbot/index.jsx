@@ -115,7 +115,12 @@ function Chatbot() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [replyingTo, setReplyingTo] = useState(null);
 
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
+  const shouldScrollToBottomRef = useRef(false);
   const sendingRef = useRef(false);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
@@ -158,9 +163,31 @@ function Chatbot() {
     return "Selene AI";
   };
 
+  // Xử lý sự kiện cuộn tin nhắn để xác định vị trí của người dùng
+  const handleScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = distanceToBottom <= 80;
+    isAtBottomRef.current = atBottom;
+    setShowScrollBottom(distanceToBottom > 120);
+  };
+
+  // Cuộn xuống tin nhắn mới nhất
+  const scrollToBottom = (behavior = "smooth") => {
+    isAtBottomRef.current = true;
+    setShowScrollBottom(false);
+    messagesEndRef.current?.scrollIntoView({
+      behavior,
+      block: "nearest",
+    });
+  };
+
   // Cuộn mượt đến tin nhắn gốc khi bấm vào trích dẫn reply
   const scrollToMessage = async (targetMessageId) => {
     if (!targetMessageId) return;
+    shouldScrollToBottomRef.current = false;
+    isAtBottomRef.current = false;
     const element = document.getElementById(`chatbot-msg-${targetMessageId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -247,13 +274,16 @@ function Chatbot() {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
-  // Cuộn đến tin mới khi mở cửa sổ hoặc chờ phản hồi.
+  // Chỉ tự động cuộn xuống đáy khi có yêu cầu (mới gửi tin nhắn hoặc người dùng đang ở đáy)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
-  }, [messages, isSending, open]);
+    if (shouldScrollToBottomRef.current || isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+      shouldScrollToBottomRef.current = false;
+    }
+  }, [messages, isSending]);
 
   // Chọn tệp đính kèm (ảnh, video, file tài liệu)
   const handleFileChange = (e) => {
@@ -304,7 +334,47 @@ function Chatbot() {
         }
         if (Array.isArray(data.messages)) {
           setMessages((prev) => {
-            if (prev.length === 0) return data.messages;
+            if (prev.length === 0) {
+              shouldScrollToBottomRef.current = true;
+              return data.messages;
+            }
+
+            // Kiểm tra xem có tin nhắn mới nào chưa tồn tại trong danh sách không
+            const prevIds = new Set(prev.map((m) => String(m.message_id)));
+            const hasNewMessages = data.messages.some(
+              (m) => m.message_id && !prevIds.has(String(m.message_id))
+            );
+
+            // Kiểm tra xem có tin nhắn nào bị chỉnh sửa nội dung/trạng thái không
+            let hasModified = false;
+            if (!hasNewMessages) {
+              const prevMap = new Map(prev.map((m) => [String(m.message_id), m]));
+              for (const m of data.messages) {
+                if (!m.message_id) continue;
+                const existing = prevMap.get(String(m.message_id));
+                if (
+                  existing &&
+                  (existing.content !== m.content ||
+                    existing.status !== m.status ||
+                    existing.message_type !== m.message_type ||
+                    existing.reply_to?.message_id !== m.reply_to?.message_id)
+                ) {
+                  hasModified = true;
+                  break;
+                }
+              }
+            }
+
+            // Nếu không có tin nhắn mới và không có thay đổi -> giữ nguyên prev để tránh re-render và tránh cuộn
+            if (!hasNewMessages && !hasModified) {
+              return prev;
+            }
+
+            // Chỉ cho phép tự động cuộn nếu có tin nhắn mới VÀ người dùng đang ở đáy
+            if (hasNewMessages && isAtBottomRef.current) {
+              shouldScrollToBottomRef.current = true;
+            }
+
             const map = new Map();
             prev.forEach((m) => {
               if (m.message_id) map.set(String(m.message_id), m);
@@ -325,10 +395,18 @@ function Chatbot() {
     }
   }, []);
 
-  // Khi mở cửa sổ chat, tự động tải tin nhắn từ API getMyMessages
+  // Khi mở cửa sổ chat, tự động tải tin nhắn từ API getMyMessages và cuộn xuống đáy
   useEffect(() => {
     if (open) {
       setUnreadCount(0);
+      isAtBottomRef.current = true;
+      shouldScrollToBottomRef.current = true;
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "auto",
+          block: "nearest",
+        });
+      }, 50);
       fetchHistory(false);
     }
   }, [open, fetchHistory]);
@@ -366,6 +444,9 @@ function Chatbot() {
           setMessages((prev) => {
             if (prev.some((m) => String(m.message_id) === String(newMsg.message_id))) {
               return prev;
+            }
+            if (isAtBottomRef.current) {
+              shouldScrollToBottomRef.current = true;
             }
             return [...prev, newMsg];
           });
@@ -409,12 +490,27 @@ function Chatbot() {
     const cursor = pagination?.next_cursor || pagination?.oldest_message_id;
     if (!cursor || loadingMore) return;
     setLoadingMore(true);
+    shouldScrollToBottomRef.current = false;
+    isAtBottomRef.current = false;
+
+    const container = messagesContainerRef.current;
+    const oldScrollHeight = container ? container.scrollHeight : 0;
+    const oldScrollTop = container ? container.scrollTop : 0;
+
     try {
       const res = await getMyMessages({ before: cursor, limit: 10 });
       const data = res?.data?.data;
       if (data?.messages) {
         setMessages((prev) => [...data.messages, ...prev]);
         setPagination(data.pagination || null);
+
+        // Giữ nguyên vị trí cuộn thị giác sau khi tải thêm tin cũ vào đầu danh sách
+        requestAnimationFrame(() => {
+          if (container) {
+            const newScrollHeight = container.scrollHeight;
+            container.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+          }
+        });
       }
     } catch (err) {
       console.error("Lỗi khi tải thêm tin nhắn cũ:", err);
@@ -469,6 +565,9 @@ function Chatbot() {
     };
 
     sendingRef.current = true;
+    shouldScrollToBottomRef.current = true;
+    isAtBottomRef.current = true;
+    setShowScrollBottom(false);
     setMessages((prev) => [...prev, optimisticMsg]);
     setMessage("");
     setReplyingTo(null);
@@ -633,6 +732,8 @@ function Chatbot() {
           </div>
 
           <div
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
             className="chatbot-messages"
             role="log"
             aria-live="polite"
@@ -879,6 +980,19 @@ function Chatbot() {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Nút nổi cuộn xuống đáy khi người dùng đã kéo lên */}
+          {showScrollBottom && (
+            <button
+              type="button"
+              className="chatbot-scroll-bottom-btn"
+              onClick={() => scrollToBottom("smooth")}
+              title="Cuộn xuống tin mới nhất"
+              aria-label="Cuộn xuống tin mới nhất"
+            >
+              <i className="bi bi-chevron-down" />
+            </button>
+          )}
 
           {/* Thanh xem trước tệp tin trước khi gửi */}
           {selectedFile && (
@@ -1778,6 +1892,32 @@ const CHATBOT_STYLES = `
 @keyframes chatbotPulse {
   0% { box-shadow: 0 0 0 4px rgba(0, 132, 255, 0.6); }
   100% { box-shadow: none; }
+}
+
+/* Nút nổi cuộn xuống đáy khi người dùng đã kéo lên */
+.selene-chatbot .chatbot-scroll-bottom-btn {
+  position: absolute;
+  right: 18px;
+  bottom: 84px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #871b1b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 30;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 15px;
+}
+.selene-chatbot .chatbot-scroll-bottom-btn:hover {
+  background: #fdf2f2;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(135, 27, 27, 0.25);
 }
 `;
 
