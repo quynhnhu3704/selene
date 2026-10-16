@@ -7,6 +7,7 @@ import {
   getMyMessages,
   sendTextMessage,
   sendAttachmentMessage,
+  replyMessage,
   assignConversation,
   closeConversation,
 } from "../controllers/conversation.controller.js";
@@ -41,6 +42,13 @@ router.post("/messages/text", sendTextMessage);
 
 // 5. Gửi tin nhắn đính kèm file/hình ảnh/video trực tiếp (multipart/form-data)
 router.post("/messages/attachment", chatUpload.any(), sendAttachmentMessage);
+
+// =========================================================
+// ROUTE TRẢ LỜI (REPLY) TIN NHẮN
+// =========================================================
+
+// 6. Trả lời một tin nhắn cụ thể (hỗ trợ text, emoji và file/ảnh đính kèm)
+router.post("/messages/:messageId/reply", chatUpload.any(), replyMessage);
 
 // =========================================================
 // CÁC ROUTE QUẢN LÝ TIẾP NHẬN / TRẠNG THÁI HỘI THOẠI

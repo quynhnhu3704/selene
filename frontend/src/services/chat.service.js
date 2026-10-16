@@ -174,6 +174,51 @@ export const readMessages = async () => ({
   data: { data: [] },
 });
 
+/**
+ * Trả lời (reply) một tin nhắn cụ thể
+ * @param {string|number|Object|FormData} messageIdOrPayload - ID tin nhắn cần reply hoặc Payload Object / FormData
+ * @param {Object} [data] - Dữ liệu kèm theo nếu tham số 1 là messageId: { content, file, ... }
+ * @returns {Promise} Axios response: { success, message, data: { message } }
+ */
+export const replyMessage = async (messageIdOrPayload, data = {}) => {
+  let messageId = null;
+  let payload = data;
+
+  if (typeof messageIdOrPayload === "string" || typeof messageIdOrPayload === "number") {
+    messageId = String(messageIdOrPayload);
+  } else if (messageIdOrPayload instanceof FormData) {
+    messageId =
+      messageIdOrPayload.get("reply_to_message_id") ||
+      messageIdOrPayload.get("message_id");
+    payload = messageIdOrPayload;
+  } else if (typeof messageIdOrPayload === "object" && messageIdOrPayload !== null) {
+    messageId =
+      messageIdOrPayload.reply_to_message_id ||
+      messageIdOrPayload.message_id ||
+      messageIdOrPayload.replyToMessageId;
+    payload = messageIdOrPayload;
+  }
+
+  if (payload instanceof FormData) {
+    return await http.post(`/chat/messages/${messageId}/reply`, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  if (payload?.file) {
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, val]) => {
+      if (val !== undefined && val !== null) formData.append(key, val);
+    });
+    return await http.post(`/chat/messages/${messageId}/reply`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  return await http.post(`/chat/messages/${messageId}/reply`, payload);
+};
+
+
 
 
 

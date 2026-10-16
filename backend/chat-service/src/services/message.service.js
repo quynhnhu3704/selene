@@ -238,6 +238,33 @@ export const MessageService = {
     }
 
     // 9. CHUẨN HÓA DỮ LIỆU TIN NHẮN TRẢ VỀ
+    let replyToData = null;
+    if (createdMessage.reply_to_message_id) {
+      try {
+        const parentMsg = await MessageModel.findById(createdMessage.reply_to_message_id);
+        if (parentMsg) {
+          replyToData = {
+            message_id: parentMsg.message_id,
+            conversation_id: parentMsg.conversation_id,
+            sender_id: parentMsg.sender_id,
+            sender_type: parentMsg.sender_type || "user",
+            sender_role:
+              parentMsg.sender_id === conversation.customer_id
+                ? "customer"
+                : parentMsg.sender_type === "ai"
+                  ? "ai"
+                  : "staff",
+            message_type: parentMsg.message_type || "text",
+            content: parentMsg.content,
+            attachments: parentMsg.attachments || [],
+            created_at: parentMsg.created_at,
+          };
+        }
+      } catch (err) {
+        console.warn("[MessageService.sendTextMessage] Warning loading reply_to parent:", err.message);
+      }
+    }
+
     const formattedMessage = {
       message_id: createdMessage.message_id,
       conversation_id: createdMessage.conversation_id,
@@ -248,6 +275,7 @@ export const MessageService = {
       content: createdMessage.content,
       attachments: [],
       reply_to_message_id: createdMessage.reply_to_message_id || null,
+      reply_to: replyToData,
       status: createdMessage.status || "sent",
       is_read: true,
       created_at: createdMessage.created_at,
@@ -256,6 +284,7 @@ export const MessageService = {
 
     return {
       message: formattedMessage,
+      reply_to: replyToData,
       conversation,
       is_new_conversation: isNewConversation,
     };
@@ -488,6 +517,33 @@ export const MessageService = {
     }
 
     // 8. Định dạng dữ liệu trả về cho client
+    let replyToData = null;
+    if (createdMessage.reply_to_message_id) {
+      try {
+        const parentMsg = await MessageModel.findById(createdMessage.reply_to_message_id);
+        if (parentMsg) {
+          replyToData = {
+            message_id: parentMsg.message_id,
+            conversation_id: parentMsg.conversation_id,
+            sender_id: parentMsg.sender_id,
+            sender_type: parentMsg.sender_type || "user",
+            sender_role:
+              parentMsg.sender_id === conversation.customer_id
+                ? "customer"
+                : parentMsg.sender_type === "ai"
+                  ? "ai"
+                  : "staff",
+            message_type: parentMsg.message_type || "text",
+            content: parentMsg.content,
+            attachments: parentMsg.attachments || [],
+            created_at: parentMsg.created_at,
+          };
+        }
+      } catch (err) {
+        console.warn("[MessageService.sendMediaMessage] Warning loading reply_to parent:", err.message);
+      }
+    }
+
     const formattedMessage = {
       message_id: createdMessage.message_id,
       conversation_id: createdMessage.conversation_id,
@@ -498,6 +554,7 @@ export const MessageService = {
       content: createdMessage.content,
       attachments: createdMessage.attachments || [],
       reply_to_message_id: createdMessage.reply_to_message_id || null,
+      reply_to: replyToData,
       status: createdMessage.status || "sent",
       is_read: true,
       created_at: createdMessage.created_at,
@@ -506,8 +563,237 @@ export const MessageService = {
 
     return {
       message: formattedMessage,
+      reply_to: replyToData,
       conversation,
       is_new_conversation: isNewConversation,
+    };
+  },
+
+  /**
+   * Chức năng trả lời (reply) một tin nhắn cụ thể
+   *
+   * @param {Object} user - Thông tin người dùng đăng nhập
+   * @param {Object} payload - {
+   *   reply_to_message_id: string (bắt buộc),
+   *   content: string,
+   *   message_type?: string,
+   *   sender_type?: string,
+   *   file?: object,
+   *   file_url?: string,
+   *   file_name?: string,
+   *   file_size?: number,
+   *   file_type?: string,
+   *   conversation_id?: string
+   * }
+   */
+  replyMessage: async (
+    user,
+    {
+      reply_to_message_id,
+      content = "",
+      message_type = "text",
+      sender_type = "user",
+      file = null,
+      file_url = null,
+      file_name = null,
+      file_size = null,
+      file_type = null,
+      conversation_id = null,
+    } = {}
+  ) => {
+    // 1. Kiểm tra tham số reply_to_message_id
+    if (!reply_to_message_id) {
+      throw { status: 400, message: "Vui lòng cung cấp ID tin nhắn cần trả lời (reply_to_message_id)!" };
+    }
+
+    // 2. Tìm tin nhắn gốc cần reply
+    const parentMessage = await MessageModel.findById(reply_to_message_id);
+    if (!parentMessage) {
+      throw { status: 404, message: "Không tìm thấy tin nhắn cần trả lời!" };
+    }
+
+    // Xác định cuộc trò chuyện từ tin nhắn gốc
+    const targetConversationId = parentMessage.conversation_id;
+    if (conversation_id && String(conversation_id) !== String(targetConversationId)) {
+      throw {
+        status: 400,
+        message: "Tin nhắn được trả lời không thuộc về cuộc hội thoại này!",
+      };
+    }
+
+    // 3. Xác thực người gửi và quyền hạn
+    const senderId = String(user?.accountId || user?.account_id || user?.id || "");
+    if (!senderId) {
+      throw { status: 401, message: "Không xác định được thông tin người gửi!" };
+    }
+    const userRole = user?.role || "customer";
+    const isCustomer = userRole === "customer";
+
+    if (!isCustomer) {
+      requirePermission(user, "chat:reply");
+    }
+
+    // 4. Tìm và kiểm tra quyền truy cập cuộc trò chuyện
+    const conversation = await ConversationModel.findById(targetConversationId);
+    if (!conversation) {
+      throw { status: 404, message: "Không tìm thấy cuộc trò chuyện của tin nhắn này!" };
+    }
+
+    if (isCustomer && String(conversation.customer_id) !== senderId) {
+      throw { status: 403, message: "Bạn không có quyền trả lời tin nhắn trong cuộc trò chuyện này!" };
+    }
+
+    // 5. Kiểm tra trạng thái cuộc trò chuyện
+    if (conversation.status === "closed") {
+      if (isCustomer) {
+        try {
+          await ConversationModel.update(conversation.conversation_id, { status: "pending" });
+          conversation.status = "pending";
+        } catch (err) {
+          console.warn("[MessageService.replyMessage] Warning reopening conversation:", err.message);
+        }
+      } else {
+        throw {
+          status: 400,
+          message: "Cuộc trò chuyện đã đóng! Vui lòng nhận xử lý cuộc trò chuyện trước khi gửi tin nhắn.",
+        };
+      }
+    }
+
+    if (!isCustomer && (conversation.status === "pending" || conversation.status === "waiting")) {
+      try {
+        await ConversationModel.update(conversation.conversation_id, { status: "processing" });
+        conversation.status = "processing";
+      } catch (err) {
+        console.warn("[MessageService.replyMessage] Warning updating status to processing:", err.message);
+      }
+    }
+
+    // 6. Xử lý tệp đính kèm hoặc văn bản / emoji
+    let finalFileUrl = file_url;
+    let finalFileName = file_name;
+    let finalFileSize = file_size;
+    let finalFileType = file_type;
+    let finalMessageType = message_type || "text";
+
+    if (file) {
+      const uploadResult = await uploadChatFile(file);
+      finalFileUrl = uploadResult.file_url;
+      finalFileName = uploadResult.file_name;
+      finalFileSize = uploadResult.file_size;
+      finalFileType = uploadResult.file_type;
+      if (!finalMessageType || finalMessageType === "text") {
+        finalMessageType = uploadResult.message_type || "attachment";
+      }
+    }
+
+    // Nếu không có file/file_url, kiểm tra textContent
+    const textContent = typeof content === "string" ? content.trim() : "";
+    if (!finalFileUrl && !textContent) {
+      throw { status: 400, message: "Nội dung tin nhắn trả lời không được để trống!" };
+    }
+    if (textContent.length > 2000) {
+      throw { status: 400, message: "Tin nhắn trả lời không được vượt quá 2000 ký tự!" };
+    }
+
+    let previewText = "";
+    if (finalFileUrl) {
+      if (finalMessageType === "image") previewText = textContent ? `[Hình ảnh] ${textContent}` : "[Hình ảnh]";
+      else if (finalMessageType === "video") previewText = textContent ? `[Video] ${textContent}` : "[Video]";
+      else if (finalMessageType === "audio") previewText = textContent ? `[Ghi âm] ${textContent}` : "[Âm thanh]";
+      else previewText = textContent ? `[Tệp đính kèm] ${textContent}` : `[Tệp đính kèm] ${finalFileName || "tệp tin"}`;
+    } else {
+      previewText = textContent;
+    }
+
+    const messageContent = textContent || finalFileName || previewText;
+
+    // 7. Lưu tin nhắn vào bảng messages
+    const now = new Date().toISOString();
+    const messageId = crypto.randomUUID();
+    const createdMessage = await MessageModel.create({
+      messageId,
+      conversationId: conversation.conversation_id,
+      senderId: sender_type === "ai" || sender_type === "system" ? null : senderId,
+      senderType: sender_type || "user",
+      messageType: finalMessageType,
+      content: messageContent,
+      fileUrl: finalFileUrl,
+      fileName: finalFileName,
+      fileSize: finalFileSize,
+      fileType: finalFileType,
+      replyToMessageId: parentMessage.message_id,
+      status: "sent",
+    });
+
+    const messageCreatedAt = createdMessage.created_at || now;
+
+    // 8. Cập nhật last_message của hội thoại
+    try {
+      await ConversationModel.update(conversation.conversation_id, {
+        last_message_id: createdMessage.message_id,
+        last_message: previewText,
+        last_message_at: messageCreatedAt,
+      });
+      conversation.last_message_id = createdMessage.message_id;
+      conversation.last_message = previewText;
+      conversation.last_message_at = messageCreatedAt;
+    } catch (err) {
+      console.warn("[MessageService.replyMessage] Warning updating conversation last_message:", err.message);
+    }
+
+    // 9. Cập nhật trạng thái đã xem cho người gửi
+    try {
+      await ConversationModel.upsertParticipant({
+        conversation_id: conversation.conversation_id,
+        account_id: senderId,
+        role: isCustomer ? "customer" : userRole,
+        last_read_message_id: createdMessage.message_id,
+        last_read_at: messageCreatedAt,
+      });
+    } catch (err) {
+      console.warn("[MessageService.replyMessage] Warning updating participant read status:", err.message);
+    }
+
+    // 10. Định dạng thông tin tin nhắn gốc và tin nhắn mới trả về
+    const replyToData = {
+      message_id: parentMessage.message_id,
+      conversation_id: parentMessage.conversation_id,
+      sender_id: parentMessage.sender_id,
+      sender_type: parentMessage.sender_type || "user",
+      sender_role:
+        parentMessage.sender_id === conversation.customer_id
+          ? "customer"
+          : parentMessage.sender_type === "ai"
+            ? "ai"
+            : "staff",
+      message_type: parentMessage.message_type || "text",
+      content: parentMessage.content,
+      attachments: parentMessage.attachments || [],
+      created_at: parentMessage.created_at,
+    };
+
+    const formattedMessage = {
+      message_id: createdMessage.message_id,
+      conversation_id: createdMessage.conversation_id,
+      sender_id: createdMessage.sender_id,
+      sender_type: createdMessage.sender_type || "user",
+      sender_role: isCustomer ? "customer" : userRole === "admin" ? "admin" : "staff",
+      message_type: finalMessageType,
+      content: createdMessage.content,
+      attachments: createdMessage.attachments || [],
+      reply_to_message_id: parentMessage.message_id,
+      reply_to: replyToData,
+      status: createdMessage.status || "sent",
+      is_read: true,
+      created_at: createdMessage.created_at,
+      updated_at: createdMessage.updated_at || createdMessage.created_at,
+    };
+
+    return {
+      message: formattedMessage,
+      reply_to: replyToData,
+      conversation,
     };
   },
 

@@ -358,4 +358,77 @@ export const closeConversation = async (req, res, next) => {
   }
 };
 
+// Trả lời (reply) một tin nhắn cụ thể (hỗ trợ text, emoji, file đính kèm)
+export const replyMessage = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const file = req.file || (req.files && req.files.length > 0 ? req.files[0] : null);
+
+    const messageId =
+      req.params.messageId ||
+      req.params.id ||
+      req.body.reply_to_message_id ||
+      req.body.replyToMessageId ||
+      null;
+
+    const conversationId =
+      req.params.conversationId ||
+      req.body.conversation_id ||
+      req.body.conversationId ||
+      null;
+
+    const {
+      content,
+      sender_type,
+      senderType,
+      message_type,
+      messageType,
+      file_url,
+      fileUrl,
+      file_name,
+      fileName,
+    } = req.body;
+
+    const result = await MessageService.replyMessage(user, {
+      reply_to_message_id: messageId,
+      conversation_id: conversationId,
+      content,
+      message_type: message_type || messageType || (file ? "attachment" : "text"),
+      sender_type: sender_type || senderType || "user",
+      file,
+      file_url: file_url || fileUrl,
+      file_name: file_name || fileName,
+    });
+
+    // Phát sự kiện realtime qua Socket.IO
+    const io = req.app.get("io");
+    if (io) {
+      try {
+        io.to(`conversation:${result.conversation.conversation_id}`).emit(
+          "message:new",
+          result.message
+        );
+        io.to(`conversation:${result.conversation.conversation_id}`).emit(
+          "message:reply",
+          result.message
+        );
+        notifyConversation(io, result.conversation);
+      } catch (socketErr) {
+        console.warn("[replyMessage] Socket emission warning:", socketErr.message);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Trả lời tin nhắn thành công!",
+      data: {
+        message: result.message,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 

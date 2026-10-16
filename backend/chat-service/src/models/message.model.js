@@ -74,6 +74,90 @@ const formatMessageRow = (msg, attachments = [], defaultSenderRole = null) => {
   };
 };
 
+/**
+ * Gắn thêm thông tin của tin nhắn gốc (reply_to) vào danh sách tin nhắn
+ */
+const populateReplyMessages = async (formattedMessages = []) => {
+  if (!Array.isArray(formattedMessages) || formattedMessages.length === 0) {
+    return formattedMessages;
+  }
+
+  const replyIds = formattedMessages
+    .map((m) => m.reply_to_message_id)
+    .filter((id) => id !== null && id !== undefined && id !== "");
+
+  if (replyIds.length === 0) {
+    formattedMessages.forEach((m) => {
+      m.reply_to = null;
+    });
+    return formattedMessages;
+  }
+
+  // 1. Tạo map từ danh sách hiện tại
+  const replyMap = {};
+  formattedMessages.forEach((m) => {
+    replyMap[String(m.message_id)] = {
+      message_id: m.message_id,
+      conversation_id: m.conversation_id,
+      sender_id: m.sender_id,
+      sender_type: m.sender_type,
+      message_type: m.message_type,
+      content: m.content,
+      attachments: m.attachments || [],
+      created_at: m.created_at,
+    };
+  });
+
+  // 2. Những ID chưa có trong batch hiện tại -> truy vấn thêm từ database
+  const missingIds = replyIds.filter((id) => !replyMap[String(id)]);
+  if (missingIds.length > 0) {
+    try {
+      const uniqueMissing = Array.from(new Set(missingIds.map(String)));
+      const { data, error } = await supabase
+        .from("messages")
+        .select(MESSAGE_FIELDS)
+        .in("message_id", uniqueMissing);
+
+      if (!error && Array.isArray(data)) {
+        let parentAtts = [];
+        try {
+          parentAtts = await AttachmentModel.findByMessageIds(uniqueMissing);
+        } catch {}
+
+        const attsByMsgId = {};
+        parentAtts.forEach((att) => {
+          const mid = String(att.message_id);
+          if (!attsByMsgId[mid]) attsByMsgId[mid] = [];
+          attsByMsgId[mid].push(att);
+        });
+
+        data.forEach((raw) => {
+          const formatted = formatMessageRow(raw, attsByMsgId[String(raw.message_id)] || []);
+          replyMap[String(raw.message_id)] = {
+            message_id: formatted.message_id,
+            conversation_id: formatted.conversation_id,
+            sender_id: formatted.sender_id,
+            sender_type: formatted.sender_type,
+            message_type: formatted.message_type,
+            content: formatted.content,
+            attachments: formatted.attachments || [],
+            created_at: formatted.created_at,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn("[populateReplyMessages] Warning loading parent messages:", err.message);
+    }
+  }
+
+  // 3. Gán object reply_to vào từng tin nhắn
+  formattedMessages.forEach((m) => {
+    m.reply_to = m.reply_to_message_id ? (replyMap[String(m.reply_to_message_id)] || null) : null;
+  });
+
+  return formattedMessages;
+};
+
 export const MessageModel = {
   /**
    * Lấy danh sách tin nhắn theo cuộc trò chuyện (kèm dữ liệu từ bảng message_attachments)
@@ -129,12 +213,15 @@ export const MessageModel = {
       return formatMessageRow(msg, msgAtts);
     });
 
+    // 3. Gắn thông tin tin nhắn được reply (nếu có)
+    const messagesWithReply = await populateReplyMessages(formattedMessages);
+
     return {
-      messages: formattedMessages,
+      messages: messagesWithReply,
       has_more: hasMore,
-      next_cursor: formattedMessages.length > 0 ? formattedMessages[0].created_at : null,
-      oldest_message_id: formattedMessages.length > 0 ? formattedMessages[0].message_id : null,
-      total_returned: formattedMessages.length,
+      next_cursor: messagesWithReply.length > 0 ? messagesWithReply[0].created_at : null,
+      oldest_message_id: messagesWithReply.length > 0 ? messagesWithReply[0].message_id : null,
+      total_returned: messagesWithReply.length,
     };
   },
 
@@ -201,12 +288,15 @@ export const MessageModel = {
       );
     });
 
+    // Gắn thông tin tin nhắn được reply (nếu có)
+    const messagesWithReply = await populateReplyMessages(formattedMessages);
+
     return {
-      messages: formattedMessages,
+      messages: messagesWithReply,
       has_more: hasMore,
-      next_cursor: formattedMessages.length > 0 ? formattedMessages[0].created_at : null,
-      oldest_message_id: formattedMessages.length > 0 ? formattedMessages[0].message_id : null,
-      total_returned: formattedMessages.length,
+      next_cursor: messagesWithReply.length > 0 ? messagesWithReply[0].created_at : null,
+      oldest_message_id: messagesWithReply.length > 0 ? messagesWithReply[0].message_id : null,
+      total_returned: messagesWithReply.length,
     };
   },
 
@@ -290,6 +380,22 @@ export const MessageModel = {
       error = retry.error;
     }
 
+    // 4. Dự phòng trường hợp cột reply_to_message_id chưa tồn tại trong DB cũ
+    if (
+      error &&
+      error.message?.includes("reply_to_message_id") &&
+      (error.message?.includes("column") || error.message?.includes("does not exist"))
+    ) {
+      delete insertPayload.reply_to_message_id;
+      const retry = await supabase
+        .from("messages")
+        .insert([insertPayload])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) throw error;
 
     // 3. NẾU CÓ TỆP ĐÍNH KÈM: Lưu vào bảng message_attachments
@@ -324,11 +430,75 @@ export const MessageModel = {
     return {
       ...data,
       attachments: attachmentsList,
+      reply_to_message_id: data.reply_to_message_id || replyToMessageId || null,
       message_type:
         data.message_type === "text" && messageType !== "text"
           ? messageType
           : data.message_type || messageType,
     };
+  },
+
+  /**
+   * Tìm một tin nhắn theo ID (kèm thông tin attachments)
+   * @param {string|number} messageId
+   */
+  findById: async (messageId) => {
+    if (!messageId) return null;
+    const { data, error } = await supabase
+      .from("messages")
+      .select(MESSAGE_FIELDS)
+      .eq("message_id", String(messageId))
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") {
+      console.warn("[MessageModel.findById] Warning finding message:", error.message);
+      return null;
+    }
+    if (!data) return null;
+
+    let attachments = [];
+    try {
+      attachments = await AttachmentModel.findByMessageIds([String(data.message_id)]);
+    } catch {}
+
+    return formatMessageRow(data, attachments);
+  },
+
+  /**
+   * Tìm danh sách tin nhắn theo danh sách IDs
+   * @param {Array<string|number>} messageIds
+   */
+  findByIds: async (messageIds = []) => {
+    const validIds = Array.from(new Set(messageIds.filter(Boolean).map(String)));
+    if (!validIds.length) return [];
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select(MESSAGE_FIELDS)
+      .in("message_id", validIds);
+
+    if (error) {
+      console.warn("[MessageModel.findByIds] Warning querying messages:", error.message);
+      return [];
+    }
+
+    const rows = data || [];
+    let attachments = [];
+    try {
+      attachments = await AttachmentModel.findByMessageIds(validIds);
+    } catch {}
+
+    const attachmentsByMsgId = {};
+    attachments.forEach((att) => {
+      const mid = String(att.message_id);
+      if (!attachmentsByMsgId[mid]) attachmentsByMsgId[mid] = [];
+      attachmentsByMsgId[mid].push(att);
+    });
+
+    return rows.map((msg) => {
+      const msgAtts = attachmentsByMsgId[String(msg.message_id)] || [];
+      return formatMessageRow(msg, msgAtts);
+    });
   },
 
   /**
