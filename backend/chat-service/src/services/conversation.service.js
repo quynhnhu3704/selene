@@ -44,11 +44,12 @@ export const ConversationService = {
   },
 
   getAccessible: async (user, id) => {
-    if (!id || typeof id !== "string") {
+    const cleanId = id != null ? String(id).trim() : "";
+    if (!cleanId) {
       throw { status: 400, message: "Mã hội thoại hoặc mã khách hàng không hợp lệ!" };
     }
     // 1. Thử tìm theo conversation_id
-    let conversation = await ConversationModel.findById(id);
+    let conversation = await ConversationModel.findById(cleanId);
 
     // 2. Nếu không tìm thấy, thử tìm theo customer_id
     if (!conversation) {

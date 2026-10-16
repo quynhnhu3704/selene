@@ -47,15 +47,19 @@ const formatMessageRow = (msg, attachments = [], defaultSenderRole = null, react
   }
 
   // Tự động phân loại nếu có file đính kèm nhưng message_type vẫn là text
-  if (fileUrl && messageType === "text") {
-    const ext = (fileName || fileUrl).split(".").pop()?.split("?")[0]?.toLowerCase();
-    const mime = (fileType || "").toLowerCase();
-    if (mime.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext)) {
-      messageType = "image";
-    } else if (mime.startsWith("video/") || ["mp4", "mov", "webm", "mkv"].includes(ext)) {
-      messageType = "video";
+  if ((fileUrl || (attachments && attachments.length > 0)) && messageType === "text") {
+    if (attachments && attachments.length > 1) {
+      messageType = "attachment";
     } else {
-      messageType = "file";
+      const ext = (fileName || fileUrl || "").split(".").pop()?.split("?")[0]?.toLowerCase();
+      const mime = (fileType || "").toLowerCase();
+      if (mime.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext)) {
+        messageType = "image";
+      } else if (mime.startsWith("video/") || ["mp4", "mov", "webm", "mkv"].includes(ext)) {
+        messageType = "video";
+      } else {
+        messageType = "file";
+      }
     }
   }
 
@@ -68,6 +72,10 @@ const formatMessageRow = (msg, attachments = [], defaultSenderRole = null, react
     sender_type: msg.sender_type || defaultSenderRole || "user",
     message_type: messageType,
     content: displayContent,
+    file_url: fileUrl,
+    file_name: fileName,
+    file_size: fileSize,
+    file_type: fileType,
     attachments: attachments,
     reactions: reactionsList,
     reaction_summary: ReactionModel.buildSummary(reactionsList),
@@ -333,7 +341,8 @@ export const MessageModel = {
   },
 
   /**
-   * Tạo tin nhắn mới vào bảng messages và lưu tệp đính kèm vào bảng message_attachments
+   * Tạo tin nhắn mới vào bảng messages và lưu danh sách tệp đính kèm vào bảng message_attachments
+   * Hỗ trợ gửi nhiều ảnh, video, tài liệu cùng lúc
    */
   create: async ({
     messageId,
@@ -344,6 +353,7 @@ export const MessageModel = {
     fileName = null,
     fileSize = null,
     fileType = null,
+    attachments = [],
     senderType = "user",
     messageType = "text",
     replyToMessageId = null,
@@ -352,13 +362,51 @@ export const MessageModel = {
     const now = new Date().toISOString();
     const newMsgId = messageId || crypto.randomUUID();
 
+    // Chuẩn hóa danh sách tệp đính kèm
+    let normalizedAttachments = [];
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      normalizedAttachments = attachments.map((att) => ({
+        attachment_id: att.attachment_id || att.attachmentId || crypto.randomUUID(),
+        file_url: att.file_url || att.fileUrl,
+        file_name: att.file_name || att.fileName || "file",
+        file_type: att.file_type || att.fileType || "application/octet-stream",
+        file_size: att.file_size != null ? Number(att.file_size) : (att.fileSize != null ? Number(att.fileSize) : null),
+        message_id: String(newMsgId),
+      }));
+    } else if (fileUrl) {
+      normalizedAttachments = [
+        {
+          attachment_id: crypto.randomUUID(),
+          file_url: fileUrl,
+          file_name: fileName || "file",
+          file_type: fileType || "application/octet-stream",
+          file_size: fileSize ? Number(fileSize) : null,
+          message_id: String(newMsgId),
+        },
+      ];
+    }
+
+    // Tự động suy luận message_type nếu có attachments nhưng messageType đang là text
+    let finalMessageType = messageType || "text";
+    if (normalizedAttachments.length > 0 && finalMessageType === "text") {
+      finalMessageType = normalizedAttachments.length > 1 ? "attachment" : "file";
+    }
+
+    // Chuẩn bị nội dung text của tin nhắn
+    let defaultContent = "Tin nhắn";
+    if (normalizedAttachments.length === 1) {
+      defaultContent = normalizedAttachments[0].file_name || "[Tệp đính kèm]";
+    } else if (normalizedAttachments.length > 1) {
+      defaultContent = `[${normalizedAttachments.length} tệp đính kèm]`;
+    }
+
     const insertPayload = {
       message_id: newMsgId,
       conversation_id: conversationId,
       sender_id: senderId || null,
       sender_type: senderType || "user",
-      message_type: messageType || "text",
-      content: content || fileName || (fileUrl ? "[Tệp đính kèm]" : "Tin nhắn"),
+      message_type: finalMessageType,
+      content: content || defaultContent,
       reply_to_message_id: replyToMessageId || null,
       status: status || "sent",
       created_at: now,
@@ -430,45 +478,44 @@ export const MessageModel = {
 
     if (error) throw error;
 
-    // 3. NẾU CÓ TỆP ĐÍNH KÈM: Lưu vào bảng message_attachments
-    let savedAttachment = null;
-    if (fileUrl && data?.message_id) {
+    // 5. NẾU CÓ TỆP ĐÍNH KÈM: Lưu toàn bộ danh sách vào bảng message_attachments
+    let savedAttachments = [];
+    if (normalizedAttachments.length > 0 && data?.message_id) {
       try {
-        savedAttachment = await AttachmentModel.create({
-          attachmentId: crypto.randomUUID(),
-          messageId: String(data.message_id),
-          fileUrl: fileUrl,
-          fileName: fileName || "file",
-          fileType: fileType || "application/octet-stream",
-          fileSize: fileSize ? Number(fileSize) : null,
-        });
-      } catch (attError) {
-        console.warn("[MessageModel.create] Warning saving attachment to message_attachments:", attError.message);
-        // Lưu tạm attachment dạng object trả về cho client
-        savedAttachment = {
-          attachment_id: crypto.randomUUID(),
+        const attsWithMsgId = normalizedAttachments.map((a) => ({
+          ...a,
           message_id: String(data.message_id),
-          file_url: fileUrl,
-          file_name: fileName || "file",
-          file_type: fileType || "application/octet-stream",
-          file_size: fileSize ? Number(fileSize) : null,
+          attachment_id: a.attachment_id || crypto.randomUUID(),
+        }));
+        savedAttachments = await AttachmentModel.createMany(attsWithMsgId);
+      } catch (attError) {
+        console.warn("[MessageModel.create] Warning saving attachments to message_attachments:", attError.message);
+        savedAttachments = normalizedAttachments.map((a) => ({
+          ...a,
+          attachment_id: a.attachment_id || crypto.randomUUID(),
+          message_id: String(data.message_id),
           created_at: now,
-        };
+        }));
       }
     }
 
-    const attachmentsList = savedAttachment ? [savedAttachment] : [];
+    const firstAtt = savedAttachments.length > 0 ? savedAttachments[0] : null;
 
     return {
       ...data,
-      attachments: attachmentsList,
+      attachments: savedAttachments,
+      // Các trường file trực tiếp cho tương thích ngược
+      file_url: firstAtt?.file_url || null,
+      file_name: firstAtt?.file_name || null,
+      file_size: firstAtt?.file_size ? Number(firstAtt.file_size) : null,
+      file_type: firstAtt?.file_type || null,
       reactions: [],
       reaction_summary: ReactionModel.buildSummary([]),
       reply_to_message_id: data.reply_to_message_id || replyToMessageId || null,
       message_type:
-        data.message_type === "text" && messageType !== "text"
-          ? messageType
-          : data.message_type || messageType,
+        data.message_type === "text" && finalMessageType !== "text"
+          ? finalMessageType
+          : data.message_type || finalMessageType,
     };
   },
 

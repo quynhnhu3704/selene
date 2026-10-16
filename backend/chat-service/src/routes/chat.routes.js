@@ -45,8 +45,9 @@ router.post("/messages/text", sendTextMessage);
 // ROUTE GỬI HÌNH ẢNH, VIDEO, TỆP ĐÍNH KÈM
 // =========================================================
 
-// 5. Gửi tin nhắn đính kèm file/hình ảnh/video trực tiếp (multipart/form-data)
-router.post("/messages/attachment", chatUpload.any(), sendAttachmentMessage);
+// 5. Gửi tin nhắn đính kèm một hoặc nhiều file/hình ảnh/video (multipart/form-data)
+router.post("/messages/attachments", chatUpload.any(), sendAttachmentMessage);
+
 
 // =========================================================
 // ROUTE TRẢ LỜI (REPLY) TIN NHẮN

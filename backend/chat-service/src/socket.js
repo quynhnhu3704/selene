@@ -92,7 +92,18 @@ export const createChatSocket = (server) => {
           reaction || emoji
         );
 
-        io.to(`conversation:${result.conversation_id}`).emit("message:reaction", {
+        const targetRooms = [
+          `conversation:${result.conversation_id}`,
+          result.conversation?.customer_id ? `customer:${result.conversation.customer_id}` : null,
+          "support:staff",
+        ].filter(Boolean);
+
+        let emitter = io;
+        targetRooms.forEach((room) => {
+          emitter = emitter.to(room);
+        });
+
+        emitter.emit("message:reaction", {
           action: result.action,
           message_id: result.message_id,
           conversation_id: result.conversation_id,

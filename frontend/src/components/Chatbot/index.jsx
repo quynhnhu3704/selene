@@ -32,7 +32,7 @@ function formatFileSize(bytes) {
   return `${(num / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Trích xuất thông tin media từ tin nhắn (ảnh, video, file, audio)
+// Trích xuất thông tin media từ tin nhắn (ảnh, video, file, audio, danh sách attachments)
 function resolveMedia(message) {
   let fileUrl = message.file_url || null;
   let fileName = message.file_name || null;
@@ -41,12 +41,14 @@ function resolveMedia(message) {
   let messageType = message.message_type || "text";
   let caption = message.content || message.text || "";
 
-  if (!fileUrl && Array.isArray(message.attachments) && message.attachments.length > 0) {
-    const firstAtt = message.attachments[0];
-    fileUrl = firstAtt.file_url;
-    fileName = firstAtt.file_name;
-    fileSize = firstAtt.file_size;
-    fileType = firstAtt.file_type;
+  let attachmentsList = Array.isArray(message.attachments) ? message.attachments : [];
+
+  if (attachmentsList.length > 0) {
+    const firstAtt = attachmentsList[0];
+    fileUrl = fileUrl || firstAtt.file_url;
+    fileName = fileName || firstAtt.file_name;
+    fileSize = fileSize || firstAtt.file_size;
+    fileType = fileType || firstAtt.file_type;
   }
 
   if (typeof caption === "string" && caption.startsWith("{")) {
@@ -101,11 +103,12 @@ function resolveMedia(message) {
     caption === fileUrl ||
     caption === "[Hình ảnh]" ||
     caption === "[Video]" ||
-    caption === "[Tệp đính kèm]";
+    caption === "[Tệp đính kèm]" ||
+    /^\[\d+\s+(hình ảnh|video|ghi âm|tệp đính kèm)\]$/i.test(caption.trim());
 
   const displayCaption = isCaptionRedundant ? "" : caption;
 
-  return { fileUrl, fileName, fileSize, fileType, messageType, displayCaption };
+  return { fileUrl, fileName, fileSize, fileType, messageType, displayCaption, attachmentsList };
 }
 
 // Giữ giao diện chat mẫu, nhận văn bản, tệp tin và sản phẩm riêng từ API của Selene.
@@ -119,8 +122,8 @@ function Chatbot() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [conversationStatus, setConversationStatus] = useState("open");
   const [conversationId, setConversationId] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [filePreviewUrl, setFilePreviewUrl] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [filePreviews, setFilePreviews] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [replyingTo, setReplyingTo] = useState(null);
 
@@ -288,6 +291,9 @@ function Chatbot() {
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
+    if (socketRef.current && conversationId) {
+      socketRef.current.emit("conversation:join", conversationId);
+    }
   }, [conversationId]);
 
   // Chỉ tự động cuộn xuống đáy khi có yêu cầu (mới gửi tin nhắn hoặc người dùng đang ở đáy)
@@ -301,32 +307,64 @@ function Chatbot() {
     }
   }, [messages, isSending]);
 
-  // Chọn tệp đính kèm (ảnh, video, file tài liệu)
+  // Chọn tệp đính kèm (hỗ trợ nhiều ảnh, video, tệp tin cùng lúc)
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const rawFiles = Array.from(e.target.files || []);
+    if (!rawFiles.length) return;
+
+    const validFiles = [];
+    const newPreviews = [];
+
+    for (const file of rawFiles) {
       if (file.size > 50 * 1024 * 1024) {
-        alert("Kích thước tệp tin không được vượt quá 50MB!");
-        e.target.value = "";
-        return;
+        alert(`Tệp "${file.name}" vượt quá dung lượng cho phép (50MB)!`);
+        continue;
       }
-      setSelectedFile(file);
-      if (file.type.startsWith("image/")) {
-        const preview = URL.createObjectURL(file);
-        setFilePreviewUrl(preview);
-      } else {
-        setFilePreviewUrl(null);
-      }
+      validFiles.push(file);
+      const isImg = file.type.startsWith("image/");
+      const isVid = file.type.startsWith("video/");
+      const isAud = file.type.startsWith("audio/");
+      newPreviews.push({
+        file,
+        previewUrl: isImg ? URL.createObjectURL(file) : null,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        isImage: isImg,
+        isVideo: isVid,
+        isAudio: isAud,
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...validFiles]);
+      setFilePreviews((prev) => [...prev, ...newPreviews]);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
-  // Hủy chọn tệp
-  const removeSelectedFile = () => {
-    if (filePreviewUrl) {
-      URL.revokeObjectURL(filePreviewUrl);
-      setFilePreviewUrl(null);
-    }
-    setSelectedFile(null);
+  // Hủy một tệp tin đã chọn
+  const removeSelectedFileAt = (index) => {
+    setFilePreviews((prev) => {
+      const target = prev[index];
+      if (target?.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Hủy toàn bộ tệp tin đã chọn
+  const clearAllSelectedFiles = () => {
+    filePreviews.forEach((item) => {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+    setFilePreviews([]);
+    setSelectedFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -361,7 +399,7 @@ function Chatbot() {
               (m) => m.message_id && !prevIds.has(String(m.message_id))
             );
 
-            // Kiểm tra xem có tin nhắn nào bị chỉnh sửa nội dung/trạng thái không
+            // Kiểm tra xem có tin nhắn nào bị chỉnh sửa nội dung/trạng thái/biểu cảm không
             let hasModified = false;
             if (!hasNewMessages) {
               const prevMap = new Map(prev.map((m) => [String(m.message_id), m]));
@@ -373,7 +411,10 @@ function Chatbot() {
                   (existing.content !== m.content ||
                     existing.status !== m.status ||
                     existing.message_type !== m.message_type ||
-                    existing.reply_to?.message_id !== m.reply_to?.message_id)
+                    existing.reply_to?.message_id !== m.reply_to?.message_id ||
+                    Number(existing.reaction_summary?.total || 0) !== Number(m.reaction_summary?.total || 0) ||
+                    (existing.reactions || []).length !== (m.reactions || []).length ||
+                    JSON.stringify(existing.reactions || []) !== JSON.stringify(m.reactions || []))
                 ) {
                   hasModified = true;
                   break;
@@ -491,8 +532,10 @@ function Chatbot() {
           if (!payload?.message_id) return;
           setMessages((prev) => {
             if (!prev) return prev;
-            return prev.map((m) => {
+            let found = false;
+            const updated = prev.map((m) => {
               if (String(m.message_id) === String(payload.message_id)) {
+                found = true;
                 return {
                   ...m,
                   reactions: payload.reactions || [],
@@ -504,6 +547,7 @@ function Chatbot() {
               }
               return m;
             });
+            return found ? updated : prev;
           });
         });
       }
@@ -686,11 +730,12 @@ function Chatbot() {
     }
   };
 
-  // Gửi tin nhắn loại text hoặc đính kèm tệp tin (ảnh/video/file) vào CSKH, có hỗ trợ reply
+  // Gửi tin nhắn loại text hoặc đính kèm nhiều tệp tin (ảnh/video/file) vào CSKH, có hỗ trợ reply
   const send = async () => {
-    if ((!message.trim() && !selectedFile) || sendingRef.current) return;
+    if ((!message.trim() && selectedFiles.length === 0) || sendingRef.current) return;
     const text = message.trim();
-    const fileToSend = selectedFile;
+    const filesToSend = [...selectedFiles];
+    const previewsToSend = [...filePreviews];
     const replying = replyingTo;
 
     if (!isLoggedIn()) {
@@ -710,22 +755,34 @@ function Chatbot() {
     }
 
     const tempId = "client-" + Date.now();
+    const hasFiles = filesToSend.length > 0;
+    const firstPreview = previewsToSend[0];
+
     const optimisticMsg = {
       message_id: tempId,
       role: "user",
       sender_role: "customer",
-      content: text || (fileToSend ? fileToSend.name : ""),
-      file_url: filePreviewUrl || null,
-      file_name: fileToSend ? fileToSend.name : null,
-      file_size: fileToSend ? fileToSend.size : null,
-      file_type: fileToSend ? fileToSend.type : null,
-      message_type: fileToSend
-        ? fileToSend.type.startsWith("image/")
+      content: text || (hasFiles ? (filesToSend.length === 1 ? filesToSend[0].name : `[${filesToSend.length} tệp đính kèm]`) : ""),
+      file_url: firstPreview?.previewUrl || null,
+      file_name: firstPreview?.name || null,
+      file_size: firstPreview?.size || null,
+      file_type: firstPreview?.type || null,
+      message_type: hasFiles
+        ? filesToSend.length > 1
+          ? "attachment"
+          : firstPreview?.isImage
           ? "image"
-          : fileToSend.type.startsWith("video/")
+          : firstPreview?.isVideo
           ? "video"
           : "file"
         : "text",
+      attachments: previewsToSend.map((p, idx) => ({
+        attachment_id: `temp-att-${idx}-${Date.now()}`,
+        file_url: p.previewUrl || "",
+        file_name: p.name,
+        file_size: p.size,
+        file_type: p.type,
+      })),
       reply_to_message_id: replying?.message_id || null,
       reply_to: replying || null,
       created_at: new Date().toISOString(),
@@ -738,15 +795,15 @@ function Chatbot() {
     setMessages((prev) => [...prev, optimisticMsg]);
     setMessage("");
     setReplyingTo(null);
-    removeSelectedFile();
+    clearAllSelectedFiles();
     setIsSending(true);
 
     try {
       let res;
       if (replying?.message_id) {
-        if (fileToSend) {
+        if (hasFiles) {
           const formData = new FormData();
-          formData.append("file", fileToSend);
+          filesToSend.forEach((f) => formData.append("files", f));
           if (text) formData.append("content", text);
           formData.append("reply_to_message_id", replying.message_id);
           if (conversationIdRef.current) {
@@ -759,9 +816,9 @@ function Chatbot() {
             conversation_id: conversationIdRef.current || undefined,
           });
         }
-      } else if (fileToSend) {
+      } else if (hasFiles) {
         const formData = new FormData();
-        formData.append("file", fileToSend);
+        filesToSend.forEach((f) => formData.append("files", f));
         if (text) formData.append("content", text);
         if (conversationIdRef.current) {
           formData.append("conversation_id", conversationIdRef.current);
@@ -940,7 +997,7 @@ function Chatbot() {
             {messages.map((msg, index) => {
               const isCustomer = msg.sender_role === "customer" || msg.role === "user";
               const isStaff = msg.sender_role === "staff" || msg.sender_role === "admin";
-              const { fileUrl, fileName, fileSize, messageType, displayCaption } = resolveMedia(msg);
+              const { fileUrl, fileName, fileSize, messageType, displayCaption, attachmentsList } = resolveMedia(msg);
               const textContent = displayCaption || msg.content || msg.text || "";
               const timeString = msg.created_at
                 ? new Date(msg.created_at).toLocaleTimeString("vi-VN", {
@@ -1068,89 +1125,190 @@ function Chatbot() {
                       </span>
                     )}
 
-                    {/* 1. Tin nhắn hình ảnh */}
-                    {fileUrl && messageType === "image" && (
-                      <div className="chatbot-media-box">
-                        <a
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Bấm để xem ảnh đầy đủ"
+                    {/* Hiển thị nhiều attachments nếu tin nhắn có từ 2 tệp đính kèm trở lên */}
+                    {attachmentsList && attachmentsList.length > 1 ? (
+                      <div className="chatbot-multi-attachments">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "6px",
+                            maxWidth: "320px",
+                            marginTop: "2px",
+                            marginBottom: "4px",
+                          }}
                         >
-                          <img
-                            src={fileUrl}
-                            alt={fileName || "Hình ảnh đính kèm"}
-                            className="chatbot-img-preview"
-                            loading="lazy"
-                          />
-                        </a>
-                        {textContent && (
-                          <div className="chatbot-media-caption">{textContent}</div>
-                        )}
-                      </div>
-                    )}
+                          {attachmentsList.map((att, idx) => {
+                            const attUrl = att.file_url;
+                            const attName = att.file_name || "file";
+                            const attType = (att.file_type || "").toLowerCase();
+                            const ext = (attName.split(".").pop() || "").toLowerCase();
+                            const isImg =
+                              attType.startsWith("image/") ||
+                              ["jpg", "jpeg", "png", "webp", "gif", "svg", "bmp", "heic", "avif"].includes(ext);
+                            const isVid =
+                              attType.startsWith("video/") ||
+                              ["mp4", "mov", "webm", "mkv", "avi"].includes(ext);
+                            const isAud =
+                              attType.startsWith("audio/") ||
+                              ["mp3", "wav", "ogg", "m4a"].includes(ext);
 
-                    {/* 2. Tin nhắn video */}
-                    {fileUrl && messageType === "video" && (
-                      <div className="chatbot-media-box">
-                        <video
-                          controls
-                          src={fileUrl}
-                          className="chatbot-video-preview"
-                          preload="metadata"
-                        >
-                          Trình duyệt không hỗ trợ phát video này.
-                        </video>
-                        {textContent && (
-                          <div className="chatbot-media-caption">{textContent}</div>
-                        )}
-                      </div>
-                    )}
+                            if (isImg) {
+                              return (
+                                <a
+                                  key={att.attachment_id || idx}
+                                  href={attUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Xem ảnh: ${attName}`}
+                                  style={{
+                                    borderRadius: "8px",
+                                    overflow: "hidden",
+                                    border: "1px solid rgba(0,0,0,0.08)",
+                                    display: "inline-block",
+                                    flex: attachmentsList.length === 2 ? "1 1 calc(50% - 6px)" : "1 1 calc(33.3% - 6px)",
+                                    maxWidth: "150px",
+                                    minWidth: "85px",
+                                  }}
+                                >
+                                  <img
+                                    src={attUrl}
+                                    alt={attName}
+                                    style={{
+                                      width: "100%",
+                                      height: "90px",
+                                      objectFit: "cover",
+                                      display: "block",
+                                    }}
+                                    loading="lazy"
+                                  />
+                                </a>
+                              );
+                            }
 
-                    {/* 3. Tin nhắn âm thanh */}
-                    {fileUrl && messageType === "audio" && (
-                      <div className="chatbot-media-box">
-                        <audio controls src={fileUrl} className="chatbot-audio-preview" />
-                        {textContent && (
-                          <div className="chatbot-media-caption">{textContent}</div>
-                        )}
-                      </div>
-                    )}
+                            if (isVid) {
+                              return (
+                                <div key={att.attachment_id || idx} style={{ width: "100%", maxWidth: "280px", marginBottom: "4px" }}>
+                                  <video controls src={attUrl} style={{ width: "100%", borderRadius: "8px", maxHeight: "180px" }} preload="metadata" />
+                                </div>
+                              );
+                            }
 
-                    {/* 4. Tin nhắn tệp tin / tài liệu */}
-                    {fileUrl && messageType === "file" && (
-                      <div className="chatbot-file-box">
-                        <a
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={fileName || true}
-                          className="chatbot-file-link"
-                          title="Bấm để tải về"
-                        >
-                          <div className="chatbot-file-icon">
-                            <i className="bi bi-file-earmark-arrow-down-fill" />
-                          </div>
-                          <div className="chatbot-file-meta">
-                            <div className="chatbot-file-title" title={fileName || "Tệp tin"}>
-                              {fileName || "Tệp tin đính kèm"}
-                            </div>
-                            {fileSize && (
-                              <div className="chatbot-file-size">
-                                {formatFileSize(fileSize)}
+                            if (isAud) {
+                              return (
+                                <div key={att.attachment_id || idx} style={{ width: "100%", maxWidth: "260px", marginBottom: "4px" }}>
+                                  <audio controls src={attUrl} style={{ width: "100%" }} />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={att.attachment_id || idx} className="chatbot-file-box" style={{ width: "100%", marginBottom: "4px" }}>
+                                <a href={attUrl} target="_blank" rel="noopener noreferrer" download={attName || true} className="chatbot-file-link" title="Bấm để tải về">
+                                  <div className="chatbot-file-icon">
+                                    <i className="bi bi-file-earmark-arrow-down-fill" />
+                                  </div>
+                                  <div className="chatbot-file-meta">
+                                    <div className="chatbot-file-title" title={attName}>{attName}</div>
+                                    {att.file_size && <div className="chatbot-file-size">{formatFileSize(att.file_size)}</div>}
+                                  </div>
+                                  <i className="bi bi-download chatbot-file-dl-icon" />
+                                </a>
                               </div>
+                            );
+                          })}
+                        </div>
+                        {displayCaption && <div className="chatbot-media-caption">{displayCaption}</div>}
+                      </div>
+                    ) : (
+                      <>
+                        {/* 1. Tin nhắn hình ảnh */}
+                        {fileUrl && messageType === "image" && (
+                          <div className="chatbot-media-box">
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Bấm để xem ảnh đầy đủ"
+                            >
+                              <img
+                                src={fileUrl}
+                                alt={fileName || "Hình ảnh đính kèm"}
+                                className="chatbot-img-preview"
+                                loading="lazy"
+                              />
+                            </a>
+                            {textContent && (
+                              <div className="chatbot-media-caption">{textContent}</div>
                             )}
                           </div>
-                          <i className="bi bi-download chatbot-file-dl-icon" />
-                        </a>
-                        {textContent && (
-                          <div className="chatbot-media-caption">{textContent}</div>
                         )}
-                      </div>
+
+                        {/* 2. Tin nhắn video */}
+                        {fileUrl && messageType === "video" && (
+                          <div className="chatbot-media-box">
+                            <video
+                              controls
+                              src={fileUrl}
+                              className="chatbot-video-preview"
+                              preload="metadata"
+                            >
+                              Trình duyệt không hỗ trợ phát video này.
+                            </video>
+                            {textContent && (
+                              <div className="chatbot-media-caption">{textContent}</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 3. Tin nhắn âm thanh */}
+                        {fileUrl && messageType === "audio" && (
+                          <div className="chatbot-media-box">
+                            <audio controls src={fileUrl} className="chatbot-audio-preview" />
+                            {textContent && (
+                              <div className="chatbot-media-caption">{textContent}</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 4. Tin nhắn tệp tin / tài liệu */}
+                        {fileUrl && messageType === "file" && (
+                          <div className="chatbot-file-box">
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={fileName || true}
+                              className="chatbot-file-link"
+                              title="Bấm để tải về"
+                            >
+                              <div className="chatbot-file-icon">
+                                <i className="bi bi-file-earmark-arrow-down-fill" />
+                              </div>
+                              <div className="chatbot-file-meta">
+                                <div className="chatbot-file-title" title={fileName || "Tệp tin"}>
+                                  {fileName || "Tệp tin đính kèm"}
+                                </div>
+                                {fileSize && (
+                                  <div className="chatbot-file-size">
+                                    {formatFileSize(fileSize)}
+                                  </div>
+                                )}
+                              </div>
+                              <i className="bi bi-download chatbot-file-dl-icon" />
+                            </a>
+                            {textContent && (
+                              <div className="chatbot-media-caption">{textContent}</div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* 5. Tin nhắn văn bản thuần túy */}
-                    {!fileUrl && <div className="bubble-content">{textContent}</div>}
+                    {!fileUrl && (!attachmentsList || attachmentsList.length === 0) && (
+                      <div className="bubble-content">{textContent}</div>
+                    )}
 
                     {timeString && <div className="bubble-time">{timeString}</div>}
                     {msg.products?.length > 0 && (
@@ -1242,32 +1400,78 @@ function Chatbot() {
             </button>
           )}
 
-          {/* Thanh xem trước tệp tin trước khi gửi */}
-          {selectedFile && (
-            <div className="chatbot-file-preview-bar">
-              {filePreviewUrl ? (
-                <img
-                  src={filePreviewUrl}
-                  alt="Preview"
-                  className="chatbot-preview-thumb"
-                />
-              ) : (
-                <i className="bi bi-paperclip text-danger fs-5" />
-              )}
-              <div className="chatbot-preview-info">
-                <span className="chatbot-preview-name">{selectedFile.name}</span>
-                <span className="chatbot-preview-size">
-                  ({formatFileSize(selectedFile.size)})
-                </span>
-              </div>
-              <button
-                type="button"
-                className="chatbot-preview-remove"
-                onClick={removeSelectedFile}
-                title="Hủy chọn tệp"
-              >
-                <i className="bi bi-x-circle-fill" />
-              </button>
+          {/* Thanh xem trước danh sách tệp tin trước khi gửi */}
+          {filePreviews.length > 0 && (
+            <div
+              className="chatbot-file-preview-bar"
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                maxHeight: "130px",
+                overflowY: "auto",
+                padding: "8px 12px",
+                background: "#f8f9fa",
+                borderTop: "1px solid #e9ecef",
+              }}
+            >
+              {filePreviews.map((p, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "#ffffff",
+                    border: "1px solid #dee2e6",
+                    borderRadius: "6px",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    maxWidth: "200px",
+                  }}
+                >
+                  {p.previewUrl ? (
+                    <img
+                      src={p.previewUrl}
+                      alt="Preview"
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        objectFit: "cover",
+                        borderRadius: "4px",
+                      }}
+                    />
+                  ) : (
+                    <i className="bi bi-file-earmark text-primary" style={{ fontSize: "16px" }} />
+                  )}
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "110px",
+                    }}
+                    title={p.name}
+                  >
+                    {p.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeSelectedFileAt(idx)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#dc3545",
+                      cursor: "pointer",
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                    title="Xóa tệp này"
+                  >
+                    <i className="bi bi-x-circle-fill" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
@@ -1311,13 +1515,14 @@ function Chatbot() {
               onChange={handleFileChange}
               accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
               disabled={isSending}
+              multiple
             />
             <button
               type="button"
               className="attach-btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={isSending}
-              title="Đính kèm hình ảnh, video hoặc tệp tin"
+              title="Đính kèm hình ảnh, video hoặc tệp tin (chọn nhiều tệp)"
               aria-label="Đính kèm tệp"
             >
               <i className="bi bi-paperclip" />
@@ -1328,8 +1533,8 @@ function Chatbot() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={
-                selectedFile
-                  ? "Thêm chú thích cho tệp tin (tùy chọn)..."
+                filePreviews.length > 0
+                  ? `Thêm chú thích cho ${filePreviews.length} tệp tin (tùy chọn)...`
                   : replyingTo
                   ? "Trả lời tin nhắn..."
                   : "Hỏi về trang phục, so sánh, giá tốt..."
@@ -1352,9 +1557,9 @@ function Chatbot() {
             />
             <button
               type="button"
-              className={`send-btn ${(!message.trim() && !selectedFile) || isSending ? "disabled" : ""}`}
+              className={`send-btn ${(!message.trim() && filePreviews.length === 0) || isSending ? "disabled" : ""}`}
               onClick={send}
-              disabled={(!message.trim() && !selectedFile) || isSending}
+              disabled={(!message.trim() && filePreviews.length === 0) || isSending}
               aria-label="Gửi tin nhắn"
             >
               {isSending ? (

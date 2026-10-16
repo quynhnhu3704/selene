@@ -25,13 +25,15 @@ function resolveMedia(message) {
   let messageType = message.message_type || "text";
   let caption = message.content || "";
 
+  let attachmentsList = Array.isArray(message.attachments) ? message.attachments : [];
+
   // Nếu tin nhắn có danh sách attachments từ bảng message_attachments
-  if (!fileUrl && Array.isArray(message.attachments) && message.attachments.length > 0) {
-    const firstAtt = message.attachments[0];
-    fileUrl = firstAtt.file_url;
-    fileName = firstAtt.file_name;
-    fileSize = firstAtt.file_size;
-    fileType = firstAtt.file_type;
+  if (attachmentsList.length > 0) {
+    const firstAtt = attachmentsList[0];
+    fileUrl = fileUrl || firstAtt.file_url;
+    fileName = fileName || firstAtt.file_name;
+    fileSize = fileSize || firstAtt.file_size;
+    fileType = fileType || firstAtt.file_type;
   }
 
   // Dự phòng: Nếu content là JSON fallback
@@ -90,11 +92,12 @@ function resolveMedia(message) {
     caption === fileUrl ||
     caption === "[Hình ảnh]" ||
     caption === "[Video]" ||
-    caption === "[Tệp đính kèm]";
+    caption === "[Tệp đính kèm]" ||
+    /^\[\d+\s+(hình ảnh|video|ghi âm|tệp đính kèm)\]$/i.test(caption.trim());
 
   const displayCaption = isCaptionRedundant ? "" : caption;
 
-  return { fileUrl, fileName, fileSize, fileType, messageType, displayCaption };
+  return { fileUrl, fileName, fileSize, fileType, messageType, displayCaption, attachmentsList };
 }
 
 export default function MessageList({
@@ -230,7 +233,7 @@ export default function MessageList({
               message.sender_role === "admin"
             );
 
-        const { fileUrl, fileName, fileSize, messageType, displayCaption } = resolveMedia(message);
+        const { fileUrl, fileName, fileSize, messageType, displayCaption, attachmentsList } = resolveMedia(message);
 
         const hasReactions =
           Boolean(message.reaction_summary?.total > 0) ||
@@ -346,87 +349,217 @@ export default function MessageList({
                 </div>
               )}
 
-              {/* 1. Tin nhắn Hình ảnh */}
-              {fileUrl && messageType === "image" && (
-                <div className="support-media-box">
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Bấm để xem ảnh kích thước đầy đủ"
+              {/* Hiển thị danh sách nhiều tệp tin khi tin nhắn chứa nhiều attachments */}
+              {attachmentsList && attachmentsList.length > 1 ? (
+                <div className="support-multi-attachments">
+                  <div
+                    className="support-attachments-grid"
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                      maxWidth: "420px",
+                      marginTop: "2px",
+                      marginBottom: "4px",
+                    }}
                   >
-                    <img
-                      src={fileUrl}
-                      alt={fileName || "Hình ảnh đính kèm"}
-                      className="support-img-preview"
-                      loading="lazy"
-                    />
-                  </a>
-                  {displayCaption && (
-                    <div className="support-media-caption">{displayCaption}</div>
-                  )}
-                </div>
-              )}
+                    {attachmentsList.map((att, idx) => {
+                      const attUrl = att.file_url;
+                      const attName = att.file_name || "file";
+                      const attType = (att.file_type || "").toLowerCase();
+                      const ext = (attName.split(".").pop() || "").toLowerCase();
+                      const isImg =
+                        attType.startsWith("image/") ||
+                        ["jpg", "jpeg", "png", "webp", "gif", "svg", "bmp", "heic", "avif"].includes(ext);
+                      const isVid =
+                        attType.startsWith("video/") ||
+                        ["mp4", "mov", "webm", "mkv", "avi"].includes(ext);
+                      const isAud =
+                        attType.startsWith("audio/") ||
+                        ["mp3", "wav", "ogg", "m4a"].includes(ext);
 
-              {/* 2. Tin nhắn Video */}
-              {fileUrl && messageType === "video" && (
-                <div className="support-media-box">
-                  <video
-                    controls
-                    src={fileUrl}
-                    className="support-video-preview"
-                    preload="metadata"
-                  >
-                    Trình duyệt không hỗ trợ phát video này.
-                  </video>
-                  {displayCaption && (
-                    <div className="support-media-caption">{displayCaption}</div>
-                  )}
-                </div>
-              )}
+                      if (isImg) {
+                        return (
+                          <a
+                            key={att.attachment_id || idx}
+                            href={attUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`Xem ảnh: ${attName}`}
+                            style={{
+                              borderRadius: "8px",
+                              overflow: "hidden",
+                              border: "1px solid rgba(0,0,0,0.08)",
+                              display: "inline-block",
+                              flex: attachmentsList.length === 2 ? "1 1 calc(50% - 6px)" : "1 1 calc(33.3% - 6px)",
+                              maxWidth: "180px",
+                              minWidth: "95px",
+                            }}
+                          >
+                            <img
+                              src={attUrl}
+                              alt={attName}
+                              style={{
+                                width: "100%",
+                                height: "105px",
+                                objectFit: "cover",
+                                display: "block",
+                              }}
+                              loading="lazy"
+                            />
+                          </a>
+                        );
+                      }
 
-              {/* 3. Tin nhắn Âm thanh / Ghi âm */}
-              {fileUrl && messageType === "audio" && (
-                <div className="support-media-box">
-                  <audio controls src={fileUrl} className="support-audio-preview" />
-                  {displayCaption && (
-                    <div className="support-media-caption">{displayCaption}</div>
-                  )}
-                </div>
-              )}
+                      if (isVid) {
+                        return (
+                          <div
+                            key={att.attachment_id || idx}
+                            style={{ width: "100%", maxWidth: "340px", marginBottom: "4px" }}
+                          >
+                            <video
+                              controls
+                              src={attUrl}
+                              style={{ width: "100%", borderRadius: "8px", maxHeight: "200px" }}
+                              preload="metadata"
+                            />
+                          </div>
+                        );
+                      }
 
-              {/* 4. Tin nhắn Tệp tin / Tài liệu đính kèm */}
-              {fileUrl && messageType === "file" && (
-                <div className="support-file-box">
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={fileName || true}
-                    className="support-file-link"
-                    title="Bấm để tải về"
-                  >
-                    <div className="support-file-icon">
-                      <i className="bi bi-file-earmark-arrow-down-fill" />
-                    </div>
-                    <div className="support-file-meta">
-                      <div className="support-file-title" title={fileName || "Tệp tin đính kèm"}>
-                        {fileName || "Tệp tin đính kèm"}
-                      </div>
-                      {fileSize && (
-                        <div className="support-file-size">{formatFileSize(fileSize)}</div>
-                      )}
-                    </div>
-                    <i className="bi bi-download support-file-dl-icon" />
-                  </a>
+                      if (isAud) {
+                        return (
+                          <div
+                            key={att.attachment_id || idx}
+                            style={{ width: "100%", maxWidth: "300px", marginBottom: "4px" }}
+                          >
+                            <audio controls src={attUrl} style={{ width: "100%" }} />
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={att.attachment_id || idx}
+                          className="support-file-box"
+                          style={{ width: "100%", marginBottom: "4px" }}
+                        >
+                          <a
+                            href={attUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={attName || true}
+                            className="support-file-link"
+                            title="Bấm để tải về"
+                          >
+                            <div className="support-file-icon">
+                              <i className="bi bi-file-earmark-arrow-down-fill" />
+                            </div>
+                            <div className="support-file-meta">
+                              <div className="support-file-title" title={attName}>
+                                {attName}
+                              </div>
+                              {att.file_size && (
+                                <div className="support-file-size">
+                                  {formatFileSize(att.file_size)}
+                                </div>
+                              )}
+                            </div>
+                            <i className="bi bi-download support-file-dl-icon" />
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
                   {displayCaption && (
                     <div className="support-media-caption mt-1">{displayCaption}</div>
                   )}
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* 1. Tin nhắn Hình ảnh */}
+                  {fileUrl && messageType === "image" && (
+                    <div className="support-media-box">
+                      <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Bấm để xem ảnh kích thước đầy đủ"
+                      >
+                        <img
+                          src={fileUrl}
+                          alt={fileName || "Hình ảnh đính kèm"}
+                          className="support-img-preview"
+                          loading="lazy"
+                        />
+                      </a>
+                      {displayCaption && (
+                        <div className="support-media-caption">{displayCaption}</div>
+                      )}
+                    </div>
+                  )}
 
-              {/* 5. Tin nhắn văn bản thuần túy */}
-              {!fileUrl && <div>{message.content}</div>}
+                  {/* 2. Tin nhắn Video */}
+                  {fileUrl && messageType === "video" && (
+                    <div className="support-media-box">
+                      <video
+                        controls
+                        src={fileUrl}
+                        className="support-video-preview"
+                        preload="metadata"
+                      >
+                        Trình duyệt không hỗ trợ phát video này.
+                      </video>
+                      {displayCaption && (
+                        <div className="support-media-caption">{displayCaption}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 3. Tin nhắn Âm thanh / Ghi âm */}
+                  {fileUrl && messageType === "audio" && (
+                    <div className="support-media-box">
+                      <audio controls src={fileUrl} className="support-audio-preview" />
+                      {displayCaption && (
+                        <div className="support-media-caption">{displayCaption}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 4. Tin nhắn Tệp tin / Tài liệu đính kèm */}
+                  {fileUrl && messageType === "file" && (
+                    <div className="support-file-box">
+                      <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={fileName || true}
+                        className="support-file-link"
+                        title="Bấm để tải về"
+                      >
+                        <div className="support-file-icon">
+                          <i className="bi bi-file-earmark-arrow-down-fill" />
+                        </div>
+                        <div className="support-file-meta">
+                          <div className="support-file-title" title={fileName || "Tệp tin đính kèm"}>
+                            {fileName || "Tệp tin đính kèm"}
+                          </div>
+                          {fileSize && (
+                            <div className="support-file-size">{formatFileSize(fileSize)}</div>
+                          )}
+                        </div>
+                        <i className="bi bi-download support-file-dl-icon" />
+                      </a>
+                      {displayCaption && (
+                        <div className="support-media-caption mt-1">{displayCaption}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 5. Tin nhắn văn bản thuần túy */}
+                  {!fileUrl && <div>{message.content}</div>}
+                </>
+              )}
 
               <small>
                 {message.created_at && !isNaN(new Date(message.created_at).getTime())

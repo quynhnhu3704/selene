@@ -9,7 +9,7 @@ export default function MessageInput({
   isCustomer = false,
 }) {
   const [content, setContent] = useState("");
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -23,19 +23,28 @@ export default function MessageInput({
   }, [replyingTo]);
 
   const handleFileChange = (e) => {
-    const selected = e.target.files?.[0];
-    if (selected) {
-      if (selected.size > 50 * 1024 * 1024) {
-        alert("Kích thước tệp tin không được vượt quá 50MB!");
-        e.target.value = "";
-        return;
+    const selectedList = Array.from(e.target.files || []);
+    if (selectedList.length > 0) {
+      const valid = [];
+      for (const selected of selectedList) {
+        if (selected.size > 50 * 1024 * 1024) {
+          alert(`Tệp "${selected.name}" vượt quá dung lượng tối đa 50MB!`);
+        } else {
+          valid.push(selected);
+        }
       }
-      setFile(selected);
+      setFiles((prev) => [...prev, ...valid].slice(0, 30));
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const removeFile = () => {
-    setFile(null);
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const clearFiles = () => {
+    setFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -57,13 +66,14 @@ export default function MessageInput({
 
   const submit = async (event) => {
     if (event) event.preventDefault();
-    if (disabled || busyRef.current || (!content.trim() && !file)) return;
+    if (disabled || busyRef.current || (!content.trim() && files.length === 0)) return;
     busyRef.current = true;
     setSending(true);
 
     const payload = {
       content: content.trim(),
-      file: file || null,
+      files: files,
+      file: files.length > 0 ? files[0] : null,
       reply_to_message_id: replyingTo?.message_id || null,
       client_id: crypto.randomUUID(),
     };
@@ -71,7 +81,7 @@ export default function MessageInput({
     try {
       await onSend(payload);
       setContent("");
-      removeFile();
+      clearFiles();
       if (onCancelReply) onCancelReply();
     } catch {
       // Giữ bản nháp để có thể thử lại
@@ -84,8 +94,10 @@ export default function MessageInput({
   // Xác định placeholder: Admin hiển thị gợi ý tag tên khách hàng, Khách hàng hiển thị placeholder thân thiện
   const inputPlaceholder = disabled
     ? "Chưa thể gửi tin nhắn"
-    : file
-    ? "Thêm chú thích cho tệp tin (tùy chọn)..."
+    : files.length > 0
+    ? files.length === 1
+      ? `Đã chọn "${files[0].name}" (nhập chú thích nếu muốn)...`
+      : `Đã chọn ${files.length} tệp tin (nhập chú thích nếu muốn)...`
     : replyingTo
     ? `Trả lời tin nhắn...`
     : !isCustomer && customerName
@@ -126,22 +138,84 @@ export default function MessageInput({
         </div>
       )}
 
-      {/* 2. Thanh xem trước tệp đính kèm nếu có */}
-      {file && (
-        <div className="support-file-preview-bar">
-          <i className="bi bi-paperclip text-primary" />
-          <span className="support-file-preview-name">{file.name}</span>
-          <span className="text-muted" style={{ fontSize: "11px" }}>
-            ({(file.size / 1024).toFixed(0)} KB)
-          </span>
-          <button
-            type="button"
-            className="support-file-remove-btn"
-            onClick={removeFile}
-            title="Hủy chọn tệp"
-          >
-            <i className="bi bi-x-circle-fill" />
-          </button>
+      {/* 2. Thanh xem trước danh sách tệp đính kèm (hỗ trợ nhiều tệp) */}
+      {files.length > 0 && (
+        <div
+          className="support-file-preview-bar"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "6px",
+            alignItems: "center",
+            padding: "6px 12px",
+            backgroundColor: "#f8f9fa",
+            borderBottom: "1px solid #e9ecef",
+          }}
+        >
+          {files.map((f, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                background: "#ffffff",
+                border: "1px solid #dee2e6",
+                borderRadius: "16px",
+                padding: "2px 8px",
+                fontSize: "12px",
+              }}
+            >
+              <i
+                className={
+                  f.type.startsWith("image/")
+                    ? "bi bi-image text-primary"
+                    : f.type.startsWith("video/")
+                    ? "bi bi-film text-danger"
+                    : "bi bi-paperclip text-success"
+                }
+              />
+              <span
+                style={{
+                  maxWidth: "130px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                title={f.name}
+              >
+                {f.name}
+              </span>
+              <span className="text-muted" style={{ fontSize: "10px" }}>
+                ({(f.size / 1024).toFixed(0)} KB)
+              </span>
+              <button
+                type="button"
+                onClick={() => removeFile(idx)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#dc3545",
+                  padding: 0,
+                  cursor: "pointer",
+                  display: "flex",
+                }}
+                title="Xóa tệp"
+              >
+                <i className="bi bi-x-circle-fill" />
+              </button>
+            </div>
+          ))}
+          {files.length > 1 && (
+            <button
+              type="button"
+              onClick={clearFiles}
+              className="btn btn-link btn-sm text-muted p-0 ms-auto"
+              style={{ fontSize: "11px", textDecoration: "none" }}
+            >
+              Xóa tất cả ({files.length})
+            </button>
+          )}
         </div>
       )}
 
@@ -150,6 +224,7 @@ export default function MessageInput({
         <input
           type="file"
           ref={fileInputRef}
+          multiple
           style={{ display: "none" }}
           onChange={handleFileChange}
           accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
@@ -160,7 +235,7 @@ export default function MessageInput({
           className="support-composer-btn"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || sending}
-          title="Đính kèm hình ảnh, video hoặc tệp tin"
+          title="Đính kèm hình ảnh, video hoặc tệp tin (hỗ trợ chọn nhiều tệp)"
         >
           <i className="bi bi-paperclip" />
         </button>
@@ -186,7 +261,7 @@ export default function MessageInput({
         <button
           className="btn btn-dark"
           type="submit"
-          disabled={disabled || sending || (!content.trim() && !file)}
+          disabled={disabled || sending || (!content.trim() && files.length === 0)}
           aria-label="Gửi tin nhắn"
           title="Gửi tin nhắn (Enter)"
         >

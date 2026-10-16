@@ -3,7 +3,13 @@ import { MessageModel } from "../models/message.model.js";
 import { ConversationModel } from "../models/conversation.model.js";
 import { CustomerModel } from "../models/customer.model.js";
 import { ConversationService, requirePermission } from "./conversation.service.js";
-import { uploadChatFile, getMessageTypeFromMime } from "./storage.service.js";
+import {
+  uploadChatFile,
+  uploadMultipleChatFiles,
+  getMessageTypeFromMime,
+  determineOverallMessageType,
+  generatePreviewText,
+} from "./storage.service.js";
 import { ReactionService } from "./reaction.service.js";
 
 export const MessageService = {
@@ -33,24 +39,38 @@ export const MessageService = {
       content,
       reply_to_message_id = null,
       sender_type = "user",
+      files = null,
       file = null,
+      attachments = [],
       file_url = null,
+      file_urls = null,
       file_name = null,
       file_size = null,
       file_type = null,
       message_type = "text",
     } = {}
   ) => {
-    // Nếu có file hoặc file_url truyền vào, chuyển tiếp sang sendMediaMessage
-    if (file || file_url || (message_type && message_type !== "text")) {
+    // Nếu có file, files, attachments hoặc file_url truyền vào, chuyển tiếp sang sendMediaMessage
+    const hasAttachments =
+      (Array.isArray(files) && files.length > 0) ||
+      file ||
+      (Array.isArray(attachments) && attachments.length > 0) ||
+      file_url ||
+      (Array.isArray(file_urls) && file_urls.length > 0) ||
+      (message_type && message_type !== "text");
+
+    if (hasAttachments) {
       return MessageService.sendMediaMessage(user, {
         conversation_id,
         customer_id,
         content,
         reply_to_message_id,
         sender_type,
+        files,
         file,
+        attachments,
         file_url,
+        file_urls,
         file_name,
         file_size,
         file_type,
@@ -293,25 +313,46 @@ export const MessageService = {
 
   /**
    * Chức năng gửi tin nhắn loại hình ảnh, video, file / tệp đính kèm:
-   * - Hỗ trợ cả nhận file tải lên từ Multer hoặc file_url đã có sẵn
-   * - Tự động upload lên Supabase Storage và xác định loại media
+   * - Hỗ trợ gửi nhiều ảnh, video, tệp tin cùng lúc
+   * - Hỗ trợ cả nhận files tải lên từ Multer hoặc danh sách file_url/attachments đã có sẵn
+   * - Tự động upload song song lên Supabase Storage và phân loại media
    * - Tự động tạo cuộc hội thoại mới nếu khách hàng chưa có hội thoại mở
    *
    * @param {Object} user - Thông tin người dùng đăng nhập
-   * @param {Object} payload - { conversation_id, customer_id, file, file_url, file_name, file_size, file_type, message_type, content, reply_to_message_id, sender_type }
+   * @param {Object} payload - {
+   *   conversation_id,
+   *   customer_id,
+   *   files,
+   *   file,
+   *   attachments,
+   *   file_urls,
+   *   file_url,
+   *   file_name,
+   *   file_size,
+   *   file_type,
+   *   message_type,
+   *   content,
+   *   caption,
+   *   reply_to_message_id,
+   *   sender_type
+   * }
    */
   sendMediaMessage: async (
     user,
     {
       conversation_id,
       customer_id,
+      files = null,
       file = null,
+      attachments = [],
       file_url = null,
+      file_urls = null,
       file_name = null,
       file_size = null,
       file_type = null,
       message_type = null,
       content = "",
+      caption = "",
       reply_to_message_id = null,
       sender_type = "user",
     } = {}
@@ -329,49 +370,83 @@ export const MessageService = {
       requirePermission(user, "chat:reply");
     }
 
-    // 2. Xử lý tệp đính kèm
-    let finalFileUrl = file_url;
-    let finalFileName = file_name;
-    let finalFileSize = file_size;
-    let finalFileType = file_type;
+    // 2. Thu thập danh sách file từ Multer
+    let rawFiles = [];
+    if (Array.isArray(files) && files.length > 0) {
+      rawFiles = files.filter((f) => f && (f.buffer || f.path));
+    } else if (file && (file.buffer || file.path)) {
+      rawFiles = [file];
+    }
+
+    // 3. Upload tất cả file tải lên song song lên Supabase Storage
+    let uploadedAttachments = [];
+    if (rawFiles.length > 0) {
+      uploadedAttachments = await uploadMultipleChatFiles(rawFiles);
+    }
+
+    // 4. Tổng hợp danh sách attachments cuối cùng
+    const finalAttachments = [...uploadedAttachments];
+
+    // Bổ sung các attachments dạng object truyền qua body (nếu có)
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      attachments.forEach((att) => {
+        if (att && (att.file_url || att.fileUrl)) {
+          finalAttachments.push({
+            file_url: att.file_url || att.fileUrl,
+            file_name: att.file_name || att.fileName || "file",
+            file_size: att.file_size != null ? Number(att.file_size) : (att.fileSize != null ? Number(att.fileSize) : null),
+            file_type: att.file_type || att.fileType || "application/octet-stream",
+            message_type: att.message_type || att.messageType || getMessageTypeFromMime(att.file_type || att.fileType, att.file_name || att.fileName),
+          });
+        }
+      });
+    }
+
+    // Bổ sung file_urls (mảng các url) nếu có
+    if (Array.isArray(file_urls) && file_urls.length > 0) {
+      file_urls.forEach((url) => {
+        if (url && typeof url === "string" && !finalAttachments.some((a) => a.file_url === url)) {
+          finalAttachments.push({
+            file_url: url,
+            file_name: url.split("/").pop()?.split("?")[0] || "file",
+            file_size: null,
+            file_type: "application/octet-stream",
+            message_type: getMessageTypeFromMime("", url),
+          });
+        }
+      });
+    }
+
+    // Bổ sung file_url đơn lẻ nếu có
+    if (file_url && typeof file_url === "string" && !finalAttachments.some((a) => a.file_url === file_url)) {
+      finalAttachments.push({
+        file_url,
+        file_name: file_name || file_url.split("/").pop()?.split("?")[0] || "file",
+        file_size: file_size ? Number(file_size) : null,
+        file_type: file_type || "application/octet-stream",
+        message_type: message_type || getMessageTypeFromMime(file_type, file_name || file_url),
+      });
+    }
+
+    if (finalAttachments.length === 0) {
+      throw {
+        status: 400,
+        message: "Vui lòng đính kèm ít nhất một tệp tin (hình ảnh, video, tài liệu) hoặc cung cấp đường dẫn tệp!",
+      };
+    }
+
+    // 5. Xác định message_type
     let finalMessageType = message_type;
-
-    if (file) {
-      const uploadResult = await uploadChatFile(file);
-      finalFileUrl = uploadResult.file_url;
-      finalFileName = uploadResult.file_name;
-      finalFileSize = uploadResult.file_size;
-      finalFileType = uploadResult.file_type;
-      if (!finalMessageType || finalMessageType === "text") {
-        finalMessageType = uploadResult.message_type;
-      }
+    if (!finalMessageType || finalMessageType === "text") {
+      finalMessageType = determineOverallMessageType(finalAttachments);
     }
 
-    if (!finalFileUrl) {
-      throw { status: 400, message: "Vui lòng đính kèm tệp tin hoặc cung cấp đường dẫn tệp (file_url)!" };
-    }
+    // 6. Chuẩn bị nội dung hiển thị & văn bản tóm tắt cho cuộc hội thoại
+    const textCaption = typeof (content || caption) === "string" ? (content || caption).trim() : "";
+    const previewText = generatePreviewText(finalAttachments, textCaption);
+    const messageContent = textCaption || previewText;
 
-    // Tự động suy ra message_type nếu chưa có
-    if (!finalMessageType || !["image", "video", "file", "audio"].includes(finalMessageType)) {
-      finalMessageType = getMessageTypeFromMime(finalFileType, finalFileName);
-    }
-
-    // 3. Chuẩn bị nội dung hiển thị & văn bản tóm tắt cho cuộc hội thoại
-    const textCaption = typeof content === "string" ? content.trim() : "";
-    let previewText = "";
-    if (finalMessageType === "image") {
-      previewText = textCaption ? `[Hình ảnh] ${textCaption}` : "[Hình ảnh]";
-    } else if (finalMessageType === "video") {
-      previewText = textCaption ? `[Video] ${textCaption}` : "[Video]";
-    } else if (finalMessageType === "audio") {
-      previewText = textCaption ? `[Ghi âm] ${textCaption}` : "[Âm thanh]";
-    } else {
-      previewText = textCaption ? `[Tệp đính kèm] ${textCaption}` : `[Tệp đính kèm] ${finalFileName || "tệp tin"}`;
-    }
-
-    const messageContent = textCaption || finalFileName || previewText;
-
-    // 4. Tìm cuộc hội thoại tương ứng
+    // 7. Tìm cuộc hội thoại tương ứng
     let conversation = null;
     let isNewConversation = false;
 
@@ -471,8 +546,10 @@ export const MessageService = {
       }
     }
 
-    // 5. Lưu tin nhắn vào bảng messages
+    // 8. Lưu tin nhắn vào bảng messages và toàn bộ attachments vào bảng message_attachments
     const messageId = crypto.randomUUID();
+    const firstAtt = finalAttachments.length > 0 ? finalAttachments[0] : null;
+
     const createdMessage = await MessageModel.create({
       messageId,
       conversationId: conversation.conversation_id,
@@ -480,17 +557,18 @@ export const MessageService = {
       senderType: sender_type || "user",
       messageType: finalMessageType,
       content: messageContent,
-      fileUrl: finalFileUrl,
-      fileName: finalFileName,
-      fileSize: finalFileSize,
-      fileType: finalFileType,
+      attachments: finalAttachments,
+      fileUrl: firstAtt?.file_url || null,
+      fileName: firstAtt?.file_name || null,
+      fileSize: firstAtt?.file_size || null,
+      fileType: firstAtt?.file_type || null,
       replyToMessageId: reply_to_message_id || null,
       status: "sent",
     });
 
     const messageCreatedAt = createdMessage.created_at || now;
 
-    // 6. Cập nhật last_message của hội thoại
+    // 9. Cập nhật last_message của hội thoại
     try {
       await ConversationModel.update(conversation.conversation_id, {
         last_message_id: createdMessage.message_id,
@@ -504,7 +582,7 @@ export const MessageService = {
       console.warn("[MessageService] Warning updating last_message in conversation:", err.message);
     }
 
-    // 7. Cập nhật trạng thái đã xem cho người gửi
+    // 10. Cập nhật trạng thái đã xem cho người gửi
     try {
       await ConversationModel.upsertParticipant({
         conversation_id: conversation.conversation_id,
@@ -517,7 +595,7 @@ export const MessageService = {
       console.warn("[MessageService] Warning updating participant read status:", err.message);
     }
 
-    // 8. Định dạng dữ liệu trả về cho client
+    // 11. Định dạng dữ liệu tin nhắn trả về cho client
     let replyToData = null;
     if (createdMessage.reply_to_message_id) {
       try {
@@ -545,6 +623,9 @@ export const MessageService = {
       }
     }
 
+    const savedAtts = createdMessage.attachments || [];
+    const mainAtt = savedAtts.length > 0 ? savedAtts[0] : null;
+
     const formattedMessage = {
       message_id: createdMessage.message_id,
       conversation_id: createdMessage.conversation_id,
@@ -553,7 +634,11 @@ export const MessageService = {
       sender_role: isCustomer ? "customer" : userRole === "admin" ? "admin" : "staff",
       message_type: finalMessageType,
       content: createdMessage.content,
-      attachments: createdMessage.attachments || [],
+      attachments: savedAtts,
+      file_url: mainAtt?.file_url || null,
+      file_name: mainAtt?.file_name || null,
+      file_size: mainAtt?.file_size || null,
+      file_type: mainAtt?.file_type || null,
       reply_to_message_id: createdMessage.reply_to_message_id || null,
       reply_to: replyToData,
       status: createdMessage.status || "sent",
@@ -572,30 +657,21 @@ export const MessageService = {
 
   /**
    * Chức năng trả lời (reply) một tin nhắn cụ thể
-   *
-   * @param {Object} user - Thông tin người dùng đăng nhập
-   * @param {Object} payload - {
-   *   reply_to_message_id: string (bắt buộc),
-   *   content: string,
-   *   message_type?: string,
-   *   sender_type?: string,
-   *   file?: object,
-   *   file_url?: string,
-   *   file_name?: string,
-   *   file_size?: number,
-   *   file_type?: string,
-   *   conversation_id?: string
-   * }
+   * Hỗ trợ trả lời kèm văn bản và nhiều ảnh, video, tệp tin đính kèm
    */
   replyMessage: async (
     user,
     {
       reply_to_message_id,
       content = "",
-      message_type = "text",
+      caption = "",
+      message_type = null,
       sender_type = "user",
+      files = null,
       file = null,
+      attachments = [],
       file_url = null,
+      file_urls = null,
       file_name = null,
       file_size = null,
       file_type = null,
@@ -670,48 +746,81 @@ export const MessageService = {
       }
     }
 
-    // 6. Xử lý tệp đính kèm hoặc văn bản / emoji
-    let finalFileUrl = file_url;
-    let finalFileName = file_name;
-    let finalFileSize = file_size;
-    let finalFileType = file_type;
-    let finalMessageType = message_type || "text";
-
-    if (file) {
-      const uploadResult = await uploadChatFile(file);
-      finalFileUrl = uploadResult.file_url;
-      finalFileName = uploadResult.file_name;
-      finalFileSize = uploadResult.file_size;
-      finalFileType = uploadResult.file_type;
-      if (!finalMessageType || finalMessageType === "text") {
-        finalMessageType = uploadResult.message_type || "attachment";
-      }
+    // 6. Xử lý danh sách tệp đính kèm (nếu có)
+    let rawFiles = [];
+    if (Array.isArray(files) && files.length > 0) {
+      rawFiles = files.filter((f) => f && (f.buffer || f.path));
+    } else if (file && (file.buffer || file.path)) {
+      rawFiles = [file];
     }
 
-    // Nếu không có file/file_url, kiểm tra textContent
-    const textContent = typeof content === "string" ? content.trim() : "";
-    if (!finalFileUrl && !textContent) {
+    let uploadedAttachments = [];
+    if (rawFiles.length > 0) {
+      uploadedAttachments = await uploadMultipleChatFiles(rawFiles);
+    }
+
+    const finalAttachments = [...uploadedAttachments];
+
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      attachments.forEach((att) => {
+        if (att && (att.file_url || att.fileUrl)) {
+          finalAttachments.push({
+            file_url: att.file_url || att.fileUrl,
+            file_name: att.file_name || att.fileName || "file",
+            file_size: att.file_size != null ? Number(att.file_size) : (att.fileSize != null ? Number(att.fileSize) : null),
+            file_type: att.file_type || att.fileType || "application/octet-stream",
+            message_type: att.message_type || att.messageType || getMessageTypeFromMime(att.file_type || att.fileType, att.file_name || att.fileName),
+          });
+        }
+      });
+    }
+
+    if (Array.isArray(file_urls) && file_urls.length > 0) {
+      file_urls.forEach((url) => {
+        if (url && typeof url === "string" && !finalAttachments.some((a) => a.file_url === url)) {
+          finalAttachments.push({
+            file_url: url,
+            file_name: url.split("/").pop()?.split("?")[0] || "file",
+            file_size: null,
+            file_type: "application/octet-stream",
+            message_type: getMessageTypeFromMime("", url),
+          });
+        }
+      });
+    }
+
+    if (file_url && typeof file_url === "string" && !finalAttachments.some((a) => a.file_url === file_url)) {
+      finalAttachments.push({
+        file_url,
+        file_name: file_name || file_url.split("/").pop()?.split("?")[0] || "file",
+        file_size: file_size ? Number(file_size) : null,
+        file_type: file_type || "application/octet-stream",
+        message_type: message_type || getMessageTypeFromMime(file_type, file_name || file_url),
+      });
+    }
+
+    const textContent = typeof (content || caption) === "string" ? (content || caption).trim() : "";
+
+    if (finalAttachments.length === 0 && !textContent) {
       throw { status: 400, message: "Nội dung tin nhắn trả lời không được để trống!" };
     }
     if (textContent.length > 2000) {
       throw { status: 400, message: "Tin nhắn trả lời không được vượt quá 2000 ký tự!" };
     }
 
-    let previewText = "";
-    if (finalFileUrl) {
-      if (finalMessageType === "image") previewText = textContent ? `[Hình ảnh] ${textContent}` : "[Hình ảnh]";
-      else if (finalMessageType === "video") previewText = textContent ? `[Video] ${textContent}` : "[Video]";
-      else if (finalMessageType === "audio") previewText = textContent ? `[Ghi âm] ${textContent}` : "[Âm thanh]";
-      else previewText = textContent ? `[Tệp đính kèm] ${textContent}` : `[Tệp đính kèm] ${finalFileName || "tệp tin"}`;
-    } else {
-      previewText = textContent;
+    let finalMessageType = message_type;
+    if (!finalMessageType || finalMessageType === "text") {
+      finalMessageType = finalAttachments.length > 0 ? determineOverallMessageType(finalAttachments) : "text";
     }
 
-    const messageContent = textContent || finalFileName || previewText;
+    const previewText = finalAttachments.length > 0 ? generatePreviewText(finalAttachments, textContent) : textContent;
+    const messageContent = textContent || previewText;
 
-    // 7. Lưu tin nhắn vào bảng messages
+    // 7. Lưu tin nhắn vào bảng messages và message_attachments
     const now = new Date().toISOString();
     const messageId = crypto.randomUUID();
+    const firstAtt = finalAttachments.length > 0 ? finalAttachments[0] : null;
+
     const createdMessage = await MessageModel.create({
       messageId,
       conversationId: conversation.conversation_id,
@@ -719,10 +828,11 @@ export const MessageService = {
       senderType: sender_type || "user",
       messageType: finalMessageType,
       content: messageContent,
-      fileUrl: finalFileUrl,
-      fileName: finalFileName,
-      fileSize: finalFileSize,
-      fileType: finalFileType,
+      attachments: finalAttachments,
+      fileUrl: firstAtt?.file_url || null,
+      fileName: firstAtt?.file_name || null,
+      fileSize: firstAtt?.file_size || null,
+      fileType: firstAtt?.file_type || null,
       replyToMessageId: parentMessage.message_id,
       status: "sent",
     });
@@ -774,6 +884,9 @@ export const MessageService = {
       created_at: parentMessage.created_at,
     };
 
+    const savedAtts = createdMessage.attachments || [];
+    const mainAtt = savedAtts.length > 0 ? savedAtts[0] : null;
+
     const formattedMessage = {
       message_id: createdMessage.message_id,
       conversation_id: createdMessage.conversation_id,
@@ -782,7 +895,11 @@ export const MessageService = {
       sender_role: isCustomer ? "customer" : userRole === "admin" ? "admin" : "staff",
       message_type: finalMessageType,
       content: createdMessage.content,
-      attachments: createdMessage.attachments || [],
+      attachments: savedAtts,
+      file_url: mainAtt?.file_url || null,
+      file_name: mainAtt?.file_name || null,
+      file_size: mainAtt?.file_size || null,
+      file_type: mainAtt?.file_type || null,
       reply_to_message_id: parentMessage.message_id,
       reply_to: replyToData,
       status: createdMessage.status || "sent",
@@ -795,6 +912,68 @@ export const MessageService = {
       message: formattedMessage,
       reply_to: replyToData,
       conversation,
+    };
+  },
+
+  /**
+   * Chức năng gửi nhiều tin nhắn media riêng biệt cùng một lúc (mỗi tệp tin thành 1 tin nhắn)
+   */
+  sendMultipleMediaMessages: async (
+    user,
+    {
+      conversation_id,
+      customer_id,
+      files = [],
+      attachments = [],
+      content = "",
+      caption = "",
+      reply_to_message_id = null,
+      sender_type = "user",
+    } = {}
+  ) => {
+    let rawFiles = [];
+    if (Array.isArray(files) && files.length > 0) {
+      rawFiles = files.filter((f) => f && (f.buffer || f.path));
+    }
+
+    let uploaded = [];
+    if (rawFiles.length > 0) {
+      uploaded = await uploadMultipleChatFiles(rawFiles);
+    }
+
+    const allAttachments = [...uploaded, ...(Array.isArray(attachments) ? attachments : [])];
+    if (allAttachments.length === 0) {
+      throw { status: 400, message: "Không có tệp đính kèm nào được tải lên!" };
+    }
+
+    const textCaption = typeof (content || caption) === "string" ? (content || caption).trim() : "";
+    const createdMessages = [];
+    let conversation = null;
+    let isNewConv = false;
+
+    for (let i = 0; i < allAttachments.length; i++) {
+      const att = allAttachments[i];
+      const isFirst = i === 0;
+      const singleContent = isFirst && textCaption ? textCaption : "";
+
+      const result = await MessageService.sendMediaMessage(user, {
+        conversation_id: conversation ? conversation.conversation_id : conversation_id,
+        customer_id,
+        attachments: [att],
+        content: singleContent,
+        reply_to_message_id: isFirst ? reply_to_message_id : null,
+        sender_type,
+      });
+
+      conversation = result.conversation;
+      if (result.is_new_conversation) isNewConv = true;
+      createdMessages.push(result.message);
+    }
+
+    return {
+      messages: createdMessages,
+      conversation,
+      is_new_conversation: isNewConv,
     };
   },
 

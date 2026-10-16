@@ -135,20 +135,33 @@ export const sendTextMessage = async (payload) => {
  */
 export const sendAttachmentMessage = async (payload) => {
   if (payload instanceof FormData) {
-    return await http.post("/chat/messages/attachment", payload, {
+    return await http.post("/chat/messages/attachments", payload, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   }
   const formData = new FormData();
   if (payload.file) formData.append("file", payload.file);
+  if (Array.isArray(payload.files)) {
+    payload.files.forEach((f) => formData.append("files", f));
+  }
+  if (payload.attachments) {
+    formData.append(
+      "attachments",
+      typeof payload.attachments === "string"
+        ? payload.attachments
+        : JSON.stringify(payload.attachments)
+    );
+  }
   if (payload.conversation_id) formData.append("conversation_id", payload.conversation_id);
   if (payload.content) formData.append("content", payload.content);
+  if (payload.caption) formData.append("caption", payload.caption);
   if (payload.customer_id) formData.append("customer_id", payload.customer_id);
   if (payload.reply_to_message_id) formData.append("reply_to_message_id", payload.reply_to_message_id);
   if (payload.sender_type) formData.append("sender_type", payload.sender_type);
   if (payload.message_type) formData.append("message_type", payload.message_type);
+  if (payload.mode) formData.append("mode", payload.mode);
 
-  return await http.post("/chat/messages/attachment", formData, {
+  return await http.post("/chat/messages/attachments", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 };
@@ -205,10 +218,18 @@ export const replyMessage = async (messageIdOrPayload, data = {}) => {
     });
   }
 
-  if (payload?.file) {
+  if (payload?.file || (Array.isArray(payload?.files) && payload.files.length > 0)) {
     const formData = new FormData();
     Object.entries(payload).forEach(([key, val]) => {
-      if (val !== undefined && val !== null) formData.append(key, val);
+      if (val !== undefined && val !== null) {
+        if (key === "files" && Array.isArray(val)) {
+          val.forEach((f) => formData.append("files", f));
+        } else if (key === "attachments" && typeof val !== "string") {
+          formData.append("attachments", JSON.stringify(val));
+        } else {
+          formData.append(key, val);
+        }
+      }
     });
     return await http.post(`/chat/messages/${messageId}/reply`, formData, {
       headers: { "Content-Type": "multipart/form-data" },

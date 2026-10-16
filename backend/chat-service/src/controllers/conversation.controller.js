@@ -200,10 +200,11 @@ export const sendTextMessage = async (req, res, next) => {
 };
 
 // Gửi tin nhắn đính kèm hình ảnh, video, tệp tin trực tiếp qua Multipart/Form-data
+// Hỗ trợ gửi nhiều ảnh, video, tài liệu cùng lúc
 export const sendAttachmentMessage = async (req, res, next) => {
   try {
     const user = req.user;
-    const file = req.file || (req.files && req.files.length > 0 ? req.files[0] : null);
+    const files = req.files && req.files.length > 0 ? req.files : (req.file ? [req.file] : []);
 
     const conversationId =
       req.params.conversationId ||
@@ -212,35 +213,108 @@ export const sendAttachmentMessage = async (req, res, next) => {
       req.body.conversationId ||
       null;
 
+    let parsedAttachments = [];
+    if (req.body.attachments) {
+      try {
+        parsedAttachments = typeof req.body.attachments === "string"
+          ? JSON.parse(req.body.attachments)
+          : req.body.attachments;
+      } catch {}
+    }
+
+    let parsedFileUrls = [];
+    if (req.body.file_urls || req.body.fileUrls) {
+      try {
+        const raw = req.body.file_urls || req.body.fileUrls;
+        parsedFileUrls = typeof raw === "string" ? JSON.parse(raw) : raw;
+      } catch {}
+    }
+
     const {
       content,
+      caption,
       customer_id,
       customerId,
       reply_to_message_id,
       replyToMessageId,
       sender_type,
+      senderType,
       message_type,
       messageType,
       file_url,
       fileUrl,
       file_name,
       fileName,
+      file_size,
+      fileSize,
+      file_type,
+      fileType,
+      mode, // 'single' (mặc định) hoặc 'separate'
     } = req.body;
 
+    const sendMode = mode || req.query.mode || "single";
+    const io = req.app.get("io");
+
+    // Nếu người dùng chọn gửi từng file thành một tin nhắn độc lập
+    if (sendMode === "separate" && (files.length > 1 || parsedAttachments.length > 1)) {
+      const result = await MessageService.sendMultipleMediaMessages(user, {
+        conversation_id: conversationId,
+        customer_id: customer_id || customerId,
+        files,
+        attachments: parsedAttachments,
+        content: content || caption || "",
+        reply_to_message_id: reply_to_message_id || replyToMessageId,
+        sender_type: sender_type || senderType || "user",
+      });
+
+      if (io) {
+        try {
+          result.messages.forEach((msg) => {
+            io.to(`conversation:${result.conversation.conversation_id}`).emit(
+              "message:new",
+              msg
+            );
+          });
+          notifyConversation(io, result.conversation);
+        } catch (socketErr) {
+          console.warn("[sendAttachmentMessage] Socket emission warning:", socketErr.message);
+        }
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: result.is_new_conversation
+          ? "Đã tạo cuộc hội thoại mới và gửi các tệp tin thành công!"
+          : "Gửi các tệp tin thành công!",
+        data: {
+          messages: result.messages,
+          message: result.messages[0],
+          conversation: result.conversation,
+          is_new_conversation: result.is_new_conversation,
+          count: result.messages.length,
+        },
+      });
+    }
+
+    // Mặc định: Gửi 1 tin nhắn có đính kèm danh sách nhiều tệp tin
     const result = await MessageService.sendMediaMessage(user, {
       conversation_id: conversationId,
       customer_id: customer_id || customerId,
-      file,
+      files,
+      file: files.length === 1 ? files[0] : null,
+      attachments: parsedAttachments,
+      file_urls: parsedFileUrls,
       file_url: file_url || fileUrl,
       file_name: file_name || fileName,
+      file_size: file_size || fileSize,
+      file_type: file_type || fileType,
       message_type: message_type || messageType,
-      content,
+      content: content || caption,
       reply_to_message_id: reply_to_message_id || replyToMessageId,
-      sender_type,
+      sender_type: sender_type || senderType || "user",
     });
 
     // Phát sự kiện realtime qua Socket.IO
-    const io = req.app.get("io");
     if (io) {
       try {
         io.to(`conversation:${result.conversation.conversation_id}`).emit(
@@ -358,11 +432,11 @@ export const closeConversation = async (req, res, next) => {
   }
 };
 
-// Trả lời (reply) một tin nhắn cụ thể (hỗ trợ text, emoji, file đính kèm)
+// Trả lời (reply) một tin nhắn cụ thể (hỗ trợ text, emoji, một hoặc nhiều file đính kèm)
 export const replyMessage = async (req, res, next) => {
   try {
     const user = req.user;
-    const file = req.file || (req.files && req.files.length > 0 ? req.files[0] : null);
+    const files = req.files && req.files.length > 0 ? req.files : (req.file ? [req.file] : []);
 
     const messageId =
       req.params.messageId ||
@@ -377,8 +451,26 @@ export const replyMessage = async (req, res, next) => {
       req.body.conversationId ||
       null;
 
+    let parsedAttachments = [];
+    if (req.body.attachments) {
+      try {
+        parsedAttachments = typeof req.body.attachments === "string"
+          ? JSON.parse(req.body.attachments)
+          : req.body.attachments;
+      } catch {}
+    }
+
+    let parsedFileUrls = [];
+    if (req.body.file_urls || req.body.fileUrls) {
+      try {
+        const raw = req.body.file_urls || req.body.fileUrls;
+        parsedFileUrls = typeof raw === "string" ? JSON.parse(raw) : raw;
+      } catch {}
+    }
+
     const {
       content,
+      caption,
       sender_type,
       senderType,
       message_type,
@@ -387,17 +479,26 @@ export const replyMessage = async (req, res, next) => {
       fileUrl,
       file_name,
       fileName,
+      file_size,
+      fileSize,
+      file_type,
+      fileType,
     } = req.body;
 
     const result = await MessageService.replyMessage(user, {
       reply_to_message_id: messageId,
       conversation_id: conversationId,
-      content,
-      message_type: message_type || messageType || (file ? "attachment" : "text"),
+      content: content || caption,
+      message_type: message_type || messageType,
       sender_type: sender_type || senderType || "user",
-      file,
+      files,
+      file: files.length === 1 ? files[0] : null,
+      attachments: parsedAttachments,
+      file_urls: parsedFileUrls,
       file_url: file_url || fileUrl,
       file_name: file_name || fileName,
+      file_size: file_size || fileSize,
+      file_type: file_type || fileType,
     });
 
     // Phát sự kiện realtime qua Socket.IO

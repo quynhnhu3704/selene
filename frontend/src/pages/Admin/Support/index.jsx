@@ -592,17 +592,21 @@ function SupportInbox() {
   };
 
 
-  // Gửi tin nhắn mới trong khung chat (text hoặc file đính kèm)
+  // Gửi tin nhắn mới trong khung chat (text hoặc một/nhiều file đính kèm)
   const handleSendMessage = async (data) => {
-    if (!selectedId || (!data?.content && !data?.file)) return;
+    const rawFiles = Array.isArray(data?.files) && data.files.length > 0
+      ? data.files
+      : (data?.file ? [data.file] : []);
+
+    if (!selectedId || (!data?.content && rawFiles.length === 0)) return;
     const content = data?.content ? data.content.trim() : "";
 
     try {
       let res;
       if (data?.reply_to_message_id) {
-        if (data.file) {
+        if (rawFiles.length > 0) {
           const formData = new FormData();
-          formData.append("file", data.file);
+          rawFiles.forEach((f) => formData.append("files", f));
           if (content) formData.append("content", content);
           formData.append("reply_to_message_id", data.reply_to_message_id);
           formData.append("conversation_id", selectedId);
@@ -613,9 +617,9 @@ function SupportInbox() {
             conversation_id: selectedId,
           });
         }
-      } else if (data.file) {
+      } else if (rawFiles.length > 0) {
         const formData = new FormData();
-        formData.append("file", data.file);
+        rawFiles.forEach((f) => formData.append("files", f));
         if (content) formData.append("content", content);
         formData.append("conversation_id", selectedId);
         res = await sendAttachmentMessage(formData);

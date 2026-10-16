@@ -169,3 +169,101 @@ export const uploadChatFile = async (file, folder = null) => {
     message_type: messageType,
   };
 };
+
+/**
+ * Upload danh sách nhiều tệp tin lên Supabase Storage song song
+ * @param {Array<Object>} files - Danh sách file từ Multer
+ * @param {string|null} folder - Thư mục con lưu trữ
+ * @returns {Promise<Array<{ file_url: string, file_name: string, file_size: number, file_type: string, message_type: string }>>}
+ */
+export const uploadMultipleChatFiles = async (files = [], folder = null) => {
+  if (!Array.isArray(files) || files.length === 0) return [];
+
+  // Lọc chỉ những file hợp lệ có buffer
+  const validFiles = files.filter((f) => f && (f.buffer || f.path));
+  if (validFiles.length === 0) return [];
+
+  // Upload tất cả song song để tối ưu tốc độ mạng
+  const results = await Promise.all(
+    validFiles.map((file) => uploadChatFile(file, folder))
+  );
+
+  return results;
+};
+
+/**
+ * Xác định message_type tổng thể cho danh sách nhiều tệp đính kèm
+ * - Nếu tất cả là ảnh -> 'image'
+ * - Nếu tất cả là video -> 'video'
+ * - Nếu tất cả là âm thanh -> 'audio'
+ * - Nếu kết hợp nhiều định dạng hoặc có tài liệu/tệp tin -> 'attachment'
+ *
+ * @param {Array<Object>} attachments
+ * @returns {"image" | "video" | "audio" | "attachment" | "text"}
+ */
+export const determineOverallMessageType = (attachments = []) => {
+  if (!attachments || attachments.length === 0) return "text";
+
+  if (attachments.length === 1) {
+    const single = attachments[0];
+    const mime = single.file_type || single.fileType || "";
+    const name = single.file_name || single.fileName || single.file_url || single.fileUrl || "";
+    const directType = single.message_type || single.messageType;
+    if (directType && directType !== "text") return directType;
+    return getMessageTypeFromMime(mime, name);
+  }
+
+  const detectedTypes = attachments.map((att) => {
+    const mime = att.file_type || att.fileType || "";
+    const name = att.file_name || att.fileName || att.file_url || att.fileUrl || "";
+    const directType = att.message_type || att.messageType;
+    if (directType && directType !== "text" && directType !== "attachment") return directType;
+    return getMessageTypeFromMime(mime, name);
+  });
+
+  const uniqueTypes = new Set(detectedTypes);
+
+  if (uniqueTypes.size === 1) {
+    const onlyType = Array.from(uniqueTypes)[0];
+    if (onlyType === "image") return "image";
+    if (onlyType === "video") return "video";
+    if (onlyType === "audio") return "audio";
+  }
+
+  // Kết hợp nhiều loại file hoặc có tệp tài liệu
+  return "attachment";
+};
+
+/**
+ * Tạo nội dung tóm tắt hiển thị (preview text) cho tin nhắn và last_message của hội thoại
+ * @param {Array<Object>} attachments
+ * @param {string} caption - Lời chú thích tùy chọn từ người dùng
+ * @returns {string}
+ */
+export const generatePreviewText = (attachments = [], caption = "") => {
+  const textCaption = typeof caption === "string" ? caption.trim() : "";
+  const count = attachments.length;
+
+  if (count === 0) return textCaption;
+
+  const overallType = determineOverallMessageType(attachments);
+
+  let prefix = "";
+  if (overallType === "image") {
+    prefix = count === 1 ? "[Hình ảnh]" : `[${count} hình ảnh]`;
+  } else if (overallType === "video") {
+    prefix = count === 1 ? "[Video]" : `[${count} video]`;
+  } else if (overallType === "audio") {
+    prefix = count === 1 ? "[Ghi âm]" : `[${count} ghi âm]`;
+  } else {
+    prefix = count === 1
+      ? `[Tệp đính kèm] ${attachments[0]?.file_name || attachments[0]?.fileName || "tệp tin"}`
+      : `[${count} tệp đính kèm]`;
+  }
+
+  if (textCaption) {
+    return `${prefix} ${textCaption}`;
+  }
+  return prefix;
+};
+
