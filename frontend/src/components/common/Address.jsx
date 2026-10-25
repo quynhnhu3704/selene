@@ -129,7 +129,7 @@ export default function Address({
       <div className="row g-3 mb-3 mx-0" ref={addressRef}>
         <div className="info-field col-md-6">
           <label htmlFor="shipping-province" className="info-field-label">
-            Tỉnh/Thành phố
+            Tỉnh Thành
             {!optional && <span className="text-danger ms-1">*</span>}
           </label>
           <div className="dropdown w-100">
@@ -184,7 +184,7 @@ export default function Address({
         </div>
         <div className="info-field col-md-6">
           <label htmlFor="shipping-ward" className="info-field-label">
-            Phường/Xã
+            Phường Xã
             {!optional && <span className="text-danger ms-1">*</span>}
           </label>
           <div className="dropdown w-100">
@@ -252,7 +252,7 @@ export default function Address({
         )}
       </div>
       <label htmlFor="shipping-address-detail" className="info-field-label">
-        Địa chỉ chi tiết
+        Số nhà, tên đường
         {!optional && <span className="text-danger ms-1">*</span>}
       </label>
       <input

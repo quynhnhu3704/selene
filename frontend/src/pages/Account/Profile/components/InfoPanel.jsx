@@ -384,7 +384,7 @@ export default function InfoPanel({ profile, setProfile }) {
                     className="form-control text-start d-flex justify-content-between align-items-center"
                     onClick={() => setGenderOpen((prev) => !prev)}
                   >
-                    <span>{form.gender || "-- Chưa cập nhật --"}</span>
+                    <span>{form.gender || "Chưa cập nhật"}</span>
                     <i
                       className={`bi ${genderOpen ? "bi-caret-up" : "bi-caret-down"}`}
                     />
@@ -398,7 +398,7 @@ export default function InfoPanel({ profile, setProfile }) {
                           className="dropdown-item fw-normal"
                           onClick={() => handleGenderSelect("")}
                         >
-                          -- Chưa cập nhật --
+                          Chưa cập nhật
                         </button>
                       </li>
                       <li>
