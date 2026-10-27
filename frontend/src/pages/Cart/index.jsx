@@ -16,8 +16,13 @@ const EMPTY_ITEMS = [];
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Cart() {
-  const { cart, removeFromCart, increaseQuantity, decreaseQuantity } =
-    useContext(CartContext);
+  const {
+    cart,
+    removeFromCart,
+    removeMultipleFromCart,
+    increaseQuantity,
+    decreaseQuantity,
+  } = useContext(CartContext);
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -147,8 +152,11 @@ export default function Cart() {
       },
     });
     if (!res.isConfirmed) return;
-    await removeFromCart(id);
+    // Xoá ngay lập tức trên UI (0ms)
     setSelected((p) => p.filter((x) => x !== id));
+    removeFromCart(id).catch((err) => {
+      console.error("Lỗi khi xóa sản phẩm:", err);
+    });
   };
 
   const handleDeleteSelected = async () => {
@@ -171,8 +179,12 @@ export default function Cart() {
       },
     });
     if (!res.isConfirmed) return;
-    for (const item of selectedItems) await removeFromCart(item.cart_item_id);
+    const idsToDelete = selectedItems.map((item) => item.cart_item_id);
+    // Xoá ngay lập tức trên UI (0ms)
     setSelected([]);
+    removeMultipleFromCart(idsToDelete).catch((err) => {
+      console.error("Lỗi khi xóa nhiều sản phẩm:", err);
+    });
   };
 
   /* ── EMPTY STATE ── */

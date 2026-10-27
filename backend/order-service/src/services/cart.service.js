@@ -189,30 +189,23 @@ export const removeItemFromCart = async (accountId, cartItemId) => {
       throw new Error("Thiếu thông tin bắt buộc!");
     }
 
-    // 1. Kiểm tra xem người dùng có quyền xóa sản phẩm này không (có nằm trong giỏ của họ không)
-    const isOwner = await CartModel.verifyItemBelongsToAccount(
-      cartItemId,
-      accountId,
-    );
-
-    if (!isOwner) {
-      throw new Error("Sản phẩm không tồn tại trong giỏ hàng của bạn!");
+    // 1. Tìm giỏ hàng của user
+    const cart = await CartModel.findByAccountId(accountId);
+    if (!cart) {
+      return { total_quantity: 0 };
     }
 
-    // 2. Xóa
+    // 2. Xóa sản phẩm khỏi giỏ hàng
     await CartModel.removeCartItem(cartItemId);
 
     // 3. Tính lại tổng số lượng
-    const cart = await CartModel.findByAccountId(accountId);
-    let totalQuantity = 0;
+    const totalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
 
-    if (cart) {
-      totalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
-
-      // Nếu giỏ hàng đã trống trơn, xóa luôn giỏ hàng đó
-      if (totalQuantity === 0) {
-        await CartModel.deleteCart(cart.cart_id);
-      }
+    // Nếu giỏ hàng đã trống trơn, dọn dẹp ngầm
+    if (totalQuantity === 0) {
+      CartModel.deleteCart(cart.cart_id).catch((err) => {
+        console.warn("Lỗi dọn dẹp giỏ hàng rỗng ngầm:", err.message);
+      });
     }
 
     return {
