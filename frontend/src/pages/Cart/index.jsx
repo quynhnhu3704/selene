@@ -29,32 +29,95 @@ export default function Cart() {
     return () => clearTimeout(t);
   }, []);
 
-  /* auto-select all on first load */
+  const validCartItems = cartItems.filter((i) => i.product);
+
+  /* auto-select all on first load and synchronize selection when cartItems changes */
   const [previousCartItems, setPreviousCartItems] = useState(null);
   if (previousCartItems !== cartItems) {
     setPreviousCartItems(cartItems);
-    if (cartItems.length > 0 && selected.length === 0) {
-      setSelected(
-        cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
-      );
+
+    const currentValidIds = validCartItems.map((i) => i.cart_item_id);
+
+    if (!previousCartItems) {
+      // Lần đầu tải giỏ hàng: Chọn tất cả sản phẩm
+      setSelected(currentValidIds);
+    } else {
+      const prevValidItems = previousCartItems.filter((i) => i.product);
+      const prevValidIds = prevValidItems.map((i) => i.cart_item_id);
+
+      // Kiểm tra xem trước đó người dùng có đang "Chọn tất cả" hay không
+      const wasAllSelected =
+        prevValidIds.length > 0 &&
+        prevValidIds.every((id) => selected.includes(id));
+
+      if (wasAllSelected || selected.length === 0) {
+        // Nếu trước đó đang chọn tất cả (hoặc chưa chọn gì), tiếp tục chọn tất cả bao gồm sản phẩm mới
+        setSelected(currentValidIds);
+      } else {
+        // Giữ nguyên các sản phẩm đã chọn, map temp_id -> real_id, và tự động chọn sản phẩm mới vừa thêm
+        const nextSelected = [];
+
+        validCartItems.forEach((item) => {
+          // 1. Đang được chọn bằng đúng ID hiện tại
+          if (selected.includes(item.cart_item_id)) {
+            nextSelected.push(item.cart_item_id);
+            return;
+          }
+
+          // 2. Từng được chọn qua temp ID hoặc cùng variant_id
+          const matchedPrev = prevValidItems.find(
+            (p) =>
+              selected.includes(p.cart_item_id) &&
+              ((p.product?.variant_id &&
+                item.product?.variant_id &&
+                p.product.variant_id === item.product.variant_id) ||
+                (p.variant_id &&
+                  item.variant_id &&
+                  p.variant_id === item.variant_id)),
+          );
+          if (matchedPrev) {
+            nextSelected.push(item.cart_item_id);
+            return;
+          }
+
+          // 3. Sản phẩm mới tinh vừa thêm vào giỏ hàng
+          const isNewlyAdded = !prevValidItems.some(
+            (p) =>
+              p.cart_item_id === item.cart_item_id ||
+              (p.variant_id &&
+                item.variant_id &&
+                p.variant_id === item.variant_id) ||
+              (p.product?.variant_id &&
+                item.product?.variant_id &&
+                p.product.variant_id === item.product.variant_id),
+          );
+          if (isNewlyAdded) {
+            nextSelected.push(item.cart_item_id);
+          }
+        });
+
+        setSelected(nextSelected);
+      }
     }
   }
 
+  // allSelected CHỈ TRUE khi TẤT CẢ các sản phẩm hợp lệ đều có trong selected
   const allSelected =
-    selected.length === cartItems.length && cartItems.length > 0;
+    validCartItems.length > 0 &&
+    validCartItems.every((i) => selected.includes(i.cart_item_id));
+
   const toggleAll = () =>
     setSelected(
-      allSelected
-        ? []
-        : cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
+      allSelected ? [] : validCartItems.map((i) => i.cart_item_id),
     );
+
   const toggleOne = (id) =>
     setSelected((p) =>
       p.includes(id) ? p.filter((x) => x !== id) : [...p, id],
     );
 
-  const selectedItems = cartItems.filter(
-    (i) => i.product && selected.includes(i.cart_item_id),
+  const selectedItems = validCartItems.filter((i) =>
+    selected.includes(i.cart_item_id),
   );
   const totalQty = selectedItems.reduce((s, i) => s + i.quantity, 0);
   const totalPrice = selectedItems.reduce(
@@ -89,9 +152,9 @@ export default function Cart() {
   };
 
   const handleDeleteSelected = async () => {
-    if (selected.length === 0) return;
+    if (selectedItems.length === 0) return;
     const res = await Swal.fire({
-      title: `Xoá ${selected.length} sản phẩm?`,
+      title: `Xoá ${selectedItems.length} sản phẩm?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Xoá tất cả",
@@ -108,7 +171,7 @@ export default function Cart() {
       },
     });
     if (!res.isConfirmed) return;
-    for (const id of selected) await removeFromCart(id);
+    for (const item of selectedItems) await removeFromCart(item.cart_item_id);
     setSelected([]);
   };
 
@@ -307,15 +370,15 @@ export default function Cart() {
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  disabled={loading}
+                  disabled={loading || validCartItems.length === 0}
                 />
                 Chọn tất cả
               </label>
 
-              {selected.length > 0 && (
+              {selectedItems.length > 0 && (
                 <button className="cart-del-sel" onClick={handleDeleteSelected}>
                   <i className="bi bi-trash3 me-1" />
-                  Xoá ({selected.length})
+                  Xoá ({selectedItems.length})
                 </button>
               )}
             </div>
@@ -472,9 +535,13 @@ export default function Cart() {
 
                   <button
                     className="cart-checkout-btn"
-                    disabled={selected.length === 0}
+                    disabled={selectedItems.length === 0}
                     onClick={() =>
-                      navigate("/thanh-toan", { state: { selected } })
+                      navigate("/thanh-toan", {
+                        state: {
+                          selected: selectedItems.map((i) => i.cart_item_id),
+                        },
+                      })
                     }
                   >
                     <i className="bi bi-bag-check" />

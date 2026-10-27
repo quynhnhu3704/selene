@@ -6,6 +6,23 @@ const generateId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+// In-memory cache thông tin tồn kho biến thể sản phẩm (TTL 60s)
+const variantCache = new Map();
+
+export const fetchVariantStock = async (variantId) => {
+  // 1. Kiểm tra cache RAM (0ms)
+  const cached = variantCache.get(variantId);
+  if (cached && Date.now() - cached.timestamp < 60000) {
+    return cached.stock;
+  }
+
+  // 2. Lấy thông tin từ product-service qua RabbitMQ RPC
+  const details = await requestProductDetails([variantId]);
+  const stock = details?.[0]?.stock_quantity || 0;
+  variantCache.set(variantId, { stock, timestamp: Date.now() });
+  return stock;
+};
+
 // thêm vào giỏ hàng
 export const addItemToCart = async (accountId, productInfo) => {
   try {
@@ -16,25 +33,20 @@ export const addItemToCart = async (accountId, productInfo) => {
       throw new Error("Thiếu thông tin bắt buộc!");
     }
 
-    // 1. Kiểm tra tồn kho và tính hợp lệ của sản phẩm thông qua RabbitMQ RPC
-    let productDetails = [];
-    try {
-      productDetails = await requestProductDetails([variant_id]);
-    } catch (err) {
-      console.error("Lỗi khi gọi RPC RabbitMQ:", err);
-      throw new Error(
-        "Hệ thống đang bận, không thể kiểm tra thông tin sản phẩm lúc này",
-      );
-    }
+    // 1. Kiểm tra tồn kho siêu tốc và lấy giỏ hàng ĐỒNG THỜI (chỉ mất ~40ms)
+    const [stock, cartData] = await Promise.all([
+      fetchVariantStock(variant_id).catch((err) => {
+        console.error("Lỗi khi kiểm tra tồn kho:", err);
+        throw new Error(
+          "Hệ thống đang bận, không thể kiểm tra thông tin sản phẩm lúc này",
+        );
+      }),
+      CartModel.getCartWithItems(accountId),
+    ]);
 
-    if (!productDetails || productDetails.length === 0) {
-      throw new Error("Biến thể sản phẩm không tồn tại!");
-    }
-
-    const stock = productDetails[0].stock_quantity || 0;
-
-    // 1. Tìm hoặc tạo giỏ hàng
-    let cart = await CartModel.findByAccountId(accountId);
+    let cart = cartData;
+    let existingItem = null;
+    let currentTotalQuantity = 0;
 
     if (!cart) {
       const newCartData = {
@@ -42,53 +54,51 @@ export const addItemToCart = async (accountId, productInfo) => {
         account_id: accountId,
       };
       cart = await CartModel.createCart(newCartData);
+    } else {
+      const items = cart.cart_items || [];
+      existingItem = items.find(
+        (i) => i.product_id === product_id && i.variant_id === variant_id,
+      );
+      currentTotalQuantity = items.reduce(
+        (sum, item) => sum + (item.quantity || 0),
+        0,
+      );
     }
-
-    // 3. XỬ LÝ SẢN PHẨM: Kiểm tra trùng lặp và tồn kho
-    let finalItem;
-    const existingItem = await CartModel.findItemInCart(
-      cart.cart_id,
-      product_id,
-      variant_id,
-    );
 
     const totalRequestedQuantity = existingItem
       ? existingItem.quantity + itemQuantity
       : itemQuantity;
 
-    if (stock <= 0) {
-      throw new Error("Đã hết mặt hàng này");
+    if (stock <= 0 || stock < totalRequestedQuantity) {
+      throw new Error("Sản phẩm bạn chọn đã hết");
     }
 
-    if (stock < totalRequestedQuantity) {
-      throw new Error(`Chỉ còn ${stock} sản phẩm`);
-    }
-
+    // 2. Ghi DB (chỉ 1 câu UPDATE hoặc INSERT duy nhất ~30ms)
+    let resultItemId;
     if (existingItem) {
-      // Trường hợp ĐÃ CÓ: Lấy số lượng cũ + số lượng mới add thêm vào
-      finalItem = await CartModel.updateItemQuantity(
+      resultItemId = existingItem.cart_item_id;
+      await CartModel.updateItemQuantity(
         existingItem.cart_item_id,
         totalRequestedQuantity,
       );
     } else {
-      // Trường hợp CHƯA CÓ: Tạo dòng mới tinh
+      resultItemId = generateId("item");
       const newCartItemData = {
-        cart_item_id: generateId("item"),
+        cart_item_id: resultItemId,
         cart_id: cart.cart_id,
         product_id: product_id,
         variant_id: variant_id,
         quantity: itemQuantity,
       };
-      finalItem = await CartModel.addCartItem(newCartItemData);
+      await CartModel.addCartItem(newCartItemData);
     }
 
-    // 3. Tính toán tổng số lượng sản phẩm mới nhất của giỏ hàng để trả về
-    const finalTotalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
+    const finalTotalQuantity = currentTotalQuantity + itemQuantity;
 
-    // 4. Trả kết quả ra ngoài
+    // 3. Trả kết quả ngay lập tức
     return {
-      //   cart_id: cart.cart_id,
-      //   added_item: finalItem,
+      cart_id: cart.cart_id,
+      cart_item_id: resultItemId,
       total_quantity: finalTotalQuantity,
     };
   } catch (error) {
@@ -278,29 +288,19 @@ export const increaseItemQuantity = async (accountId, cartItemId) => {
     const currentQuantity = cartItem.quantity;
     const { variant_id } = cartItem;
 
-    // 2. Kiểm tra tồn kho từ RabbitMQ RPC
-    let productDetails = [];
+    // 2. Kiểm tra tồn kho siêu tốc
+    let stock = 0;
     try {
-      productDetails = await requestProductDetails([variant_id]);
+      stock = await fetchVariantStock(variant_id);
     } catch (err) {
-      console.error("Lỗi khi gọi RPC RabbitMQ:", err);
+      console.error("Lỗi khi kiểm tra tồn kho:", err);
       throw new Error(
         "Hệ thống đang bận, không thể kiểm tra thông tin sản phẩm lúc này",
       );
     }
 
-    if (!productDetails || productDetails.length === 0) {
-      throw new Error("Biến thể sản phẩm không tồn tại!");
-    }
-
-    const stock = productDetails[0].stock_quantity || 0;
-
-    if (stock <= 0) {
-      throw new Error("Đã hết mặt hàng này");
-    }
-
-    if (stock < currentQuantity + 1) {
-      throw new Error("Số lượng tồn kho không đủ");
+    if (stock <= 0 || stock < currentQuantity + 1) {
+      throw new Error("Sản phẩm bạn chọn đã hết");
     }
 
     // 3. Tăng số lượng đi 1

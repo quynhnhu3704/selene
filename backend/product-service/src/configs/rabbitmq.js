@@ -50,6 +50,9 @@ async function listenForStockRequests() {
   });
 }
 
+// In-memory cache cho thông tin sản phẩm giỏ hàng (TTL 30s) giúp trả lời RPC tức thì (0ms DB time)
+export const rpcProductDetailsCache = new Map();
+
 // Hàm lắng nghe yêu cầu RPC từ queue để truy vấn và cung cấp thông tin sản phẩm cho giỏ hàng
 export const listenForCartProductDetails = async () => {
   // Phòng hờ trường hợp hàm này chạy trước khi có kết nối channel thành công
@@ -74,64 +77,144 @@ export const listenForCartProductDetails = async () => {
 
     try {
       // Chuyển đổi Buffer dữ liệu nhận được từ Client thành mảng các variantId
-      const variantIds = JSON.parse(msg.content.toString());
+      const rawPayload = JSON.parse(msg.content.toString());
+      const variantIds = Array.isArray(rawPayload)
+        ? rawPayload.filter(Boolean)
+        : [];
       console.log(`[.] Received request for variants:`, variantIds);
 
-      // Tạo một mảng các Promise xử lý đồng thời (parallel) nhằm tăng tốc hiệu năng truy vấn database
-      const detailsPromises = variantIds.map(async (variantId) => {
-        try {
-          // --- BƯỚC 2.1: Lấy thông tin thuộc về biến thể (size, color, stock, product_id) ---
-          const { data: variant, error: vErr } = await supabase
+      if (variantIds.length > 0) {
+        // 1. Kiểm tra cache
+        const cachedResults = [];
+        const missingIds = [];
+
+        for (const vid of variantIds) {
+          const item = rpcProductDetailsCache.get(vid);
+          if (item && Date.now() - item.timestamp < 30000) {
+            cachedResults.push(item.data);
+          } else {
+            missingIds.push(vid);
+          }
+        }
+
+        if (missingIds.length === 0) {
+          responseData = cachedResults;
+        } else {
+          const parseImageUrl = (imageUrls) => {
+            if (!imageUrls) return null;
+            if (Array.isArray(imageUrls)) {
+              return imageUrls.length > 0 ? imageUrls[0] : null;
+            }
+            if (typeof imageUrls === "string") {
+              try {
+                const parsed = JSON.parse(imageUrls);
+                if (Array.isArray(parsed)) {
+                  return parsed.length > 0 ? parsed[0] : null;
+                }
+                return parsed || imageUrls;
+              } catch (e) {
+                return imageUrls;
+              }
+            }
+            return null;
+          };
+
+          let freshResults = [];
+
+          // --- BƯỚC 2: Tối ưu truy vấn: Lấy các biến thể còn thiếu trong 1 lần gọi DB ---
+          const { data: variantsWithProduct, error: joinErr } = await supabase
             .from("product_variants")
-            .select("*")
-            .eq("variant_id", variantId)
-            .single();
+            .select(`
+              variant_id,
+              product_id,
+              size,
+              color,
+              stock_quantity,
+              products (
+                product_name,
+                image_urls,
+                original_price,
+                discount_price
+              )
+            `)
+            .in("variant_id", missingIds);
 
-          // Nếu xảy ra lỗi DB hoặc không tìm thấy biến thể, loại bỏ phần tử này khỏi giỏ hàng
-          if (vErr || !variant) return null;
+          if (!joinErr && Array.isArray(variantsWithProduct)) {
+            freshResults = variantsWithProduct
+              .filter((v) => v && v.products)
+              .map((v) => {
+                const prod = Array.isArray(v.products)
+                  ? v.products[0]
+                  : v.products;
+                return {
+                  product_id: v.product_id,
+                  variant_id: v.variant_id,
+                  product_name: prod?.product_name || "",
+                  image_url: parseImageUrl(prod?.image_urls),
+                  original_price: prod?.original_price || 0,
+                  discount_price: prod?.discount_price,
+                  size: v.size,
+                  color: v.color,
+                  stock_quantity: v.stock_quantity,
+                };
+              });
+          } else {
+            // Fallback nếu join chưa được cấu hình FK ở PostgREST: Query 2 batch thay vì N+1
+            console.warn(
+              "[RPC] Join query failed, falling back to batch query:",
+              joinErr?.message,
+            );
+            const { data: variants, error: vErr } = await supabase
+              .from("product_variants")
+              .select("*")
+              .in("variant_id", missingIds);
 
-          // --- BƯỚC 2.2: Lấy thông tin chung của sản phẩm (tên, hình ảnh, giá cả gốc/giảm) ---
-          const { data: product, error: pErr } = await supabase
-            .from("products")
-            .select("product_name, image_urls, original_price, discount_price")
-            .eq("product_id", variant.product_id)
-            .single();
+            if (!vErr && Array.isArray(variants) && variants.length > 0) {
+              const productIds = [
+                ...new Set(variants.map((v) => v.product_id).filter(Boolean)),
+              ];
+              const { data: products } = await supabase
+                .from("products")
+                .select(
+                  "product_id, product_name, image_urls, original_price, discount_price",
+                )
+                .in("product_id", productIds);
 
-          if (pErr || !product) return null;
+              const productMap = new Map(
+                (products || []).map((p) => [p.product_id, p]),
+              );
 
-          // Xử lý dữ liệu hình ảnh phòng trường hợp dữ liệu lưu dưới dạng JSON String hoặc Plain String
-          let images = product.image_urls;
-          if (typeof images === "string") {
-            try {
-              images = JSON.parse(images);
-            } catch (e) {
-              images = [images]; // Nếu parse fail, bọc nó lại thành mảng chứa 1 chuỗi string duy nhất
+              freshResults = variants
+                .map((v) => {
+                  const prod = productMap.get(v.product_id);
+                  if (!prod) return null;
+                  return {
+                    product_id: v.product_id,
+                    variant_id: v.variant_id,
+                    product_name: prod.product_name,
+                    image_url: parseImageUrl(prod.image_urls),
+                    original_price: prod.original_price,
+                    discount_price: prod.discount_price,
+                    size: v.size,
+                    color: v.color,
+                    stock_quantity: v.stock_quantity,
+                  };
+                })
+                .filter(Boolean);
             }
           }
 
-          // trả dữ liệu
-          return {
-            product_id: variant.product_id,
-            variant_id: variantId,
-            product_name: product.product_name,
-            image_url: images && images.length > 0 ? images[0] : null,
-            original_price: product.original_price,
-            discount_price: product.discount_price,
-            size: variant.size,
-            color: variant.color,
-            stock_quantity: variant.stock_quantity,
-          };
-        } catch (e) {
-          console.error(e);
-          return null;
+          // Lưu các item mới vào cache
+          for (const item of freshResults) {
+            rpcProductDetailsCache.set(item.variant_id, {
+              data: item,
+              timestamp: Date.now(),
+            });
+          }
+
+          responseData = [...cachedResults, ...freshResults];
         }
-      });
-
-      // Đợi tất cả các tiến trình truy vấn DB của mọi variantId hoàn thành
-      const results = await Promise.all(detailsPromises);
-
-      // Lọc bỏ những phần tử bị null (do lỗi database hoặc biến thể không tồn tại)
-      responseData = results.filter((item) => item !== null);
+      }
     } catch (err) {
       console.error("Error processing RPC request:", err);
     }
@@ -168,6 +251,9 @@ export const listenForStockUpdate = async () => {
       console.log(`[.] Received stock update event for variants:`, items);
 
       for (const item of items) {
+        // Xóa cache để lượt query tiếp theo lấy số lượng mới nhất
+        rpcProductDetailsCache.delete(item.variant_id);
+
         // Lấy số lượng tồn kho và trạng thái hiện tại
         const { data: variant, error: fetchErr } = await supabase
           .from("product_variants")

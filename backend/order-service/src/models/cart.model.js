@@ -2,6 +2,26 @@
 import { supabase } from "../configs/supabase.js";
 
 export const CartModel = {
+  // Lấy giỏ hàng cùng các item trong 1 lần truy vấn duy nhất
+  getCartWithItems: async (accountId) => {
+    const { data, error } = await supabase
+      .from("carts")
+      .select(`
+        cart_id,
+        cart_items (
+          cart_item_id,
+          product_id,
+          variant_id,
+          quantity
+        )
+      `)
+      .eq("account_id", accountId)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
+
   // Tìm giỏ hàng hiện có của User
   findByAccountId: async (accountId) => {
     const { data, error } = await supabase

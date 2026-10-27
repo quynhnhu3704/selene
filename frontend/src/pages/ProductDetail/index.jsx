@@ -14,6 +14,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { FAQS, COMMITS, SIZE_GUIDE_IMAGE, getColorImage } from "./constants";
 import ImageModal from "./ImageModal";
 import { toast } from "react-toastify";
+import { isLoggedIn } from "../../utils/auth";
 
 function fmt(n) {
   return n.toLocaleString("vi-VN") + "đ";
@@ -48,7 +49,7 @@ function ProductDetailContent({ id }) {
     () => getCachedProductById(id)?.data ?? null,
   );
   const [loading, setLoading] = useState(() => !getCachedProductById(id)?.data);
-  const { addToCart } = useContext(CartContext);
+  const { cart, addToCart } = useContext(CartContext);
 
   useEffect(() => {
     let active = true;
@@ -643,45 +644,78 @@ function ProductDetailContent({ id }) {
 
               <button
                 className="pd-btn-cart"
-                onClick={async () => {
+                onClick={() => {
+                  // 1. Kiểm tra biến thể và tồn kho tại chỗ (0ms)
                   if (!selectedVariant) {
-                    toast.error(
-                      "Sản phẩm với màu và kích thước này không có hàng.",
-                    );
+                    toast.error("Sản phẩm bạn chọn đã hết");
                     return;
                   }
 
-                  if (Number(selectedVariant.stock_quantity || 0) <= 0) {
-                    toast.error(
-                      "Sản phẩm với màu và kích thước đã chọn đã hết hàng.",
-                    );
-                    return;
-                  }
-                  if (qty > Number(selectedVariant.stock_quantity)) {
-                    toast.error(
-                      `Chỉ còn ${selectedVariant.stock_quantity} sản phẩm với màu và kích thước đã chọn.`,
-                    );
+                  const stock = Number(selectedVariant.stock_quantity || 0);
+                  if (stock <= 0) {
+                    toast.error("Sản phẩm bạn chọn đã hết");
                     return;
                   }
 
-                  try {
-                    await addToCart(
-                      product.product_id,
-                      selectedVariant.variant_id,
-                      qty,
-                    );
+                  // Kiểm tra số lượng đã có sẵn trong giỏ hàng + số lượng muốn thêm
+                  const existingInCart = cart?.items?.find(
+                    (item) =>
+                      item.product?.variant_id === selectedVariant.variant_id ||
+                      item.variant_id === selectedVariant.variant_id,
+                  );
+                  const currentInCartQty = existingInCart
+                    ? Number(existingInCart.quantity || 0)
+                    : 0;
 
-                    toast.success("Đã thêm sản phẩm vào giỏ hàng!");
-                  } catch (error) {
+                  if (currentInCartQty + qty > stock) {
+                    toast.error("Sản phẩm bạn chọn đã hết");
+                    return;
+                  }
+
+                  if (!isLoggedIn()) {
+                    toast.warning("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+                    return;
+                  }
+
+                  // 2. ĐÃ VƯỢT QUA KIỂM TRA TỒN KHO: Phản hồi ngay lập tức (0ms)
+                  toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+
+                  // 3. Snapshot dữ liệu sản phẩm để cập nhật lạc quan (Optimistic)
+                  const snapshot = {
+                    product_id: product.product_id,
+                    variant_id: selectedVariant.variant_id,
+                    product_name: product.product_name,
+                    image_url:
+                      PRODUCT.colors?.[activeColor]?.image ||
+                      (Array.isArray(product.images) && product.images[0]) ||
+                      product.image_url,
+                    original_price:
+                      selectedVariant.original_price || product.original_price,
+                    discount_price:
+                      selectedVariant.discount_price ||
+                      selectedVariant.price ||
+                      product.discount_price,
+                    stock_quantity: stock,
+                    size: selectedVariant.size,
+                    color: selectedVariant.color,
+                  };
+
+                  // 4. Gửi API lên server chạy ngầm (asynchronous) không chặn giao diện
+                  addToCart(
+                    product.product_id,
+                    selectedVariant.variant_id,
+                    qty,
+                    snapshot,
+                  ).catch((error) => {
+                    // Nếu server trả về lỗi / hết hàng -> Hoàn tác và thông báo
                     toast.error(
-                      error.response?.data?.message ||
-                        "Không thể thêm vào giỏ hàng. Vui lòng thử lại.",
+                      error.response?.data?.message || "Sản phẩm bạn chọn đã hết",
                     );
                     console.error(
                       "Lỗi thêm giỏ hàng:",
                       error.response?.data || error,
                     );
-                  }
+                  });
                 }}
               >
                 Thêm vào giỏ&nbsp;
