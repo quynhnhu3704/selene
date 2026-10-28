@@ -292,15 +292,28 @@ export const getAllProduct = async (options = {}) => {
       to,
     );
 
-    const formattedProducts = (data || []).map((product) => ({
-      product_id: product.product_id,
-      product_name: product.product_name,
-      image_url: getFirstImage(product.image_urls),
-      second_image_url: getProductImage(product.image_urls, 1),
-      category_name: product.categories?.name || null,
-      discount_price: product.discount_price,
-      original_price: product.original_price,
-    }));
+    const formattedProducts = (data || []).map((product) => {
+      const activeVariants = (product.product_variants || []).filter(
+        (v) => v.status !== "inactive" && v.status !== "archived",
+      );
+      const totalStock = activeVariants.reduce(
+        (total, variant) => total + (Number(variant.stock_quantity) || 0),
+        0,
+      );
+
+      return {
+        product_id: product.product_id,
+        product_name: product.product_name,
+        image_url: getFirstImage(product.image_urls),
+        second_image_url: getProductImage(product.image_urls, 1),
+        category_name: product.categories?.name || null,
+        discount_price: product.discount_price,
+        original_price: product.original_price,
+        stock_quantity: totalStock,
+        is_out_of_stock: totalStock <= 0,
+        variants: product.product_variants || [],
+      };
+    });
 
     const totalPages = Math.ceil(count / limit);
 
@@ -455,13 +468,26 @@ export const searchProductsByName = async (options = {}) => {
       to,
     );
 
-    const formattedProducts = data.map((product) => ({
-      product_id: product.product_id,
-      product_name: product.product_name,
-      image_url: getFirstImage(product.image_urls),
-      discount_price: product.discount_price,
-      original_price: product.original_price,
-    }));
+    const formattedProducts = data.map((product) => {
+      const activeVariants = (product.product_variants || []).filter(
+        (v) => v.status !== "inactive" && v.status !== "archived",
+      );
+      const totalStock = activeVariants.reduce(
+        (total, variant) => total + (Number(variant.stock_quantity) || 0),
+        0,
+      );
+
+      return {
+        product_id: product.product_id,
+        product_name: product.product_name,
+        image_url: getFirstImage(product.image_urls),
+        discount_price: product.discount_price,
+        original_price: product.original_price,
+        stock_quantity: totalStock,
+        is_out_of_stock: totalStock <= 0,
+        variants: product.product_variants || [],
+      };
+    });
 
     const totalPages = Math.ceil(count / limit);
 
@@ -498,14 +524,27 @@ export const searchProductsByCategoryName = async (options = {}) => {
       to,
     );
 
-    const formattedProducts = data.map((product) => ({
-      product_id: product.product_id,
-      product_name: product.product_name,
-      image_url: getFirstImage(product.image_urls),
-      discount_price: product.discount_price,
-      original_price: product.original_price,
-      category_name: product.categories?.name || null,
-    }));
+    const formattedProducts = data.map((product) => {
+      const activeVariants = (product.product_variants || []).filter(
+        (v) => v.status !== "inactive" && v.status !== "archived",
+      );
+      const totalStock = activeVariants.reduce(
+        (total, variant) => total + (Number(variant.stock_quantity) || 0),
+        0,
+      );
+
+      return {
+        product_id: product.product_id,
+        product_name: product.product_name,
+        image_url: getFirstImage(product.image_urls),
+        discount_price: product.discount_price,
+        original_price: product.original_price,
+        category_name: product.categories?.name || null,
+        stock_quantity: totalStock,
+        is_out_of_stock: totalStock <= 0,
+        variants: product.product_variants || [],
+      };
+    });
 
     const totalPages = Math.ceil(count / limit);
 

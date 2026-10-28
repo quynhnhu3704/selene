@@ -130,11 +130,13 @@ export const listenForCartProductDetails = async () => {
               size,
               color,
               stock_quantity,
+              status,
               products (
                 product_name,
                 image_urls,
                 original_price,
-                discount_price
+                discount_price,
+                status
               )
             `)
             .in("variant_id", missingIds);
@@ -156,6 +158,8 @@ export const listenForCartProductDetails = async () => {
                   size: v.size,
                   color: v.color,
                   stock_quantity: v.stock_quantity,
+                  status: v.status,
+                  product_status: prod?.status,
                 };
               });
           } else {
@@ -176,7 +180,7 @@ export const listenForCartProductDetails = async () => {
               const { data: products } = await supabase
                 .from("products")
                 .select(
-                  "product_id, product_name, image_urls, original_price, discount_price",
+                  "product_id, product_name, image_urls, original_price, discount_price, status",
                 )
                 .in("product_id", productIds);
 
@@ -198,6 +202,8 @@ export const listenForCartProductDetails = async () => {
                     size: v.size,
                     color: v.color,
                     stock_quantity: v.stock_quantity,
+                    status: v.status,
+                    product_status: prod?.status,
                   };
                 })
                 .filter(Boolean);

@@ -138,6 +138,12 @@ function ProductDetailContent({ id }) {
   const selectedVariant = (product.variants || []).find(
     (v) => v.color === selectedColor && v.size === selectedSize,
   );
+  const isCurrentOutOfStock =
+    !selectedVariant || Number(selectedVariant.stock_quantity || 0) <= 0;
+  const isAllSizesOutOfStock =
+    Array.isArray(product.variants) &&
+    product.variants.length > 0 &&
+    product.variants.every((v) => Number(v.stock_quantity || 0) <= 0);
 
   console.log("PRODUCT:", product);
   console.log("VARIANTS:", product.variants);
@@ -248,17 +254,51 @@ function ProductDetailContent({ id }) {
         .pd-size-row {
           display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
         }
+        .pd-out-of-stock-tag {
+          color: #dc3545; font-size: 13px; font-weight: 700;
+        }
         .pd-guide-link { background: none; border: none; padding: 0; font-size: 13.5px; font-weight: 600; color: #871B1B; text-decoration: none; }
         .pd-guide-link:hover { text-decoration: underline; }
         .pd-sizes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
         .pd-size-btn {
+          position: relative;
           min-width: 72px; height: 40px; border-radius: 8px;
           border: 1.5px solid #d0d0d0; background: #fff;
           font-size: 14px; font-weight: 600; font-family: 'Manrope', sans-serif;
-          color: #333; cursor: pointer; padding: 0 10px; transition: all 0.15s;
+          color: #333; cursor: pointer; padding: 0 12px; transition: all 0.15s;
+          display: inline-flex; align-items: center; justify-content: center;
+          overflow: hidden; user-select: none;
         }
         .pd-size-btn.active { border-color: #871B1B; background: #fcf2f2; color: #871B1B; }
-        .pd-size-btn:hover:not(.active) { border-color: #6c757d; }
+        .pd-size-btn:hover:not(.active):not(.out-of-stock) { border-color: #6c757d; }
+        .pd-size-btn.out-of-stock {
+          background: #f8f9fa;
+          color: #888;
+          border-color: #dee2e6;
+        }
+        .pd-size-btn.out-of-stock.active {
+          border-color: #871B1B;
+          background: #fcf2f2;
+          color: #871B1B;
+        }
+        .pd-size-text {
+          position: relative;
+          z-index: 1;
+        }
+        .pd-size-x-mark {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 2;
+        }
+        .pd-size-x-mark line {
+          stroke: #dc3545;
+          stroke-width: 1.8;
+          stroke-linecap: round;
+          opacity: 0.85;
+        }
 
         /* Qty + cart */
         .pd-action-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
@@ -283,6 +323,14 @@ function ProductDetailContent({ id }) {
         }
         .pd-btn-cart:hover { background: #6f1515; }
         .pd-btn-cart:active { transform: scale(0.98); }
+        .pd-btn-cart.pd-btn-cart-disabled {
+          background: #f1f3f5 !important;
+          color: #868e96 !important;
+          border: 1.5px solid #dee2e6 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          box-shadow: none !important;
+        }
 
         /* Commit */
         .pd-commit-title {
@@ -423,6 +471,9 @@ function ProductDetailContent({ id }) {
                 </div>
 
                 <div className="pd-main-img-wrap">
+                  {isAllSizesOutOfStock && (
+                    <span className="pl-badge-out-of-stock">Hết hàng</span>
+                  )}
                   <img
                     key={PRODUCT.images[activeImg]}
                     src={PRODUCT.images[activeImg]}
@@ -602,6 +653,9 @@ function ProductDetailContent({ id }) {
             <div className="pd-size-row">
               <div className="pd-section-label mb-0">
                 Kích thước: <strong>{PRODUCT.sizes[activeSize]}</strong>
+                {isCurrentOutOfStock && (
+                  <span className="pd-out-of-stock-tag ms-2">(Hết hàng)</span>
+                )}
               </div>
               <button
                 type="button"
@@ -612,115 +666,152 @@ function ProductDetailContent({ id }) {
               </button>
             </div>
             <div className="pd-sizes">
-              {PRODUCT.sizes.map((sz, i) => (
-                <button
-                  key={i}
-                  className={`pd-size-btn${activeSize === i ? " active" : ""}`}
-                  onClick={() => setSize(i)}
-                  aria-pressed={activeSize === i}
-                >
-                  {sz}
-                </button>
-              ))}
+              {PRODUCT.sizes.map((sz, i) => {
+                const variantForSz = (product.variants || []).find(
+                  (v) => v.color === selectedColor && v.size === sz,
+                );
+                const szStock = Number(variantForSz?.stock_quantity ?? 0);
+                const isOutOfStock = !variantForSz || szStock <= 0;
+                const isActive = activeSize === i;
+
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`pd-size-btn${isActive ? " active" : ""}${isOutOfStock ? " out-of-stock" : ""}`}
+                    onClick={() => setSize(i)}
+                    title={isOutOfStock ? `${sz} (Hết hàng)` : sz}
+                    aria-label={isOutOfStock ? `${sz} - Hết hàng` : sz}
+                    aria-pressed={isActive}
+                  >
+                    <span className="pd-size-text">{sz}</span>
+                    {isOutOfStock && (
+                      <svg
+                        className="pd-size-x-mark"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <line x1="0" y1="0" x2="100" y2="100" />
+                        <line x1="100" y1="0" x2="0" y2="100" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Qty + Thêm vào giỏ */}
             <div className="pd-action-row">
-              <div className="pd-qty">
+              {isCurrentOutOfStock ? (
                 <button
-                  className="pd-qty-btn"
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  type="button"
+                  className="pd-btn-cart pd-btn-cart-disabled"
+                  disabled
+                  aria-disabled="true"
                 >
-                  <i className="bi bi-dash" />
+                  <i className="bi bi-slash-circle" />
+                  Hết hàng
                 </button>
-                <span className="pd-qty-val">{qty}</span>
-                <button
-                  className="pd-qty-btn"
-                  onClick={() => setQty((q) => q + 1)}
-                >
-                  <i className="bi bi-plus" />
-                </button>
-              </div>
+              ) : (
+                <>
+                  <div className="pd-qty">
+                    <button
+                      className="pd-qty-btn"
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    >
+                      <i className="bi bi-dash" />
+                    </button>
+                    <span className="pd-qty-val">{qty}</span>
+                    <button
+                      className="pd-qty-btn"
+                      onClick={() => setQty((q) => q + 1)}
+                    >
+                      <i className="bi bi-plus" />
+                    </button>
+                  </div>
 
-              <button
-                className="pd-btn-cart"
-                onClick={() => {
-                  // 1. Kiểm tra biến thể và tồn kho tại chỗ (0ms)
-                  if (!selectedVariant) {
-                    toast.error("Sản phẩm bạn chọn đã hết");
-                    return;
-                  }
+                  <button
+                    className="pd-btn-cart"
+                    onClick={() => {
+                      // 1. Kiểm tra biến thể và tồn kho tại chỗ (0ms)
+                      if (!selectedVariant) {
+                        toast.error("Sản phẩm bạn chọn đã hết");
+                        return;
+                      }
 
-                  const stock = Number(selectedVariant.stock_quantity || 0);
-                  if (stock <= 0) {
-                    toast.error("Sản phẩm bạn chọn đã hết");
-                    return;
-                  }
+                      const stock = Number(selectedVariant.stock_quantity || 0);
+                      if (stock <= 0) {
+                        toast.error("Sản phẩm bạn chọn đã hết");
+                        return;
+                      }
 
-                  // Kiểm tra số lượng đã có sẵn trong giỏ hàng + số lượng muốn thêm
-                  const existingInCart = cart?.items?.find(
-                    (item) =>
-                      item.product?.variant_id === selectedVariant.variant_id ||
-                      item.variant_id === selectedVariant.variant_id,
-                  );
-                  const currentInCartQty = existingInCart
-                    ? Number(existingInCart.quantity || 0)
-                    : 0;
+                      // Kiểm tra số lượng đã có sẵn trong giỏ hàng + số lượng muốn thêm
+                      const existingInCart = cart?.items?.find(
+                        (item) =>
+                          item.product?.variant_id === selectedVariant.variant_id ||
+                          item.variant_id === selectedVariant.variant_id,
+                      );
+                      const currentInCartQty = existingInCart
+                        ? Number(existingInCart.quantity || 0)
+                        : 0;
 
-                  if (currentInCartQty + qty > stock) {
-                    toast.error("Sản phẩm bạn chọn đã hết");
-                    return;
-                  }
+                      if (currentInCartQty + qty > stock) {
+                        toast.error("Sản phẩm bạn chọn đã hết");
+                        return;
+                      }
 
-                  if (!isLoggedIn()) {
-                    toast.warning("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
-                    return;
-                  }
+                      if (!isLoggedIn()) {
+                        toast.warning("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+                        return;
+                      }
 
-                  // 2. ĐÃ VƯỢT QUA KIỂM TRA TỒN KHO: Phản hồi ngay lập tức (0ms)
-                  toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+                      // 2. ĐÃ VƯỢT QUA KIỂM TRA TỒN KHO: Phản hồi ngay lập tức (0ms)
+                      toast.success("Đã thêm sản phẩm vào giỏ hàng!");
 
-                  // 3. Snapshot dữ liệu sản phẩm để cập nhật lạc quan (Optimistic)
-                  const snapshot = {
-                    product_id: product.product_id,
-                    variant_id: selectedVariant.variant_id,
-                    product_name: product.product_name,
-                    image_url:
-                      PRODUCT.colors?.[activeColor]?.image ||
-                      (Array.isArray(product.images) && product.images[0]) ||
-                      product.image_url,
-                    original_price:
-                      selectedVariant.original_price || product.original_price,
-                    discount_price:
-                      selectedVariant.discount_price ||
-                      selectedVariant.price ||
-                      product.discount_price,
-                    stock_quantity: stock,
-                    size: selectedVariant.size,
-                    color: selectedVariant.color,
-                  };
+                      // 3. Snapshot dữ liệu sản phẩm để cập nhật lạc quan (Optimistic)
+                      const snapshot = {
+                        product_id: product.product_id,
+                        variant_id: selectedVariant.variant_id,
+                        product_name: product.product_name,
+                        image_url:
+                          PRODUCT.colors?.[activeColor]?.image ||
+                          (Array.isArray(product.images) && product.images[0]) ||
+                          product.image_url,
+                        original_price:
+                          selectedVariant.original_price || product.original_price,
+                        discount_price:
+                          selectedVariant.discount_price ||
+                          selectedVariant.price ||
+                          product.discount_price,
+                        stock_quantity: stock,
+                        size: selectedVariant.size,
+                        color: selectedVariant.color,
+                      };
 
-                  // 4. Gửi API lên server chạy ngầm (asynchronous) không chặn giao diện
-                  addToCart(
-                    product.product_id,
-                    selectedVariant.variant_id,
-                    qty,
-                    snapshot,
-                  ).catch((error) => {
-                    // Nếu server trả về lỗi / hết hàng -> Hoàn tác và thông báo
-                    toast.error(
-                      error.response?.data?.message || "Sản phẩm bạn chọn đã hết",
-                    );
-                    console.error(
-                      "Lỗi thêm giỏ hàng:",
-                      error.response?.data || error,
-                    );
-                  });
-                }}
-              >
-                Thêm vào giỏ&nbsp;
-                <i className="bi bi-handbag" />
-              </button>
+                      // 4. Gửi API lên server chạy ngầm (asynchronous) không chặn giao diện
+                      addToCart(
+                        product.product_id,
+                        selectedVariant.variant_id,
+                        qty,
+                        snapshot,
+                      ).catch((error) => {
+                        // Nếu server trả về lỗi / hết hàng -> Hoàn tác và thông báo
+                        toast.error(
+                          error.response?.data?.message || "Sản phẩm bạn chọn đã hết",
+                        );
+                        console.error(
+                          "Lỗi thêm giỏ hàng:",
+                          error.response?.data || error,
+                        );
+                      });
+                    }}
+                  >
+                    Thêm vào giỏ&nbsp;
+                    <i className="bi bi-handbag" />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 className={`pd-wishlist${isFavorite(product.product_id) ? " active" : ""}`}
