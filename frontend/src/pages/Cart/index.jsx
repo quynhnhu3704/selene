@@ -22,6 +22,7 @@ export default function Cart() {
     removeMultipleFromCart,
     increaseQuantity,
     decreaseQuantity,
+    flushPendingUpdates,
   } = useContext(CartContext);
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,13 @@ export default function Cart() {
       (i.product.discount_price ?? i.product.original_price ?? 0) * i.quantity,
     0,
   );
+
+  const handleDecrease = (item) => {
+    if (item.quantity <= 1) {
+      setSelected((p) => p.filter((x) => x !== item.cart_item_id));
+    }
+    decreaseQuantity(item.cart_item_id);
+  };
 
   const handleDelete = async (id) => {
     const res = await Swal.fire({
@@ -462,18 +470,20 @@ export default function Cart() {
                       <div className="cart-qty">
                         <button
                           className="cart-qty-btn"
-                          disabled={item.quantity <= 1}
-                          onClick={() => decreaseQuantity(item.cart_item_id)}
+                          onClick={() => handleDecrease(item)}
+                          title={
+                            item.quantity <= 1
+                              ? "Xoá sản phẩm khỏi giỏ hàng"
+                              : "Giảm số lượng"
+                          }
                         >
                           <i className="bi bi-dash" />
                         </button>
                         <span className="cart-qty-val">{item.quantity}</span>
                         <button
                           className="cart-qty-btn"
-                          disabled={
-                            item.quantity >= (item.product.stock_quantity ?? 0)
-                          }
                           onClick={() => increaseQuantity(item.cart_item_id)}
+                          title="Tăng số lượng"
                         >
                           <i className="bi bi-plus" />
                         </button>
@@ -548,13 +558,16 @@ export default function Cart() {
                   <button
                     className="cart-checkout-btn"
                     disabled={selectedItems.length === 0}
-                    onClick={() =>
+                    onClick={async () => {
+                      if (flushPendingUpdates) {
+                        await flushPendingUpdates();
+                      }
                       navigate("/thanh-toan", {
                         state: {
                           selected: selectedItems.map((i) => i.cart_item_id),
                         },
-                      })
-                    }
+                      });
+                    }}
                   >
                     <i className="bi bi-bag-check" />
                     Thanh toán ngay

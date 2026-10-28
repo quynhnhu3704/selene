@@ -217,58 +217,33 @@ export const removeItemFromCart = async (accountId, cartItemId) => {
   }
 };
 
-// giảm số lượng item trong giỏ hàng
-export const decreaseItemQuantity = async (accountId, cartItemId) => {
+// cập nhật số lượng item trực tiếp
+export const updateItemQuantity = async (
+  accountId,
+  cartItemId,
+  targetQuantity,
+) => {
   try {
-    if (!accountId || !cartItemId) {
+    if (
+      !accountId ||
+      !cartItemId ||
+      targetQuantity === undefined ||
+      targetQuantity === null
+    ) {
       throw new Error("Thiếu thông tin bắt buộc!");
     }
 
-    // 1. Lấy thông tin item để kiểm tra số lượng hiện tại
-    const cartItem = await CartModel.getCartItemByIdAndAccount(
-      cartItemId,
-      accountId,
-    );
-
-    if (!cartItem) {
-      throw new Error("Sản phẩm không tồn tại trong giỏ hàng của bạn!");
+    const quantity = parseInt(targetQuantity, 10);
+    if (isNaN(quantity)) {
+      throw new Error("Số lượng sản phẩm không hợp lệ!");
     }
 
-    const currentQuantity = cartItem.quantity;
-
-    // 2. Kiểm tra nếu số lượng <= 1 thì xóa luôn
-    if (currentQuantity <= 1) {
+    // Nếu số lượng <= 0, xóa sản phẩm khỏi giỏ hàng
+    if (quantity <= 0) {
       return await removeItemFromCart(accountId, cartItemId);
     }
 
-    // 3. Nếu số lượng > 1 thì giảm đi 1
-    await CartModel.updateItemQuantity(cartItemId, currentQuantity - 1);
-
-    // 4. Trả kết quả (tính lại tổng số lượng)
-    const cart = await CartModel.findByAccountId(accountId);
-    let totalQuantity = 0;
-    if (cart) {
-      totalQuantity = await CartModel.getTotalQuantity(cart.cart_id);
-    }
-
-    return {
-      new_quantity: currentQuantity - 1,
-      total_quantity: totalQuantity,
-    };
-  } catch (error) {
-    console.error("Lỗi tại decreaseItemQuantity Service:", error.message);
-    throw new Error(error.message || "Không thể giảm số lượng sản phẩm!");
-  }
-};
-
-// tăng số lượng item trong giỏ hàng
-export const increaseItemQuantity = async (accountId, cartItemId) => {
-  try {
-    if (!accountId || !cartItemId) {
-      throw new Error("Thiếu thông tin bắt buộc!");
-    }
-
-    // 1. Lấy thông tin item để kiểm tra số lượng hiện tại
+    // 1. Lấy thông tin item để kiểm tra quyền và variant_id
     const cartItem = await CartModel.getCartItemByIdAndAccount(
       cartItemId,
       accountId,
@@ -278,10 +253,9 @@ export const increaseItemQuantity = async (accountId, cartItemId) => {
       throw new Error("Sản phẩm không tồn tại trong giỏ hàng của bạn!");
     }
 
-    const currentQuantity = cartItem.quantity;
     const { variant_id } = cartItem;
 
-    // 2. Kiểm tra tồn kho siêu tốc
+    // 2. Kiểm tra tồn kho
     let stock = 0;
     try {
       stock = await fetchVariantStock(variant_id);
@@ -292,14 +266,14 @@ export const increaseItemQuantity = async (accountId, cartItemId) => {
       );
     }
 
-    if (stock <= 0 || stock < currentQuantity + 1) {
+    if (stock <= 0 || stock < quantity) {
       throw new Error("Sản phẩm bạn chọn đã hết");
     }
 
-    // 3. Tăng số lượng đi 1
-    await CartModel.updateItemQuantity(cartItemId, currentQuantity + 1);
+    // 3. Cập nhật số lượng
+    await CartModel.updateItemQuantity(cartItemId, quantity);
 
-    // 4. Trả kết quả (tính lại tổng số lượng)
+    // 4. Lấy tổng số lượng
     const cart = await CartModel.findByAccountId(accountId);
     let totalQuantity = 0;
     if (cart) {
@@ -307,11 +281,12 @@ export const increaseItemQuantity = async (accountId, cartItemId) => {
     }
 
     return {
-      new_quantity: currentQuantity + 1,
+      new_quantity: quantity,
       total_quantity: totalQuantity,
     };
   } catch (error) {
-    console.error("Lỗi tại increaseItemQuantity Service:", error.message);
-    throw new Error(error.message || "Không thể tăng số lượng sản phẩm!");
+    console.error("Lỗi tại updateItemQuantity Service:", error.message);
+    throw new Error(error.message || "Không thể cập nhật số lượng sản phẩm!");
   }
 };
+
