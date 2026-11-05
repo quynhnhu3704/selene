@@ -167,14 +167,9 @@ router.delete(
   cartController.handleRemoveItemFromCart,
 );
 router.put(
-  "/cart/decrease/:cartItemId",
+  "/cart/update-quantity/:cartItemId",
   verifyToken,
-  cartController.handleDecreaseItemQuantity,
-);
-router.put(
-  "/cart/increase/:cartItemId",
-  verifyToken,
-  cartController.handleIncreaseItemQuantity,
+  cartController.handleUpdateItemQuantity,
 );
 
 // ================= VOUCHER =================

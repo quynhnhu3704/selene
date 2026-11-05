@@ -85,15 +85,17 @@ export const handleRemoveItemFromCart = async (req, res) => {
   }
 };
 
-// giảm số lượng item trong giỏ hàng
-export const handleDecreaseItemQuantity = async (req, res) => {
+// cập nhật số lượng item trong giỏ hàng
+export const handleUpdateItemQuantity = async (req, res) => {
   try {
     const accountId = req.user?.accountId;
     const { cartItemId } = req.params;
+    const { quantity } = req.body;
 
-    const result = await cartService.decreaseItemQuantity(
+    const result = await cartService.updateItemQuantity(
       accountId,
       cartItemId,
+      quantity,
     );
 
     return res.status(200).json({
@@ -102,38 +104,7 @@ export const handleDecreaseItemQuantity = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error(
-      "Lỗi tại handleDecreaseItemQuantity Controller:",
-      error.message,
-    );
-    return res.status(500).json({
-      status: 500,
-      message: error.message || "Internal Server Error!",
-    });
-  }
-};
-
-// tăng số lượng item trong giỏ hàng
-export const handleIncreaseItemQuantity = async (req, res) => {
-  try {
-    const accountId = req.user?.accountId;
-    const { cartItemId } = req.params;
-
-    const result = await cartService.increaseItemQuantity(
-      accountId,
-      cartItemId,
-    );
-
-    return res.status(200).json({
-      status: 200,
-      message: "Cập nhật số lượng sản phẩm thành công",
-      data: result,
-    });
-  } catch (error) {
-    console.error(
-      "Lỗi tại handleIncreaseItemQuantity Controller:",
-      error.message,
-    );
+    console.error("Lỗi tại handleUpdateItemQuantity Controller:", error.message);
     const statusCode =
       error.message &&
       (error.message.includes("Không thể") ||

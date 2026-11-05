@@ -96,8 +96,28 @@ export default function Checkout() {
     return Object.keys(errors).length === 0;
   };
 
+  const isOutOfStock = (item) =>
+    !item.product ||
+    Boolean(item.product.error) ||
+    (item.product.status && item.product.status !== "active") ||
+    (item.product.product_status && item.product.product_status !== "active") ||
+    Number(item.product.stock_quantity ?? 0) <= 0;
+
+  // Chỉ lấy những sản phẩm được chọn từ Cart
+  const selectedItems = cartItems.filter(
+    (item) => item.product && selected.includes(item.cart_item_id),
+  );
+
   const handlePlaceOrder = async () => {
     if (submitting || checkingVoucher || !validateShippingInfo()) {
+      return;
+    }
+
+    const outOfStockItems = selectedItems.filter(isOutOfStock);
+    if (outOfStockItems.length > 0) {
+      toast.error(
+        "Một số sản phẩm trong đơn hàng đã hết hàng. Vui lòng quay lại giỏ hàng kiểm tra.",
+      );
       return;
     }
 
@@ -158,11 +178,6 @@ export default function Checkout() {
       setSubmitting(false);
     }
   };
-
-  // Chỉ lấy những sản phẩm được chọn từ Cart
-  const selectedItems = cartItems.filter(
-    (item) => item.product && selected.includes(item.cart_item_id),
-  );
 
   const totalQty = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
 

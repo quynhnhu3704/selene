@@ -94,11 +94,29 @@ export default function ProductSection({
       ) : (
         <div className="pl-home-slider-wrap">
           <div className="pl-home-slider" ref={sliderRef}>
-            {products.map((product) => (
-              <div className="pl-home-product-item" key={product.product_id}>
-                <div className="pl-pcard">
-                  <div className="pl-pimg-wrap">
-                    <ProductLink productId={product.product_id}>
+              {products.map((product) => {
+                const isOutOfStock =
+                  product.is_out_of_stock === true ||
+                  (product.stock_quantity !== undefined &&
+                    Number(product.stock_quantity) <= 0) ||
+                  (Array.isArray(product.variants) &&
+                    product.variants.length > 0 &&
+                    product.variants.every(
+                      (v) => Number(v.stock_quantity || 0) <= 0,
+                    ));
+
+                return (
+                  <div className="pl-home-product-item" key={product.product_id}>
+                    <div
+                      className={`pl-pcard${isOutOfStock ? " is-out-of-stock" : ""}`}
+                    >
+                      <div className="pl-pimg-wrap">
+                        {isOutOfStock && (
+                          <span className="pl-badge-out-of-stock">
+                            Hết hàng
+                          </span>
+                        )}
+                        <ProductLink productId={product.product_id}>
                       <ProductImage src={product.image_url} alt="" loading="lazy" />
                       {product.second_image_url && (
                         <img
@@ -139,7 +157,8 @@ export default function ProductSection({
                   </div>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
           {(canScrollPrev || canScrollNext) && (
             <>

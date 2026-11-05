@@ -16,8 +16,14 @@ const EMPTY_ITEMS = [];
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
 export default function Cart() {
-  const { cart, removeFromCart, increaseQuantity, decreaseQuantity } =
-    useContext(CartContext);
+  const {
+    cart,
+    removeFromCart,
+    removeMultipleFromCart,
+    increaseQuantity,
+    decreaseQuantity,
+    flushPendingUpdates,
+  } = useContext(CartContext);
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -29,32 +35,104 @@ export default function Cart() {
     return () => clearTimeout(t);
   }, []);
 
-  /* auto-select all on first load */
+  const isOutOfStock = (item) =>
+    !item.product ||
+    Boolean(item.product.error) ||
+    (item.product.status && item.product.status !== "active") ||
+    (item.product.product_status && item.product.product_status !== "active") ||
+    Number(item.product.stock_quantity ?? 0) <= 0;
+
+  const validCartItems = cartItems.filter((i) => i.product);
+  const availableCartItems = validCartItems.filter((i) => !isOutOfStock(i));
+  const outOfStockCartItems = validCartItems.filter((i) => isOutOfStock(i));
+
+  /* auto-select all available items on first load and synchronize selection when cartItems changes */
   const [previousCartItems, setPreviousCartItems] = useState(null);
   if (previousCartItems !== cartItems) {
     setPreviousCartItems(cartItems);
-    if (cartItems.length > 0 && selected.length === 0) {
-      setSelected(
-        cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
-      );
+
+    const currentAvailableIds = availableCartItems.map((i) => i.cart_item_id);
+
+    if (!previousCartItems) {
+      // Lần đầu tải giỏ hàng: Chỉ chọn tất cả sản phẩm CÒN HÀNG
+      setSelected(currentAvailableIds);
+    } else {
+      const prevAvailableItems = (previousCartItems || [])
+        .filter((i) => i.product)
+        .filter((i) => !isOutOfStock(i));
+      const prevAvailableIds = prevAvailableItems.map((i) => i.cart_item_id);
+
+      // Kiểm tra xem trước đó người dùng có đang "Chọn tất cả" hay không
+      const wasAllSelected =
+        prevAvailableIds.length > 0 &&
+        prevAvailableIds.every((id) => selected.includes(id));
+
+      if (wasAllSelected || selected.length === 0) {
+        setSelected(currentAvailableIds);
+      } else {
+        const nextSelected = [];
+
+        availableCartItems.forEach((item) => {
+          if (selected.includes(item.cart_item_id)) {
+            nextSelected.push(item.cart_item_id);
+            return;
+          }
+
+          const matchedPrev = prevAvailableItems.find(
+            (p) =>
+              selected.includes(p.cart_item_id) &&
+              ((p.product?.variant_id &&
+                item.product?.variant_id &&
+                p.product.variant_id === item.product.variant_id) ||
+                (p.variant_id &&
+                  item.variant_id &&
+                  p.variant_id === item.variant_id)),
+          );
+          if (matchedPrev) {
+            nextSelected.push(item.cart_item_id);
+            return;
+          }
+
+          const isNewlyAdded = !prevAvailableItems.some(
+            (p) =>
+              p.cart_item_id === item.cart_item_id ||
+              (p.variant_id &&
+                item.variant_id &&
+                p.variant_id === item.variant_id) ||
+              (p.product?.variant_id &&
+                item.product?.variant_id &&
+                p.product.variant_id === item.product.variant_id),
+          );
+          if (isNewlyAdded) {
+            nextSelected.push(item.cart_item_id);
+          }
+        });
+
+        setSelected(nextSelected);
+      }
     }
   }
 
+  // allSelected CHỈ TRUE khi TẤT CẢ các sản phẩm còn hàng đều có trong selected
   const allSelected =
-    selected.length === cartItems.length && cartItems.length > 0;
+    availableCartItems.length > 0 &&
+    availableCartItems.every((i) => selected.includes(i.cart_item_id));
+
   const toggleAll = () =>
     setSelected(
-      allSelected
-        ? []
-        : cartItems.filter((i) => i.product).map((i) => i.cart_item_id),
+      allSelected ? [] : availableCartItems.map((i) => i.cart_item_id),
     );
-  const toggleOne = (id) =>
+
+  const toggleOne = (id) => {
+    const item = validCartItems.find((i) => i.cart_item_id === id);
+    if (item && isOutOfStock(item)) return;
     setSelected((p) =>
       p.includes(id) ? p.filter((x) => x !== id) : [...p, id],
     );
+  };
 
-  const selectedItems = cartItems.filter(
-    (i) => i.product && selected.includes(i.cart_item_id),
+  const selectedItems = availableCartItems.filter((i) =>
+    selected.includes(i.cart_item_id),
   );
   const totalQty = selectedItems.reduce((s, i) => s + i.quantity, 0);
   const totalPrice = selectedItems.reduce(
@@ -63,6 +141,13 @@ export default function Cart() {
       (i.product.discount_price ?? i.product.original_price ?? 0) * i.quantity,
     0,
   );
+
+  const handleDecrease = (item) => {
+    if (item.quantity <= 1) {
+      setSelected((p) => p.filter((x) => x !== item.cart_item_id));
+    }
+    decreaseQuantity(item.cart_item_id);
+  };
 
   const handleDelete = async (id) => {
     const res = await Swal.fire({
@@ -84,14 +169,17 @@ export default function Cart() {
       },
     });
     if (!res.isConfirmed) return;
-    await removeFromCart(id);
+    // Xoá ngay lập tức trên UI (0ms)
     setSelected((p) => p.filter((x) => x !== id));
+    removeFromCart(id).catch((err) => {
+      console.error("Lỗi khi xóa sản phẩm:", err);
+    });
   };
 
   const handleDeleteSelected = async () => {
-    if (selected.length === 0) return;
+    if (selectedItems.length === 0) return;
     const res = await Swal.fire({
-      title: `Xoá ${selected.length} sản phẩm?`,
+      title: `Xoá ${selectedItems.length} sản phẩm?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Xoá tất cả",
@@ -108,8 +196,12 @@ export default function Cart() {
       },
     });
     if (!res.isConfirmed) return;
-    for (const id of selected) await removeFromCart(id);
+    const idsToDelete = selectedItems.map((item) => item.cart_item_id);
+    // Xoá ngay lập tức trên UI (0ms)
     setSelected([]);
+    removeMultipleFromCart(idsToDelete).catch((err) => {
+      console.error("Lỗi khi xóa nhiều sản phẩm:", err);
+    });
   };
 
   /* ── EMPTY STATE ── */
@@ -162,9 +254,18 @@ export default function Cart() {
           display: flex; align-items: center; gap: 18px;
           padding: 20px 0;
           border-bottom: 1px solid #f3f3f3;
-          transition: background 0.15s;
         }
         .cart-item:first-child { border-top: 1px solid #f3f3f3; }
+        .cart-item.out-of-stock {
+          opacity: 0.5;
+          transition: opacity 0.2s;
+        }
+        .cart-item.out-of-stock:hover {
+          opacity: 0.7;
+        }
+        .cart-item.out-of-stock .cart-item-img {
+          filter: grayscale(45%);
+        }
 
         .cart-item-img-wrap {
           position: relative; flex-shrink: 0;
@@ -172,6 +273,58 @@ export default function Cart() {
           border-radius: 10px; overflow: hidden; background: #f7f7f7;
         }
         .cart-item-img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+
+        .cart-item-badge-out {
+          position: absolute;
+          top: 18px;
+          left: 18px;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          width: 90px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          background: rgba(33, 37, 41, 0.92);
+          color: #fff;
+          font-size: 9.5px;
+          font-weight: 700;
+          line-height: 1;
+          letter-spacing: 0.3px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+          pointer-events: none;
+          user-select: none;
+        }
+
+        .cart-out-tag {
+          display: inline-block;
+          background: #fff5f5;
+          color: #dc3545;
+          border: 1px solid #fecaca;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 4px;
+          line-height: 1.4;
+        }
+
+        .cart-item-out-warning {
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.3;
+        }
+
+        .cart-qty.disabled {
+          opacity: 0.45;
+          background: #f5f5f5;
+          border-color: #e5e5e5;
+        }
+        .cart-qty.disabled .cart-qty-btn {
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+
+
 
         .cart-item-info { flex: 1; min-width: 0; }
         .cart-item-name {
@@ -307,15 +460,15 @@ export default function Cart() {
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  disabled={loading}
+                  disabled={loading || availableCartItems.length === 0}
                 />
-                Chọn tất cả
+                Chọn tất cả {availableCartItems.length > 0 && `(${availableCartItems.length})`}
               </label>
 
-              {selected.length > 0 && (
+              {selectedItems.length > 0 && (
                 <button className="cart-del-sel" onClick={handleDeleteSelected}>
                   <i className="bi bi-trash3 me-1" />
-                  Xoá ({selected.length})
+                  Xoá ({selectedItems.length})
                 </button>
               )}
             </div>
@@ -329,100 +482,160 @@ export default function Cart() {
               ) : (
                 cartItems
                   .filter((i) => i.product)
-                  .map((item) => (
-                    <div className="cart-item" key={item.cart_item_id}>
-                      {/* checkbox */}
-                      <input
-                        type="checkbox"
-                        className="cart-item-check"
-                        checked={selected.includes(item.cart_item_id)}
-                        onChange={() => toggleOne(item.cart_item_id)}
-                      />
+                  .map((item) => {
+                    const itemOutOfStock = isOutOfStock(item);
 
-                      {/* image */}
-                      <div className="cart-item-img-wrap">
-                        <ProductLink productId={item.product.product_id}>
-                          <img
-                            src={item.product.image_url || "/placeholder.jpg"}
-                            alt=""
-                            className="cart-item-img"
-                            onError={(e) => {
-                              e.currentTarget.src = "/placeholder.jpg";
-                            }}
-                          />
-                        </ProductLink>
-                      </div>
-
-                      {/* info */}
-                      <div className="cart-item-info">
-                        <ProductLink
-                          productId={item.product.product_id}
-                          className="cart-item-name"
-                        >
-                          {item.product.product_name}
-                        </ProductLink>
-                        {item.product.color && (
-                          <span className="cart-item-meta">
-                            Màu: {item.product.color}
-                          </span>
-                        )}
-
-                        {item.product.size && (
-                          <span className="cart-item-meta ms-2">
-                            · Size: {item.product.size}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* đơn giá */}
-                      <div className="cart-item-price">
-                        {fmt(
-                          item.product.discount_price ??
-                            item.product.original_price ??
-                            0,
-                        )}
-                      </div>
-
-                      {/* qty stepper */}
-                      <div className="cart-qty">
-                        <button
-                          className="cart-qty-btn"
-                          disabled={item.quantity <= 1}
-                          onClick={() => decreaseQuantity(item.cart_item_id)}
-                        >
-                          <i className="bi bi-dash" />
-                        </button>
-                        <span className="cart-qty-val">{item.quantity}</span>
-                        <button
-                          className="cart-qty-btn"
-                          disabled={
-                            item.quantity >= (item.product.stock_quantity ?? 0)
-                          }
-                          onClick={() => increaseQuantity(item.cart_item_id)}
-                        >
-                          <i className="bi bi-plus" />
-                        </button>
-                      </div>
-
-                      {/* thành tiền */}
-                      <div className="cart-item-subtotal">
-                        {fmt(
-                          (item.product.discount_price ??
-                            item.product.original_price ??
-                            0) * item.quantity,
-                        )}
-                      </div>
-
-                      {/* delete */}
-                      <button
-                        className="cart-del-btn"
-                        onClick={() => handleDelete(item.cart_item_id)}
-                        title="Xoá sản phẩm"
+                    return (
+                      <div
+                        className={`cart-item${itemOutOfStock ? " out-of-stock" : ""}`}
+                        key={item.cart_item_id}
                       >
-                        <i className="bi bi-trash3" />
-                      </button>
-                    </div>
-                  ))
+                        {/* checkbox */}
+                        <input
+                          type="checkbox"
+                          className="cart-item-check"
+                          checked={!itemOutOfStock && selected.includes(item.cart_item_id)}
+                          onChange={() => toggleOne(item.cart_item_id)}
+                          disabled={itemOutOfStock}
+                          title={itemOutOfStock ? "Sản phẩm đã hết hàng" : undefined}
+                        />
+
+                        {/* image */}
+                        <div className="cart-item-img-wrap">
+                          {itemOutOfStock && (
+                            <span className="cart-item-badge-out">Hết hàng</span>
+                          )}
+                          <ProductLink productId={item.product.product_id}>
+                            <img
+                              src={item.product.image_url || "/placeholder.jpg"}
+                              alt=""
+                              className="cart-item-img"
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder.jpg";
+                              }}
+                            />
+                          </ProductLink>
+                        </div>
+
+                        {/* info */}
+                        <div className="cart-item-info">
+                          <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <ProductLink
+                              productId={item.product.product_id}
+                              className="cart-item-name mb-0"
+                            >
+                              {item.product.product_name}
+                            </ProductLink>
+                            {itemOutOfStock && (
+                              <span className="cart-out-tag">Hết hàng</span>
+                            )}
+                          </div>
+                          <div>
+                            {item.product.color && (
+                              <span className="cart-item-meta">
+                                Màu: {item.product.color}
+                              </span>
+                            )}
+
+                            {item.product.size && (
+                              <span className="cart-item-meta ms-2">
+                                · Size: {item.product.size}
+                              </span>
+                            )}
+                          </div>
+                          {!itemOutOfStock &&
+                            item.product?.stock_quantity !== undefined &&
+                            item.quantity > Number(item.product.stock_quantity) && (
+                              <div className="cart-item-out-warning text-danger mt-1">
+                                <i className="bi bi-exclamation-triangle me-1" />
+                                Số lượng vượt quá tồn kho (kho còn {item.product.stock_quantity} sp)
+                              </div>
+                            )}
+                        </div>
+
+                        {/* đơn giá */}
+                        <div className="cart-item-price">
+                          {itemOutOfStock ? (
+                            <span className="text-muted text-decoration-line-through">
+                              {fmt(
+                                item.product.discount_price ??
+                                  item.product.original_price ??
+                                  0,
+                              )}
+                            </span>
+                          ) : (
+                            fmt(
+                              item.product.discount_price ??
+                                item.product.original_price ??
+                                0,
+                            )
+                          )}
+                        </div>
+
+                        {/* qty stepper */}
+                        <div className={`cart-qty${itemOutOfStock ? " disabled" : ""}`}>
+                          <button
+                            className="cart-qty-btn"
+                            onClick={() => handleDecrease(item)}
+                            disabled={itemOutOfStock}
+                            title={
+                              item.quantity <= 1
+                                ? "Xoá sản phẩm khỏi giỏ hàng"
+                                : "Giảm số lượng"
+                            }
+                          >
+                            <i className="bi bi-dash" />
+                          </button>
+                          <span className="cart-qty-val">{item.quantity}</span>
+                          <button
+                            className="cart-qty-btn"
+                            onClick={() => increaseQuantity(item.cart_item_id)}
+                            disabled={
+                              itemOutOfStock ||
+                              (item.product?.stock_quantity !== undefined &&
+                                item.quantity >= Number(item.product.stock_quantity))
+                            }
+                            title={
+                              item.product?.stock_quantity !== undefined &&
+                              item.quantity >= Number(item.product.stock_quantity)
+                                ? "Đã đạt số lượng tồn kho tối đa"
+                                : "Tăng số lượng"
+                            }
+                          >
+                            <i className="bi bi-plus" />
+                          </button>
+                        </div>
+
+                        {/* thành tiền */}
+                        <div className="cart-item-subtotal">
+                          {itemOutOfStock ? (
+                            <span className="text-muted text-decoration-line-through">
+                              {fmt(
+                                (item.product.discount_price ??
+                                  item.product.original_price ??
+                                  0) * item.quantity,
+                              )}
+                            </span>
+                          ) : (
+                            fmt(
+                              (item.product.discount_price ??
+                                item.product.original_price ??
+                                0) * item.quantity,
+                            )
+                          )}
+                        </div>
+
+                        {/* delete */}
+                        <button
+                          className="cart-del-btn"
+                          onClick={() => handleDelete(item.cart_item_id)}
+                          title="Xoá sản phẩm"
+                        >
+                          <i className="bi bi-trash3" />
+                        </button>
+                      </div>
+                    );
+                  })
               )}
             </div>
 
@@ -472,10 +685,42 @@ export default function Cart() {
 
                   <button
                     className="cart-checkout-btn"
-                    disabled={selected.length === 0}
-                    onClick={() =>
-                      navigate("/thanh-toan", { state: { selected } })
-                    }
+                    disabled={selectedItems.length === 0}
+                    onClick={async () => {
+                      const hasOutOfStock = selectedItems.some((i) =>
+                        isOutOfStock(i),
+                      );
+                      const hasExceededStock = selectedItems.some(
+                        (i) =>
+                          i.product?.stock_quantity !== undefined &&
+                          i.quantity > Number(i.product.stock_quantity),
+                      );
+                      if (hasOutOfStock) {
+                        Swal.fire({
+                          icon: "warning",
+                          title: "Có sản phẩm hết hàng",
+                          text: "Vui lòng bỏ chọn hoặc xóa sản phẩm đã hết hàng trước khi thanh toán.",
+                        });
+                        return;
+                      }
+                      if (hasExceededStock) {
+                        Swal.fire({
+                          icon: "warning",
+                          title: "Số lượng vượt quá tồn kho",
+                          text: "Vui lòng điều chỉnh lại số lượng sản phẩm không vượt quá tồn kho trước khi thanh toán.",
+                        });
+                        return;
+                      }
+
+                      if (flushPendingUpdates) {
+                        await flushPendingUpdates();
+                      }
+                      navigate("/thanh-toan", {
+                        state: {
+                          selected: selectedItems.map((i) => i.cart_item_id),
+                        },
+                      });
+                    }}
                   >
                     <i className="bi bi-bag-check" />
                     Thanh toán ngay

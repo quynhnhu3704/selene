@@ -19,14 +19,11 @@ export const removeFromCart = async (cartItemId) => {
   return res.data;
 };
 
-// giảm số lượng sản phẩm
-export const decreaseQuantity = async (cartItemId) => {
-  const res = await http.put(`/orders/cart/decrease/${cartItemId}`);
+// cập nhật trực tiếp số lượng sản phẩm
+export const updateCartItemQuantity = async (cartItemId, quantity) => {
+  const res = await http.put(`/orders/cart/update-quantity/${cartItemId}`, {
+    quantity,
+  });
   return res.data;
 };
 
-// tăng số lượng sản phẩm
-export const increaseQuantity = async (cartItemId) => {
-  const res = await http.put(`/orders/cart/increase/${cartItemId}`);
-  return res.data;
-};

@@ -19,15 +19,12 @@ export const ProductModel = {
         categories!inner (
           name,
           status
+        ),
+        product_variants${hasVariantFilter ? "!inner" : ""} (
+          variant_id,
+          stock_quantity,
+          status
         )
-        ${
-          hasVariantFilter
-            ? `,
-        product_variants!inner (
-          variant_id
-        )`
-            : ""
-        }
       `,
         { count: "exact" },
       )
@@ -215,7 +212,12 @@ export const ProductModel = {
         image_urls,
         original_price,
         discount_price,
-        categories!inner ( status )
+        categories!inner ( status ),
+        product_variants (
+          variant_id,
+          stock_quantity,
+          status
+        )
       `,
         { count: "exact" },
       )
@@ -242,6 +244,11 @@ export const ProductModel = {
         discount_price,
         categories!inner (
           name,
+          status
+        ),
+        product_variants (
+          variant_id,
+          stock_quantity,
           status
         )
       `,

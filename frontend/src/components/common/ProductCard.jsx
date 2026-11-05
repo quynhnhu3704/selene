@@ -9,9 +9,20 @@ function fmt(price) {
 export default function ProductCard({ product }) {
   const { isFavorite, toggleWishlist } = useWishlist();
 
+  const isOutOfStock =
+    product.is_out_of_stock === true ||
+    (product.stock_quantity !== undefined &&
+      Number(product.stock_quantity) <= 0) ||
+    (Array.isArray(product.variants) &&
+      product.variants.length > 0 &&
+      product.variants.every((v) => Number(v.stock_quantity || 0) <= 0));
+
   return (
-    <div className="pl-pcard">
+    <div className={`pl-pcard${isOutOfStock ? " is-out-of-stock" : ""}`}>
       <div className="pl-pimg-wrap">
+        {isOutOfStock && (
+          <span className="pl-badge-out-of-stock">Hết hàng</span>
+        )}
         <ProductLink productId={product.product_id}>
           <ProductImage
             src={product.image_url}
