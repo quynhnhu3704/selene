@@ -35,10 +35,10 @@ export default function ProductPromotions() {
     name: "",
     scope: "Toàn bộ sản phẩm",
     discount_type: "percent",
-    discount_value: 20,
+    discount_value: "",
     status: "active",
-    start_date: "2026-10-01",
-    end_date: "2026-10-31",
+    start_date: "",
+    end_date: "",
   });
 
   const composing = useRef(false);
@@ -106,14 +106,14 @@ export default function ProductPromotions() {
   const handleOpenAdd = () => {
     setEditingItem(null);
     setFormData({
-      code: `KM${Date.now().toString().slice(-8)}sp`,
+      code: "",
       name: "",
       scope: "Toàn bộ sản phẩm",
       discount_type: "percent",
-      discount_value: 20,
+      discount_value: "",
       status: "active",
-      start_date: new Date().toISOString().slice(0, 10),
-      end_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+      start_date: "",
+      end_date: "",
     });
     setShowModal(true);
   };
@@ -139,7 +139,7 @@ export default function ProductPromotions() {
       toast.warning("Vui lòng nhập tên chương trình khuyến mãi!");
       return;
     }
-    if (formData.discount_value <= 0) {
+    if (!formData.discount_value || Number(formData.discount_value) <= 0) {
       toast.warning("Mức giảm phải lớn hơn 0!");
       return;
     }

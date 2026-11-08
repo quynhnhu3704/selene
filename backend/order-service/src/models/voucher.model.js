@@ -38,7 +38,7 @@ export const VoucherModel = {
     const { data, error } = await supabase
       .from("vouchers")
       .select(
-        "voucher_id, code, name, discount_type, discount_value, min_order_value, max_discount_amount, start_date, end_date, per_user_limit, total_quantity, used_quantity",
+        "voucher_id, code, name, description, discount_type, discount_value, min_order_value, max_discount_amount, start_date, end_date, per_user_limit, total_quantity, used_quantity",
       )
       .eq("status", "active")
       .order("created_at", { ascending: false });

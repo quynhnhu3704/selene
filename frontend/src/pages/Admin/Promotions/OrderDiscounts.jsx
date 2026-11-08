@@ -22,6 +22,46 @@ import {
 
 const ITEMS_PER_PAGE = 8;
 
+const formatK = (val) => {
+  if (!val || Number(val) === 0) return "0đ";
+  const num = Number(val);
+  if (num >= 1000 && num % 1000 === 0) {
+    return `${(num / 1000).toLocaleString("vi-VN")}k`;
+  }
+  return fmtVND(num);
+};
+
+const getVoucherDescription = (item) => {
+  if (item.description) return item.description;
+
+  const isPercent =
+    item.discount_type === "percentage" || item.discount_type === "percent";
+  const isFreeShip = item.discount_type === "free_shipping";
+  const minOrder = item.min_order_value ?? item.min_order ?? 0;
+  const maxDiscount = item.max_discount_amount ?? 0;
+
+  let text = "";
+  if (isPercent) {
+    text = `Giảm ${item.discount_value}%`;
+    if (Number(maxDiscount) > 0) {
+      text += ` tối đa ${formatK(maxDiscount)}`;
+    }
+  } else if (isFreeShip) {
+    text = "Miễn phí vận chuyển";
+    if (Number(item.discount_value) > 0) {
+      text += ` tối đa ${formatK(item.discount_value)}`;
+    }
+  } else {
+    text = `Giảm ${fmtVND(item.discount_value)}`;
+  }
+
+  if (Number(minOrder) > 0) {
+    text += ` cho đơn từ ${formatK(minOrder)}`;
+  }
+
+  return text || "—";
+};
+
 export default function OrderDiscounts() {
   const [discounts, setDiscounts] = useState(() => {
     const saved = localStorage.getItem("selene_mock_order_discounts");
@@ -272,13 +312,13 @@ export default function OrderDiscounts() {
             <thead>
               <tr>
                 <th className="text-center" style={{ width: "4%" }}>#</th>
-                <th style={{ width: "11%" }}>Mã giảm giá</th>
-                <th style={{ width: "25%" }}>Áp dụng</th>
-                <th className="text-center" style={{ width: "12%" }}>Mức giảm</th>
-                <th className="text-center" style={{ width: "11%" }}>Lượt sử dụng</th>
-                <th className="text-center" style={{ width: "14%" }}>Trạng thái</th>
-                <th className="text-center" style={{ width: "16%" }}>Thời hạn</th>
-                <th className="text-center" style={{ width: "7%" }}></th>
+                <th style={{ width: "12%" }}>Mã giảm giá</th>
+                <th style={{ width: "18%" }}>Tên mã</th>
+                <th style={{ width: "27%" }}>Áp dụng</th>
+                <th className="text-center" style={{ width: "12%" }}>Lượt dùng</th>
+                <th className="text-center" style={{ width: "12%" }}>Trạng thái</th>
+                <th className="text-center" style={{ width: "15%" }}>Thời hạn</th>
+                <th className="text-center" style={{ width: "6%" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -292,13 +332,8 @@ export default function OrderDiscounts() {
                 paginatedDiscounts.map((item, index) => {
                   const state = getOrderDiscountStatus(item.status);
                   const stt = (page - 1) * ITEMS_PER_PAGE + index + 1;
-                  const minOrder = item.min_order_value ?? item.min_order ?? 0;
                   const usedQty = item.used_quantity ?? item.used_count ?? 0;
                   const totalQty = item.total_quantity ?? item.max_usage ?? "—";
-                  const isPercent =
-                    item.discount_type === "percentage" ||
-                    item.discount_type === "percent";
-                  const isFreeShip = item.discount_type === "free_shipping";
 
                   const voucherKey = item.voucher_id || item.id;
                   const editUrl = `/admin/khuyen-mai/ma-giam-gia/${voucherKey}/sua?returnUrl=${encodeURIComponent(
@@ -320,7 +355,7 @@ export default function OrderDiscounts() {
                         >
                           <span
                             className="font-monospace text-dark fw-bold"
-                            style={{ fontSize: 16, letterSpacing: "0.5px" }}
+                            style={{ fontSize: 15, letterSpacing: "0.5px" }}
                           >
                             {item.code}
                           </span>
@@ -329,43 +364,27 @@ export default function OrderDiscounts() {
                       <td>
                         <Link
                           to={editUrl}
-                          className="adm-name text-break text-decoration-none text-dark"
+                          className="adm-name text-break text-decoration-none text-dark fw-semibold"
                           title="Bấm để chỉnh sửa"
                           onClick={saveScrollPosition}
                         >
                           {item.name || item.code}
                         </Link>
+                      </td>
+                      <td>
+                        <div className="fw-medium text-dark text-break">
+                          {getVoucherDescription(item)}
+                        </div>
+                      </td>
+                      <td className="text-center">
+                        <span className="fw-semibold text-dark">
+                          {usedQty} / {totalQty}
+                        </span>
                         {item.per_user_limit ? (
-                          <div className="adm-sub text-muted">
+                          <div className="text-muted small" style={{ fontSize: 11.5 }}>
                             Tối đa {item.per_user_limit} lần/khách
                           </div>
                         ) : null}
-                      </td>
-                      <td className="text-center fw-semibold text-danger" style={{ fontSize: 15 }}>
-                        {isPercent ? (
-                          <>
-                            <div>-{item.discount_value}%</div>
-                            {Number(item.max_discount_amount) > 0 && (
-                              <div className="text-muted small fw-normal">
-                                Tối đa {fmtVND(item.max_discount_amount)}
-                              </div>
-                            )}
-                          </>
-                        ) : isFreeShip ? (
-                          <>
-                            <div className="text-success">Freeship</div>
-                            <div className="text-muted small fw-normal">
-                              Tối đa {fmtVND(item.discount_value)}
-                            </div>
-                          </>
-                        ) : (
-                          <div>-{fmtVND(item.discount_value)}</div>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <span className="fw-semibold">
-                          {usedQty} / {totalQty}
-                        </span>
                       </td>
                       <td className="text-center">
                         <span

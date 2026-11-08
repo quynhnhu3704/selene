@@ -40,6 +40,16 @@ const formatNumberVND = (val) => {
   return num.toLocaleString("vi-VN");
 };
 
+// Format number compactly for condition sentences (e.g. 700000 -> "700k", 150000 -> "150k")
+const formatK = (val) => {
+  if (!val || Number(val) === 0) return "0đ";
+  const num = Number(val);
+  if (num >= 1000 && num % 1000 === 0) {
+    return `${(num / 1000).toLocaleString("vi-VN")}k`;
+  }
+  return fmtVND(num);
+};
+
 export default function VoucherPage({ create = false }) {
   const { voucherId } = useParams();
   const [params] = useSearchParams();
@@ -55,19 +65,21 @@ export default function VoucherPage({ create = false }) {
   const title = create ? "Thêm mã giảm giá mới" : "Chỉnh sửa mã giảm giá";
 
   const [form, setForm] = useState({
-    code: create ? `GIAM${Math.floor(20 + Math.random() * 80)}K` : "",
+    code: "",
     name: "",
+    description: "",
     discount_type: "percentage",
-    discount_value: 20,
-    min_order_value: 200000,
-    max_discount_amount: 50000,
-    total_quantity: 100,
-    per_user_limit: 10,
+    discount_value: "",
+    min_order_value: "",
+    max_discount_amount: "",
+    total_quantity: "",
+    per_user_limit: "",
     status: "active",
-    start_date: new Date().toISOString().slice(0, 10),
-    end_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    start_date: "",
+    end_date: "",
   });
 
+  const [isCustomDesc, setIsCustomDesc] = useState(false);
   const [loading, setLoading] = useState(!create);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -121,16 +133,17 @@ export default function VoucherPage({ create = false }) {
         setForm({
           code: voucherData.code || "",
           name: voucherData.name || "",
+          description: voucherData.description || "",
           discount_type:
             voucherData.discount_type === "percent"
               ? "percentage"
               : voucherData.discount_type === "fixed"
                 ? "fixed_amount"
                 : voucherData.discount_type || "percentage",
-          discount_value: voucherData.discount_value ?? 0,
+          discount_value: voucherData.discount_value ?? "",
           min_order_value: voucherData.min_order_value ?? voucherData.min_order ?? 0,
           max_discount_amount: voucherData.max_discount_amount ?? 0,
-          total_quantity: voucherData.total_quantity ?? voucherData.max_usage ?? 100,
+          total_quantity: voucherData.total_quantity ?? voucherData.max_usage ?? 0,
           per_user_limit: voucherData.per_user_limit ?? 1,
           status:
             voucherData.status === "locked"
@@ -141,6 +154,9 @@ export default function VoucherPage({ create = false }) {
           start_date: formatDateForInput(voucherData.start_date),
           end_date: formatDateForInput(voucherData.end_date),
         });
+        if (voucherData.description) {
+          setIsCustomDesc(true);
+        }
       } else {
         setError("Không tìm thấy thông tin mã giảm giá này hoặc mã đã bị xóa.");
       }
@@ -164,11 +180,6 @@ export default function VoucherPage({ create = false }) {
     handleChange(field, clean === "" ? "" : Number(clean));
   };
 
-  const handleGenerateCode = () => {
-    const randomNum = Math.floor(20 + Math.random() * 80);
-    handleChange("code", `GIAM${randomNum}K`);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (saving) return;
@@ -181,7 +192,7 @@ export default function VoucherPage({ create = false }) {
       toast.warning("Vui lòng nhập tên chương trình giảm giá!");
       return;
     }
-    if (Number(form.discount_value) <= 0) {
+    if (form.discount_value === "" || Number(form.discount_value) <= 0) {
       toast.warning("Mức giảm phải lớn hơn 0!");
       return;
     }
@@ -197,10 +208,19 @@ export default function VoucherPage({ create = false }) {
       toast.warning("Ngày bắt đầu không được lớn hơn ngày kết thúc!");
       return;
     }
+    if (form.total_quantity === "" || Number(form.total_quantity) <= 0) {
+      toast.warning("Vui lòng nhập tổng số lượng phát hành hợp lệ!");
+      return;
+    }
+    if (form.per_user_limit === "" || Number(form.per_user_limit) <= 0) {
+      toast.warning("Vui lòng nhập giới hạn lượt dùng cho mỗi khách hàng!");
+      return;
+    }
 
     const payload = {
       code: form.code.toUpperCase().replace(/\s+/g, ""),
       name: form.name.trim(),
+      description: (form.description?.trim() || conditionDescription || "").trim(),
       discount_type: form.discount_type,
       discount_value: Number(form.discount_value),
       min_order_value: Number(form.min_order_value || 0),
@@ -210,7 +230,7 @@ export default function VoucherPage({ create = false }) {
           : 0,
       total_quantity: Number(form.total_quantity || 1),
       per_user_limit: Number(form.per_user_limit || 1),
-      start_date: new Date(form.start_date).toISOString(),
+      start_date: new Date(`${form.start_date}T00:00:00Z`).toISOString(),
       end_date: new Date(`${form.end_date}T23:59:59Z`).toISOString(),
       status: form.status,
     };
@@ -227,7 +247,11 @@ export default function VoucherPage({ create = false }) {
           });
           createdVoucher = res?.data;
         } catch (apiErr) {
-          console.warn("API create voucher failed, saving locally:", apiErr.message);
+          const errMsg = apiErr.response?.data?.message || apiErr.message;
+          if (apiErr.response && apiErr.response.status !== 404) {
+            throw new Error(errMsg);
+          }
+          console.warn("API create voucher failed, saving locally:", errMsg);
         }
 
         // Cập nhật bộ nhớ cục bộ
@@ -309,13 +333,71 @@ export default function VoucherPage({ create = false }) {
   // Preview badge calculation
   const previewBadge = useMemo(() => {
     if (form.discount_type === "percentage") {
-      return `Giảm ${form.discount_value}%`;
+      return form.discount_value !== "" ? `Giảm ${form.discount_value}%` : "Chưa có mức giảm";
     }
     if (form.discount_type === "free_shipping") {
       return "Miễn phí vận chuyển";
     }
-    return `Giảm ${fmtVND(form.discount_value)}`;
+    return form.discount_value !== "" ? `Giảm ${fmtVND(form.discount_value)}` : "Chưa có mức giảm";
   }, [form.discount_type, form.discount_value]);
+
+  // Auto-generate condition description sentence
+  const conditionDescription = useMemo(() => {
+    const { discount_type, discount_value, max_discount_amount, min_order_value } = form;
+
+    const hasDiscount = discount_value !== "" && Number(discount_value) > 0;
+    const hasMinOrder = min_order_value !== "" && Number(min_order_value) > 0;
+    const hasMaxDiscount =
+      discount_type === "percentage" &&
+      max_discount_amount !== "" &&
+      Number(max_discount_amount) > 0;
+
+    if (!hasDiscount && !hasMinOrder && discount_type !== "free_shipping") {
+      return "";
+    }
+
+    let text = "";
+    if (discount_type === "percentage") {
+      if (hasDiscount) {
+        text = `Giảm ${discount_value}%`;
+        if (hasMaxDiscount) {
+          text += ` tối đa ${formatK(max_discount_amount)}`;
+        }
+      }
+    } else if (discount_type === "free_shipping") {
+      text = "Miễn phí vận chuyển";
+      if (hasDiscount) {
+        text += ` tối đa ${formatK(discount_value)}`;
+      }
+    } else {
+      // fixed_amount
+      if (hasDiscount) {
+        text = `Giảm ${fmtVND(discount_value)}`;
+      }
+    }
+
+    if (hasMinOrder) {
+      if (text) {
+        text += ` cho đơn từ ${formatK(min_order_value)}`;
+      } else {
+        text = `Áp dụng cho đơn từ ${formatK(min_order_value)}`;
+      }
+    }
+
+    return text;
+  }, [
+    form.discount_type,
+    form.discount_value,
+    form.max_discount_amount,
+    form.min_order_value,
+  ]);
+
+  // Tự động gán mô tả điều kiện vào form.description nếu người dùng chưa tự chỉnh sửa
+  useEffect(() => {
+    if (!isCustomDesc) {
+      setForm((prev) => ({ ...prev, description: conditionDescription }));
+    }
+  }, [conditionDescription, isCustomDesc]);
 
   return (
     <>
@@ -403,32 +485,20 @@ export default function VoucherPage({ create = false }) {
                 <div className="row g-3">
                   <div className="col-12 col-md-6">
                     <label className="vp-label">
-                      Mã Voucher (Code) <span className="text-danger">*</span>
+                      Mã Voucher <span className="text-danger">*</span>
                     </label>
-                    <div className="input-group">
-                      <input
-                        type="text"
-                        className="form-control vp-input text-uppercase font-monospace fw-bold"
-                        placeholder="VD: GIAM50K"
-                        value={form.code}
-                        onChange={(e) =>
-                          handleChange("code", e.target.value.toUpperCase().replace(/\s+/g, ""))
-                        }
-                        required
-                        disabled={saving}
-                        style={{ letterSpacing: "1px" }}
-                      />
-                      {create && (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm px-3"
-                          onClick={handleGenerateCode}
-                          title="Tạo mã ngẫu nhiên"
-                        >
-                          <i className="bi bi-shuffle me-1" /> Tự động
-                        </button>
-                      )}
-                    </div>
+                    <input
+                      type="text"
+                      className="form-control vp-input text-uppercase font-monospace fw-bold"
+                      placeholder="VD: GIAM50K"
+                      value={form.code}
+                      onChange={(e) =>
+                        handleChange("code", e.target.value.toUpperCase().replace(/\s+/g, ""))
+                      }
+                      required
+                      disabled={saving}
+                      style={{ letterSpacing: "1px" }}
+                    />
                   </div>
 
                   <div className="col-12 col-md-6">
@@ -449,12 +519,25 @@ export default function VoucherPage({ create = false }) {
                   </div>
 
                   <div className="col-12">
-                    <label className="vp-label">
-                      Tên mã giảm giá <span className="text-danger">*</span>
-                    </label>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <label className="vp-label mb-0">
+                        Tên mã giảm giá <span className="text-danger">*</span>
+                      </label>
+                      {conditionDescription && form.name !== conditionDescription && (
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 text-decoration-none text-primary"
+                          onClick={() => handleChange("name", conditionDescription)}
+                          style={{ fontSize: 12.5 }}
+                          title="Điền tự động từ mô tả điều kiện"
+                        >
+                          <i className="bi bi-magic me-1" /> Dùng mô tả điều kiện làm tên
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="text"
-                      className="form-control vp-input"
+                      className="form-control vp-input mt-1"
                       placeholder="VD: Giảm 50.000đ cho đơn hàng từ 200.000đ"
                       value={form.name}
                       onChange={(e) => handleChange("name", e.target.value)}
@@ -503,6 +586,7 @@ export default function VoucherPage({ create = false }) {
                           className="form-control vp-input"
                           min="1"
                           max="100"
+                          placeholder="VD: 20"
                           value={form.discount_value}
                           onChange={(e) => handleChange("discount_value", e.target.value)}
                           required
@@ -512,6 +596,7 @@ export default function VoucherPage({ create = false }) {
                         <input
                           type="text"
                           className="form-control vp-input"
+                          placeholder="VD: 50.000"
                           value={form.discount_value === "" ? "" : formatNumberVND(form.discount_value)}
                           onChange={(e) => handleCurrencyChange("discount_value", e.target.value)}
                           required
@@ -532,7 +617,7 @@ export default function VoucherPage({ create = false }) {
                       <input
                         type="text"
                         className="form-control vp-input"
-                        placeholder={form.discount_type === "percentage" ? "0 = Không giới hạn" : "Không áp dụng"}
+                        placeholder={form.discount_type === "percentage" ? "VD: 200.000" : "Không áp dụng"}
                         disabled={form.discount_type !== "percentage" || saving}
                         value={
                           form.discount_type !== "percentage"
@@ -570,21 +655,49 @@ export default function VoucherPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
-                      Số tiền giảm dự kiến
-                    </label>
-                    <div className="form-control vp-input bg-light text-muted d-flex align-items-center">
-                      {form.discount_type === "percentage" ? (
-                        <span>
-                          Giảm <strong>{form.discount_value}%</strong>
-                          {Number(form.max_discount_amount) > 0 && (
-                            <> (tối đa <strong>{fmtVND(form.max_discount_amount)}</strong>)</>
-                          )}
-                        </span>
-                      ) : (
-                        <span>
-                          Giảm trực tiếp <strong>{fmtVND(form.discount_value)}</strong>
-                        </span>
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <label className="vp-label mb-0">
+                        Mô tả điều kiện
+                      </label>
+                      {isCustomDesc && conditionDescription && (
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 text-decoration-none text-muted"
+                          onClick={() => {
+                            setIsCustomDesc(false);
+                            handleChange("description", conditionDescription);
+                          }}
+                          style={{ fontSize: 11.5 }}
+                          title="Đặt lại theo câu điều kiện tự động tạo"
+                        >
+                          <i className="bi bi-arrow-counterclockwise me-1" /> Tự động
+                        </button>
+                      )}
+                    </div>
+                    <div className="input-group">
+                      <input
+                        type="text"
+                        className="form-control vp-input"
+                        placeholder={conditionDescription || "VD: Giảm 20% tối đa 150k cho đơn từ 700k"}
+                        value={form.description}
+                        onChange={(e) => {
+                          setIsCustomDesc(true);
+                          handleChange("description", e.target.value);
+                        }}
+                        disabled={saving}
+                      />
+                      {(form.description || conditionDescription) && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm px-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(form.description || conditionDescription);
+                            toast.info("Đã sao chép mô tả điều kiện!");
+                          }}
+                          title="Sao chép mô tả điều kiện"
+                        >
+                          <i className="bi bi-clipboard" />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -704,19 +817,34 @@ export default function VoucherPage({ create = false }) {
                   </div>
 
                   <div className="small text-muted mt-2" style={{ fontSize: 12.5 }}>
-                    <div>
-                      Đơn tối thiểu {fmtVND(form.min_order_value)}
-                      {form.discount_type === "percentage" &&
-                        Number(form.max_discount_amount) > 0 && (
-                          <> · Tối đa {fmtVND(form.max_discount_amount)}</>
-                        )}
-                    </div>
+                    {form.description || conditionDescription ? (
+                      <div className="fw-semibold text-dark mb-1">
+                        <i className="bi bi-info-circle text-primary me-1" />
+                        {form.description || conditionDescription}
+                      </div>
+                    ) : (
+                      <div>
+                        Đơn tối thiểu {fmtVND(form.min_order_value || 0)}
+                        {form.discount_type === "percentage" &&
+                          Number(form.max_discount_amount) > 0 && (
+                            <> · Tối đa {fmtVND(form.max_discount_amount)}</>
+                          )}
+                      </div>
+                    )}
                     <div className="mt-1">
-                      HSD: {formatDate(form.start_date)} - {formatDate(form.end_date)}
+                      HSD:{" "}
+                      {form.start_date || form.end_date
+                        ? `${formatDate(form.start_date)} - ${formatDate(form.end_date)}`
+                        : "Chưa thiết lập"}
                     </div>
-                    {form.per_user_limit > 0 && (
+                    {Number(form.per_user_limit) > 0 && (
                       <div className="text-secondary mt-1">
                         Tối đa {form.per_user_limit} lượt/khách hàng
+                      </div>
+                    )}
+                    {Number(form.total_quantity) > 0 && (
+                      <div className="text-muted mt-1" style={{ fontSize: 11.5 }}>
+                        Tổng phát hành: {form.total_quantity} mã
                       </div>
                     )}
                   </div>
