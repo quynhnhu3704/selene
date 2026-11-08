@@ -99,6 +99,12 @@ router.get(
   voucherController.getAllVouchers,
 );
 router.get(
+  "/manage/vouchers/add",
+  verifyToken,
+  verifyPermission("voucher:view"),
+  voucherController.getAllVouchers,
+);
+router.get(
   "/manage/vouchers/:voucherId",
   verifyToken,
   verifyPermission("voucher:view"),

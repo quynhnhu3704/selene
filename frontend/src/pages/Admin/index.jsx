@@ -37,6 +37,26 @@ const MENU_ITEMS = [
     enabled: true,
   },
   {
+    key: "promotions",
+    label: "Khuyến mãi & Ưu đãi",
+    icon: "bi-tags",
+    enabled: true,
+    children: [
+      {
+        key: "product-promotions",
+        label: "Khuyến mãi sản phẩm",
+        icon: "bi-tag",
+        path: "/admin/khuyen-mai/san-pham",
+      },
+      {
+        key: "order-discounts",
+        label: "Mã giảm giá đơn hàng",
+        icon: "bi-ticket-perforated",
+        path: "/admin/khuyen-mai/ma-giam-gia",
+      },
+    ],
+  },
+  {
     key: "customers",
     label: "Khách hàng",
     icon: "bi-people",
@@ -51,9 +71,9 @@ const MENU_ITEMS = [
     enabled: true,
   },
   {
-    key: "discounts",
+    key: "categories",
     label: "Danh mục",
-    icon: "bi-tags",
+    icon: "bi-tag",
     path: "/admin/danh-muc",
     enabled: true,
   },
@@ -72,6 +92,24 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [openMenus, setOpenMenus] = useState(() => ({
+    promotions: location.pathname.startsWith("/admin/khuyen-mai"),
+  }));
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/admin/khuyen-mai")) {
+      setOpenMenus((prev) => ({ ...prev, promotions: true }));
+    }
+  }, [location.pathname]);
+
+  const handleParentToggle = (item) => {
+    if (collapsed) {
+      setCollapsed(false);
+      setOpenMenus((prev) => ({ ...prev, [item.key]: true }));
+      return;
+    }
+    setOpenMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+  };
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -100,6 +138,56 @@ export default function AdminLayout() {
   };
 
   const renderItem = (item) => {
+    // Nếu có danh mục con (Sub-menu)
+    if (item.children && item.children.length > 0) {
+      const isChildActive = item.children.some((child) => isActive(child.path));
+      const isOpen = Boolean(openMenus[item.key]);
+
+      return (
+        <div key={item.key} className="adm-nav-group">
+          <button
+            type="button"
+            className={`adm-nav-item adm-nav-parent-btn${
+              isChildActive ? " active-parent" : ""
+            }`}
+            onClick={() => handleParentToggle(item)}
+            data-tip={item.label}
+            aria-expanded={isOpen}
+          >
+            <i
+              className={`bi ${item.icon}`}
+              style={{ color: isChildActive ? "#0d6efd" : undefined }}
+            />
+            <span className="adm-nav-label-txt">{item.label}</span>
+            <i
+              className={`bi bi-chevron-down adm-nav-chevron ${
+                isOpen ? "open" : ""
+              }`}
+            />
+          </button>
+
+          {!collapsed && isOpen && (
+            <div className="adm-nav-submenu">
+              {item.children.map((sub) => {
+                const activeSub = isActive(sub.path);
+                return (
+                  <Link
+                    key={sub.key}
+                    to={sub.path}
+                    className={`adm-nav-subitem${activeSub ? " active" : ""}`}
+                    data-tip={sub.label}
+                  >
+                    <i className={`bi ${sub.icon}`} />
+                    <span>{sub.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     const activeItem = isActive(item.path);
     const content = (
       <>
@@ -297,7 +385,72 @@ export default function AdminLayout() {
           border-radius: 9px; display: ${collapsed ? "none" : "flex"};
           align-items: center; justify-content: center; padding: 0 5px;
         }
-        .adm-nav-chevron { margin-left: auto; font-size: 11px; display: ${collapsed ? "none" : "inline-block"}; }
+        .adm-nav-chevron {
+          margin-left: auto; font-size: 11px;
+          display: ${collapsed ? "none" : "inline-block"};
+          transition: transform 0.2s ease;
+        }
+        .adm-nav-chevron.open {
+          transform: rotate(180deg);
+        }
+
+        /* ── SUBMENU ── */
+        .adm-nav-group {
+          margin-bottom: 8px;
+        }
+        .adm-nav-parent-btn {
+          width: 100%;
+          border: 0;
+          background: transparent;
+          font-family: inherit;
+          text-align: left;
+        }
+        .adm-nav-parent-btn.active-parent {
+          color: #0d6efd;
+          font-weight: 700;
+        }
+        .adm-nav-parent-btn.active-parent i:first-child {
+          color: #0d6efd;
+        }
+        .adm-nav-submenu {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          margin-left: 14px;
+          padding-left: 12px;
+          border-left: 2px solid #dfdedb;
+          margin-bottom: 6px;
+          margin-top: -2px;
+        }
+        .adm-nav-subitem {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 10px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #4b5563;
+          text-decoration: none;
+          border-radius: 8px;
+          transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
+          white-space: nowrap;
+        }
+        .adm-nav-subitem i {
+          font-size: 14px;
+          width: 16px;
+          text-align: center;
+          flex-shrink: 0;
+        }
+        .adm-nav-subitem:hover {
+          color: #17151F;
+          background: rgba(0,0,0,0.03);
+        }
+        .adm-nav-subitem.active {
+          color: #17151F;
+          background: #fff;
+          font-weight: 800;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
 
         .adm-nav-item[data-tip]:hover::after {
           content: attr(data-tip);
