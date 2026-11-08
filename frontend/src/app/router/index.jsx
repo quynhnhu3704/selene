@@ -43,6 +43,8 @@ import CreateCategory from "../../pages/Admin/Categories/pages/Create";
 import EditCategory from "../../pages/Admin/Categories/pages/Edit";
 import ProductPromotions from "../../pages/Admin/Promotions/ProductPromotions";
 import OrderDiscounts from "../../pages/Admin/Promotions/OrderDiscounts";
+import CreateVoucher from "../../pages/Admin/Promotions/pages/Create";
+import EditVoucher from "../../pages/Admin/Promotions/pages/Edit";
 
 import CreateProduct from "../../pages/Admin/Products/pages/Create";
 import EditProduct from "../../pages/Admin/Products/pages/Edit";
@@ -125,6 +127,14 @@ export default function AppRouter() {
         />
         <Route path="khuyen-mai/san-pham" element={<ProductPromotions />} />
         <Route path="khuyen-mai/ma-giam-gia" element={<OrderDiscounts />} />
+        <Route
+          path="khuyen-mai/ma-giam-gia/them-moi"
+          element={<CreateVoucher />}
+        />
+        <Route
+          path="khuyen-mai/ma-giam-gia/:voucherId/sua"
+          element={<EditVoucher />}
+        />
         <Route
           path="khuyen-mai/don-hang"
           element={<Navigate to="/admin/khuyen-mai/ma-giam-gia" replace />}

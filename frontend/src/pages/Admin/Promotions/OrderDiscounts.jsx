@@ -1,5 +1,6 @@
 // frontend/src/pages/Admin/Promotions/OrderDiscounts.jsx
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
 import AdminSelect from "../components/AdminSelect";
@@ -16,7 +17,6 @@ import {
 } from "./mockData";
 import {
   getAdminVouchers,
-  createAdminVoucher,
   updateAdminVoucher,
 } from "../../../services/voucher.service";
 
@@ -33,26 +33,21 @@ export default function OrderDiscounts() {
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("default");
   const [page, setPage] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Modal State
-  const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    discount_type: "percentage",
-    discount_value: 20,
-    min_order_value: 200000,
-    max_discount_amount: 50000,
-    total_quantity: 100,
-    per_user_limit: 10,
-    status: "active",
-    start_date: new Date().toISOString().slice(0, 10),
-    end_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-  });
 
   const composing = useRef(false);
+
+  // Restore scroll position when returning from edit page
+  const saveScrollPosition = () => {
+    sessionStorage.setItem("discountsScrollY", String(window.scrollY));
+  };
+
+  useEffect(() => {
+    const savedY = sessionStorage.getItem("discountsScrollY");
+    if (savedY) {
+      window.scrollTo(0, parseInt(savedY, 10));
+      sessionStorage.removeItem("discountsScrollY");
+    }
+  }, [loading]);
 
   // Fetch vouchers from API
   const fetchVouchers = useCallback(async () => {
@@ -109,6 +104,9 @@ export default function OrderDiscounts() {
         if (status === "out_of_stock") {
           return item.status === "out_of_stock" || item.status === "depleted";
         }
+        if (status === "inactive") {
+          return item.status === "inactive" || item.status === "locked";
+        }
         return item.status === status;
       });
     }
@@ -143,138 +141,10 @@ export default function OrderDiscounts() {
     setPage(1);
   };
 
-  const handleOpenAdd = () => {
-    setEditingItem(null);
-    setFormData({
-      code: `GIAM${Math.floor(20 + Math.random() * 80)}K`,
-      name: "",
-      discount_type: "percentage",
-      discount_value: 20,
-      min_order_value: 200000,
-      max_discount_amount: 50000,
-      total_quantity: 100,
-      per_user_limit: 10,
-      status: "active",
-      start_date: new Date().toISOString().slice(0, 10),
-      end_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-    });
-    setShowModal(true);
-  };
-
-  const handleOpenEdit = (item) => {
-    setEditingItem(item);
-    setFormData({
-      code: item.code || "",
-      name: item.name || "",
-      discount_type:
-        item.discount_type === "percent"
-          ? "percentage"
-          : item.discount_type === "fixed"
-            ? "fixed_amount"
-            : item.discount_type || "percentage",
-      discount_value: item.discount_value ?? 0,
-      min_order_value: item.min_order_value ?? item.min_order ?? 0,
-      max_discount_amount: item.max_discount_amount ?? 0,
-      total_quantity: item.total_quantity ?? item.max_usage ?? 100,
-      per_user_limit: item.per_user_limit ?? 1,
-      status: item.status || "active",
-      start_date: item.start_date ? new Date(item.start_date).toISOString().slice(0, 10) : "",
-      end_date: item.end_date ? new Date(item.end_date).toISOString().slice(0, 10) : "",
-    });
-    setShowModal(true);
-  };
-
-  const handleSaveModal = async (e) => {
-    e.preventDefault();
-    if (!formData.code.trim()) {
-      toast.warning("Vui lòng nhập mã voucher!");
-      return;
-    }
-    if (!formData.name.trim()) {
-      toast.warning("Vui lòng nhập tên chương trình giảm giá!");
-      return;
-    }
-    if (formData.discount_value <= 0) {
-      toast.warning("Mức giảm phải lớn hơn 0!");
-      return;
-    }
-
-    const payload = {
-      code: formData.code.toUpperCase().trim(),
-      name: formData.name.trim(),
-      discount_type: formData.discount_type,
-      discount_value: Number(formData.discount_value),
-      min_order_value: Number(formData.min_order_value),
-      max_discount_amount:
-        formData.discount_type === "percentage"
-          ? Number(formData.max_discount_amount || 0)
-          : 0,
-      total_quantity: Number(formData.total_quantity),
-      per_user_limit: Number(formData.per_user_limit || 1),
-      start_date: new Date(formData.start_date).toISOString(),
-      end_date: new Date(`${formData.end_date}T23:59:59Z`).toISOString(),
-      status: formData.status,
-    };
-
-    setIsSubmitting(true);
-    try {
-      if (editingItem) {
-        const voucherId = editingItem.voucher_id || editingItem.id;
-        try {
-          await updateAdminVoucher(voucherId, payload);
-        } catch (apiErr) {
-          console.warn("API update failed, saving locally:", apiErr.message);
-        }
-
-        const updated = discounts.map((item) =>
-          (item.voucher_id || item.id) === voucherId
-            ? {
-                ...item,
-                ...payload,
-                min_order: payload.min_order_value,
-                max_usage: payload.total_quantity,
-              }
-            : item,
-        );
-        saveToStorage(updated);
-        toast.success("Cập nhật mã giảm giá thành công!");
-      } else {
-        let createdVoucher = null;
-        try {
-          const res = await createAdminVoucher({
-            ...payload,
-            used_quantity: 0,
-          });
-          createdVoucher = res?.data;
-        } catch (apiErr) {
-          console.warn("API create failed, saving locally:", apiErr.message);
-        }
-
-        const newItem = createdVoucher || {
-          voucher_id: `voucher-${Date.now()}`,
-          id: `VC${Date.now().toString().slice(-4)}`,
-          ...payload,
-          min_order: payload.min_order_value,
-          max_usage: payload.total_quantity,
-          used_quantity: 0,
-          used_count: 0,
-          created_at: new Date().toISOString(),
-        };
-
-        saveToStorage([newItem, ...discounts]);
-        toast.success("Thêm mã giảm giá mới thành công!");
-      }
-      setShowModal(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || "Đã xảy ra lỗi");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleToggleLock = async (item) => {
     const voucherId = item.voucher_id || item.id;
-    const nextStatus = item.status === "locked" ? "active" : "locked";
+    const isInactive = item.status === "inactive" || item.status === "locked";
+    const nextStatus = isInactive ? "active" : "inactive";
 
     try {
       await updateAdminVoucher(voucherId, { status: nextStatus });
@@ -287,9 +157,9 @@ export default function OrderDiscounts() {
     );
     saveToStorage(updated);
     toast.info(
-      nextStatus === "locked"
-        ? `Đã tạm khóa mã "${item.code}"`
-        : `Đã mở kích hoạt lại mã "${item.code}"`,
+      nextStatus === "inactive"
+        ? `Đã dừng hoạt động mã "${item.code}"`
+        : `Đã mở hoạt động lại mã "${item.code}"`,
     );
   };
 
@@ -301,12 +171,7 @@ export default function OrderDiscounts() {
 
       {/* ── PAGE HEADER ── */}
       <div className="adm-page-head">
-        <div>
-          <div className="adm-page-title">Mã giảm giá đơn hàng</div>
-          <div className="text-muted small">
-            Quản lý danh sách voucher, thêm mới và thiết lập khuyến mãi toàn sàn
-          </div>
-        </div>
+        <div className="adm-page-title">Mã giảm giá đơn hàng</div>
         <div className="d-flex gap-2 flex-wrap">
           <button
             type="button"
@@ -318,14 +183,13 @@ export default function OrderDiscounts() {
             <i className={`bi bi-arrow-clockwise me-1 ${loading ? "spin" : ""}`} />
             Làm mới
           </button>
-          <button
-            type="button"
+          <Link
+            to="/admin/khuyen-mai/ma-giam-gia/them-moi"
             className="form-btn btn btn-dark fw-semibold px-4"
-            onClick={handleOpenAdd}
           >
             <i className="bi bi-plus-lg me-2" />
             Thêm mã giảm giá
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -436,17 +300,23 @@ export default function OrderDiscounts() {
                     item.discount_type === "percent";
                   const isFreeShip = item.discount_type === "free_shipping";
 
+                  const voucherKey = item.voucher_id || item.id;
+                  const editUrl = `/admin/khuyen-mai/ma-giam-gia/${voucherKey}/sua?returnUrl=${encodeURIComponent(
+                    window.location.pathname + window.location.search,
+                  )}`;
+
                   return (
-                    <tr key={item.voucher_id || item.id || item.code}>
+                    <tr key={voucherKey || item.code}>
                       <td className="text-center">
                         <span className="adm-stt">{stt}</span>
                       </td>
                       <td>
-                        <div
-                          className="adm-name text-break fw-bold"
-                          style={{ cursor: "pointer", color: "#17151F" }}
-                          onClick={() => handleOpenEdit(item)}
+                        <Link
+                          to={editUrl}
+                          className="adm-name text-break fw-bold text-decoration-none"
+                          style={{ color: "#17151F" }}
                           title="Bấm để chỉnh sửa"
+                          onClick={saveScrollPosition}
                         >
                           <span
                             className="font-monospace text-dark fw-bold"
@@ -454,23 +324,22 @@ export default function OrderDiscounts() {
                           >
                             {item.code}
                           </span>
-                        </div>
+                        </Link>
                       </td>
                       <td>
-                        <div
-                          className="adm-name text-break"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleOpenEdit(item)}
+                        <Link
+                          to={editUrl}
+                          className="adm-name text-break text-decoration-none text-dark"
                           title="Bấm để chỉnh sửa"
+                          onClick={saveScrollPosition}
                         >
-                          {item.name || `Đơn từ ${fmtVND(minOrder)}`}
-                        </div>
-                        <div className="adm-sub text-muted">
-                          {item.name ? <>Đơn từ {fmtVND(minOrder)}</> : null}
-                          {item.per_user_limit ? (
-                            <>{item.name ? " · " : ""}Tối đa {item.per_user_limit} lần/khách</>
-                          ) : null}
-                        </div>
+                          {item.name || item.code}
+                        </Link>
+                        {item.per_user_limit ? (
+                          <div className="adm-sub text-muted">
+                            Tối đa {item.per_user_limit} lần/khách
+                          </div>
+                        ) : null}
                       </td>
                       <td className="text-center fw-semibold text-danger" style={{ fontSize: 15 }}>
                         {isPercent ? (
@@ -514,24 +383,30 @@ export default function OrderDiscounts() {
                       </td>
                       <td className="text-center">
                         <div className="d-flex gap-2 justify-content-center">
-                          <button
-                            type="button"
+                          <Link
+                            to={editUrl}
                             className="adm-action-btn"
                             title="Chỉnh sửa"
                             aria-label={`Sửa ${item.code}`}
-                            onClick={() => handleOpenEdit(item)}
+                            onClick={saveScrollPosition}
                           >
                             <i className="bi bi-pencil-square" />
-                          </button>
+                          </Link>
                           <button
                             type="button"
-                            className={`adm-action-btn ${item.status === "locked" ? "unlock" : "lock"}`}
-                            title={item.status === "locked" ? "Mở khóa mã" : "Khóa mã"}
+                            className={`adm-action-btn ${item.status === "inactive" || item.status === "locked" ? "unlock" : "lock"}`}
+                            title={
+                              item.status === "inactive" || item.status === "locked"
+                                ? "Mở hoạt động lại"
+                                : "Dừng hoạt động"
+                            }
                             onClick={() => handleToggleLock(item)}
                           >
                             <i
                               className={`bi ${
-                                item.status === "locked" ? "bi-unlock" : "bi-lock"
+                                item.status === "inactive" || item.status === "locked"
+                                  ? "bi-unlock"
+                                  : "bi-lock"
                               }`}
                             />
                           </button>
@@ -556,269 +431,6 @@ export default function OrderDiscounts() {
           label="mã giảm giá"
           onPageChange={(nextPage) => setPage(nextPage)}
         />
-      )}
-
-      {/* ── MODAL ADD / EDIT ── */}
-      {showModal && (
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content rounded-4 border-0 shadow">
-              <div className="modal-header border-bottom px-4 pt-4 pb-3">
-                <div>
-                  <h5 className="modal-title fw-bold">
-                    {editingItem ? "Chỉnh sửa mã giảm giá" : "Thêm mã giảm giá mới"}
-                  </h5>
-                  <div className="text-muted small">
-                    Đồng bộ trực tiếp với hệ thống đơn hàng & áp dụng thanh toán
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowModal(false)}
-                />
-              </div>
-              <form onSubmit={handleSaveModal}>
-                <div className="modal-body px-4 py-3">
-                  <div className="row g-3 mb-2">
-                    <div className="col-12 col-md-5">
-                      <label className="form-label fw-semibold">
-                        Mã Voucher (Code) <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control text-uppercase font-monospace fw-bold"
-                        placeholder="VD: GIAM50K"
-                        value={formData.code}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            code: e.target.value.toUpperCase().replace(/\s+/g, ""),
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-7">
-                      <label className="form-label fw-semibold">
-                        Tên chương trình / Mô tả <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="VD: Giảm 50k cho đơn từ 200k"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="row g-3 mb-2">
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">Loại giảm giá</label>
-                      <select
-                        className="form-select"
-                        value={formData.discount_type}
-                        onChange={(e) =>
-                          setFormData({ ...formData, discount_type: e.target.value })
-                        }
-                      >
-                        <option value="percentage">Phần trăm (%)</option>
-                        <option value="fixed_amount">Số tiền trực tiếp (VNĐ)</option>
-                        <option value="free_shipping">Ưu đãi phí vận chuyển</option>
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        {formData.discount_type === "percentage"
-                          ? "Mức giảm (%)"
-                          : "Mức giảm (VNĐ)"}{" "}
-                        <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min="1"
-                        max={formData.discount_type === "percentage" ? "100" : undefined}
-                        value={formData.discount_value}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            discount_value: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        Giảm tối đa (VNĐ)
-                        {formData.discount_type !== "percentage" && (
-                          <span className="text-muted fw-normal"> (Không áp dụng)</span>
-                        )}
-                      </label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min="0"
-                        step="1000"
-                        placeholder="0 = Không giới hạn"
-                        disabled={formData.discount_type !== "percentage"}
-                        value={formData.max_discount_amount}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            max_discount_amount: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="row g-3 mb-2">
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        Đơn tối thiểu (VNĐ) <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min="0"
-                        step="1000"
-                        placeholder="VD: 200000"
-                        value={formData.min_order_value}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            min_order_value: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        Tổng số lượng phát hành <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min="1"
-                        value={formData.total_quantity}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            total_quantity: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        Giới hạn / khách hàng <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min="1"
-                        value={formData.per_user_limit}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            per_user_limit: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="row g-3 mb-2">
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        Ngày bắt đầu <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={formData.start_date}
-                        onChange={(e) =>
-                          setFormData({ ...formData, start_date: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">
-                        Ngày kết thúc <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={formData.end_date}
-                        onChange={(e) =>
-                          setFormData({ ...formData, end_date: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">Trạng thái</label>
-                      <select
-                        className="form-select"
-                        value={formData.status}
-                        onChange={(e) =>
-                          setFormData({ ...formData, status: e.target.value })
-                        }
-                      >
-                        <option value="active">Đang kích hoạt</option>
-                        <option value="upcoming">Sắp áp dụng</option>
-                        <option value="locked">Tạm khóa</option>
-                        <option value="expired">Đã hết hạn</option>
-                        <option value="out_of_stock">Hết lượt dùng</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modal-footer border-top px-4 py-3">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary px-4 fw-semibold"
-                    onClick={() => setShowModal(false)}
-                    disabled={isSubmitting}
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-dark px-4 fw-semibold"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" />
-                        Đang lưu...
-                      </>
-                    ) : editingItem ? (
-                      "Lưu thay đổi"
-                    ) : (
-                      "Tạo mã giảm giá"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
       )}
     </>
   );

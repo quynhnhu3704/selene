@@ -17,12 +17,10 @@ export const PRODUCT_SORT_OPTIONS = [
 ];
 
 export const ORDER_DISCOUNT_STATUSES = [
-  { key: "active", label: "Đang kích hoạt", color: "success" },
-  { key: "upcoming", label: "Sắp áp dụng", color: "info" },
-  { key: "out_of_stock", label: "Hết lượt dùng", color: "warning" },
-  { key: "depleted", label: "Hết lượt dùng", color: "warning" },
-  { key: "expired", label: "Đã hết hạn", color: "secondary" },
-  { key: "locked", label: "Tạm khóa", color: "danger" },
+  { key: "active", label: "Đang hoạt động", color: "success" },
+  { key: "inactive", label: "Dừng hoạt động", color: "danger" },
+  { key: "out_of_stock", label: "Đã sử dụng hết suất", color: "warning" },
+  { key: "expired", label: "Đã hết thời gian", color: "secondary" },
 ];
 
 export const ORDER_SORT_OPTIONS = [
@@ -273,7 +271,7 @@ export const INITIAL_ORDER_DISCOUNTS = [
     used_quantity: 0,
     used_count: 0,
     per_user_limit: 1,
-    status: "upcoming",
+    status: "inactive",
     start_date: "2026-10-05",
     end_date: "2026-10-10",
     created_at: "2026-09-20",
@@ -288,7 +286,16 @@ export const getProductPromotionStatus = (status) =>
 
 export const getOrderDiscountStatus = (status) => {
   if (status === "out_of_stock" || status === "depleted") {
-    return { label: "Hết lượt dùng", color: "warning" };
+    return { label: "Đã sử dụng hết suất", color: "warning" };
+  }
+  if (status === "inactive" || status === "locked") {
+    return { label: "Dừng hoạt động", color: "danger" };
+  }
+  if (status === "expired") {
+    return { label: "Đã hết thời gian", color: "secondary" };
+  }
+  if (status === "active") {
+    return { label: "Đang hoạt động", color: "success" };
   }
   return (
     ORDER_DISCOUNT_STATUSES.find((item) => item.key === status) || {
