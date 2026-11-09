@@ -1,36 +1,55 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import defaultProduct from "../../assets/images/default-product.png";
 
-export default function ProductImage({ src, ...props }) {
-  const [loadedSrc, setLoadedSrc] = useState(null);
+export const sanitizeImageUrl = (val) => {
+  if (!val) return null;
+  if (Array.isArray(val)) {
+    for (const item of val) {
+      const found = sanitizeImageUrl(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof val === "object") {
+    return sanitizeImageUrl(val.url || val.image_url || val.src);
+  }
+  if (typeof val === "string") {
+    const s = val.trim();
+    if (!s || s === "[" || s === "]" || s === "null" || s === "undefined") {
+      return null;
+    }
+    if (s.startsWith("[") || s.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(s);
+        return sanitizeImageUrl(parsed);
+      } catch {
+        return null;
+      }
+    }
+    const clean = s.replace(/^["']|["']$/g, "").trim();
+    if (!clean || clean.length < 5) return null;
+    return clean;
+  }
+  return null;
+};
+
+export default function ProductImage({ src, alt = "", ...props }) {
+  const cleanSrc = useMemo(() => sanitizeImageUrl(src), [src]);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    if (!src) return;
+    setHasError(false);
+  }, [cleanSrc]);
 
-    let active = true;
-    const image = new Image();
-    image.onload = async () => {
-      try {
-        await image.decode();
-        if (active) setLoadedSrc(src);
-      } catch {
-        // Keep the placeholder if the image cannot be decoded.
-      }
-    };
-    image.src = src;
-
-    return () => {
-      active = false;
-      image.onload = null;
-    };
-  }, [src]);
+  const displaySrc = cleanSrc && !hasError ? cleanSrc : defaultProduct;
 
   return (
     <img
       {...props}
-      src={src && loadedSrc === src ? src : defaultProduct}
-      alt=""
+      src={displaySrc}
+      alt={alt}
       onError={(event) => {
+        setHasError(true);
         if (event.currentTarget.getAttribute("src") !== defaultProduct) {
           event.currentTarget.src = defaultProduct;
         }

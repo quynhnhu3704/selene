@@ -1,6 +1,41 @@
 // backend\product-service\src\models\promotion.model.js
 import { supabase } from "../configs/supabase.js";
 
+// Helper trích xuất chính xác duy nhất 1 ảnh đầu tiên dạng URL hợp lệ
+const extractFirstImageUrl = (raw) => {
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const found = extractFirstImageUrl(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (
+      !trimmed ||
+      trimmed === "[" ||
+      trimmed === "]" ||
+      trimmed === "null" ||
+      trimmed === "undefined"
+    ) {
+      return null;
+    }
+    if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extractFirstImageUrl(parsed);
+      } catch {
+        return null;
+      }
+    }
+    const clean = trimmed.replace(/^["']|["']$/g, "").trim();
+    return clean.length >= 5 ? clean : null;
+  }
+  return null;
+};
+
 export const PromotionModel = {
   // Kiểm tra tên chương trình khuyến mãi đã tồn tại chưa
   checkNameExists: async (name) => {
@@ -197,7 +232,13 @@ export const PromotionModel = {
       if (productsError) throw productsError;
 
       (productsData || []).forEach((prod) => {
-        productsMap[prod.product_id] = prod;
+        const firstImg = extractFirstImageUrl(prod.image_urls || prod.image_url);
+
+        productsMap[prod.product_id] = {
+          ...prod,
+          image_url: firstImg,
+          image_urls: firstImg ? [firstImg] : [],
+        };
       });
     }
 

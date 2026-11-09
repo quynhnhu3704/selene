@@ -45,6 +45,8 @@ import ProductPromotions from "../../pages/Admin/Promotions/ProductPromotions";
 import OrderDiscounts from "../../pages/Admin/Promotions/OrderDiscounts";
 import CreateVoucher from "../../pages/Admin/Promotions/pages/Create";
 import EditVoucher from "../../pages/Admin/Promotions/pages/Edit";
+import CreatePromotion from "../../pages/Admin/Promotions/pages/CreatePromotion";
+import EditPromotion from "../../pages/Admin/Promotions/pages/EditPromotion";
 
 import CreateProduct from "../../pages/Admin/Products/pages/Create";
 import EditProduct from "../../pages/Admin/Products/pages/Edit";
@@ -126,6 +128,14 @@ export default function AppRouter() {
           element={<Navigate to="/admin/khuyen-mai/san-pham" replace />}
         />
         <Route path="khuyen-mai/san-pham" element={<ProductPromotions />} />
+        <Route
+          path="khuyen-mai/san-pham/them-moi"
+          element={<CreatePromotion />}
+        />
+        <Route
+          path="khuyen-mai/san-pham/:promotionId/sua"
+          element={<EditPromotion />}
+        />
         <Route path="khuyen-mai/ma-giam-gia" element={<OrderDiscounts />} />
         <Route
           path="khuyen-mai/ma-giam-gia/them-moi"
