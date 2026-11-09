@@ -164,3 +164,15 @@ export const updateAdminProduct = async (productId, formData) => {
 
   return res.data;
 };
+
+// Re-export promotion APIs
+export {
+  getAdminPromotions,
+  getAdminPromotionDetail,
+  createAdminPromotion,
+  updateAdminPromotion,
+  updateAdminPromotionStatus,
+  addProductsToPromotion,
+  updatePromotionItemStatus,
+} from "./promotion.service";
+

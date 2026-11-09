@@ -214,16 +214,6 @@ export default function OrderDiscounts() {
       <div className="adm-page-head">
         <div className="adm-page-title">Mã giảm giá đơn hàng</div>
         <div className="d-flex gap-2 flex-wrap">
-          <button
-            type="button"
-            className="form-btn btn btn-outline-dark fw-semibold px-3"
-            onClick={fetchVouchers}
-            title="Làm mới dữ liệu từ máy chủ"
-            disabled={loading}
-          >
-            <i className={`bi bi-arrow-clockwise me-1 ${loading ? "spin" : ""}`} />
-            Làm mới
-          </button>
           <Link
             to="/admin/khuyen-mai/ma-giam-gia/them-moi"
             className="form-btn btn btn-dark fw-semibold px-4"

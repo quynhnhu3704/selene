@@ -105,6 +105,36 @@ export const PromotionModel = {
     return { data: promotions || [], count: count || 0 };
   },
 
+  // Đếm số lượng sản phẩm áp dụng cho danh sách promotion_id
+  getAppliedProductsCountMap: async (promotionIds = []) => {
+    if (!promotionIds || promotionIds.length === 0) return {};
+    const { data, error } = await supabase
+      .from("promotion_items")
+      .select("promotion_id, product_id")
+      .in("promotion_id", promotionIds);
+
+    if (error) {
+      console.warn("Lỗi khi đếm promotion_items:", error.message);
+      return {};
+    }
+
+    const map = {};
+    (data || []).forEach((item) => {
+      if (!map[item.promotion_id]) {
+        map[item.promotion_id] = new Set();
+      }
+      if (item.product_id) {
+        map[item.promotion_id].add(item.product_id);
+      }
+    });
+
+    const countMap = {};
+    Object.keys(map).forEach((pId) => {
+      countMap[pId] = map[pId].size;
+    });
+    return countMap;
+  },
+
   // Cập nhật trạng thái khuyến mãi theo ID
   updateStatus: async (promotion_id, status, updated_at) => {
     const { data, error } = await supabase

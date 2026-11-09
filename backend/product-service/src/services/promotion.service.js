@@ -234,10 +234,19 @@ export const getAllPromotions = async (options = {}) => {
       to,
       filters,
     );
+
+    const promoIds = (data || []).map((p) => p.promotion_id).filter(Boolean);
+    const countMap = await PromotionModel.getAppliedProductsCountMap(promoIds);
+
+    const enhancedPromotions = (data || []).map((promo) => ({
+      ...promo,
+      applied_products_count: countMap[promo.promotion_id] ?? 0,
+    }));
+
     const totalPages = Math.ceil((count || 0) / limit);
 
     return {
-      promotions: data || [],
+      promotions: enhancedPromotions,
       pagination: {
         currentPage: page,
         limit,

@@ -1,31 +1,70 @@
 // frontend/src/pages/Admin/Promotions/ProductPromotions.jsx
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
 import AdminSelect from "../components/AdminSelect";
 import Pagination from "../../../components/common/Pagination";
 import EmptyState from "../../../components/common/EmptyState";
+import Loading from "../../../components/common/Loading";
 import {
-  INITIAL_PRODUCT_PROMOTIONS,
-  PRODUCT_PROMOTION_STATUSES,
+  PRODUCT_PROMOTION_FILTER_STATUSES,
   PRODUCT_SORT_OPTIONS,
   getProductPromotionStatus,
   fmtVND,
   formatDate,
 } from "./mockData";
+import {
+  getAdminPromotions,
+  createAdminPromotion,
+  updateAdminPromotion,
+  updateAdminPromotionStatus,
+} from "../../../services/promotion.service";
 
 const ITEMS_PER_PAGE = 8;
+
+const getAppliedProductCount = (item) => {
+  if (typeof item.applied_products_count === "number") {
+    return item.applied_products_count;
+  }
+  if (Array.isArray(item.promotion_items)) {
+    return item.promotion_items.length;
+  }
+  if (Array.isArray(item.product_ids)) {
+    return item.product_ids.length;
+  }
+  const text = item.description || item.scope || "";
+  const match = text.match(/\((\d+)\s*(?:SP|sản phẩm)\)/i);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  if (
+    text.toLowerCase().includes("toàn bộ") ||
+    text.toLowerCase().includes("tất cả")
+  ) {
+    return "Tất cả";
+  }
+  return 0;
+};
 
 export default function ProductPromotions() {
   const [promotions, setPromotions] = useState(() => {
     const saved = localStorage.getItem("selene_mock_product_promotions");
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCT_PROMOTIONS;
+    return saved ? JSON.parse(saved) : [];
   });
 
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("default");
   const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    limit: ITEMS_PER_PAGE,
+    totalItems: 0,
+    totalPages: 1,
+  });
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -33,9 +72,10 @@ export default function ProductPromotions() {
   const [formData, setFormData] = useState({
     code: "",
     name: "",
-    scope: "Toàn bộ sản phẩm",
-    discount_type: "percent",
+    description: "",
+    discount_type: "percentage",
     discount_value: "",
+    quantity_limit: 0,
     status: "active",
     start_date: "",
     end_date: "",
@@ -43,61 +83,104 @@ export default function ProductPromotions() {
 
   const composing = useRef(false);
 
-  const saveToStorage = (updated) => {
-    setPromotions(updated);
-    try {
-      localStorage.setItem(
-        "selene_mock_product_promotions",
-        JSON.stringify(updated),
-      );
-    } catch {
-      /* ignore */
-    }
-  };
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [q]);
 
-  // Filter & Sort
-  const filteredPromotions = useMemo(() => {
+  // Fetch promotions from API (http://localhost:8000/api/products/manage/promotions)
+  const fetchPromotions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getAdminPromotions({
+        page,
+        limit: ITEMS_PER_PAGE,
+        status: status || undefined,
+        q: debouncedQ.trim() || undefined,
+      });
+
+      const list = res?.data || [];
+      setPromotions(list);
+
+      if (res?.pagination) {
+        setPagination({
+          currentPage: res.pagination.currentPage ?? page,
+          limit: res.pagination.limit ?? ITEMS_PER_PAGE,
+          totalItems: res.pagination.totalItems ?? list.length,
+          totalPages: res.pagination.totalPages ?? Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
+        });
+      } else {
+        setPagination({
+          currentPage: page,
+          limit: ITEMS_PER_PAGE,
+          totalItems: list.length,
+          totalPages: Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
+        });
+      }
+
+      try {
+        localStorage.setItem(
+          "selene_mock_product_promotions",
+          JSON.stringify(list),
+        );
+      } catch {
+        /* ignore */
+      }
+    } catch (err) {
+      console.warn("Không thể tải danh sách khuyến mãi từ server:", err.message);
+      // Fallback to local storage if API call fails
+      const saved = localStorage.getItem("selene_mock_product_promotions");
+      if (saved) {
+        try {
+          const fallbackList = JSON.parse(saved);
+          setPromotions(fallbackList);
+          setPagination({
+            currentPage: 1,
+            limit: ITEMS_PER_PAGE,
+            totalItems: fallbackList.length,
+            totalPages: Math.max(1, Math.ceil(fallbackList.length / ITEMS_PER_PAGE)),
+          });
+        } catch {
+          /* ignore */
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [page, status, debouncedQ]);
+
+  useEffect(() => {
+    fetchPromotions();
+  }, [fetchPromotions]);
+
+  // Client-side sort on current page results
+  const sortedPromotions = useMemo(() => {
     let result = [...promotions];
 
-    if (q.trim()) {
-      const keyword = q.toLowerCase().trim();
-      result = result.filter(
-        (item) =>
-          item.code.toLowerCase().includes(keyword) ||
-          item.name.toLowerCase().includes(keyword) ||
-          item.scope.toLowerCase().includes(keyword),
-      );
-    }
-
-    if (status) {
-      result = result.filter((item) => item.status === status);
-    }
-
     if (sort === "newest") {
-      result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     } else if (sort === "oldest") {
-      result.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      result.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    } else if (sort === "usage_desc") {
+      result.sort((a, b) => (Number(b.used_quantity) || 0) - (Number(a.used_quantity) || 0));
     } else if (sort === "discount_desc") {
-      result.sort((a, b) => b.discount_value - a.discount_value);
+      result.sort((a, b) => (Number(b.discount_value) || 0) - (Number(a.discount_value) || 0));
     } else if (sort === "discount_asc") {
-      result.sort((a, b) => a.discount_value - b.discount_value);
+      result.sort((a, b) => (Number(a.discount_value) || 0) - (Number(b.discount_value) || 0));
     } else if (sort === "az") {
-      result.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+      result.sort((a, b) => (a.name || "").localeCompare(b.name || "", "vi"));
     }
 
     return result;
-  }, [promotions, q, status, sort]);
-
-  // Pagination calculation
-  const totalItems = filteredPromotions.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
-  const paginatedPromotions = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return filteredPromotions.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredPromotions, page]);
+  }, [promotions, sort]);
 
   const handleReset = () => {
     setQ("");
+    setDebouncedQ("");
     setStatus("");
     setSort("default");
     setPage(1);
@@ -105,15 +188,21 @@ export default function ProductPromotions() {
 
   const handleOpenAdd = () => {
     setEditingItem(null);
+    const today = new Date().toISOString().slice(0, 10);
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
     setFormData({
       code: "",
       name: "",
-      scope: "Toàn bộ sản phẩm",
-      discount_type: "percent",
+      description: "",
+      discount_type: "percentage",
       discount_value: "",
+      quantity_limit: 0,
       status: "active",
-      start_date: "",
-      end_date: "",
+      start_date: today,
+      end_date: future,
     });
     setShowModal(true);
   };
@@ -121,64 +210,110 @@ export default function ProductPromotions() {
   const handleOpenEdit = (item) => {
     setEditingItem(item);
     setFormData({
-      code: item.code,
-      name: item.name,
-      scope: item.scope,
-      discount_type: item.discount_type,
-      discount_value: item.discount_value,
-      status: item.status,
-      start_date: item.start_date,
-      end_date: item.end_date,
+      code: item.promotion_id || item.code || item.id || "",
+      name: item.name || "",
+      description: item.description || item.scope || "",
+      discount_type:
+        item.discount_type === "percent" || item.discount_type === "percentage"
+          ? "percentage"
+          : "fixed_amount",
+      discount_value: item.discount_value ?? "",
+      quantity_limit: item.quantity_limit ?? 0,
+      status: item.status || "active",
+      start_date: item.start_date ? item.start_date.slice(0, 10) : "",
+      end_date: item.end_date ? item.end_date.slice(0, 10) : "",
     });
     setShowModal(true);
   };
 
-  const handleSaveModal = (e) => {
+  const handleSaveModal = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       toast.warning("Vui lòng nhập tên chương trình khuyến mãi!");
       return;
     }
-    if (!formData.discount_value || Number(formData.discount_value) <= 0) {
+    const numValue = Number(formData.discount_value);
+    if (!formData.discount_value || isNaN(numValue) || numValue <= 0) {
       toast.warning("Mức giảm phải lớn hơn 0!");
       return;
     }
-
-    if (editingItem) {
-      const updated = promotions.map((item) =>
-        item.id === editingItem.id
-          ? { ...item, ...formData, discount_value: Number(formData.discount_value) }
-          : item,
-      );
-      saveToStorage(updated);
-      toast.success("Cập nhật khuyến mãi thành công!");
-    } else {
-      const newItem = {
-        id: `KM${Date.now().toString().slice(-4)}`,
-        ...formData,
-        discount_value: Number(formData.discount_value),
-        created_at: new Date().toISOString().slice(0, 10),
-      };
-      saveToStorage([newItem, ...promotions]);
-      toast.success("Thêm khuyến mãi mới thành công!");
+    if (formData.discount_type === "percentage" && numValue > 100) {
+      toast.warning("Giảm giá theo phần trăm không được vượt quá 100%!");
+      return;
+    }
+    if (!formData.start_date) {
+      toast.warning("Vui lòng chọn ngày bắt đầu!");
+      return;
+    }
+    if (!formData.end_date) {
+      toast.warning("Vui lòng chọn ngày kết thúc!");
+      return;
+    }
+    if (new Date(formData.end_date) <= new Date(formData.start_date)) {
+      toast.warning("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!");
+      return;
     }
 
-    setShowModal(false);
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description?.trim() || null,
+        discount_type: formData.discount_type,
+        discount_value: numValue,
+        quantity_limit: Math.max(0, parseInt(formData.quantity_limit, 10) || 0),
+        start_date: new Date(formData.start_date).toISOString(),
+        end_date: new Date(formData.end_date + "T23:59:59").toISOString(),
+        status: formData.status || "active",
+      };
+
+      if (editingItem) {
+        const promoId = editingItem.promotion_id || editingItem.id;
+        await updateAdminPromotion(promoId, payload);
+        toast.success("Cập nhật khuyến mãi thành công!");
+      } else {
+        await createAdminPromotion(payload);
+        toast.success("Tạo mới chương trình khuyến mãi thành công!");
+      }
+
+      setShowModal(false);
+      fetchPromotions();
+    } catch (err) {
+      console.error("Lỗi khi lưu khuyến mãi:", err);
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Có lỗi xảy ra, vui lòng thử lại!";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleToggleLock = (item) => {
-    const isPaused = item.status === "paused";
-    const nextStatus = isPaused ? "active" : "paused";
-    const updated = promotions.map((p) =>
-      p.id === item.id ? { ...p, status: nextStatus } : p,
-    );
-    saveToStorage(updated);
-    toast.info(
-      nextStatus === "paused"
-        ? `Đã khóa khuyến mãi "${item.name}"`
-        : `Đã mở khóa khuyến mãi "${item.name}"`,
-    );
+  const handleToggleLock = async (item) => {
+    const promoId = item.promotion_id || item.id;
+    const isPaused = item.status === "inactive" || item.status === "paused";
+    const nextStatus = isPaused ? "active" : "inactive";
+
+    try {
+      await updateAdminPromotionStatus(promoId, nextStatus);
+      toast.success(
+        nextStatus === "inactive"
+          ? `Đã dừng hoạt động khuyến mãi "${item.name}"`
+          : `Đã kích hoạt khuyến mãi "${item.name}"`,
+      );
+      fetchPromotions();
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.message ||
+          "Không thể thay đổi trạng thái khuyến mãi. Vui lòng thử lại!",
+      );
+    }
   };
+
+  const totalItems = pagination.totalItems || sortedPromotions.length;
+  const totalPages = pagination.totalPages || 1;
 
   return (
     <>
@@ -186,7 +321,7 @@ export default function ProductPromotions() {
         <title>Khuyến mãi sản phẩm | Selene</title>
       </Helmet>
 
-      {/* ── PAGE HEADER (Matches Orders Layout) ── */}
+      {/* ── PAGE HEADER ── */}
       <div className="adm-page-head">
         <div className="adm-page-title">Khuyến mãi sản phẩm</div>
         <div className="d-flex gap-2 flex-wrap">
@@ -216,11 +351,9 @@ export default function ProductPromotions() {
             onCompositionEnd={(e) => {
               composing.current = false;
               setQ(e.target.value);
-              setPage(1);
             }}
             onChange={(e) => {
               setQ(e.target.value);
-              if (!composing.current) setPage(1);
             }}
           />
         </div>
@@ -235,7 +368,7 @@ export default function ProductPromotions() {
           }}
         >
           <option value="">Tất cả trạng thái</option>
-          {PRODUCT_PROMOTION_STATUSES.map((item) => (
+          {PRODUCT_PROMOTION_FILTER_STATUSES.map((item) => (
             <option key={item.key} value={item.key}>
               {item.label}
             </option>
@@ -248,7 +381,6 @@ export default function ProductPromotions() {
           value={sort}
           onChange={(e) => {
             setSort(e.target.value);
-            setPage(1);
           }}
         >
           {PRODUCT_SORT_OPTIONS.map((item) => (
@@ -267,74 +399,123 @@ export default function ProductPromotions() {
         </button>
       </div>
 
-      {/* ── TABLE (Identical to Orders table in Image 3) ── */}
+      {/* ── TABLE ── */}
       <div className="adm-table-wrap table-responsive overflow-x-auto">
-        <table className="table adm-table mb-0" style={{ minWidth: 1000 }}>
+        <table className="table adm-table mb-0" style={{ minWidth: 1100 }}>
           <thead>
             <tr>
-              <th className="text-center" style={{ width: "5%" }}>#</th>
-              <th style={{ width: "22%" }}>Khuyến mãi</th>
-              <th style={{ width: "22%" }}>Áp dụng</th>
-              <th className="text-end" style={{ width: "14%" }}>Mức giảm</th>
-              <th className="text-center" style={{ width: "17%" }}>Trạng thái</th>
-              <th className="text-center" style={{ width: "14%" }}>Thời gian áp dụng</th>
-              <th className="text-center" style={{ width: "6%" }}></th>
+              <th className="text-center" style={{ width: "4%" }}>#</th>
+              <th style={{ width: "22%" }}>Mã khuyến mãi</th>
+              <th style={{ width: "25%", paddingLeft: "30px" }}>Chương trình khuyến mãi</th>
+              <th className="text-center" style={{ width: "9%" }}>SP áp dụng</th>
+              <th className="text-center" style={{ width: "9%" }}>Lượt dùng</th>
+              <th className="text-center" style={{ width: "13%" }}>Trạng thái</th>
+              <th className="text-center" style={{ width: "10%" }}>Thời gian</th>
+              <th className="text-center" style={{ width: "8%" }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {!paginatedPromotions.length ? (
+            {loading ? (
               <tr>
-                <td colSpan={7} className="page-empty py-5">
+                <td colSpan={8} className="text-center py-5">
+                  <Loading text="Đang tải danh sách khuyến mãi..." />
+                </td>
+              </tr>
+            ) : !sortedPromotions.length ? (
+              <tr>
+                <td colSpan={8} className="page-empty py-5">
                   <EmptyState text="Không có chương trình khuyến mãi nào để hiển thị" />
                 </td>
               </tr>
             ) : (
-              paginatedPromotions.map((item, index) => {
+              sortedPromotions.map((item, index) => {
                 const state = getProductPromotionStatus(item.status);
+                const promoCode = item.promotion_id || item.code || item.id;
+                const isPaused =
+                  item.status === "inactive" || item.status === "paused";
                 const stt = (page - 1) * ITEMS_PER_PAGE + index + 1;
+                const usedQty = item.used_quantity ?? 0;
+                const totalQty =
+                  Number(item.quantity_limit) > 0 ? item.quantity_limit : "∞";
+                const appliedCount = getAppliedProductCount(item);
+
                 return (
-                  <tr key={item.id}>
+                  <tr key={promoCode || index}>
                     <td className="text-center">
                       <span className="adm-stt">{stt}</span>
                     </td>
                     <td>
                       <div
-                        className="adm-name text-break fw-bold"
-                        style={{ cursor: "pointer", color: "#17151F" }}
+                        className="font-monospace fw-semibold text-nowrap"
+                        style={{
+                          cursor: "pointer",
+                          color: "#17151F",
+                          fontSize: 13.5,
+                          letterSpacing: "0.2px",
+                        }}
                         onClick={() => handleOpenEdit(item)}
                         title="Bấm để chỉnh sửa"
                       >
-                        {item.code}
-                      </div>
-                      <div className="adm-sub text-muted">{item.name}</div>
-                    </td>
-                    <td>
-                      <div className="adm-name">{item.scope}</div>
-                      <div className="adm-sub text-muted">
-                        Tạo ngày: {formatDate(item.created_at)}
+                        {promoCode}
                       </div>
                     </td>
-                    <td className="text-end fw-semibold text-danger" style={{ fontSize: 15 }}>
-                      {item.discount_type === "percent"
-                        ? `-${item.discount_value}%`
-                        : `-${fmtVND(item.discount_value)}`}
+                    <td style={{ paddingLeft: "30px" }}>
+                      <div
+                        className="fw-bold text-dark text-break"
+                        style={{ cursor: "pointer", fontSize: 13.5 }}
+                        onClick={() => handleOpenEdit(item)}
+                        title="Bấm để chỉnh sửa"
+                      >
+                        {item.name || promoCode}
+                      </div>
+                      {(item.description || item.scope) && (
+                        <div
+                          className="text-muted text-break mt-1"
+                          style={{ fontSize: 12.5, lineHeight: 1.4 }}
+                        >
+                          {item.description || item.scope}
+                        </div>
+                      )}
                     </td>
-                    <td className="text-center">
+                    <td className="text-center text-nowrap">
+                      {appliedCount === "Tất cả" ? (
+                        <span className="badge bg-secondary-subtle text-secondary fw-semibold">
+                          Tất cả SP
+                        </span>
+                      ) : (
+                        <span className="fw-semibold text-dark">
+                          {appliedCount}{" "}
+                          <span className="text-muted small fw-normal">SP</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-center text-nowrap">
+                      <span className="fw-semibold text-dark">
+                        {usedQty}
+                      </span>{" "}
+                      <span className="text-muted">/ {totalQty}</span>
+                      {Number(item.quantity_limit) === 0 && (
+                        <div className="text-muted small" style={{ fontSize: 11 }}>
+                          Không giới hạn
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-center text-nowrap">
                       <span
                         className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
-                        style={{ width: "8.5rem", display: "inline-block" }}
+                        style={{ minWidth: "9.2rem", display: "inline-block", padding: "3px 8px" }}
                       >
                         {state.label}
                       </span>
                     </td>
-                    <td className="text-center text-nowrap" style={{ fontSize: 13.5 }}>
-                      <div>{formatDate(item.start_date)}</div>
-                      <div className="text-muted" style={{ fontSize: 12 }}>
+                    <td className="text-center text-nowrap" style={{ fontSize: 13 }}>
+                      <div className="fw-medium">{formatDate(item.start_date)}</div>
+                      <div className="text-muted" style={{ fontSize: 11.5 }}>
                         đến {formatDate(item.end_date)}
                       </div>
                     </td>
                     <td className="text-center">
-                      <div className="d-flex gap-1 justify-content-center">
+                      <div className="d-flex gap-2 justify-content-center">
                         <button
                           type="button"
                           className="adm-action-btn"
@@ -346,15 +527,13 @@ export default function ProductPromotions() {
                         </button>
                         <button
                           type="button"
-                          className={`adm-action-btn ${item.status === "paused" ? "unlock" : "lock"}`}
-                          title={item.status === "paused" ? "Mở khóa khuyến mãi" : "Khóa khuyến mãi"}
+                          className={`adm-action-btn ${isPaused ? "unlock" : "lock"}`}
+                          title={isPaused ? "Kích hoạt khuyến mãi" : "Dừng hoạt động khuyến mãi"}
                           onClick={() => handleToggleLock(item)}
                         >
                           <i
                             className={`bi ${
-                              item.status === "paused"
-                                ? "bi-unlock"
-                                : "bi-lock"
+                              isPaused ? "bi-unlock" : "bi-lock"
                             }`}
                           />
                         </button>
@@ -369,12 +548,12 @@ export default function ProductPromotions() {
       </div>
 
       {/* ── PAGINATION ── */}
-      {totalItems > 0 && (
+      {!loading && totalItems > 0 && (
         <Pagination
           page={page}
           totalPages={totalPages}
           totalItems={totalItems}
-          displayedCount={paginatedPromotions.length}
+          displayedCount={sortedPromotions.length}
           label="khuyến mãi"
           onPageChange={(nextPage) => setPage(nextPage)}
         />
@@ -401,26 +580,26 @@ export default function ProductPromotions() {
               </div>
               <form onSubmit={handleSaveModal}>
                 <div className="modal-body pt-3">
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Mã khuyến mãi</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData.code}
-                      onChange={(e) =>
-                        setFormData({ ...formData, code: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
+                  {editingItem && (
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Mã khuyến mãi</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.code}
+                        disabled
+                      />
+                    </div>
+                  )}
+
                   <div className="mb-3">
                     <label className="form-label fw-semibold">
-                      Tên chương trình khuyến mãi
+                      Tên chương trình khuyến mãi <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="VD: Ưu đãi Mùa Hè Rực Rỡ"
+                      placeholder="VD: Ưu đãi BST Mùa Hè Rực Rỡ"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
@@ -428,24 +607,20 @@ export default function ProductPromotions() {
                       required
                     />
                   </div>
+
                   <div className="mb-3">
-                    <label className="form-label fw-semibold">Phạm vi áp dụng</label>
-                    <select
-                      className="form-select"
-                      value={formData.scope}
+                    <label className="form-label fw-semibold">Mô tả / Phạm vi áp dụng</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="VD: Toàn bộ sản phẩm hoặc Áo khoác & Hoodie"
+                      value={formData.description}
                       onChange={(e) =>
-                        setFormData({ ...formData, scope: e.target.value })
+                        setFormData({ ...formData, description: e.target.value })
                       }
-                    >
-                      <option value="Toàn bộ sản phẩm">Toàn bộ sản phẩm</option>
-                      <option value="Danh mục Áo nam">Danh mục Áo nam</option>
-                      <option value="Danh mục Quần Jean">Danh mục Quần Jean</option>
-                      <option value="Áo khoác & Hoodie">Áo khoác & Hoodie</option>
-                      <option value="Áo thun phong cách">Áo thun phong cách</option>
-                      <option value="Tất cả phụ kiện">Tất cả phụ kiện</option>
-                      <option value="Sản phẩm chọn lọc (12 SP)">Sản phẩm chọn lọc (12 SP)</option>
-                    </select>
+                    />
                   </div>
+
                   <div className="row g-2 mb-3">
                     <div className="col-6">
                       <label className="form-label fw-semibold">Loại giảm giá</label>
@@ -456,16 +631,20 @@ export default function ProductPromotions() {
                           setFormData({ ...formData, discount_type: e.target.value })
                         }
                       >
-                        <option value="percent">Phần trăm (%)</option>
-                        <option value="fixed">Số tiền trực tiếp (VNĐ)</option>
+                        <option value="percentage">Phần trăm (%)</option>
+                        <option value="fixed_amount">Số tiền trực tiếp (VNĐ)</option>
                       </select>
                     </div>
                     <div className="col-6">
-                      <label className="form-label fw-semibold">Mức giảm</label>
+                      <label className="form-label fw-semibold">
+                        Mức giảm <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="number"
                         className="form-control"
                         min="1"
+                        max={formData.discount_type === "percentage" ? "100" : undefined}
+                        placeholder={formData.discount_type === "percentage" ? "VD: 20 (%)" : "VD: 50000 (đ)"}
                         value={formData.discount_value}
                         onChange={(e) =>
                           setFormData({
@@ -477,9 +656,30 @@ export default function ProductPromotions() {
                       />
                     </div>
                   </div>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      Giới hạn số lượt dùng (0 = không giới hạn)
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      min="0"
+                      value={formData.quantity_limit}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          quantity_limit: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
                   <div className="row g-2 mb-3">
                     <div className="col-6">
-                      <label className="form-label fw-semibold">Ngày bắt đầu</label>
+                      <label className="form-label fw-semibold">
+                        Ngày bắt đầu <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="date"
                         className="form-control"
@@ -491,7 +691,9 @@ export default function ProductPromotions() {
                       />
                     </div>
                     <div className="col-6">
-                      <label className="form-label fw-semibold">Ngày kết thúc</label>
+                      <label className="form-label fw-semibold">
+                        Ngày kết thúc <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="date"
                         className="form-control"
@@ -503,6 +705,7 @@ export default function ProductPromotions() {
                       />
                     </div>
                   </div>
+
                   <div className="mb-2">
                     <label className="form-label fw-semibold">Trạng thái</label>
                     <select
@@ -512,27 +715,36 @@ export default function ProductPromotions() {
                         setFormData({ ...formData, status: e.target.value })
                       }
                     >
-                      {PRODUCT_PROMOTION_STATUSES.map((item) => (
-                        <option key={item.key} value={item.key}>
-                          {item.label}
-                        </option>
-                      ))}
+                      <option value="active">Đang hoạt động</option>
+                      <option value="inactive">Dừng hoạt động</option>
                     </select>
                   </div>
                 </div>
+
                 <div className="modal-footer border-top-0 pt-0">
                   <button
                     type="button"
                     className="btn btn-outline-secondary px-4 fw-semibold"
                     onClick={() => setShowModal(false)}
+                    disabled={submitting}
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     className="btn btn-dark px-4 fw-semibold"
+                    disabled={submitting}
                   >
-                    {editingItem ? "Lưu thay đổi" : "Tạo khuyến mãi"}
+                    {submitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                        Đang lưu...
+                      </>
+                    ) : editingItem ? (
+                      "Lưu thay đổi"
+                    ) : (
+                      "Tạo khuyến mãi"
+                    )}
                   </button>
                 </div>
               </form>
@@ -543,4 +755,3 @@ export default function ProductPromotions() {
     </>
   );
 }
-

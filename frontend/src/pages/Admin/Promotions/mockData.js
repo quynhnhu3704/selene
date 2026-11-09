@@ -1,18 +1,27 @@
 // frontend/src/pages/Admin/Promotions/mockData.js
 
 export const PRODUCT_PROMOTION_STATUSES = [
-  { key: "active", label: "Đang diễn ra", color: "success" },
+  { key: "active", label: "Đang hoạt động", color: "success" },
+  { key: "inactive", label: "Dừng hoạt động", color: "danger" },
+  { key: "paused", label: "Dừng hoạt động", color: "danger" },
+  { key: "out_of_stock", label: "Đã sử dụng hết suất", color: "warning" },
+  { key: "expired", label: "Đã hết thời gian", color: "secondary" },
+  { key: "ended", label: "Đã hết thời gian", color: "secondary" },
   { key: "upcoming", label: "Sắp diễn ra", color: "info" },
-  { key: "paused", label: "Tạm dừng", color: "warning" },
-  { key: "ended", label: "Đã kết thúc", color: "secondary" },
+];
+
+export const PRODUCT_PROMOTION_FILTER_STATUSES = [
+  { key: "active", label: "Đang hoạt động" },
+  { key: "inactive", label: "Dừng hoạt động" },
+  { key: "out_of_stock", label: "Đã sử dụng hết suất" },
+  { key: "expired", label: "Đã hết thời gian" },
 ];
 
 export const PRODUCT_SORT_OPTIONS = [
   { key: "default", label: "Mặc định" },
   { key: "newest", label: "Mới nhất" },
   { key: "oldest", label: "Cũ nhất" },
-  { key: "discount_desc", label: "Mức giảm: Cao → Thấp" },
-  { key: "discount_asc", label: "Mức giảm: Thấp → Cao" },
+  { key: "usage_desc", label: "Lượt dùng: Nhiều → Ít" },
   { key: "az", label: "Tên: A → Z" },
 ];
 
@@ -278,11 +287,24 @@ export const INITIAL_ORDER_DISCOUNTS = [
   },
 ];
 
-export const getProductPromotionStatus = (status) =>
-  PRODUCT_PROMOTION_STATUSES.find((item) => item.key === status) || {
-    label: status || "—",
-    color: "secondary",
-  };
+export const getProductPromotionStatus = (status) => {
+  if (status === "active")
+    return { label: "Đang hoạt động", color: "success" };
+  if (status === "inactive" || status === "paused")
+    return { label: "Dừng hoạt động", color: "danger" };
+  if (status === "out_of_stock" || status === "depleted")
+    return { label: "Đã sử dụng hết suất", color: "warning" };
+  if (status === "expired" || status === "ended")
+    return { label: "Đã hết thời gian", color: "secondary" };
+  if (status === "upcoming")
+    return { label: "Sắp diễn ra", color: "info" };
+  return (
+    PRODUCT_PROMOTION_STATUSES.find((item) => item.key === status) || {
+      label: status || "—",
+      color: "secondary",
+    }
+  );
+};
 
 export const getOrderDiscountStatus = (status) => {
   if (status === "out_of_stock" || status === "depleted") {
