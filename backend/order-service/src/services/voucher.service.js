@@ -156,6 +156,43 @@ export const VoucherService = {
     return await VoucherModel.update(id, updateData);
   },
 
+  // Cập nhật trạng thái voucher (toggle active <-> inactive hoặc nhận status cụ thể)
+  updateVoucherStatus: async (voucherId, status) => {
+    if (!voucherId) {
+      throw new Error("Mã ID voucher không được để trống!");
+    }
+
+    // 1. Kiểm tra voucher có tồn tại không (hỗ trợ cả voucher_id hoặc mã code)
+    let voucher = await VoucherModel.findById(voucherId);
+    if (!voucher) {
+      voucher = await VoucherModel.findByCode(voucherId);
+    }
+    if (!voucher) {
+      throw new Error("Không tìm thấy voucher yêu cầu!");
+    }
+
+    // 2. Xác định trạng thái mới dựa trên đầu vào (hoặc toggle nếu không truyền)
+    let targetStatus;
+    if (status !== undefined && status !== null && status !== "") {
+      const validStatuses = ["active", "inactive", "out_of_stock", "expired"];
+      if (!validStatuses.includes(status)) {
+        throw new Error("Trạng thái voucher không hợp lệ!");
+      }
+      targetStatus = status;
+    } else {
+      // Toggle trạng thái nếu không truyền status cụ thể: active -> inactive và ngược lại
+      targetStatus = voucher.status === "active" ? "inactive" : "active";
+    }
+
+    // 3. Cập nhật trạng thái của voucher theo voucher_id chuẩn
+    const updatedVoucher = await VoucherModel.updateStatus(
+      voucher.voucher_id,
+      targetStatus,
+    );
+
+    return updatedVoucher;
+  },
+
   // Voucher Usages
   // Xử lý áp dụng voucher: Kiểm tra hạn dùng, điều kiện giá, số lượng, lưu lịch sử và cập nhật số lượt dùng
   applyVoucher: async (voucherId, accountId, orderId, orderValue) => {

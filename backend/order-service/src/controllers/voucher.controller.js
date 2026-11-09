@@ -157,6 +157,45 @@ export const updateVoucher = async (req, res, next) => {
   }
 };
 
+// Controller cập nhật trạng thái voucher (toggle active <-> inactive hoặc nhận status cụ thể)
+export const handleUpdateVoucherStatus = async (req, res, next) => {
+  try {
+    const { voucherId } = req.params;
+    const { status } = req.body;
+
+    const result = await VoucherService.updateVoucherStatus(voucherId, status);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Cập nhật trạng thái voucher thành công!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Lỗi tại handleUpdateVoucherStatus Controller:", error.message);
+
+    if (error.message.includes("Không tìm thấy")) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: error.message,
+      });
+    }
+
+    const isClientError =
+      error.message.includes("không hợp lệ") ||
+      error.message.includes("không được để trống");
+
+    return res.status(isClientError ? 400 : 500).json({
+      status: isClientError ? 400 : 500,
+      success: false,
+      message: error.message || "Internal Server Error!",
+    });
+  }
+};
+
+export const updateVoucherStatus = handleUpdateVoucherStatus;
+
 // Controller nhận request áp dụng voucher vào đơn hàng
 export const applyVoucher = async (req, res, next) => {
   try {

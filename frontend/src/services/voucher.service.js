@@ -51,3 +51,13 @@ export const updateAdminVoucher = async (voucherId, data) => {
   );
   return res.data;
 };
+
+// PUT: http://localhost:8000/api/orders/manage/vouchers/change-status/:voucherId
+export const updateAdminVoucherStatus = async (voucherId, status) => {
+  const body = status ? { status } : {};
+  const res = await http.put(
+    `/orders/manage/vouchers/change-status/${encodeURIComponent(voucherId)}`,
+    body,
+  );
+  return res.data;
+};

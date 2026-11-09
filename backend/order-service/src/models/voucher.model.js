@@ -80,6 +80,18 @@ export const VoucherModel = {
     return data;
   },
 
+  // Cập nhật trạng thái của voucher theo ID
+  updateStatus: async (voucherId, status) => {
+    const { data, error } = await supabase
+      .from("vouchers")
+      .update({ status })
+      .eq("voucher_id", voucherId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   // Voucher Usages
   // Lưu lại lịch sử sử dụng voucher của khách hàng vào bảng voucher_usages
   recordUsage: async (usageData) => {

@@ -116,6 +116,12 @@ router.put(
   verifyPermission("voucher:update"),
   voucherController.updateVoucher,
 );
+router.put(
+  "/manage/vouchers/change-status/:voucherId",
+  verifyToken,
+  verifyPermission("voucher:update"),
+  voucherController.handleUpdateVoucherStatus,
+);
 
 // ================= VOUCHER USAGES =================
 router.post("/vouchers/apply", verifyToken, voucherController.applyVoucher);

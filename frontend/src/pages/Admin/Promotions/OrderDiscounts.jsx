@@ -18,6 +18,7 @@ import {
 import {
   getAdminVouchers,
   updateAdminVoucher,
+  updateAdminVoucherStatus,
 } from "../../../services/voucher.service";
 
 const ITEMS_PER_PAGE = 8;
@@ -187,7 +188,7 @@ export default function OrderDiscounts() {
     const nextStatus = isInactive ? "active" : "inactive";
 
     try {
-      await updateAdminVoucher(voucherId, { status: nextStatus });
+      await updateAdminVoucherStatus(voucherId, nextStatus);
     } catch (err) {
       console.warn("API update status failed, saving locally:", err.message);
     }
