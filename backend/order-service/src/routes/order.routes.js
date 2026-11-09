@@ -99,6 +99,12 @@ router.get(
   voucherController.getAllVouchers,
 );
 router.get(
+  "/manage/vouchers/add",
+  verifyToken,
+  verifyPermission("voucher:view"),
+  voucherController.getAllVouchers,
+);
+router.get(
   "/manage/vouchers/:voucherId",
   verifyToken,
   verifyPermission("voucher:view"),
@@ -109,6 +115,12 @@ router.put(
   verifyToken,
   verifyPermission("voucher:update"),
   voucherController.updateVoucher,
+);
+router.put(
+  "/manage/vouchers/change-status/:voucherId",
+  verifyToken,
+  verifyPermission("voucher:update"),
+  voucherController.handleUpdateVoucherStatus,
 );
 
 // ================= VOUCHER USAGES =================

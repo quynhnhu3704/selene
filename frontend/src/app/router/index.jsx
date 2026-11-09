@@ -41,6 +41,12 @@ import AdminCategories from "../../pages/Admin/Categories";
 import AdminPermissions from "../../pages/Admin/Permissions";
 import CreateCategory from "../../pages/Admin/Categories/pages/Create";
 import EditCategory from "../../pages/Admin/Categories/pages/Edit";
+import ProductPromotions from "../../pages/Admin/Promotions/ProductPromotions";
+import OrderDiscounts from "../../pages/Admin/Promotions/OrderDiscounts";
+import CreateVoucher from "../../pages/Admin/Promotions/pages/Create";
+import EditVoucher from "../../pages/Admin/Promotions/pages/Edit";
+import CreatePromotion from "../../pages/Admin/Promotions/pages/CreatePromotion";
+import EditPromotion from "../../pages/Admin/Promotions/pages/EditPromotion";
 
 import CreateProduct from "../../pages/Admin/Products/pages/Create";
 import EditProduct from "../../pages/Admin/Products/pages/Edit";
@@ -115,6 +121,34 @@ export default function AppRouter() {
         <Route path="phan-quyen" element={<AdminPermissions />} />
         <Route path="danh-muc/them-moi" element={<CreateCategory />} />
         <Route path="danh-muc/:categoryId/sua" element={<EditCategory />} />
+
+        {/* ===== KHUYẾN MÃI & ƯU ĐÃI ===== */}
+        <Route
+          path="khuyen-mai"
+          element={<Navigate to="/admin/khuyen-mai/san-pham" replace />}
+        />
+        <Route path="khuyen-mai/san-pham" element={<ProductPromotions />} />
+        <Route
+          path="khuyen-mai/san-pham/them-moi"
+          element={<CreatePromotion />}
+        />
+        <Route
+          path="khuyen-mai/san-pham/:promotionId/sua"
+          element={<EditPromotion />}
+        />
+        <Route path="khuyen-mai/ma-giam-gia" element={<OrderDiscounts />} />
+        <Route
+          path="khuyen-mai/ma-giam-gia/them-moi"
+          element={<CreateVoucher />}
+        />
+        <Route
+          path="khuyen-mai/ma-giam-gia/:voucherId/sua"
+          element={<EditVoucher />}
+        />
+        <Route
+          path="khuyen-mai/don-hang"
+          element={<Navigate to="/admin/khuyen-mai/ma-giam-gia" replace />}
+        />
       </Route>
 
       {/* 404 */}
