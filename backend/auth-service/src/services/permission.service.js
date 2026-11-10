@@ -1,3 +1,4 @@
+import { permissionPolicy } from "../../../shared/permission-policy.mjs";
 // backend\auth-service\src\services\permission.service.js
 import { PermissionModel } from "../models/permission.model.js";
 import { AccountModel } from "../models/account.model.js";
@@ -29,7 +30,7 @@ export const setRolePermission = async (
 ) => {
   await requirePermissionManager(accountId);
   const id = Number(roleId);
-  if (!Number.isInteger(id) || id <= 0 || typeof enabled !== "boolean") {
+  if (!Number.isSafeInteger(id) || id <= 0 || typeof enabled !== "boolean" || typeof permissionId !== "string" || !permissionId.trim()) {
     throw { status: 400, message: "Dữ liệu phân quyền không hợp lệ!" };
   }
   if (id === 1) {
@@ -51,6 +52,10 @@ export const setRolePermission = async (
       message:
         "Không thể cấp quyền đã ngừng hoạt động hoặc sửa vai trò đã khóa!",
     };
+  }
+  const policy = permissionPolicy(permission.name);
+  if (enabled && (!policy.enforced || (policy.owner_only && id !== 1))) {
+    throw { status: 400, message: "Quyền này chưa được tích hợp hoặc chỉ dành cho chủ cửa hàng!" };
   }
   await PermissionModel.setRolePermission(id, permissionId, enabled);
   return { role_id: id, permission_id: permissionId, enabled };
@@ -92,6 +97,7 @@ export const getPermissionsByAccountId = async (accountId) => {
 
 // thêm quyền mới
 export const createNewPermission = async (body) => {
+  validatePermissionBody(body);
   const { name, description, status } = body;
 
   // 1. Validate dữ liệu đầu vào bắt buộc
@@ -132,6 +138,7 @@ export const createNewPermission = async (body) => {
 
 // cập nhật quyền
 export const updatePermission = async (permissionId, body) => {
+  validatePermissionBody(body, true);
   const { name, description, status } = body;
 
   // 1. Kiểm tra quyền cần sửa có tồn tại trong hệ thống không
@@ -139,6 +146,14 @@ export const updatePermission = async (permissionId, body) => {
     await PermissionModel.getPermissionById(permissionId);
   if (!currentPermission) {
     throw { status: 404, message: "Không tìm thấy quyền hạn cần cập nhật!" };
+  }
+
+  if (status === "inactive" && permissionPolicy(currentPermission.name).owner_only) {
+    throw { status: 400, message: "Không thể vô hiệu hóa quyền quản trị hệ thống!" };
+  }
+
+  if (name !== undefined && name.trim().toLowerCase() !== currentPermission.name && permissionPolicy(currentPermission.name).enforced) {
+    throw { status: 400, message: "Không được đổi mã quyền đang được API sử dụng!" };
   }
 
   // 2. Tạo object dữ liệu mặc định kế thừa hoàn toàn từ bản ghi cũ
@@ -191,6 +206,10 @@ export const togglePermissionStatus = async (permissionId) => {
     throw { status: 404, message: "Không tìm thấy quyền hạn cần cập nhật!" };
   }
 
+  if (permission.status === "active" && permissionPolicy(permission.name).owner_only) {
+    throw { status: 400, message: "Không thể vô hiệu hóa quyền quản trị hệ thống!" };
+  }
+
   // 2. Chuyển đổi trạng thái (active <-> inactive)
   const currentStatus = permission.status || "active";
   const newStatus = currentStatus === "active" ? "inactive" : "active";
@@ -203,3 +222,14 @@ export const togglePermissionStatus = async (permissionId) => {
 
   return updatedPermission;
 };
+
+function validatePermissionBody(body, partial = false) {
+  if (!body || typeof body !== "object" || Array.isArray(body) ||
+      Object.keys(body).some(key => !["name", "description", "status"].includes(key)) ||
+      (partial && !Object.keys(body).length) ||
+      ((!partial || body.name !== undefined) && (typeof body.name !== "string" || !/^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$/.test(body.name.trim().toLowerCase()))) ||
+      (body.description !== undefined && body.description !== null && typeof body.description !== "string") ||
+      (body.status !== undefined && !["active", "inactive"].includes(body.status))) {
+    throw { status: 400, message: "Dữ liệu quyền không hợp lệ (name, description, status)!" };
+  }
+}

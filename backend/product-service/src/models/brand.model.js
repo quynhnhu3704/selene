@@ -2,6 +2,15 @@
 import { supabase } from "../configs/supabase.js";
 
 export const BrandModel = {
+  ensureDefaultBrand: async () => {
+    const brandId = "selene-default";
+    const { error } = await supabase.from("brands").upsert({
+      brand_id: brandId, name: "Selene", status: "active",
+      description: "Thương hiệu mặc định nội bộ cho sản phẩm của cửa hàng",
+    }, { onConflict: "brand_id", ignoreDuplicates: true });
+    if (error) throw error;
+    return brandId;
+  },
   // Lấy danh sách thương hiệu có phân trang
   getBrandsWithPagination: async (from, to) => {
     const { data, error, count } = await supabase

@@ -1,8 +1,9 @@
 // backend\chat-service\src\middlewares\auth.middleware.js
 import jwt from "jsonwebtoken";
+import { resolveRemoteAccess } from "../../../shared/access.mjs";
 import { config } from "../configs/index.js";
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -16,7 +17,8 @@ export const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwtAccessSecret);
+    jwt.verify(token, config.jwtAccessSecret);
+    const decoded = await resolveRemoteAccess(token);
     req.user = decoded;
 
     // Khu vực quản trị chỉ dành cho chủ cửa hàng và nhân viên.
@@ -33,6 +35,10 @@ export const verifyToken = (req, res, next) => {
 
     next();
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ status: error.status, message: error.message });
+    if (!["TokenExpiredError", "JsonWebTokenError", "NotBeforeError"].includes(error.name)) {
+      return res.status(503).json({ status: 503, message: "Không thể xác minh quyền hiện tại. Vui lòng thử lại!" });
+    }
     // TRƯỜNG HỢP 2: Token gửi lên bị lỗi (Hết hạn hoặc không hợp lệ)
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
@@ -56,10 +62,6 @@ export const verifyPermission = (requiredPermissions) => {
         status: 403,
         message: "Không thể xác thực quyền truy cập!",
       });
-    }
-
-    if (req.user.role === "admin" || req.user.role === "staff") {
-      return next();
     }
 
     if (!Array.isArray(req.user.permissions)) {
@@ -93,7 +95,8 @@ export const verifyPermission = (requiredPermissions) => {
 export const authenticate = async (token) => {
   if (!token) throw new Error("Thiếu Token!");
   try {
-    const decoded = jwt.verify(token, config.jwtAccessSecret);
+    jwt.verify(token, config.jwtAccessSecret);
+    const decoded = await resolveRemoteAccess(token);
     return decoded;
   } catch (err) {
     throw new Error("Token không hợp lệ!");

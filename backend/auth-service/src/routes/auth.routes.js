@@ -42,6 +42,10 @@ import {
 import { handleToggleRoleStatus } from "../controllers/role.controller.js";
 
 const router = express.Router();
+const requireOwner = (req, res, next) => {
+  if (Number(req.user?.role_id) !== 1) return res.status(403).json({ status: 403, message: "Chỉ chủ cửa hàng được quản lý quyền và vai trò!" });
+  next();
+};
 
 // Cấu hình Multer nhận file lưu vào RAM tạm thời
 const upload = multer({
@@ -56,6 +60,11 @@ router.post("/logout", handleLogout);
 router.post("/forgot-password", handleForgotPassword);
 router.get("/google/callback", handleLoginWithGoogle);
 router.post("/refresh-token", handleRefreshToken);
+router.get("/session/access", verifyToken, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const { accountId, role_id, role, permissions, exp } = req.user;
+  res.json({ status: 200, data: { accountId, role_id, role, permissions, exp } });
+});
 
 // user - customer
 router.put(
@@ -149,24 +158,28 @@ router.put(
 router.get(
   "/manage/permissions",
   verifyToken,
+  requireOwner,
   verifyPermission("permission:view"),
   handleGetAllPermissions,
 );
 router.post(
   "/manage/permission/add",
   verifyToken,
+  requireOwner,
   verifyPermission("permission:create"),
   handleCreatePermission,
 );
 router.put(
   "/manage/permission/update/:permissionId",
   verifyToken,
+  requireOwner,
   verifyPermission("permission:update"),
   handleUpdatePermission,
 );
 router.put(
   "/manage/permission/change-status/:permissionId",
   verifyToken,
+  requireOwner,
   verifyPermission("permission:update"),
   handleTogglePermissionStatus,
 );
@@ -175,6 +188,7 @@ router.put(
 router.put(
   "/manage/role/change-status/:roleId",
   verifyToken,
+  requireOwner,
   verifyPermission("role:update"),
   handleToggleRoleStatus,
 );

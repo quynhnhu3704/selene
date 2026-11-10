@@ -59,6 +59,10 @@ export const handleGetPermissionsByAccountId = async (req, res) => {
   try {
     const { accountId } = req.params;
 
+    if (String(accountId) !== String(req.user.accountId) && Number(req.user.role_id) !== 1) {
+      return res.status(403).json({ status: 403, message: "Bạn chỉ được xem quyền của chính mình!" });
+    }
+
     if (!accountId) {
       return res.status(400).json({
         status: 400,
@@ -74,6 +78,7 @@ export const handleGetPermissionsByAccountId = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ status: error.status, message: error.message });
     if (error.message.includes("không tồn tại")) {
       return res.status(404).json({
         status: 404,

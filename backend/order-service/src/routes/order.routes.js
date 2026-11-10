@@ -167,20 +167,23 @@ router.put(
 router.put(
   "/order/:orderId/cancel",
   verifyToken,
+  verifyPermission("order:cancel"),
   orderController.handleCancelOrder,
 );
 
 // ================= CART (CUSTOMER) =================
-router.post("/cart/add", verifyToken, cartController.handleAddItemToCart);
-router.get("/cart", verifyToken, cartController.handleGetCart);
+router.post("/cart/add", verifyToken, verifyPermission("cart:add"), cartController.handleAddItemToCart);
+router.get("/cart", verifyToken, verifyPermission("cart:view"), cartController.handleGetCart);
 router.delete(
   "/cart/remove/:cartItemId",
   verifyToken,
+  verifyPermission("cart:update"),
   cartController.handleRemoveItemFromCart,
 );
 router.put(
   "/cart/update-quantity/:cartItemId",
   verifyToken,
+  verifyPermission("cart:update"),
   cartController.handleUpdateItemQuantity,
 );
 

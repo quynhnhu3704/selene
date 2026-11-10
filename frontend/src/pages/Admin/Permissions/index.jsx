@@ -102,7 +102,7 @@ export default function AdminPermissions() {
   const canEdit = (role, permission) =>
     Number(role.role_id) !== 1 &&
     role.status === "active" &&
-    (permission.status === "active" ||
+    ((permission.status === "active" && permission.enforced && !permission.owner_only) ||
       saved.has(permissionKey(role.role_id, permission.permission_id)));
 
   const togglePermissions = (role, rows, enabled) => {
@@ -113,7 +113,7 @@ export default function AdminPermissions() {
         .forEach((permission) => {
           // Quyền ngừng hoạt động chỉ được thu hồi, không cấp mới.
           const key = permissionKey(role.role_id, permission.permission_id);
-          if (enabled && permission.status !== "active" && !saved.has(key))
+          if (enabled && (!permission.enforced || permission.owner_only || permission.status !== "active") && !saved.has(key))
             return;
           if (enabled) next.add(key);
           else next.delete(key);
@@ -167,10 +167,20 @@ export default function AdminPermissions() {
           completed += 1;
         }
       }
-      toast.success("Đã lưu phân quyền thành công!");
+      const { data } = await getPermissionMatrix();
+      const actual = matrixSelection(data.data.roles);
+      const mismatches = changes.filter(key => actual.has(key) !== selected.has(key));
+      setPermissions(data.data.permissions);
+      setRoles(data.data.roles);
+      setSaved(actual);
+      setSelected(new Set(actual));
+      if (mismatches.length) toast.warning("Dữ liệu đã thay đổi từ phiên khác. Bảng đã tải lại quyền thực tế, vui lòng kiểm tra.");
+      else toast.success("Đã lưu và kiểm tra lại phân quyền thành công!");
     } catch (err) {
       toast.error(
-        `Đã lưu ${completed}/${changes.length} thay đổi. ${err.response?.data?.message || "Kết nối bị gián đoạn."} Vui lòng lưu lại các thay đổi còn lại.`,
+        completed === changes.length
+          ? "Đã gửi lưu tất cả thay đổi nhưng không đọc lại được bảng quyền. Vui lòng tải lại trang để xác nhận dữ liệu."
+          : `Đã lưu ${completed}/${changes.length} thay đổi. ${err.response?.data?.message || "Kết nối bị gián đoạn."} Vui lòng lưu lại các thay đổi còn lại.`,
         { autoClose: false },
       );
     } finally {
@@ -360,6 +370,8 @@ export default function AdminPermissions() {
                       <td>
                         <div className="fw-semibold">
                           {permissionLabel(permission)}
+                          {!permission.enforced && <span className="badge bg-warning-subtle text-warning-emphasis ms-2">Chưa tích hợp API</span>}
+                          {permission.owner_only && <span className="badge bg-secondary-subtle text-secondary ms-2">Chỉ chủ cửa hàng</span>}
                           {permission.status !== "active" && (
                             <span className="badge bg-secondary-subtle text-secondary ms-2">
                               Ngừng hoạt động
@@ -413,7 +425,11 @@ export default function AdminPermissions() {
           </div>
           <p className="small text-muted mt-3 mb-0">
             Checkbox ở hàng tên nhóm chọn các quyền đang hoạt động và đang hiển
-            thị. Ô có nền vàng là thay đổi chưa lưu.
+            thị. Ô có nền vàng là thay đổi chưa lưu. Quyền chưa tích hợp API
+            chỉ có thể thu hồi, không cấp mới. Quyền ngừng hoạt động không có hiệu lực.
+            Các trang sản phẩm công khai không yêu cầu quyền xem. Biến thể dùng quyền sản phẩm;
+            duyệt, giao và hoàn tất đơn dùng quyền cập nhật đơn hàng.
+            Chat cần quyền xem kèm quyền thao tác tương ứng. Thay đổi có hiệu lực từ yêu cầu API tiếp theo.
           </p>
         </>
       )}

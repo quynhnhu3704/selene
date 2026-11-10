@@ -4,6 +4,7 @@ import { AccountModel } from "../models/account.model.js";
 import { UserProfileModel } from "../models/userProfile.model.js";
 
 export const toggleRoleStatus = async (roleId, currentAccountId) => {
+  if (Number(roleId) === 1) throw { status: 400, message: "Không thể khóa vai trò chủ cửa hàng!" };
   // 1. Kiểm tra vai trò có tồn tại hay không
   const role = await RoleModel.findById(roleId);
   if (!role) {
@@ -15,7 +16,7 @@ export const toggleRoleStatus = async (roleId, currentAccountId) => {
   const newStatus = currentStatus === "active" ? "inactive" : "active";
 
   const currentAccount = await AccountModel.findById(currentAccountId);
-  if (newStatus === "inactive" && currentAccount?.role_id === roleId) {
+  if (newStatus === "inactive" && String(currentAccount?.role_id) === String(roleId)) {
     throw {
       status: 400,
       message: "Không thể vô hiệu hóa vai trò của chính mình!",

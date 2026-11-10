@@ -96,11 +96,15 @@ export default function AdminLayout() {
     promotions: location.pathname.startsWith("/admin/khuyen-mai"),
   }));
 
-  useEffect(() => {
+  const [previousPathname, setPreviousPathname] = useState(location.pathname);
+
+  // Sync menu state only when the pathname changes, before rendering children.
+  if (previousPathname !== location.pathname) {
+    setPreviousPathname(location.pathname);
     if (location.pathname.startsWith("/admin/khuyen-mai")) {
       setOpenMenus((prev) => ({ ...prev, promotions: true }));
     }
-  }, [location.pathname]);
+  }
 
   const handleParentToggle = (item) => {
     if (collapsed) {

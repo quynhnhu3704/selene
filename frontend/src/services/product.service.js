@@ -162,6 +162,7 @@ export const updateAdminProduct = async (productId, formData) => {
     formData,
   );
 
+  productCache.delete(String(productId));
   return res.data;
 };
 
@@ -176,3 +177,8 @@ export {
   updatePromotionItemStatus,
 } from "./promotion.service";
 
+
+export const createAdminProduct = async (formData) => {
+  const res = await http.post("/products/manage/product/add", formData);
+  return res.data;
+};

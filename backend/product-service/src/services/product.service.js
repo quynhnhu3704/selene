@@ -566,101 +566,100 @@ export const searchProductsByCategoryName = async (options = {}) => {
   }
 };
 
-// thêm sp
-export const createProductWithVariants = async (inputData, files) => {
+// Create validates the complete payload before uploading or writing anything.
+export const createProductWithVariants = async (inputData, files = []) => {
+  const invalid = (field) => {
+    const error = new Error(`${field} không hợp lệ!`);
+    error.status = 400;
+    throw error;
+  };
+  const parseArray = (value, field) => {
+    try {
+      const parsed = typeof value === "string" ? JSON.parse(value) : value;
+      if (!Array.isArray(parsed)) invalid(field);
+      return parsed;
+    } catch { invalid(field); }
+  };
+  const { product_name, category_id, description = "", status = "active" } = inputData;
+  if (typeof product_name !== "string" || !product_name.trim() || product_name.trim().length > 120)
+    invalid("Tên sản phẩm");
+  if (typeof description !== "string") invalid("Mô tả");
+  if (typeof category_id !== "string" || !category_id.trim()) invalid("Danh mục");
+  if (!["active", "inactive", "archived"].includes(status)) invalid("Trạng thái sản phẩm");
+  const prices = {};
+  for (const field of ["price", "original_price", "discount_price"]) {
+    const value = field === "discount_price" && (inputData[field] == null || inputData[field] === "")
+      ? inputData.price : inputData[field];
+    if (!["string", "number"].includes(typeof value) || String(value).trim() === "" ||
+        !Number.isFinite(Number(value)) || Number(value) < 0) invalid("Giá sản phẩm");
+    prices[field] = Number(value);
+  }
+  if (prices.discount_price > prices.price) invalid("Giá khuyến mãi vượt giá bán");
+  const variants = parseArray(inputData.variants, "Danh sách biến thể");
+  if (!variants.length) invalid("Sản phẩm phải có ít nhất một biến thể");
+  const keys = new Set();
+  const normalizedVariants = variants.map((v) => {
+    if (!v || typeof v.size !== "string" || typeof v.color !== "string" ||
+        !v.size.trim() || !v.color.trim() || v.size.trim().length > 50 || v.color.trim().length > 50)
+      invalid("Kích thước hoặc màu sắc (tối đa 50 ký tự)");
+    const size = v.size.trim();
+    const color = v.color.trim();
+    const key = JSON.stringify([size.toUpperCase(), color.toUpperCase()]);
+    if (keys.has(key)) invalid("Biến thể trùng kích thước và màu sắc");
+    keys.add(key);
+    if (!["string", "number"].includes(typeof v.stock_quantity) || String(v.stock_quantity).trim() === "" ||
+        !Number.isInteger(Number(v.stock_quantity)) || Number(v.stock_quantity) < 0 || Number(v.stock_quantity) > 2147483647)
+      invalid("Tồn kho");
+    if (v.variant_id) invalid("Mã biến thể mới");
+    const stock = Number(v.stock_quantity);
+    const variantStatus = v.status || "active";
+    if (!["active", "inactive", "archived", "out_of_stock"].includes(variantStatus)) invalid("Trạng thái biến thể");
+    return { size, color, stock_quantity: stock,
+      status: ["inactive", "archived"].includes(variantStatus) ? variantStatus : resolveVariantStatus(stock, variantStatus) };
+  });
+  if (!Array.isArray(files) || files.length < 1 || files.length > 10) invalid("Số lượng ảnh (1–10)");
+  if (files.some((f) => !f.mimetype?.startsWith("image/") || !f.size || f.size > 5 * 1024 * 1024)) invalid("Tệp ảnh (tối đa 5 MB)");
+  const order = inputData.image_order === undefined
+    ? files.map((_, upload) => ({ upload }))
+    : parseArray(inputData.image_order, "Thứ tự ảnh");
+  if (order.length !== files.length || new Set(order.map((e) => e?.upload)).size !== files.length ||
+      order.some((e) => !e || e.url !== undefined || !Number.isInteger(e.upload) || e.upload < 0 || e.upload >= files.length))
+    invalid("Thứ tự ảnh");
+  if (inputData.old_image_urls !== undefined && parseArray(inputData.old_image_urls, "Ảnh cũ").length) invalid("Ảnh cũ của sản phẩm mới");
+  const category = await CategoryModel.getCategoryById(category_id);
+  if (!category || category.status === "inactive" || category.status === "archived") invalid("Danh mục sản phẩm");
+  // The existing database requires a brand FK. Keep that internal, without a form field.
+  let brandId = inputData.brand_id;
+  if (brandId) {
+    if (typeof brandId !== "string" || !(await BrandModel.getBrandNameById(brandId))) invalid("Thương hiệu");
+  } else {
+    brandId = await BrandModel.ensureDefaultBrand();
+  }
+  const productId = generateId();
+  const now = new Date().toISOString();
+  const variantData = normalizedVariants.map((v, index) => ({
+    ...v, variant_id: `SELENE-${productId}-${index + 1}`, product_id: productId,
+    created_at: now, updated_at: now,
+  }));
+  const uploadedUrls = await ProductModel.uploadMultipleFilesToStorage(files);
+  const imageUrls = order.map((entry) => uploadedUrls[entry.upload]);
+  let created = false;
   try {
-    const {
-      category_id,
-      brand_id,
-      product_name,
-      price,
-      original_price,
-      discount_price,
-      description,
-      status,
-      variants,
-    } = inputData;
-
-    // Ép kiểu mảng cho variants vì khi gửi qua FormData nó có thể bị chuyển thành chuỗi JSON
-    const parsedVariants =
-      typeof variants === "string" ? JSON.parse(variants) : variants;
-    if (
-      !parsedVariants ||
-      !Array.isArray(parsedVariants) ||
-      parsedVariants.length === 0
-    ) {
-      throw new Error("Sản phẩm phải có ít nhất một biến thể (Size/Color)!");
-    }
-
-    // lấy tên thương hiệu
-    const dbBrandName = await BrandModel.getBrandNameById(brand_id);
-    if (!dbBrandName) {
-      throw new Error(
-        `Mã thương hiệu (brand_id) '${brand_id}' không tồn tại trên hệ thống!`,
-      );
-    }
-
-    // 3. Xử lý upload N hình ảnh lên Supabase Storage
-    const uploadedImageUrls =
-      await ProductModel.uploadMultipleFilesToStorage(files);
-
-    const currentTime = new Date().toISOString();
-    const productId = generateId();
-    const cleanBrandName = dbBrandName.trim().toUpperCase();
-
-    // 4. Chuẩn bị dữ liệu cho bảng Product
-    const productData = {
-      product_id: productId,
-      category_id,
-      brand_id,
-      product_name: product_name.trim(),
-      image_urls: JSON.stringify(uploadedImageUrls),
-      product_url: null,
-      price,
-      original_price,
-      discount_price,
-      description,
-      status: status || "active",
-      created_at: currentTime,
-      updated_at: currentTime,
-    };
-
-    // 5. Chuẩn bị dữ liệu cho bảng Variants (Tự động tạo SKU)
-    const variantsData = parsedVariants.map((v) => {
-      const cleanSize = v.size.trim();
-      const cleanColor = v.color.trim();
-      const variant_id =
-        `${cleanBrandName}-${productId}-${cleanSize}-${cleanColor.toUpperCase()}`.replace(
-          /\s+/g,
-          "",
-        );
-
-      const stock = Number(v.stock_quantity) || 0;
-      const variantStatus = resolveVariantStatus(stock, v.status);
-
-      return {
-        variant_id,
-        product_id: productId,
-        size: v.size,
-        color: v.color,
-        stock_quantity: stock,
-        status: variantStatus,
-        created_at: currentTime,
-        updated_at: currentTime,
-      };
+    const product = await ProductModel.createProduct({
+      product_id: productId, category_id, brand_id: brandId, product_name: product_name.trim(),
+      description, ...prices, status, image_urls: JSON.stringify(imageUrls), product_url: null,
+      created_at: now, updated_at: now,
     });
-
-    // 6. Thực thi lưu vào Database
-    const newProduct = await ProductModel.createProduct(productData);
-    const newVariants = await ProductModel.createVariants(variantsData);
-
-    return {
-      ...newProduct,
-      image_urls: uploadedImageUrls,
-      variants: newVariants,
-    };
+    created = true;
+    const savedVariants = await ProductModel.createVariants(variantData);
+    return { ...product, image_urls: imageUrls, variants: savedVariants };
   } catch (error) {
-    console.error("Lỗi tại createProductWithVariants Service:", error.message);
+    try {
+      if (created) await ProductModel.deleteCreatedProduct(productId);
+      await ProductModel.deleteFilesFromStorage(uploadedUrls);
+    } catch (cleanupError) {
+      console.error("Không thể hoàn tác tạo sản phẩm:", cleanupError.message);
+    }
     throw error;
   }
 };
@@ -711,38 +710,123 @@ export const updateProductWithVariants = async (
           : old_image_urls;
     }
 
-    // LOGIC XỬ LÝ XÓA ẢNH RÁC TRÊN STORAGE
-    if (existingProduct.image_urls) {
-      // Parse danh sách ảnh hiện tại đang có trong DB
-      const currentUrlsInDb =
-        typeof existingProduct.image_urls === "string"
-          ? JSON.parse(existingProduct.image_urls)
-          : existingProduct.image_urls;
-
-      // Tìm các ảnh có trong DB nhưng KHÔNG có trong danh sách giữ lại của Frontend
-      const urlsToDelete = currentUrlsInDb.filter(
-        (url) => !finalImageUrls.includes(url),
-      );
-
-      // Tiến hành xóa các file bị loại bỏ này khỏi Storage
-      if (urlsToDelete.length > 0) {
-        await ProductModel.deleteFilesFromStorage(urlsToDelete);
+    const invalid = (message) => {
+      throw new Error(`${message} không hợp lệ!`);
+    };
+    const currentUrls =
+      typeof existingProduct.image_urls === "string"
+        ? JSON.parse(existingProduct.image_urls)
+        : existingProduct.image_urls || [];
+    if (
+      !Array.isArray(finalImageUrls) ||
+      finalImageUrls.some((url) => !currentUrls.includes(url))
+    )
+      invalid("Ảnh giữ lại");
+    if (!product_name?.trim() || product_name.trim().length > 120)
+      invalid("Tên sản phẩm");
+    for (const value of [price, original_price, discount_price]) {
+      if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === "" ||
+        !Number.isFinite(Number(value)) ||
+        Number(value) < 0
+      )
+        invalid("Giá sản phẩm");
+    }
+    if (!["active", "inactive", "archived"].includes(status))
+      invalid("Trạng thái sản phẩm");
+    const detail = await ProductModel.getProductDetailWithVariants(productId);
+    const existingVariants = detail.product_variants || [];
+    const categoryRecord = await CategoryModel.getCategoryById(category_id);
+    if (!categoryRecord) invalid("Danh mục sản phẩm");
+    const keys = new Set();
+    const ids = new Set();
+    for (const variant of parsedVariants) {
+      if (
+        typeof variant.size !== "string" ||
+        !variant.size.trim() ||
+        typeof variant.color !== "string" ||
+        !variant.color.trim()
+      )
+        invalid("Kích thước hoặc màu sắc");
+      const key = JSON.stringify([
+        variant.size.trim().toUpperCase(),
+        variant.color.trim().toUpperCase(),
+      ]);
+      if (keys.has(key)) invalid("Biến thể trùng kích thước và màu sắc");
+      keys.add(key);
+      if (
+        variant.stock_quantity == null ||
+        String(variant.stock_quantity).trim() === "" ||
+        !Number.isSafeInteger(Number(variant.stock_quantity)) ||
+        Number(variant.stock_quantity) < 0
+      )
+        invalid("Tồn kho");
+      if (
+        !["active", "inactive", "archived", "out_of_stock"].includes(
+          variant.status,
+        )
+      )
+        invalid("Trạng thái biến thể");
+      if (variant.variant_id) {
+        if (
+          ids.has(variant.variant_id) ||
+          !existingVariants.some(
+            (item) => item.variant_id === variant.variant_id,
+          )
+        )
+          invalid("Mã biến thể");
+        ids.add(variant.variant_id);
       }
     }
-
-    // Tiếp tục xử lý upload file mới từ `files` và cập nhật DB như cũ...
-    if (files && files.length > 0) {
-      const newUploadedUrls =
-        await ProductModel.uploadMultipleFilesToStorage(files);
-      finalImageUrls = [...finalImageUrls, ...newUploadedUrls];
+    if (existingVariants.some((variant) => !ids.has(variant.variant_id)))
+      invalid("Danh sách biến thể bị thiếu");
+    if (
+      finalImageUrls.length + (files?.length || 0) < 1 ||
+      finalImageUrls.length + (files?.length || 0) > 10
+    )
+      invalid("Số lượng ảnh (1–10)");
+    if (
+      (files || []).some(
+        (file) =>
+          !file.mimetype.startsWith("image/") || file.size > 5 * 1024 * 1024,
+      )
+    )
+      invalid("Tệp ảnh");
+    const imageOrder = inputData.image_order
+      ? JSON.parse(inputData.image_order)
+      : null;
+    if (imageOrder) {
+      if (
+        !Array.isArray(imageOrder) ||
+        imageOrder.length !== finalImageUrls.length + (files?.length || 0)
+      )
+        invalid("Thứ tự ảnh");
+      const entries = new Set();
+      for (const entry of imageOrder) {
+        if (
+          !entry ||
+          (entry.url === undefined
+            ? !Number.isInteger(entry.upload) ||
+              entry.upload < 0 ||
+              entry.upload >= (files?.length || 0)
+            : !finalImageUrls.includes(entry.url))
+        )
+          invalid("Thứ tự ảnh");
+        const key =
+          entry.url === undefined ? `upload:${entry.upload}` : entry.url;
+        if (entries.has(key)) invalid("Ảnh trùng lặp");
+        entries.add(key);
+      }
     }
-
-    if (finalImageUrls.length === 0) {
-      throw new Error("Sản phẩm phải có ít nhất một hình ảnh!");
-    }
+    const urlsToDelete = currentUrls.filter(
+      (url) => !finalImageUrls.includes(url),
+    );
 
     // 3. Kiểm tra thương hiệu hợp lệ
-    const dbBrandName = await BrandModel.getBrandNameById(brand_id);
+    const effectiveBrandId = brand_id || existingProduct.brand_id || await BrandModel.ensureDefaultBrand();
+    const dbBrandName = await BrandModel.getBrandNameById(effectiveBrandId);
     if (!dbBrandName) {
       throw new Error(`Mã thương hiệu (brand_id) '${brand_id}' không tồn tại!`);
     }
@@ -764,40 +848,83 @@ export const updateProductWithVariants = async (
           "",
         );
 
-      const stock = Number(v.stock_quantity) || 0;
-      const variantStatus = resolveVariantStatus(stock, v.status);
+      const stock = Number(v.stock_quantity);
+      const variantStatus = ["inactive", "archived"].includes(v.status)
+        ? v.status
+        : resolveVariantStatus(stock, v.status);
 
       return {
         variant_id,
         product_id: productId,
-        size: v.size,
-        color: v.color,
+        size: cleanSize,
+        color: cleanColor,
         stock_quantity: stock,
         status: variantStatus,
         updated_at: currentTime,
       };
     });
 
+    const generatedIds = variantsData.map((variant) => variant.variant_id);
+    if (new Set(generatedIds).size !== generatedIds.length)
+      invalid("Mã biến thể trùng lặp");
+    const uploadedUrls = await ProductModel.uploadMultipleFilesToStorage(
+      files || [],
+    );
+    finalImageUrls = imageOrder
+      ? imageOrder.map((entry) => entry.url ?? uploadedUrls[entry.upload])
+      : [...finalImageUrls, ...uploadedUrls];
+
     // 5. Tiến hành cập nhật bảng thông tin sản phẩm chính
     const productUpdateData = {
       category_id,
-      brand_id,
+      brand_id: effectiveBrandId,
       product_name: product_name.trim(),
       image_urls: JSON.stringify(finalImageUrls),
-      price,
-      original_price,
-      discount_price,
+      price: Number(price),
+      original_price: Number(original_price),
+      discount_price: Number(discount_price),
       description,
-      status: status || "active",
+      status,
       updated_at: currentTime,
     };
-    const updatedProduct = await ProductModel.updateProduct(
-      productId,
-      productUpdateData,
-    );
-
-    // 6. Thực thi cập nhật/thêm mới các biến thể song song (Upsert)
-    const savedVariants = await ProductModel.upsertVariants(variantsData);
+    let updatedProduct;
+    let savedVariants;
+    try {
+      updatedProduct = await ProductModel.updateProduct(
+        productId,
+        productUpdateData,
+      );
+      savedVariants = await ProductModel.upsertVariants(variantsData);
+    } catch (saveError) {
+      // A PostgREST upsert is atomic for the variant batch. Restore the parent
+      // only if this request still owns its version; retain images on conflict.
+      try {
+        let restored = !updatedProduct;
+        if (updatedProduct) {
+          const snapshot = Object.fromEntries(
+            Object.keys(productUpdateData).map((key) => [key, detail[key]]),
+          );
+          restored = await ProductModel.restoreProductAfterFailedUpdate(
+            productId,
+            currentTime,
+            snapshot,
+          );
+        }
+        if (restored) await ProductModel.deleteFilesFromStorage(uploadedUrls);
+      } catch (cleanupError) {
+        console.error(
+          "Không thể hoàn tác cập nhật sản phẩm:",
+          cleanupError.message,
+        );
+      }
+      throw saveError;
+    }
+    // Storage cleanup must not turn a completed database save into a failed response.
+    try {
+      await ProductModel.deleteFilesFromStorage(urlsToDelete);
+    } catch (cleanupError) {
+      console.error("Không thể dọn ảnh cũ:", cleanupError.message);
+    }
 
     return {
       ...updatedProduct,
@@ -1003,6 +1130,8 @@ export const getProductDetailForAdmin = async (productId) => {
     // 3. Khớp định dạng dữ liệu trả về gọn gàng nhất
     return {
       product_id: rawProduct.product_id,
+      category_id: rawProduct.category_id,
+      brand_id: rawProduct.brand_id,
       category_name: rawProduct.categories ? rawProduct.categories.name : null,
       brand_name: rawProduct.brands ? rawProduct.brands.name : null,
       product_name: rawProduct.product_name,

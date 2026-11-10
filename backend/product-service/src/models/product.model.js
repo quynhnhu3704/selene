@@ -295,7 +295,15 @@ export const ProductModel = {
       return publicUrlData.publicUrl;
     });
 
-    return await Promise.all(uploadPromises); // Thực thi upload song song
+    const results = await Promise.allSettled(uploadPromises);
+    const failed = results.find((result) => result.status === "rejected");
+    if (failed) {
+      await ProductModel.deleteFilesFromStorage(
+        results.filter((result) => result.status === "fulfilled").map((result) => result.value),
+      );
+      throw failed.reason;
+    }
+    return results.map((result) => result.value);
   },
 
   // Hàm xóa danh sách file trên Supabase Storage dựa vào URL công khai
@@ -329,6 +337,14 @@ export const ProductModel = {
     return data[0];
   },
 
+  // Only used to compensate a newly created product owned by this request.
+  deleteCreatedProduct: async (productId) => {
+    const { error: variantError } = await supabase.from("product_variants").delete().eq("product_id", productId);
+    if (variantError) throw variantError;
+    const { error } = await supabase.from("products").delete().eq("product_id", productId);
+    if (error) throw error;
+  },
+
   // Chèn hàng loạt biến thể vào bảng product_variants
   createVariants: async (variantsArray) => {
     const { data, error } = await supabase
@@ -352,6 +368,22 @@ export const ProductModel = {
     if (!data || data.length === 0)
       throw new Error("Không tìm thấy sản phẩm để cập nhật!");
     return data[0];
+  },
+
+  // Do not overwrite a newer concurrent edit when compensating a failed save.
+  restoreProductAfterFailedUpdate: async (
+    productId,
+    expectedUpdatedAt,
+    snapshot,
+  ) => {
+    const { data, error } = await supabase
+      .from("products")
+      .update(snapshot)
+      .eq("product_id", productId)
+      .eq("updated_at", expectedUpdatedAt)
+      .select("product_id");
+    if (error) throw error;
+    return data.length > 0;
   },
 
   // Cập nhật riêng trạng thái hiển thị của sản phẩm
@@ -591,6 +623,10 @@ export const ProductModel = {
       .select(
         `
         product_id,
+        category_id,
+        brand_id,
+        created_at,
+        updated_at,
         product_name,
         image_urls,
         product_url,

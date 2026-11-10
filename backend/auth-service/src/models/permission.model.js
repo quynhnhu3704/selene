@@ -1,4 +1,6 @@
 // backend\auth-service\src\models\permission.model.js
+import { resolveAccountAccess } from "../../../shared/access.mjs";
+import { permissionPolicy } from "../../../shared/permission-policy.mjs";
 import { supabase } from "../configs/supabase.js";
 
 export const PermissionModel = {
@@ -15,7 +17,7 @@ export const PermissionModel = {
     ]);
     if (permissions.error) throw permissions.error;
     if (roles.error) throw roles.error;
-    return { permissions: permissions.data, roles: roles.data };
+    return { permissions: permissions.data.map(p => ({ ...p, ...permissionPolicy(p.name) })), roles: roles.data };
   },
 
   setRolePermission: async (roleId, permissionId, enabled) => {
@@ -51,29 +53,8 @@ export const PermissionModel = {
 
   // lấy quyền theo accountID
   getPermissionsByAccountId: async (accountId) => {
-    const { data, error } = await supabase
-      .from("accounts")
-      .select(
-        `
-                 roles (
-                   role_permissions (
-                     permissions (name)
-                   )
-                 )
-             `,
-      )
-      .eq("account_id", accountId)
-      .single();
-
-    if (error) throw error;
-
-    // Trả về mảng rỗng nếu không có dữ liệu quyền
-    if (!data || !data.roles || !data.roles.role_permissions) return [];
-
-    // Khử mảng lồng nhau thành mảng phẳng chứa string tên quyền
-    return data.roles.role_permissions
-      .map((rp) => rp.permissions?.name)
-      .filter(Boolean);
+    const access = await resolveAccountAccess(supabase, { accountId });
+    return access.permissions;
   },
 
   // Kiểm tra quyền đã tồn tại bằng name

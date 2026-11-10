@@ -6,7 +6,6 @@ import { getCustomerOrders } from "./order.service.js";
 
 export const hasPermission = (user, permission) => {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "staff") return true;
   if (Array.isArray(user.permissions) && user.permissions.includes(permission))
     return true;
   return false;
@@ -63,6 +62,7 @@ export const ConversationService = {
     if (user.role === "customer" && String(conversation.customer_id) !== String(user.accountId)) {
       throw { status: 403, message: "Bạn không được truy cập hội thoại này!" };
     }
+    if (user.role !== "customer") requirePermission(user, "chat:view");
     return conversation;
   },
 

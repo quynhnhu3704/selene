@@ -147,48 +147,43 @@ router.get(
 router.post(
   "/manage/promotion/add",
   verifyToken,
-  verifyPermission(["promotion:create", "product:create"]),
+  verifyPermission("promotion:create"),
   promotionController.handleCreatePromotion,
 );
 router.get(
   "/manage/promotions",
   verifyToken,
-  verifyPermission(["promotion:view", "product:view"]),
+  verifyPermission("promotion:view"),
   promotionController.handleGetAllPromotions,
 );
 router.get(
   "/manage/promotion-detail/:promotionId",
   verifyToken,
-  verifyPermission(["promotion:view", "product:view"]),
+  verifyPermission("promotion:view"),
   promotionController.handleGetPromotionDetail,
 );
 router.put(
   "/manage/promotion/change-status/:promotionId",
   verifyToken,
-  verifyPermission(["promotion:update", "product:update"]),
+  verifyPermission("promotion:update"),
   promotionController.handleUpdatePromotionStatus,
 );
 router.put(
   "/manage/promotion/update/:promotionId",
   verifyToken,
-  verifyPermission(["promotion:update", "product:update"]),
+  verifyPermission("promotion:update"),
   promotionController.handleUpdatePromotion,
 );
 router.post(
   "/manage/promotion/add-items/:promotionId",
   verifyToken,
-  verifyPermission([
-    "promotion:update",
-    "product:update",
-    "promotion:create",
-    "product:create",
-  ]),
+  verifyPermission("promotion:update"),
   promotionController.handleAddProductsToPromotion,
 );
 router.put(
   "/manage/promotion-item/change-status/:promotionItemId",
   verifyToken,
-  verifyPermission(["promotion:update", "product:update"]),
+  verifyPermission("promotion:update"),
   promotionController.handleUpdatePromotionItemStatus,
 );
 

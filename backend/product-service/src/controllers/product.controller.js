@@ -142,6 +142,10 @@ export const handleCreateProduct = async (req, res) => {
     console.error("Lỗi tại handleCreateProduct Controller:", error.message);
 
     const isClientError =
+      error.status === 400 ||
+      error instanceof SyntaxError ||
+      error.message.includes("không hợp lệ") ||
+      error.message.includes("không tồn tại") ||
       error.message.includes("bắt buộc") ||
       error.message.includes("đã tồn tại") ||
       error.message.includes("ít nhất một biến thể");
@@ -173,6 +177,8 @@ export const handleUpdateProduct = async (req, res) => {
     console.error("Lỗi tại handleUpdateProduct Controller:", error.message);
 
     const isClientError =
+      error instanceof SyntaxError ||
+      error.message.includes("không hợp lệ") ||
       error.message.includes("bắt buộc") ||
       error.message.includes("không tồn tại") ||
       error.message.includes("ít nhất một");
