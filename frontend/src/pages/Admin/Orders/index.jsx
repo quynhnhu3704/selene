@@ -178,7 +178,7 @@ export default function AdminOrders() {
           {user?.permissions?.includes("order:create") && (
             <Link
               className="form-btn btn btn-dark fw-semibold px-4"
-              to="/admin/don-hang/them"
+              to="/admin/don-hang/them-moi"
             >
               <i className="bi bi-plus-lg me-2" />
               Thêm đơn hàng

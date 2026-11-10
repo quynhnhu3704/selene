@@ -100,7 +100,11 @@ export default function AppRouter() {
         <Route path="san-pham/:productId/sua" element={<EditProduct />} />
 
         <Route path="don-hang" element={<AdminOrders />} />
-        <Route path="don-hang/them" element={<CreateOrder />} />
+        <Route path="don-hang/them-moi" element={<CreateOrder />} />
+        <Route
+          path="don-hang/them"
+          element={<Navigate to="/admin/don-hang/them-moi" replace />}
+        />
         <Route path="don-hang/:orderId" element={<OrderDetail readOnly />} />
         <Route path="don-hang/:orderId/sua" element={<OrderDetail />} />
         <Route path="khach-hang" element={<AdminUsers />} />

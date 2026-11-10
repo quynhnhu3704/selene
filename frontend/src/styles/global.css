@@ -1842,6 +1842,11 @@
   flex-wrap: wrap;
   margin-bottom: 1.5em;
 }
+.adm-page-head .form-btn {
+  margin-bottom: 0;
+  align-self: flex-start;
+}
+
 .adm-page-title {
   font-size: 26px;
   font-weight: 800;
@@ -3195,4 +3200,118 @@ body p.empty-state-text {
   font-size: 14px;
   text-align: center;
   color: #6c757d;
+}
+
+/* ADMIN – FORM THÊM / CHỈNH SỬA SẢN PHẨM */
+.edit-section {
+  background: #fff;
+  border: 1px solid #efefed;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.edit-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+.edit-section-title i {
+  color: #6c757d;
+}
+.edit-variant {
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #efefed;
+}
+@media (min-width: 768px) {
+  .edit-variant {
+    padding-bottom: 0;
+    margin-bottom: 0.75rem;
+    border-bottom: 0;
+  }
+}
+.edit-variant:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+.edit-main-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f5f5f5;
+}
+.edit-img-placeholder {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  background: #f5f5f5;
+  border-radius: 12px;
+  color: #6c757d;
+}
+.edit-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.edit-thumb {
+  position: relative;
+}
+.edit-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 12px;
+  background: #f5f5f5;
+}
+.edit-thumb-del {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(33, 37, 41, 0.75);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.edit-thumb-del:hover {
+  background: #871b1b;
+}
+.edit-thumb-del:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.edit-price-input-wrap {
+  position: relative;
+}
+.edit-price-input-wrap input {
+  padding-right: 36px;
+}
+.edit-price-unit {
+  position: absolute;
+  right: 14px;
+  top: 9px;
+  color: #6c757d;
+}
+.edit-stock-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
 }

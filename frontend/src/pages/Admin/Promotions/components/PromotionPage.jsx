@@ -1,3 +1,4 @@
+import AdminSaveButton from "../../components/AdminSaveButton";
 // frontend/src/pages/Admin/Promotions/components/PromotionPage.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -674,24 +675,9 @@ export default function PromotionPage({ create = false }) {
           >
             <i className="bi bi-arrow-left me-1" /> Quay lại
           </Link>
-          <button
-            type="button"
-            className="form-btn btn btn-dark fw-semibold px-4"
-            onClick={handleSubmit}
-            disabled={saving || loading}
-          >
-            {saving ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Đang lưu...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-check-lg me-1" />
-                {create ? "Tạo khuyến mãi" : "Lưu thay đổi"}
-              </>
-            )}
-          </button>
+          <AdminSaveButton onClick={handleSubmit} disabled={loading} saving={saving}>
+            {create ? "Thêm khuyến mãi" : "Lưu thay đổi"}
+          </AdminSaveButton>
         </div>
       </div>
 

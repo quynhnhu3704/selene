@@ -172,267 +172,286 @@ export default function OrderDetail({ readOnly = false }) {
       </Helmet>
       <div className="adm-page-head">
         <div className="adm-page-title">{title}</div>
-        <Link className="form-btn btn btn-outline-dark" to={back}>
-          <i className="bi bi-arrow-left me-2" />
-          Quay lại
-        </Link>
-      </div>
-      <form onSubmit={handleSubmit} className="bg-white rounded-3 p-4 border">
-        <fieldset disabled={saving}>
-          <div className="row g-4">
-            <div className="col-md-6">
-              <div className="form-label fw-semibold">Mã đơn</div>
-              <div>{order.order_code}</div>
-            </div>
-            <div className="col-md-6">
-              <div className="form-label fw-semibold">Ngày đặt</div>
-              <div>{formatDate(order.created_at)}</div>
-            </div>
-            {fields.map(([key, label, type]) => (
-              <div
-                className={key === "recipient_address" ? "col-12" : "col-md-6"}
-                key={key}
+        <div className="d-flex flex-wrap gap-2">
+          <Link className="form-btn btn btn-outline-dark" to={back}>
+            <i className="bi bi-arrow-left me-2" />
+            Quay lại
+          </Link>
+          {!readOnly ? (
+            <button
+              className="form-btn btn btn-dark"
+              type="submit"
+              form="edit-order-form"
+              disabled={saving}
+            >
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+          ) : (
+            canEdit && (
+              <Link
+                className="form-btn btn btn-dark"
+                to={`${base}/${encodeURIComponent(orderId)}/sua?returnUrl=${encodeURIComponent(back)}`}
               >
-                <label htmlFor={key} className="form-label fw-semibold">
-                  {label}
-                  {editInformation ? " *" : ""}
-                </label>
-                {editInformation ? (
-                  <input
-                    id={key}
-                    className="form-control"
-                    type={type}
-                    required
-                    value={order[key] || ""}
-                    pattern={
-                      key === "recipient_phone" ? "0[0-9]{9}" : undefined
-                    }
-                    onChange={(e) => changeField(key, e.target.value)}
-                  />
-                ) : (
-                  <div>{order[key] || "—"}</div>
-                )}
+                Chỉnh sửa đơn hàng
+              </Link>
+            )
+          )}
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} id="edit-order-form">
+        <fieldset disabled={saving}>
+          <section className="edit-section">
+            <h2 className="edit-section-title">
+              <i className="bi bi-person" />
+              Thông tin đơn hàng
+            </h2>
+            <div className="row g-4">
+              <div className="col-md-6">
+                <div className="form-label fw-semibold">Mã đơn</div>
+                <div>{order.order_code}</div>
               </div>
-            ))}
-            <div className="col-md-6">
-              <label htmlFor="status" className="form-label fw-semibold">
-                Trạng thái đơn hàng
-              </label>
-              {readOnly ? (
-                <div>
-                  <span
-                    className={`adm-status rounded-pill w-auto text-${state.color} bg-${state.color}-subtle`}
-                  >
-                    {state.label}
-                  </span>
-                </div>
-              ) : (
-                <AdminSelect
-                  id="status"
-                  value={order.status}
-                  onChange={(e) => changeField("status", e.target.value)}
-                  required
+              <div className="col-md-6">
+                <div className="form-label fw-semibold">Ngày đặt</div>
+                <div>{formatDate(order.created_at)}</div>
+              </div>
+              {fields.map(([key, label, type]) => (
+                <div
+                  className={
+                    key === "recipient_address" ? "col-12" : "col-md-6"
+                  }
+                  key={key}
                 >
-                  {!ORDER_STATUSES.some(
-                    (item) => item.key === order.status,
-                  ) && (
-                    <option value={order.status} disabled>
-                      {order.status}
-                    </option>
+                  <label htmlFor={key} className="form-label fw-semibold">
+                    {label}
+                    {editInformation ? " *" : ""}
+                  </label>
+                  {editInformation ? (
+                    <input
+                      id={key}
+                      className="form-control"
+                      type={type}
+                      required
+                      value={order[key] || ""}
+                      pattern={
+                        key === "recipient_phone" ? "0[0-9]{9}" : undefined
+                      }
+                      onChange={(e) => changeField(key, e.target.value)}
+                    />
+                  ) : (
+                    <div>{order[key] || "—"}</div>
                   )}
-                  {ORDER_STATUSES.map((item) => (
-                    <option key={item.key} value={item.key}>
-                      {item.label}
-                    </option>
-                  ))}
-                </AdminSelect>
-              )}
-            </div>
-            {[
-              ["payment_method", "Phương thức thanh toán", PAYMENT_METHODS],
-              ["payment_status", "Trạng thái thanh toán", PAYMENT_STATUSES],
-            ].map(([key, label, options]) => (
-              <div className="col-md-6" key={key}>
-                <label htmlFor={key} className="form-label fw-semibold">
-                  {label}
+                </div>
+              ))}
+              <div className="col-md-6">
+                <label htmlFor="status" className="form-label fw-semibold">
+                  Trạng thái đơn hàng
                 </label>
-                {editInformation ? (
+                {readOnly ? (
+                  <div>
+                    <span
+                      className={`adm-status rounded-pill w-auto text-${state.color} bg-${state.color}-subtle`}
+                    >
+                      {state.label}
+                    </span>
+                  </div>
+                ) : (
                   <AdminSelect
-                    id={key}
-                    value={order[key]}
-                    onChange={(e) => changeField(key, e.target.value)}
+                    id="status"
+                    value={order.status}
+                    onChange={(e) => changeField("status", e.target.value)}
                     required
                   >
-                    {options.map((item) => (
+                    {!ORDER_STATUSES.some(
+                      (item) => item.key === order.status,
+                    ) && (
+                      <option value={order.status} disabled>
+                        {order.status}
+                      </option>
+                    )}
+                    {ORDER_STATUSES.map((item) => (
                       <option key={item.key} value={item.key}>
                         {item.label}
                       </option>
                     ))}
                   </AdminSelect>
-                ) : (
-                  <div>
-                    {options.find((item) => item.key === order[key])?.label ||
-                      order[key] ||
-                      "—"}
-                  </div>
                 )}
               </div>
-            ))}
-            <div className="col-12">
-              <div className="form-label fw-semibold">Sản phẩm trong đơn</div>
-              <div className="adm-table-wrap table-responsive">
-                <table className="table adm-table mb-0">
-                  <thead>
-                    <tr>
-                      <th>Sản phẩm</th>
-                      <th className="text-center">Số lượng</th>
-                      <th className="text-end">Đơn giá</th>
-                      <th className="text-end">Thành tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(order.order_items || []).map((item) => (
-                      <tr key={item.order_item_id}>
-                        <td>
-                          <div className="adm-cell">
-                            <img
-                              className="adm-thumb"
-                              src={item.image_url || defaultImage}
-                              alt=""
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = defaultImage;
-                              }}
-                            />
-                            <div>
-                              <div className="adm-name">
-                                {item.product_name}
-                              </div>
-                              <div className="adm-sub">
-                                {[item.color, item.size]
-                                  .filter(Boolean)
-                                  .join(" / ") || "—"}
+              {[
+                ["payment_method", "Phương thức thanh toán", PAYMENT_METHODS],
+                ["payment_status", "Trạng thái thanh toán", PAYMENT_STATUSES],
+              ].map(([key, label, options]) => (
+                <div className="col-md-6" key={key}>
+                  <label htmlFor={key} className="form-label fw-semibold">
+                    {label}
+                  </label>
+                  {editInformation ? (
+                    <AdminSelect
+                      id={key}
+                      value={order[key]}
+                      onChange={(e) => changeField(key, e.target.value)}
+                      required
+                    >
+                      {options.map((item) => (
+                        <option key={item.key} value={item.key}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </AdminSelect>
+                  ) : (
+                    <div>
+                      {options.find((item) => item.key === order[key])?.label ||
+                        order[key] ||
+                        "—"}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="edit-section">
+            <h2 className="edit-section-title">
+              <i className="bi bi-bag" />
+              Sản phẩm trong đơn
+            </h2>
+            <div className="row g-4">
+              <div className="col-12">
+                <div className="adm-table-wrap table-responsive">
+                  <table className="table adm-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Sản phẩm</th>
+                        <th className="text-center">Số lượng</th>
+                        <th className="text-end">Đơn giá</th>
+                        <th className="text-end">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(order.order_items || []).map((item) => (
+                        <tr key={item.order_item_id}>
+                          <td>
+                            <div className="adm-cell">
+                              <img
+                                className="adm-thumb"
+                                src={item.image_url || defaultImage}
+                                alt=""
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = defaultImage;
+                                }}
+                              />
+                              <div>
+                                <div className="adm-name">
+                                  {item.product_name}
+                                </div>
+                                <div className="adm-sub">
+                                  {[item.color, item.size]
+                                    .filter(Boolean)
+                                    .join(" / ") || "—"}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="text-center">
-                          {editInformation ? (
-                            <input
-                              className="form-control text-center"
-                              aria-label={`Số lượng ${item.product_name}`}
-                              type="number"
-                              min="1"
-                              max="2147483647"
-                              step="1"
-                              required
-                              value={item.quantity}
-                              onChange={(e) =>
-                                changeItem(
-                                  item.order_item_id,
-                                  "quantity",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          ) : (
-                            item.quantity
-                          )}
-                        </td>
-                        <td className="text-end">
-                          {editInformation ? (
-                            <input
-                              className="form-control text-end"
-                              aria-label={`Đơn giá ${item.product_name}`}
-                              type="number"
-                              min="0"
-                              step="1"
-                              required
-                              value={item.unit_price}
-                              onChange={(e) =>
-                                changeItem(
-                                  item.order_item_id,
-                                  "unit_price",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          ) : (
-                            fmtVND(item.unit_price)
-                          )}
-                        </td>
-                        <td className="text-end fw-semibold">
-                          {fmtVND(
-                            Number(item.quantity) * Number(item.unit_price),
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </td>
+                          <td className="text-center">
+                            {editInformation ? (
+                              <input
+                                className="form-control text-center"
+                                aria-label={`Số lượng ${item.product_name}`}
+                                type="number"
+                                min="1"
+                                max="2147483647"
+                                step="1"
+                                required
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  changeItem(
+                                    item.order_item_id,
+                                    "quantity",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            ) : (
+                              item.quantity
+                            )}
+                          </td>
+                          <td className="text-end">
+                            {editInformation ? (
+                              <input
+                                className="form-control text-end"
+                                aria-label={`Đơn giá ${item.product_name}`}
+                                type="number"
+                                min="0"
+                                step="1"
+                                required
+                                value={item.unit_price}
+                                onChange={(e) =>
+                                  changeItem(
+                                    item.order_item_id,
+                                    "unit_price",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            ) : (
+                              fmtVND(item.unit_price)
+                            )}
+                          </td>
+                          <td className="text-end fw-semibold">
+                            {fmtVND(
+                              Number(item.quantity) * Number(item.unit_price),
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-            <div className="col-md-4">
-              <div className="form-label fw-semibold">Tiền hàng</div>
-              <div>{fmtVND(subtotal)}</div>
-            </div>
-            {[
-              ["total_discount_price", "Giảm giá"],
-              ["shipping_fee", "Phí giao hàng"],
-            ].map(([key, label]) => (
-              <div className="col-md-4" key={key}>
-                <label htmlFor={key} className="form-label fw-semibold">
-                  {label}
-                </label>
-                {editInformation ? (
-                  <input
-                    id={key}
-                    className="form-control"
-                    type="number"
-                    min="0"
-                    step="1"
-                    max={key === "total_discount_price" ? subtotal : undefined}
-                    required
-                    value={order[key] ?? 0}
-                    onChange={(e) => changeField(key, e.target.value)}
-                  />
-                ) : (
-                  <div>{fmtVND(order[key])}</div>
-                )}
+          </section>
+          <section className="edit-section">
+            <h2 className="edit-section-title">
+              <i className="bi bi-credit-card" />
+              Tổng thanh toán
+            </h2>
+            <div className="row g-4">
+              <div className="col-md-4">
+                <div className="form-label fw-semibold">Tiền hàng</div>
+                <div>{fmtVND(subtotal)}</div>
               </div>
-            ))}
-            <div className="col-12 text-end fw-bold">
-              Tổng tiền: {fmtVND(editInformation ? total : order.final_amount)}
+              {[
+                ["total_discount_price", "Giảm giá"],
+                ["shipping_fee", "Phí giao hàng"],
+              ].map(([key, label]) => (
+                <div className="col-md-4" key={key}>
+                  <label htmlFor={key} className="form-label fw-semibold">
+                    {label}
+                  </label>
+                  {editInformation ? (
+                    <input
+                      id={key}
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="1"
+                      max={
+                        key === "total_discount_price" ? subtotal : undefined
+                      }
+                      required
+                      value={order[key] ?? 0}
+                      onChange={(e) => changeField(key, e.target.value)}
+                    />
+                  ) : (
+                    <div>{fmtVND(order[key])}</div>
+                  )}
+                </div>
+              ))}
+              <div className="col-12 text-end fw-bold">
+                Tổng tiền:{" "}
+                {fmtVND(editInformation ? total : order.final_amount)}
+              </div>
             </div>
-          </div>
-          <div className="d-flex justify-content-end gap-3 mt-4">
-            {!readOnly ? (
-              <>
-                <Link
-                  className="form-btn btn btn-outline-dark fw-semibold"
-                  to={back}
-                >
-                  Hủy
-                </Link>
-                <button
-                  className="form-btn btn btn-dark fw-semibold"
-                  type="submit"
-                  disabled={saving}
-                >
-                  {saving ? "Đang lưu..." : "Lưu thay đổi"}
-                </button>
-              </>
-            ) : (
-              canEdit && (
-                <Link
-                  className="form-btn btn btn-dark fw-semibold"
-                  to={`${base}/${encodeURIComponent(orderId)}/sua?returnUrl=${encodeURIComponent(back)}`}
-                >
-                  Chỉnh sửa đơn hàng
-                </Link>
-              )
-            )}
-          </div>
+          </section>
         </fieldset>
       </form>
     </>

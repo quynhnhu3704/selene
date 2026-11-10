@@ -294,10 +294,9 @@ function ProductDetailContent({ id }) {
           z-index: 2;
         }
         .pd-size-x-mark line {
-          stroke: #dc3545;
+          stroke: #871B1B;
           stroke-width: 1.8;
           stroke-linecap: round;
-          opacity: 0.85;
         }
 
         /* Qty + cart */

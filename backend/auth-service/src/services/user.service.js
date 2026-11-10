@@ -11,14 +11,13 @@ const generateId = () => {
 
 // xử lý ảnh
 const uploadAvatar = async (prefix, identifier, avatarFile) => {
-  // Kiểm tra nghiêm ngặt cấu trúc file từ Multer
-  if (!avatarFile || !avatarFile.originalname || !avatarFile.buffer) {
-    console.error("File gửi lên không hợp lệ hoặc thiếu buffer/originalname");
-    return null;
+  const extensions = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  if (!avatarFile?.buffer || !extensions[avatarFile.mimetype] || avatarFile.buffer.length > 5 * 1024 * 1024) {
+    const error = new Error("Chọn ảnh JPG, PNG hoặc WebP tối đa 5 MB.");
+    error.status = 400;
+    throw error;
   }
-
-  // 1. Lấy phần mở rộng của file
-  const fileExt = avatarFile.originalname.split(".").pop();
+  const fileExt = extensions[avatarFile.mimetype];
 
   // 2. Tạo tên file chuẩn hóa không dùng dấu gạch dưới theo yêu cầu cũ
   const fileName = `Avatar${prefix}${identifier}${Date.now()}.${fileExt}`;

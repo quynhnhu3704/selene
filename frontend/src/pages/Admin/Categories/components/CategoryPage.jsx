@@ -1,3 +1,4 @@
+import AdminSaveButton from "../../components/AdminSaveButton";
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -119,10 +120,15 @@ export default function CategoryPage({ create = false }) {
       </Helmet>
       <div className="adm-page-head">
         <div className="adm-page-title">{title}</div>
-        <Link className="form-btn btn btn-outline-dark" to={back}>
-          <i className="bi bi-arrow-left me-2" />
-          Quay lại
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          <Link className="form-btn btn btn-outline-dark" to={back}>
+            <i className="bi bi-arrow-left me-2" />
+            Quay lại
+          </Link>
+          <AdminSaveButton type="submit" form="category-form" disabled={loading || Boolean(error)} saving={saving}>
+            {create ? "Thêm danh mục" : "Lưu thay đổi"}
+          </AdminSaveButton>
+        </div>
       </div>
       {loading ? (
         <div
@@ -134,91 +140,77 @@ export default function CategoryPage({ create = false }) {
       ) : error ? (
         <div className="alert alert-danger">{error}</div>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white rounded-3 p-4 border">
+        <form id="category-form" onSubmit={handleSubmit}>
           <fieldset disabled={saving}>
             <div className="row g-4">
               <div className="col-md-4">
-                <label htmlFor="category-image" className="form-label">
-                  Ảnh danh mục (tối đa 5 MB)
-                </label>
-                {(preview || form.image_url) && (
-                  <img
-                    src={preview || form.image_url}
-                    alt=""
-                    className="d-block rounded mb-3"
-                    style={{
-                      width: "100%",
-                      maxWidth: 280,
-                      aspectRatio: "1",
-                      objectFit: "cover",
-                    }}
+                <section className="edit-section">
+                  <h2 className="edit-section-title"><i className="bi bi-image" />Ảnh danh mục</h2>
+                  <label htmlFor="category-image" className="form-label">
+                    Ảnh danh mục (tối đa 5 MB)
+                  </label>
+                  {(preview || form.image_url) ? (
+                    <img
+                      src={preview || form.image_url}
+                      alt="Ảnh danh mục"
+                      className="edit-main-img mb-3"
+                    />
+                  ) : (
+                    <div className="edit-img-placeholder mb-3">
+                      <i className="bi bi-image fs-1" />
+                      <span>Chưa có ảnh danh mục</span>
+                    </div>
+                  )}
+                  <input
+                    id="category-image"
+                    type="file"
+                    className="form-control"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageChange}
                   />
-                )}
-                <input
-                  id="category-image"
-                  type="file"
-                  className="form-control"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={handleImageChange}
-                />
-                <div className="form-text">
-                  Mỗi danh mục sử dụng một ảnh. Chọn ảnh mới để thay thế ảnh
-                  hiện tại.
-                </div>
+                  <div className="form-text">
+                    Mỗi danh mục sử dụng một ảnh. Chọn ảnh mới để thay thế ảnh
+                    hiện tại.
+                  </div>
+                </section>
               </div>
               <div className="col-md-8">
-                <div className="mb-4">
-                  <label htmlFor="category-name" className="form-label">
-                    Tên danh mục <span className="text-danger">*</span>
+                <section className="edit-section">
+                  <h2 className="edit-section-title"><i className="bi bi-info-circle" />Thông tin danh mục</h2>
+                  <div className="mb-4">
+                    <label htmlFor="category-name" className="form-label">
+                      Tên danh mục <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="category-name"
+                      className="form-control"
+                      required
+                      maxLength={80}
+                      placeholder="Nhập tên danh mục"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <label htmlFor="category-description" className="form-label">
+                    Mô tả
                   </label>
-                  <input
-                    id="category-name"
+                  <textarea
+                    id="category-description"
                     className="form-control"
-                    required
-                    maxLength={80}
-                    placeholder="Nhập tên danh mục"
-                    value={form.name}
+                    rows={5}
+                    placeholder="Nhập mô tả danh mục"
+                    value={form.description || ""}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, name: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
                     }
                   />
-                </div>
-                <label htmlFor="category-description" className="form-label">
-                  Mô tả
-                </label>
-                <textarea
-                  id="category-description"
-                  className="form-control"
-                  rows={5}
-                  placeholder="Nhập mô tả danh mục"
-                  value={form.description || ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
+                </section>
               </div>
-            </div>
-            <div className="d-flex justify-content-end gap-3 mt-4">
-              <Link
-                to={back}
-                className="form-btn btn btn-outline-dark fw-semibold px-4"
-              >
-                Hủy
-              </Link>
-              <button
-                type="submit"
-                className="form-btn btn btn-dark fw-semibold px-4"
-                disabled={saving}
-              >
-                {saving
-                  ? "Đang lưu..."
-                  : create
-                    ? "Thêm danh mục"
-                    : "Lưu thay đổi"}
-              </button>
             </div>
           </fieldset>
         </form>

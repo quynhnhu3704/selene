@@ -7,6 +7,18 @@ const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+const validateCategoryInput = ({ name, description, status }) => {
+  if (typeof name === "string" && name.trim().length > 80) {
+    throw Object.assign(new Error("Tên danh mục không được vượt quá 80 ký tự!"), { status: 400 });
+  }
+  if (description !== undefined && typeof description !== "string") {
+    throw Object.assign(new Error("Mô tả danh mục phải là chuỗi văn bản!"), { status: 400 });
+  }
+  if (status !== undefined && !["active", "inactive"].includes(status)) {
+    throw Object.assign(new Error("Trạng thái danh mục không hợp lệ!"), { status: 400 });
+  }
+};
+
 export const getCategoryDetail = async (categoryId) => {
   const category = await CategoryModel.getCategoryById(categoryId);
   if (!category) throw new Error("Không tìm thấy danh mục yêu cầu!");
@@ -17,6 +29,7 @@ export const getCategoryDetail = async (categoryId) => {
 export const createCategory = async (categoryInput, file) => {
   try {
     const { name, description, status } = categoryInput;
+    validateCategoryInput(categoryInput);
 
     if (typeof name !== "string" || name.trim() === "") {
       throw new Error("Tên danh mục là bắt buộc và không được để trống!");
@@ -59,6 +72,7 @@ export const createCategory = async (categoryInput, file) => {
 export const updateCategory = async (category_id, updateInput, file) => {
   try {
     const { name, description, status } = updateInput;
+    validateCategoryInput(updateInput);
 
     // 1. Kiểm tra nếu có cập nhật tên thì không được để trống
     if (

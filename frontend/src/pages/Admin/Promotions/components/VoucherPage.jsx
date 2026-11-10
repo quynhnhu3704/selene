@@ -1,3 +1,4 @@
+import AdminSaveButton from "../../components/AdminSaveButton";
 // frontend/src/pages/Admin/Promotions/components/VoucherPage.jsx
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -432,24 +433,9 @@ export default function VoucherPage({ create = false }) {
           <Link to={back} className="form-btn btn btn-outline-dark fw-semibold px-3">
             <i className="bi bi-arrow-left me-1" /> Quay lại
           </Link>
-          <button
-            type="button"
-            className="form-btn btn btn-dark fw-semibold px-4"
-            onClick={handleSubmit}
-            disabled={saving || loading}
-          >
-            {saving ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Đang lưu...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-check-lg me-1" />
-                {create ? "Tạo mã giảm giá" : "Lưu thay đổi"}
-              </>
-            )}
-          </button>
+          <AdminSaveButton onClick={handleSubmit} disabled={loading} saving={saving}>
+            {create ? "Thêm mã giảm giá" : "Lưu thay đổi"}
+          </AdminSaveButton>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import AdminSaveButton from "../../components/AdminSaveButton";
 import { buildProductFormData } from "./productFormData";
 import EmptyState from "../../../../components/common/EmptyState";
 import { useEffect, useRef, useState } from "react";
@@ -330,6 +331,21 @@ export default function ProductForm({ mode = "edit" }) {
     );
   }
 
+  const actions = (
+    <div className="d-flex gap-2">
+      <button
+        className="form-btn btn btn-outline-dark btn-export mb-0"
+        onClick={() => navigate(returnUrl)}
+        disabled={submitting}
+      >
+        <i className="bi bi-arrow-left me-1" /> Quay lại
+      </button>
+      <AdminSaveButton onClick={handleSubmit} disabled={submitting || readingImages} saving={submitting}>
+        {isCreate ? "Thêm sản phẩm" : "Lưu thay đổi"}
+      </AdminSaveButton>
+    </div>
+  );
+
   /* ─────────────────────────────────────────────────────────
      UI
   ───────────────────────────────────────────────────────── */
@@ -339,58 +355,14 @@ export default function ProductForm({ mode = "edit" }) {
         <title>{pageTitle} | Selene</title>
       </Helmet>
 
-      <style>{`
-        .ep-card { border-top: 1px solid #efefed; padding: 24px 0; }
-        .ep-card-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display:flex; align-items:center; gap:8px; }
-        .ep-card-title i { color: #6c757d; }
-        .ep-main-img { width:100%; aspect-ratio:4/3; object-fit:contain; display:block; background:#efefed; border-radius:12px; }
-        .ep-img-placeholder { aspect-ratio:4/3; display:grid; place-content:center; text-align:center; background:#efefed; border-radius:12px; color:#6c757d; }
-        .ep-thumb-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
-        .ep-thumb-wrap { position:relative; }
-        .ep-thumb-img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; }
-        .ep-thumb-del { position:absolute; top:6px; right:6px; width:28px; height:28px; border:0; border-radius:50%; background:#212529; color:white; }
-        .ep-img-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
-        .ep-variant-table { min-width:580px; table-layout:auto; }
-        .ep-variant-table td { padding:12px 8px; border-bottom:1px solid #efefed; }
-        .ep-variant-table .form-control { min-width:70px; }
-        .ep-price-input-wrap { position:relative; }
-        .ep-price-input-wrap input { padding-right:36px; }
-        .ep-price-unit { position:absolute; right:14px; top:9px; color:#6c757d; }
-        .ep-stock-badge { display:flex; align-items:center; gap:8px; min-height:38px; }
-        @media(max-width:575px) { .ep-page .adm-page-head { gap:16px; flex-wrap:wrap; } }
-      `}</style>
       <div className="ep-page">
         {/* ─── PAGE HEADER ─── */}
-        <div className="adm-page-head">
+        <div className="adm-page-head flex-wrap gap-3">
           <div>
             <h1 className="adm-page-title mb-1">{pageTitle}</h1>
             <span className="adm-sub">{isCreate ? "Nhập thông tin sản phẩm mới" : `Mã sản phẩm: ${productId}`}</span>
           </div>
-          <div className="d-flex gap-2">
-            <button
-              className="form-btn btn btn-outline-dark btn-export mb-0"
-              onClick={() => navigate(returnUrl)}
-              disabled={submitting}
-            >
-              <i className="bi bi-arrow-left me-1" /> Quay lại
-            </button>
-            <button
-              className="form-btn btn btn-dark mb-0"
-              onClick={handleSubmit}
-              disabled={submitting || readingImages}
-            >
-              {submitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-1" />{" "}
-                  Đang lưu...
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-check-lg me-1" /> {isCreate ? "Thêm sản phẩm" : "Lưu thay đổi"}
-                </>
-              )}
-            </button>
-          </div>
+          {actions}
         </div>
 
         {/* ─── 2-COLUMN LAYOUT ─── */}
@@ -398,14 +370,14 @@ export default function ProductForm({ mode = "edit" }) {
           {/* ══════ LEFT COL ══════ */}
           <div className="col-12 col-xl-7">
             {/* THÔNG TIN CHUNG */}
-            <div className="ep-card">
-              <div className="ep-card-title">
+            <div className="edit-section">
+              <div className="edit-section-title">
                 <i className="bi bi-info-circle" /> Thông tin chung
               </div>
 
               <div className="mb-3">
                 <label className="form-label" htmlFor="ep-name">
-                  Tên sản phẩm
+                  Tên sản phẩm <span className="text-danger">*</span>
                 </label>
                 <input
                   id="ep-name"
@@ -436,9 +408,9 @@ export default function ProductForm({ mode = "edit" }) {
             </div>
 
             {/* BIẾN THỂ */}
-            <div className="ep-card">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <div className="ep-card-title mb-0">
+            <div className="edit-section">
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div className="edit-section-title mb-0">
                   <i className="bi bi-grid-3x3-gap" /> Biến thể sản phẩm
                 </div>
                 <button
@@ -463,115 +435,118 @@ export default function ProductForm({ mode = "edit" }) {
                   <EmptyState text="Không có biến thể nào để hiển thị" />
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="adm-table ep-variant-table">
-                    <thead>
-                      <tr>
-                        <th>Kích thước</th>
-                        <th>Màu sắc</th>
-                        <th style={{ width: 90 }}>Tồn kho</th>
-                        <th style={{ width: 160 }}>Trạng thái</th>
-                        <th style={{ width: 40 }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {variants.map((variant, index) => (
-                        <tr key={variant.variant_id || index}>
-                          {/* Size */}
-                          <td>
-                            <input
-                              className="form-control"
-                              aria-label={`Kích thước biến thể ${index + 1}`}
-                              placeholder="S, M, L..."
-                              value={variant.size}
-                              onChange={(e) =>
-                                setVariant(index, "size", e.target.value)
-                              }
-                              disabled={submitting}
-                            />
-                          </td>
-                          {/* Color */}
-                          <td>
-                            <input
-                              className="form-control"
-                              aria-label={`Màu sắc biến thể ${index + 1}`}
-                              placeholder="Trắng, Đen..."
-                              value={variant.color}
-                              onChange={(e) =>
-                                setVariant(index, "color", e.target.value)
-                              }
-                              disabled={submitting}
-                            />
-                          </td>
-                          {/* Stock */}
-                          <td>
-                            <input
-                              className="form-control text-center"
-                              aria-label={`Tồn kho biến thể ${index + 1}`}
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={variant.stock_quantity}
-                              onChange={(e) =>
-                                setVariant(
-                                  index,
-                                  "stock_quantity",
-                                  e.target.value,
-                                )
-                              }
-                              disabled={submitting}
-                            />
-                          </td>
-                          {/* Status */}
-                          <td>
-                            <ProductDropdown
-                              id={`variant-status-${index}`}
-                              value={variant.status}
-                              options={[
-                                { value: "active", label: "Hoạt động" },
-                                { value: "inactive", label: "Đã khóa" },
-                                { value: "out_of_stock", label: "Hết hàng" },
-                                {
-                                  value: "archived",
-                                  label: "Ngừng kinh doanh",
-                                },
-                              ]}
-                              placeholder="Trạng thái"
-                              onChange={(val) =>
-                                setVariant(index, "status", val)
-                              }
-                              disabled={submitting}
-                            />
-                          </td>
-                          {/* Delete — chỉ xoá được dòng mới chưa lưu */}
-                          <td>
-                            {!variant.variant_id && (
-                              <button
-                                type="button"
-                                className="adm-action-btn text-danger"
-                                title="Xoá biến thể"
-                                onClick={() =>
-                                  setVariants((p) =>
-                                    p.filter((_, i) => i !== index),
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <i className="bi bi-trash3" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                variants.map((variant, index) => (
+                <div className="edit-variant" key={variant.variant_id || index}>
+                    <div className="row g-3 align-items-end">
+                    {/* Size */}
+                    <div className="col-6 col-md-3">
+                      <label className={`form-label${index > 0 ? " d-md-none" : ""}`} htmlFor={`variant-size-${index}`}>
+                        Kích thước <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        id={`variant-size-${index}`}
+                        className="form-control"
+                        aria-label={`Kích thước biến thể ${index + 1}`}
+                        placeholder="S, M, L..."
+                        value={variant.size}
+                        onChange={(e) =>
+                          setVariant(index, "size", e.target.value)
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+                    {/* Color */}
+                    <div className="col-6 col-md-3">
+                      <label className={`form-label${index > 0 ? " d-md-none" : ""}`} htmlFor={`variant-color-${index}`}>
+                        Màu sắc <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        id={`variant-color-${index}`}
+                        className="form-control"
+                        aria-label={`Màu sắc biến thể ${index + 1}`}
+                        placeholder="Trắng, Đen..."
+                        value={variant.color}
+                        onChange={(e) =>
+                          setVariant(index, "color", e.target.value)
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+                    {/* Stock */}
+                    <div className="col-6 col-md-2">
+                      <label className={`form-label${index > 0 ? " d-md-none" : ""}`} htmlFor={`variant-stock-${index}`}>
+                        Tồn kho <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        id={`variant-stock-${index}`}
+                        className="form-control text-center"
+                        aria-label={`Tồn kho biến thể ${index + 1}`}
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={variant.stock_quantity}
+                        onChange={(e) =>
+                          setVariant(
+                            index,
+                            "stock_quantity",
+                            e.target.value,
+                          )
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+                    {/* Status */}
+                    <div className="col-6 col-md-3">
+                      <label className={`form-label${index > 0 ? " d-md-none" : ""}`} htmlFor={`variant-status-${index}`}>
+                        Trạng thái
+                      </label>
+                      <ProductDropdown
+                        id={`variant-status-${index}`}
+                        value={variant.status}
+                        options={[
+                          { value: "active", label: "Hoạt động" },
+                          { value: "inactive", label: "Đã khóa" },
+                          { value: "out_of_stock", label: "Hết hàng" },
+                          {
+                            value: "archived",
+                            label: "Ngừng kinh doanh",
+                          },
+                        ]}
+                        placeholder="Trạng thái"
+                        onChange={(val) =>
+                          setVariant(index, "status", val)
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+                    {/* Delete — chỉ xoá được dòng mới chưa lưu */}
+                    <div className="col-12 col-md-1 d-flex justify-content-end justify-content-md-center">
+                      {!variant.variant_id && (
+                        <button
+                          type="button"
+                          className="adm-action-btn text-danger"
+                          title="Xoá biến thể"
+                          aria-label={`Xoá biến thể ${index + 1}`}
+                          onClick={() =>
+                            setVariants((p) =>
+                              p.filter((_, i) => i !== index),
+                            )
+                          }
+                          disabled={submitting}
+                        >
+                          <i className="bi bi-trash3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
+                ))
               )}
             </div>
 
             {/* GIÁ & TỒN KHO */}
-            <div className="ep-card">
-              <div className="ep-card-title">
+            <div className="edit-section">
+              <div className="edit-section-title">
                 <i className="bi bi-tag" /> Giá & tồn kho
               </div>
 
@@ -579,10 +554,10 @@ export default function ProductForm({ mode = "edit" }) {
                 {/* Giá sản phẩm */}
                 <div className="col-12 col-md-6">
                   <label className="form-label" htmlFor="ep-price">
-                    Giá bán
+                    Giá bán <span className="text-danger">*</span>
                   </label>
-                  <div className="ep-price-input-wrap">
-                    <span className="ep-price-unit">₫</span>
+                  <div className="edit-price-input-wrap">
+                    <span className="edit-price-unit">₫</span>
                     <input
                       type="number"
                       min="0"
@@ -600,7 +575,7 @@ export default function ProductForm({ mode = "edit" }) {
                 <div className="col-12 col-md-6">
                   <label className="form-label">Tổng tồn kho</label>
                   <div className="d-flex align-items-center">
-                    <div className="ep-stock-badge">
+                    <div className="edit-stock-badge">
                       <i
                         className="bi bi-box-seam"
                         style={{ fontSize: 14, color: "#6c757d" }}
@@ -634,8 +609,8 @@ export default function ProductForm({ mode = "edit" }) {
                   <label className="form-label" htmlFor="ep-discount">
                     Giá khuyến mãi
                   </label>
-                  <div className="ep-price-input-wrap">
-                    <span className="ep-price-unit">₫</span>
+                  <div className="edit-price-input-wrap">
+                    <span className="edit-price-unit">₫</span>
                     <input
                       type="number"
                       min="0"
@@ -651,10 +626,10 @@ export default function ProductForm({ mode = "edit" }) {
 
                 <div className="col-12 col-md-6">
                   <label className="form-label" htmlFor="ep-original-price">
-                    Giá gốc
+                    Giá gốc <span className="text-danger">*</span>
                   </label>
-                  <div className="ep-price-input-wrap">
-                    <span className="ep-price-unit">₫</span>
+                  <div className="edit-price-input-wrap">
+                    <span className="edit-price-unit">₫</span>
                     <input
                       id="ep-original-price"
                       type="number"
@@ -673,23 +648,23 @@ export default function ProductForm({ mode = "edit" }) {
           {/* ══════ RIGHT COL ══════ */}
           <div className="col-12 col-xl-5">
             {/* HÌNH ẢNH */}
-            <div className="ep-card">
-              <div className="ep-card-title">
+            <div className="edit-section">
+              <div className="edit-section-title">
                 <i className="bi bi-images" /> Hình ảnh sản phẩm
               </div>
 
               {/* Ảnh chính */}
               {mainImg ? (
-                <img src={mainImg} alt="Ảnh chính" className="ep-main-img" />
+                <img src={mainImg} alt="Ảnh chính" className="edit-main-img" />
               ) : (
-                <div className="ep-img-placeholder">
+                <div className="edit-img-placeholder">
                   <i className="bi bi-cloud-arrow-up" />
                   <span>Chưa có ảnh sản phẩm</span>
                 </div>
               )}
 
               {/* Action buttons ảnh chính */}
-              <div className="ep-img-actions">
+              <div className="d-flex flex-wrap gap-2 mt-3">
                 <button
                   type="button"
                   className="form-btn btn btn-outline-dark mb-0"
@@ -721,18 +696,18 @@ export default function ProductForm({ mode = "edit" }) {
 
               {/* Thumbnail grid */}
               {thumbs.length > 0 && (
-                <div className="ep-thumb-grid">
+                <div className="edit-thumb-grid">
                   {thumbs.map((src, i) => (
-                    <div className="ep-thumb-wrap" key={i}>
+                    <div className="edit-thumb" key={i}>
                       <img
                         src={src}
                         alt={`Ảnh phụ ${i + 1}`}
-                        className="ep-thumb-img"
                       />
                       <button
                         type="button"
-                        className="ep-thumb-del"
+                        className="edit-thumb-del"
                         title="Xoá ảnh"
+                        aria-label={`Xoá ảnh phụ ${i + 1}`}
                         onClick={() => removeThumb(i)}
                         disabled={submitting || readingImages}
                       >
@@ -783,13 +758,13 @@ export default function ProductForm({ mode = "edit" }) {
             </div>
 
             {/* DANH MỤC */}
-            <div className="ep-card">
-              <div className="ep-card-title">
+            <div className="edit-section">
+              <div className="edit-section-title">
                 <i className="bi bi-folder2-open" /> Danh mục
               </div>
 
               <label className="form-label" htmlFor="product-category">
-                Danh mục sản phẩm
+                Danh mục sản phẩm <span className="text-danger">*</span>
               </label>
               <ProductDropdown
                 id="product-category"
@@ -806,8 +781,8 @@ export default function ProductForm({ mode = "edit" }) {
 
             {/* TRẠNG THÁI HIỆN TẠI (read-only info) */}
             {product && (
-              <div className="ep-card">
-                <div className="ep-card-title">
+              <div className="edit-section">
+                <div className="edit-section-title">
                   <i className="bi bi-activity" /> Trạng thái sản phẩm
                 </div>
                 <div className="d-flex align-items-center justify-content-between">

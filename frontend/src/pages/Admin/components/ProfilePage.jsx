@@ -1,3 +1,4 @@
+import AdminSaveButton from "./AdminSaveButton";
 // frontend/src/pages/Admin/components/ProfilePage.jsx
 import { useEffect, useState } from "react";
 import {
@@ -61,7 +62,13 @@ export default function ProfilePage({
           setError("Người dùng không thuộc danh sách này.");
           return;
         }
-        setProfile(data.data);
+        setProfile({
+          ...data.data,
+          gender:
+            { male: "Nam", female: "Nữ", other: "Khác" }[data.data.gender] ||
+            data.data.gender ||
+            "",
+        });
       })
       .catch((err) => {
         if (isCurrentRequest)
@@ -130,20 +137,27 @@ export default function ProfilePage({
       </Helmet>
       <div className="adm-page-head">
         <div className="adm-page-title">{title}</div>
-        <Link className="form-btn btn btn-outline-dark" to={back}>
-          <i className="bi bi-arrow-left me-2" />
-          Quay lại
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          <Link className="form-btn btn btn-outline-dark" to={back}>
+            <i className="bi bi-arrow-left me-2" />
+            Quay lại
+          </Link>
+          {!readOnly && (
+            <AdminSaveButton type="submit" form="admin-profile-form" saving={saving}>
+              {create ? `Thêm ${role === "staff" ? "nhân viên" : "khách hàng"}` : "Lưu thay đổi"}
+            </AdminSaveButton>
+          )}
+        </div>
       </div>
       <ProfileForm
         profile={profile}
         setProfile={setProfile}
         setAvatar={setAvatar}
+        avatar={avatar}
         saving={saving}
         readOnly={readOnly}
         create={create}
         role={role}
-        back={back}
         handleSubmit={handleSubmit}
       />
     </>

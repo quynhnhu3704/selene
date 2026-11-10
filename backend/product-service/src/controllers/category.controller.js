@@ -41,8 +41,9 @@ export const handleCreateCategory = async (req, res) => {
       error.message.includes("bắt buộc") ||
       error.message.includes("đã tồn tại");
 
-    return res.status(isClientError ? 400 : 500).json({
-      status: isClientError ? 400 : 500,
+    const status = error.status || (isClientError ? 400 : 500);
+    return res.status(status).json({
+      status,
       message: error.message || "Internal Server Error!",
     });
   }
@@ -79,8 +80,9 @@ export const handleUpdateCategory = async (req, res) => {
       error.message.includes("đã được sử dụng") ||
       error.message.includes("Không tìm thấy");
 
-    return res.status(isClientError ? 400 : 500).json({
-      status: isClientError ? 400 : 500,
+    const status = error.status || (error.message.includes("Không tìm thấy") ? 404 : isClientError ? 400 : 500);
+    return res.status(status).json({
+      status,
       message: error.message || "Internal Server Error!",
     });
   }

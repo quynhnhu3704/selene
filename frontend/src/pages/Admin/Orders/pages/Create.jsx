@@ -1,3 +1,4 @@
+import AdminSaveButton from "../../components/AdminSaveButton";
 import Loading from "../../../../components/common/Loading";
 import AdminSelect from "../../components/AdminSelect";
 import { useEffect, useState } from "react";
@@ -147,271 +148,296 @@ export default function CreateOrder() {
       </Helmet>
       <div className="adm-page-head">
         <div className="adm-page-title">Thêm đơn hàng</div>
-        <Link className="form-btn btn btn-outline-dark" to="/admin/don-hang">
-          Quay lại
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          <Link className="form-btn btn btn-outline-dark" to="/admin/don-hang">
+            <i className="bi bi-arrow-left me-2" aria-hidden="true" />
+            Quay lại
+          </Link>
+          <AdminSaveButton type="submit" form="create-order-form" disabled={!items.length} saving={saving}>
+            Thêm đơn hàng
+          </AdminSaveButton>
+        </div>
       </div>
-      <form onSubmit={submit} className="bg-white rounded-3 p-4 border">
+      <form onSubmit={submit} id="create-order-form">
         {error && (
           <div role="alert" className="alert alert-danger">
             {error}
           </div>
         )}
         <fieldset disabled={saving}>
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label" htmlFor="customer-search">
-                Tìm khách hàng
-              </label>
-              <input
-                id="customer-search"
-                className="form-control"
-                value={customerQuery}
-                onChange={(e) => setCustomerQuery(e.target.value)}
-                placeholder="Tên, email hoặc số điện thoại"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label" htmlFor="customer">
-                Khách hàng *
-              </label>
-              <AdminSelect
-                id="customer"
-                required
-                value={form.account_id}
-                onChange={(e) => {
-                  const customer = customers.find(
-                    (row) => row.account_id === e.target.value,
-                  );
-                  setForm((previous) => ({
-                    ...previous,
-                    account_id: e.target.value,
-                    profile_id: customer?.profile_id || "",
-                    recipient_name: customer?.full_name || "",
-                    recipient_phone: customer?.phone_number || "",
-                  }));
-                }}
-              >
-                <option value="">Chọn khách hàng</option>
-                {form.account_id &&
-                  !customers.some(
-                    (row) => row.account_id === form.account_id,
-                  ) && (
-                    <option value={form.account_id}>
-                      {form.recipient_name}
+          <section className="edit-section">
+            <h2 className="edit-section-title">
+              <i className="bi bi-person" />
+              Thông tin người nhận
+            </h2>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="customer-search">
+                  Tìm khách hàng
+                </label>
+                <input
+                  id="customer-search"
+                  className="form-control"
+                  value={customerQuery}
+                  onChange={(e) => setCustomerQuery(e.target.value)}
+                  placeholder="Tên, email hoặc số điện thoại"
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="customer">
+                  Khách hàng *
+                </label>
+                <AdminSelect
+                  id="customer"
+                  required
+                  value={form.account_id}
+                  onChange={(e) => {
+                    const customer = customers.find(
+                      (row) => row.account_id === e.target.value,
+                    );
+                    setForm((previous) => ({
+                      ...previous,
+                      account_id: e.target.value,
+                      profile_id: customer?.profile_id || "",
+                      recipient_name: customer?.full_name || "",
+                      recipient_phone: customer?.phone_number || "",
+                    }));
+                  }}
+                >
+                  <option value="">Chọn khách hàng</option>
+                  {form.account_id &&
+                    !customers.some(
+                      (row) => row.account_id === form.account_id,
+                    ) && (
+                      <option value={form.account_id}>
+                        {form.recipient_name}
+                      </option>
+                    )}
+                  {customers.map((row) => (
+                    <option key={row.account_id} value={row.account_id}>
+                      {row.full_name} — {row.email || row.phone_number}
                     </option>
-                  )}
-                {customers.map((row) => (
-                  <option key={row.account_id} value={row.account_id}>
-                    {row.full_name} — {row.email || row.phone_number}
-                  </option>
-                ))}
-              </AdminSelect>
-            </div>
-            {[
-              ["recipient_name", "Người nhận", "text"],
-              ["recipient_phone", "Số điện thoại", "tel"],
-              ["recipient_address", "Địa chỉ nhận hàng", "text"],
-            ].map(([key, label, type]) => (
-              <div
-                key={key}
-                className={key === "recipient_address" ? "col-12" : "col-md-6"}
-              >
-                <label htmlFor={key} className="form-label">
-                  {label} *
-                </label>
-                <input
-                  id={key}
-                  className="form-control"
-                  required
-                  type={type}
-                  pattern={type === "tel" ? "0[0-9]{9}" : undefined}
-                  value={form[key]}
-                  onChange={(e) => change(key, e.target.value)}
-                />
-              </div>
-            ))}
-            <div className="col-md-6">
-              <label htmlFor="product-search" className="form-label">
-                Tìm sản phẩm
-              </label>
-              <input
-                id="product-search"
-                className="form-control"
-                value={productQuery}
-                onChange={(e) => {
-                  setProductQuery(e.target.value);
-                  setProduct(null);
-                }}
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="product" className="form-label">
-                Chọn sản phẩm
-              </label>
-              <AdminSelect
-                id="product"
-                disabled={loadingProduct}
-                value={product?.product_id || ""}
-                onChange={(e) => selectProduct(e.target.value)}
-              >
-                <option value="">Chọn sản phẩm</option>
-                {products.map((row) => (
-                  <option key={row.product_id} value={row.product_id}>
-                    {row.product_name}
-                  </option>
-                ))}
-              </AdminSelect>
-            </div>
-            {loadingProduct && <Loading text="Đang tải biến thể..." />}
-            {product && (
-              <div className="col-12 d-flex gap-2 flex-wrap">
-                {product.variants?.map((variant) => (
-                  <button
-                    type="button"
-                    className="btn btn-outline-dark"
-                    key={variant.variant_id}
-                    disabled={
-                      Number(variant.stock_quantity) < 1 ||
-                      items.some(
-                        (item) => item.variant_id === variant.variant_id,
-                      )
-                    }
-                    onClick={() => addItem(variant)}
-                  >
-                    {variant.size} / {variant.color} — Còn{" "}
-                    {variant.stock_quantity} <i className="bi bi-plus" />
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="col-12 table-responsive">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Sản phẩm</th>
-                    <th>Đơn giá</th>
-                    <th>Số lượng</th>
-                    <th>Thành tiền</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr key={item.variant_id}>
-                      <td>
-                        {item.product_name}
-                        <div className="text-muted">
-                          {item.size} / {item.color}
-                        </div>
-                      </td>
-                      <td>{fmtVND(item.unit_price)}</td>
-                      <td>
-                        <input
-                          className="form-control"
-                          style={{ width: 100 }}
-                          aria-label={`Số lượng ${item.product_name} ${item.size} ${item.color}`}
-                          required
-                          type="number"
-                          min="1"
-                          max={item.stock_quantity}
-                          step="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            setItems(
-                              items.map((row) =>
-                                row.variant_id === item.variant_id
-                                  ? { ...row, quantity: e.target.value }
-                                  : row,
-                              ),
-                            )
-                          }
-                        />
-                      </td>
-                      <td>{fmtVND(item.unit_price * Number(item.quantity))}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger"
-                          aria-label={`Xóa ${item.product_name}`}
-                          onClick={() =>
-                            setItems(
-                              items.filter(
-                                (row) => row.variant_id !== item.variant_id,
-                              ),
-                            )
-                          }
-                        >
-                          <i className="bi bi-trash" />
-                        </button>
-                      </td>
-                    </tr>
                   ))}
-                  {!items.length && (
-                    <tr>
-                      <td colSpan="5" className="text-center text-muted">
-                        Chọn sản phẩm và biến thể để thêm vào đơn.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                </AdminSelect>
+              </div>
+              {[
+                ["recipient_name", "Người nhận", "text"],
+                ["recipient_phone", "Số điện thoại", "tel"],
+                ["recipient_address", "Địa chỉ nhận hàng", "text"],
+              ].map(([key, label, type]) => (
+                <div
+                  key={key}
+                  className={
+                    key === "recipient_address" ? "col-12" : "col-md-6"
+                  }
+                >
+                  <label htmlFor={key} className="form-label">
+                    {label} *
+                  </label>
+                  <input
+                    id={key}
+                    className="form-control"
+                    required
+                    type={type}
+                    pattern={type === "tel" ? "0[0-9]{9}" : undefined}
+                    value={form[key]}
+                    onChange={(e) => change(key, e.target.value)}
+                  />
+                </div>
+              ))}
             </div>
-            <div className="col-md-4">
-              <label className="form-label" htmlFor="payment_method">
-                Thanh toán
-              </label>
-              <AdminSelect
-                id="payment_method"
-                value={form.payment_method}
-                onChange={(e) => change("payment_method", e.target.value)}
-              >
-                {PAYMENT_METHODS.map((method) => (
-                  <option key={method.key} value={method.key}>
-                    {method.label}
-                  </option>
-                ))}
-              </AdminSelect>
-            </div>
-            {[
-              ["shipping_fee", "Phí vận chuyển"],
-              ["total_discount_price", "Giảm giá"],
-            ].map(([key, label]) => (
-              <div className="col-md-4" key={key}>
-                <label className="form-label" htmlFor={key}>
-                  {label}
+          </section>
+          <section className="edit-section">
+            <h2 className="edit-section-title">
+              <i className="bi bi-bag" />
+              Sản phẩm trong đơn
+            </h2>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label htmlFor="product-search" className="form-label">
+                  Tìm sản phẩm
                 </label>
                 <input
-                  id={key}
+                  id="product-search"
                   className="form-control"
-                  required
-                  type="number"
-                  min="0"
-                  max={key === "total_discount_price" ? subtotal : undefined}
-                  step="1"
-                  value={form[key]}
-                  onChange={(e) => change(key, e.target.value)}
+                  value={productQuery}
+                  onChange={(e) => {
+                    setProductQuery(e.target.value);
+                    setProduct(null);
+                  }}
                 />
               </div>
-            ))}
-            <div className="col-12 text-end">
-              <p className="fw-bold">
-                Tổng tiền:{" "}
-                {fmtVND(
-                  subtotal -
-                    Number(form.total_discount_price) +
-                    Number(form.shipping_fee),
-                )}
-              </p>
-              <button
-                className="form-btn btn btn-dark"
-                type="submit"
-                disabled={saving || !items.length}
-              >
-                {saving ? "Đang lưu..." : "Tạo đơn hàng"}
-              </button>
+              <div className="col-md-6">
+                <label htmlFor="product" className="form-label">
+                  Chọn sản phẩm
+                </label>
+                <AdminSelect
+                  id="product"
+                  disabled={loadingProduct}
+                  value={product?.product_id || ""}
+                  onChange={(e) => selectProduct(e.target.value)}
+                >
+                  <option value="">Chọn sản phẩm</option>
+                  {products.map((row) => (
+                    <option key={row.product_id} value={row.product_id}>
+                      {row.product_name}
+                    </option>
+                  ))}
+                </AdminSelect>
+              </div>
+              {loadingProduct && <Loading text="Đang tải biến thể..." />}
+              {product && (
+                <div className="col-12 d-flex gap-2 flex-wrap">
+                  {product.variants?.map((variant) => (
+                    <button
+                      type="button"
+                      className="btn btn-outline-dark"
+                      key={variant.variant_id}
+                      disabled={
+                        Number(variant.stock_quantity) < 1 ||
+                        items.some(
+                          (item) => item.variant_id === variant.variant_id,
+                        )
+                      }
+                      onClick={() => addItem(variant)}
+                    >
+                      {variant.size} / {variant.color} — Còn{" "}
+                      {variant.stock_quantity} <i className="bi bi-plus" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="col-12 table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Sản phẩm</th>
+                      <th>Đơn giá</th>
+                      <th>Số lượng</th>
+                      <th>Thành tiền</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr key={item.variant_id}>
+                        <td>
+                          {item.product_name}
+                          <div className="text-muted">
+                            {item.size} / {item.color}
+                          </div>
+                        </td>
+                        <td>{fmtVND(item.unit_price)}</td>
+                        <td>
+                          <input
+                            className="form-control"
+                            style={{ width: 100 }}
+                            aria-label={`Số lượng ${item.product_name} ${item.size} ${item.color}`}
+                            required
+                            type="number"
+                            min="1"
+                            max={item.stock_quantity}
+                            step="1"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              setItems(
+                                items.map((row) =>
+                                  row.variant_id === item.variant_id
+                                    ? { ...row, quantity: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          {fmtVND(item.unit_price * Number(item.quantity))}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger"
+                            aria-label={`Xóa ${item.product_name}`}
+                            onClick={() =>
+                              setItems(
+                                items.filter(
+                                  (row) => row.variant_id !== item.variant_id,
+                                ),
+                              )
+                            }
+                          >
+                            <i className="bi bi-trash" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {!items.length && (
+                      <tr>
+                        <td colSpan="5" className="text-center text-muted">
+                          Chọn sản phẩm và biến thể để thêm vào đơn.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </section>
+          <section className="edit-section">
+            <h2 className="edit-section-title">
+              <i className="bi bi-credit-card" />
+              Thanh toán
+            </h2>
+            <div className="row g-3">
+              <div className="col-md-4">
+                <label className="form-label" htmlFor="payment_method">
+                  Thanh toán
+                </label>
+                <AdminSelect
+                  id="payment_method"
+                  value={form.payment_method}
+                  onChange={(e) => change("payment_method", e.target.value)}
+                >
+                  {PAYMENT_METHODS.map((method) => (
+                    <option key={method.key} value={method.key}>
+                      {method.label}
+                    </option>
+                  ))}
+                </AdminSelect>
+              </div>
+              {[
+                ["shipping_fee", "Phí vận chuyển"],
+                ["total_discount_price", "Giảm giá"],
+              ].map(([key, label]) => (
+                <div className="col-md-4" key={key}>
+                  <label className="form-label" htmlFor={key}>
+                    {label}
+                  </label>
+                  <input
+                    id={key}
+                    className="form-control"
+                    required
+                    type="number"
+                    min="0"
+                    max={key === "total_discount_price" ? subtotal : undefined}
+                    step="1"
+                    value={form[key]}
+                    onChange={(e) => change(key, e.target.value)}
+                  />
+                </div>
+              ))}
+              <div className="col-12 text-end">
+                <p className="fw-bold">
+                  Tổng tiền:{" "}
+                  {fmtVND(
+                    subtotal -
+                      Number(form.total_discount_price) +
+                      Number(form.shipping_fee),
+                  )}
+                </p>
+              </div>
+            </div>
+          </section>
         </fieldset>
       </form>
     </>
