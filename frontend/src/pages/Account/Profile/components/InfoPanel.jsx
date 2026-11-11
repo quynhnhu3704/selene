@@ -5,8 +5,7 @@ import { saveUser } from "../../../../utils/auth";
 import { updateProfile } from "../../../../services/user.service";
 import Address from "../../../../components/common/Address";
 import defaultAvatar from "../../../../assets/images/default-avatar.png";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "../../../../components/common/DatePicker";
 
 export default function InfoPanel({ profile, setProfile }) {
   const [editing, setEditing] = useState(false);
@@ -450,15 +449,10 @@ export default function InfoPanel({ profile, setProfile }) {
                       dob: date ? formatDate(date) : "",
                     }))
                   }
-                  dateFormat="dd/MM/yyyy"
                   placeholderText="Chọn ngày sinh"
                   className="form-control"
-                  showYearDropdown
-                  showMonthDropdown
-                  dropdownMode="select"
                   minDate={minDate}
                   maxDate={new Date()}
-                  showPopperArrow={false}
                 />
               ) : (
                 <span>{form.dob ? displayDate(form.dob) : <Empty />}</span>

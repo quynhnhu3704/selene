@@ -1,3 +1,4 @@
+import { DateInput } from "../../../../components/common/DatePicker";
 import AdminSaveButton from "../../components/AdminSaveButton";
 // frontend/src/pages/Admin/Promotions/components/PromotionPage.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -629,44 +630,9 @@ export default function PromotionPage({ create = false }) {
         <title>{title} | Selene</title>
       </Helmet>
 
-      <style>{`
-        .vp-label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 5px;
-          white-space: nowrap;
-          display: block;
-        }
-        .vp-input {
-          font-size: 13.5px;
-          height: 38px;
-        }
-        .vp-card-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #1f2937;
-        }
-        .promo-prod-search-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: #fff;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-          z-index: 1020;
-          max-height: 280px;
-          overflow-y: auto;
-        }
-        .promo-prod-item:hover {
-          background-color: #f9fafb;
-        }
-      `}</style>
 
       {/* ── PAGE HEADER ── */}
-      <div className="adm-page-head">
+      <div className="adm-form-head adm-page-head">
         <div className="adm-page-title">{title}</div>
         <div className="d-flex gap-2">
           <Link
@@ -987,8 +953,7 @@ export default function PromotionPage({ create = false }) {
                     <label className="vp-label">
                       Ngày bắt đầu <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="date"
+                    <DateInput
                       className="form-control vp-input"
                       value={form.start_date}
                       onChange={(e) => handleChange("start_date", e.target.value)}
@@ -1001,8 +966,7 @@ export default function PromotionPage({ create = false }) {
                     <label className="vp-label">
                       Ngày kết thúc <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="date"
+                    <DateInput
                       className="form-control vp-input"
                       value={form.end_date}
                       onChange={(e) => handleChange("end_date", e.target.value)}

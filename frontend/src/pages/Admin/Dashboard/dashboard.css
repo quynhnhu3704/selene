@@ -156,6 +156,11 @@
   margin-left: 5px;
 }
 
+.dash-date-form .react-datepicker-wrapper {
+  width: auto;
+  min-width: 0;
+}
+
 .dash-date-form input {
   color: #514b47;
   border: 0;

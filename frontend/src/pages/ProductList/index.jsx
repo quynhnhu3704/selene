@@ -508,9 +508,6 @@ export default function ProductList() {
 
   return (
     <div className="pl-page pl-product-list-page">
-      <style>{`
-        .pl-product-list-page > .container { max-width: none; }
-      `}</style>
       <Helmet>
         <title>
           {searchQuery

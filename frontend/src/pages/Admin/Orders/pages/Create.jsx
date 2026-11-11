@@ -1,7 +1,6 @@
 import AdminSaveButton from "../../components/AdminSaveButton";
-import Loading from "../../../../components/common/Loading";
 import AdminSelect from "../../components/AdminSelect";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
@@ -13,6 +12,8 @@ import {
 import { createAdminOrder } from "../../../../services/order.service";
 import { getUser } from "../../../../utils/auth";
 import { PAYMENT_METHODS, fmtVND } from "../constants";
+import defaultImage from "../../../../assets/images/default-product.png";
+import "../create-order.css";
 
 export default function CreateOrder() {
   const navigate = useNavigate();
@@ -27,12 +28,16 @@ export default function CreateOrder() {
   });
   const [customerQuery, setCustomerQuery] = useState("");
   const [customers, setCustomers] = useState([]);
+  const [customerSearchState, setCustomerSearchState] = useState("loading");
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [productQuery, setProductQuery] = useState("");
   const [products, setProducts] = useState([]);
+  const [productSearchState, setProductSearchState] = useState("loading");
   const [product, setProduct] = useState(null);
   const [items, setItems] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [loadingProduct, setLoadingProduct] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const productRequest = useRef(0);
   const [error, setError] = useState("");
   const user = getUser();
   const canCreate =
@@ -42,15 +47,21 @@ export default function CreateOrder() {
     if (!canCreate) return;
     let current = true;
     const timer = setTimeout(() => {
-      getAdminCustomers({ q: customerQuery, status: "active", limit: 100 })
+      getAdminCustomers({ q: customerQuery, status: "active", limit: 100, include_order_counts: false })
         .then(({ data }) => {
-          if (current) setCustomers(data.data);
+          if (current) {
+            setCustomers(data.data);
+            setCustomerSearchState("ready");
+          }
         })
         .catch(() => {
-          if (current)
+          if (current) {
+            setCustomers([]);
+            setCustomerSearchState("error");
             toast.error(
               "Không thể tải khách hàng. Kiểm tra quyền xem khách hàng.",
             );
+          }
         });
     }, 250);
     return () => {
@@ -62,12 +73,19 @@ export default function CreateOrder() {
     if (!canCreate) return;
     let current = true;
     const timer = setTimeout(() => {
-      getProducts({ q: productQuery, limit: 100 })
+      getProducts({ q: productQuery.trim(), limit: 100 })
         .then(({ data }) => {
-          if (current) setProducts(data);
+          if (current) {
+            setProducts(data);
+            setProductSearchState("ready");
+          }
         })
         .catch(() => {
-          if (current) toast.error("Không thể tải sản phẩm!");
+          if (current) {
+            setProducts([]);
+            setProductSearchState("error");
+            toast.error("Không thể tải sản phẩm!");
+          }
         });
     }, 250);
     return () => {
@@ -77,17 +95,30 @@ export default function CreateOrder() {
   }, [productQuery, canCreate]);
   const change = (key, value) =>
     setForm((previous) => ({ ...previous, [key]: value }));
+  const chooseCustomer = (customer) => {
+    setSelectedCustomer(customer || null);
+    setForm((previous) => ({
+      ...previous,
+      account_id: customer?.account_id || "",
+      profile_id: customer?.profile_id || "",
+      recipient_name: customer?.full_name || "",
+      recipient_phone: customer?.phone_number || "",
+    }));
+    setCustomerQuery("");
+  };
   const selectProduct = async (id) => {
+    const request = ++productRequest.current;
+    setSelectedProductId(id);
     setProduct(null);
     if (!id) return;
-    setLoadingProduct(true);
     try {
       const { data } = await getProductById(id);
-      setProduct(data);
+      if (request === productRequest.current) setProduct(data);
     } catch {
-      toast.error("Không thể tải biến thể sản phẩm!");
-    } finally {
-      setLoadingProduct(false);
+      if (request === productRequest.current) {
+        setSelectedProductId("");
+        toast.error("Không thể tải biến thể sản phẩm!");
+      }
     }
   };
   const addItem = (variant) => {
@@ -97,6 +128,7 @@ export default function CreateOrder() {
       {
         ...variant,
         product_name: product.product_name,
+        image_url: product.images?.[0] || defaultImage,
         unit_price: Number(
           product.discount_price || product.original_price || 0,
         ),
@@ -146,7 +178,7 @@ export default function CreateOrder() {
       <Helmet>
         <title>Thêm đơn hàng | Selene</title>
       </Helmet>
-      <div className="adm-page-head">
+      <div className="adm-form-head adm-page-head">
         <div className="adm-page-title">Thêm đơn hàng</div>
         <div className="d-flex flex-wrap gap-2">
           <Link className="form-btn btn btn-outline-dark" to="/admin/don-hang">
@@ -154,7 +186,7 @@ export default function CreateOrder() {
             Quay lại
           </Link>
           <AdminSaveButton type="submit" form="create-order-form" disabled={!items.length} saving={saving}>
-            Thêm đơn hàng
+            Thêm mới
           </AdminSaveButton>
         </div>
       </div>
@@ -179,32 +211,32 @@ export default function CreateOrder() {
                   id="customer-search"
                   className="form-control"
                   value={customerQuery}
-                  onChange={(e) => setCustomerQuery(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerQuery(e.target.value);
+                    setCustomerSearchState("loading");
+                  }}
                   placeholder="Tên, email hoặc số điện thoại"
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="customer">
-                  Khách hàng *
+                  Khách hàng <span className="text-danger">*</span>
                 </label>
                 <AdminSelect
                   id="customer"
                   required
+                  disabled={customerSearchState !== "ready"}
                   value={form.account_id}
                   onChange={(e) => {
-                    const customer = customers.find(
-                      (row) => row.account_id === e.target.value,
+                    const customer = [selectedCustomer, ...customers].find(
+                      (row) => row?.account_id === e.target.value,
                     );
-                    setForm((previous) => ({
-                      ...previous,
-                      account_id: e.target.value,
-                      profile_id: customer?.profile_id || "",
-                      recipient_name: customer?.full_name || "",
-                      recipient_phone: customer?.phone_number || "",
-                    }));
+                    chooseCustomer(customer);
                   }}
                 >
-                  <option value="">Chọn khách hàng</option>
+                  <option value="">
+                    {customerSearchState === "loading" ? "Đang tìm khách hàng..." : customerSearchState === "error" ? "Không thể tải khách hàng" : customers.length === 0 ? "Không tìm thấy khách hàng" : "Chọn khách hàng"}
+                  </option>
                   {form.account_id &&
                     !customers.some(
                       (row) => row.account_id === form.account_id,
@@ -232,7 +264,7 @@ export default function CreateOrder() {
                   }
                 >
                   <label htmlFor={key} className="form-label">
-                    {label} *
+                    {label} <span className="text-danger">*</span>
                   </label>
                   <input
                     id={key}
@@ -260,10 +292,23 @@ export default function CreateOrder() {
                 <input
                   id="product-search"
                   className="form-control"
+                  placeholder="Nhập tên hoặc mã sản phẩm"
                   value={productQuery}
                   onChange={(e) => {
                     setProductQuery(e.target.value);
+                    setProductSearchState("loading");
+                    setProducts([]);
+                    ++productRequest.current;
+                    setSelectedProductId("");
                     setProduct(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      if (productSearchState === "ready" && products.length === 1) {
+                        selectProduct(products[0].product_id);
+                      }
+                    }
                   }}
                 />
               </div>
@@ -273,11 +318,13 @@ export default function CreateOrder() {
                 </label>
                 <AdminSelect
                   id="product"
-                  disabled={loadingProduct}
-                  value={product?.product_id || ""}
+                  disabled={productSearchState !== "ready" || products.length === 0}
+                  value={selectedProductId}
                   onChange={(e) => selectProduct(e.target.value)}
                 >
-                  <option value="">Chọn sản phẩm</option>
+                  <option value="">
+                    {productSearchState === "loading" ? "Đang tìm sản phẩm..." : productSearchState === "error" ? "Không thể tải sản phẩm" : products.length === 0 ? "Không tìm thấy sản phẩm" : "Chọn sản phẩm"}
+                  </option>
                   {products.map((row) => (
                     <option key={row.product_id} value={row.product_id}>
                       {row.product_name}
@@ -285,13 +332,12 @@ export default function CreateOrder() {
                   ))}
                 </AdminSelect>
               </div>
-              {loadingProduct && <Loading text="Đang tải biến thể..." />}
               {product && (
                 <div className="col-12 d-flex gap-2 flex-wrap">
                   {product.variants?.map((variant) => (
                     <button
                       type="button"
-                      className="btn btn-outline-dark"
+                      className="form-btn btn btn-outline-dark mb-0"
                       key={variant.variant_id}
                       disabled={
                         Number(variant.stock_quantity) < 1 ||
@@ -302,35 +348,54 @@ export default function CreateOrder() {
                       onClick={() => addItem(variant)}
                     >
                       {variant.size} / {variant.color} — Còn{" "}
-                      {variant.stock_quantity} <i className="bi bi-plus" />
+                      {variant.stock_quantity} <i className="bi bi-plus-lg" aria-hidden="true" />
                     </button>
                   ))}
                 </div>
               )}
-              <div className="col-12 table-responsive">
-                <table className="table">
+              <div className="col-12">
+                <div className="adm-table-wrap table-responsive">
+                <table className="table adm-table adm-create-order-table mb-0">
                   <thead>
                     <tr>
+                      <th className="text-center" aria-label="Số thứ tự" />
                       <th>Sản phẩm</th>
-                      <th>Đơn giá</th>
-                      <th>Số lượng</th>
-                      <th>Thành tiền</th>
-                      <th />
+                      <th className="text-end">Đơn giá</th>
+                      <th className="text-center">Số lượng</th>
+                      <th className="text-end">Thành tiền</th>
+                      <th><span className="visually-hidden">Thao tác</span></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item) => (
+                    {items.map((item, index) => (
                       <tr key={item.variant_id}>
+                        <td className="text-center">
+                          <span className="adm-stt">{index + 1}</span>
+                        </td>
                         <td>
-                          {item.product_name}
-                          <div className="text-muted">
-                            {item.size} / {item.color}
+                          <div className="adm-cell">
+                            <img
+                              className="adm-thumb"
+                              src={item.image_url}
+                              alt=""
+                              onError={(event) => {
+                                if (event.currentTarget.getAttribute("src") !== defaultImage) {
+                                  event.currentTarget.src = defaultImage;
+                                }
+                              }}
+                            />
+                            <div>
+                              <div className="adm-name">{item.product_name}</div>
+                              <div className="adm-sub">
+                                {[item.size, item.color].filter(Boolean).join(" / ")}
+                              </div>
+                            </div>
                           </div>
                         </td>
-                        <td>{fmtVND(item.unit_price)}</td>
+                        <td className="text-end text-nowrap adm-price">{fmtVND(item.unit_price)}</td>
                         <td>
                           <input
-                            className="form-control"
+                            className="form-control text-center mx-auto adm-order-quantity"
                             style={{ width: 100 }}
                             aria-label={`Số lượng ${item.product_name} ${item.size} ${item.color}`}
                             required
@@ -350,13 +415,13 @@ export default function CreateOrder() {
                             }
                           />
                         </td>
-                        <td>
+                        <td className="text-end text-nowrap adm-price">
                           {fmtVND(item.unit_price * Number(item.quantity))}
                         </td>
-                        <td>
+                        <td className="text-end">
                           <button
                             type="button"
-                            className="btn btn-outline-danger"
+                            className="adm-action-btn lock ms-auto"
                             aria-label={`Xóa ${item.product_name}`}
                             onClick={() =>
                               setItems(
@@ -373,13 +438,14 @@ export default function CreateOrder() {
                     ))}
                     {!items.length && (
                       <tr>
-                        <td colSpan="5" className="text-center text-muted">
+                        <td colSpan="6" className="text-center text-muted">
                           Chọn sản phẩm và biến thể để thêm vào đơn.
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           </section>

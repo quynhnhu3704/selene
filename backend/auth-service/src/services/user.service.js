@@ -633,7 +633,7 @@ export const toggleAccountStatus = async (accountId) => {
 
 // Lọc và sắp xếp người dùng trước khi phân trang
 export const getAdminUsers = async (
-  { role, q = "", status = "", sort = "newest", page = 1, limit = 12 },
+  { role, q = "", status = "", sort = "newest", page = 1, limit = 12, include_order_counts = true },
   exportAll = false,
   authorization,
 ) => {
@@ -674,7 +674,10 @@ export const getAdminUsers = async (
   }
   const [profiles, counts] = await Promise.all([
     UserProfileModel.getAdminProfiles(ROLE_IDS[role]),
-    role === "customer" ? getOrderCounts(authorization) : {},
+    role === "customer" &&
+    (![false, "false"].includes(include_order_counts) || sort.startsWith("orders_"))
+      ? getOrderCounts(authorization)
+      : {},
   ]);
   const query = normalizeSearchValue(q).trim();
   const phoneQuery = query.replace(/\D/g, "");

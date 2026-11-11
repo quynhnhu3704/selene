@@ -1,4 +1,5 @@
 import AdminSaveButton from "../../components/AdminSaveButton";
+import AdminImageUpload from "../../components/AdminImageUpload";
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -118,7 +119,7 @@ export default function CategoryPage({ create = false }) {
       <Helmet>
         <title>{title} | Selene</title>
       </Helmet>
-      <div className="adm-page-head">
+      <div className="adm-form-head adm-page-head">
         <div className="adm-page-title">{title}</div>
         <div className="d-flex flex-wrap gap-2">
           <Link className="form-btn btn btn-outline-dark" to={back}>
@@ -126,7 +127,7 @@ export default function CategoryPage({ create = false }) {
             Quay lại
           </Link>
           <AdminSaveButton type="submit" form="category-form" disabled={loading || Boolean(error)} saving={saving}>
-            {create ? "Thêm danh mục" : "Lưu thay đổi"}
+            {create ? "Thêm mới" : "Lưu thay đổi"}
           </AdminSaveButton>
         </div>
       </div>
@@ -146,9 +147,6 @@ export default function CategoryPage({ create = false }) {
               <div className="col-md-4">
                 <section className="edit-section">
                   <h2 className="edit-section-title"><i className="bi bi-image" />Ảnh danh mục</h2>
-                  <label htmlFor="category-image" className="form-label">
-                    Ảnh danh mục (tối đa 5 MB)
-                  </label>
                   {(preview || form.image_url) ? (
                     <img
                       src={preview || form.image_url}
@@ -158,19 +156,17 @@ export default function CategoryPage({ create = false }) {
                   ) : (
                     <div className="edit-img-placeholder mb-3">
                       <i className="bi bi-image fs-1" />
-                      <span>Chưa có ảnh danh mục</span>
+                      <span>Chưa có ảnh</span>
                     </div>
                   )}
-                  <input
+                  <AdminImageUpload
                     id="category-image"
-                    type="file"
-                    className="form-control"
+                    hasImage={Boolean(image || form.image_url)}
                     accept="image/jpeg,image/png,image/webp,image/gif"
                     onChange={handleImageChange}
                   />
-                  <div className="form-text">
-                    Mỗi danh mục sử dụng một ảnh. Chọn ảnh mới để thay thế ảnh
-                    hiện tại.
+                  <div className="adm-sub mt-3">
+                    Tối đa 5 MB. Tải lên ảnh mới để thay thế ảnh hiện tại.
                   </div>
                 </section>
               </div>

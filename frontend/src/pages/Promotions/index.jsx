@@ -59,17 +59,12 @@ export default function Promotions() {
       <Helmet>
         <title>Khuyến mãi | Selene</title>
       </Helmet>
-      <style>{`
-        .promotions-page { padding: 32px 75px 72px; background: #fff; min-height: 70vh; }
-        .promotions-title { font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 16px; }
-        @media (max-width: 1520px) { .promotions-page { padding: 28px 24px 56px; } }
-      `}</style>
       <Breadcrumb
         items={[{ label: "Trang chủ", path: "/" }, { label: "Khuyến mãi" }]}
       />
       <div className="promotions-page">
-        <h1 className="promotions-title">Khuyến mãi</h1>
-        <p className="text-muted">
+        <h1 className="adm-page-title promotions-title">Khuyến mãi</h1>
+        <p className="text-muted promotions-note">
           Các mã còn lượt sử dụng và phù hợp với giỏ hàng hiện tại của bạn.
         </p>
         {!loggedIn ? (
@@ -77,7 +72,7 @@ export default function Promotions() {
             <p>Đăng nhập để xem các mã khuyến mãi dành cho bạn.</p>
             <Link
               to="/tai-khoan/dang-nhap"
-              className="btn btn-dark rounded-pill px-4"
+              className="form-btn btn btn-dark fw-semibold px-4 mb-0"
             >
               Đăng nhập
             </Link>
@@ -91,7 +86,7 @@ export default function Promotions() {
             <p>{error}</p>
             <button
               type="button"
-              className="btn btn-outline-dark rounded-pill"
+              className="form-btn btn btn-outline-dark fw-semibold px-4 mb-0"
               onClick={loadVouchers}
             >
               Thử lại
@@ -100,7 +95,7 @@ export default function Promotions() {
         ) : vouchers.length === 0 ? (
           <div className="text-center py-5">
             <EmptyState text="Không có mã khuyến mãi nào để hiển thị" />
-            <Link to="/san-pham" className="btn btn-dark rounded-pill px-4">
+            <Link to="/san-pham" className="form-btn btn btn-dark fw-semibold px-4 mb-0">
               Tiếp tục mua sắm
             </Link>
           </div>
@@ -112,14 +107,19 @@ export default function Promotions() {
                   className="col-12 col-md-6 col-xl-4"
                   key={voucher.voucher_id}
                 >
-                  <VoucherList vouchers={[voucher]} onSelect={copyVoucher} />
+                  <VoucherList
+                    vouchers={[voucher]}
+                    onSelect={copyVoucher}
+                    buttonClassName="form-btn btn btn-outline-dark px-3 flex-shrink-0 fw-semibold mb-0"
+                  />
                 </div>
               ))}
             </div>
             <Link
               to="/gio-hang"
-              className="btn btn-dark rounded-pill px-4 mt-4"
+              className="form-btn btn btn-dark fw-semibold px-4 mt-4 mb-0"
             >
+              <i className="bi bi-cart3 me-2" aria-hidden="true" />
               Đến giỏ hàng
             </Link>
           </>

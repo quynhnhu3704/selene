@@ -1,0 +1,24 @@
+.adm-create-order-table {
+  min-width: 720px;
+}
+
+.adm-create-order-table th:first-child {
+  width: 5%;
+}
+
+.adm-create-order-table th:nth-child(2) {
+  width: 39%;
+}
+
+.adm-create-order-table th:last-child {
+  width: 60px;
+}
+
+.adm-create-order-table .adm-thumb {
+  align-self: center;
+}
+
+.adm-order-quantity {
+  font-size: 13.5px;
+  color: #212529;
+}

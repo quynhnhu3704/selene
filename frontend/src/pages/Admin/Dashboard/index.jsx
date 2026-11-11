@@ -1,3 +1,4 @@
+import { DateInput } from "../../../components/common/DatePicker";
 import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/Dashboard/index.jsx
 import Loading from "../../../components/common/Loading";
@@ -485,9 +486,8 @@ export default function Dashboard() {
         </div>
         <form className="dash-date-form" onSubmit={applyDates}>
           <i className="bi bi-calendar3" />
-          <input
+          <DateInput
             aria-label="Từ ngày"
-            type="date"
             required
             max={today}
             onFocus={() => setToday(dateKey(Date.now()))}
@@ -497,9 +497,8 @@ export default function Dashboard() {
             }
           />
           <span>—</span>
-          <input
+          <DateInput
             aria-label="Đến ngày"
-            type="date"
             required
             min={draft.start}
             max={today}

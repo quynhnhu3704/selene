@@ -1,6 +1,8 @@
 // frontend/src/pages/Admin/components/ProfileForm.jsx
 import { useEffect, useState } from "react";
+import { DateInput } from "../../../components/common/DatePicker";
 import AdminSelect from "./AdminSelect";
+import AdminImageUpload from "./AdminImageUpload";
 import { toast } from "react-toastify";
 
 export default function ProfileForm({
@@ -46,12 +48,22 @@ export default function ProfileForm({
               <div className="row g-4">
                 {fields.map(([key, label, type, required]) => (
                   <div className="col-md-6" key={key}>
-                    <label htmlFor={key} className="form-label fw-semibold">
+                    <label htmlFor={key} className="form-label">
                       {label}
-                      {required && !readOnly ? " *" : ""}
+                      {required && !readOnly && <span className="text-danger"> *</span>}
                     </label>
                     {readOnly ? (
                       <div>{profile[key] || "—"}</div>
+                    ) : type === "date" ? (
+                      <DateInput
+                        id={key}
+                        value={profile[key] || ""}
+                        max={new Date()}
+                        disabled={saving}
+                        onChange={(e) =>
+                          setProfile({ ...profile, [key]: e.target.value })
+                        }
+                      />
                     ) : (
                       <input
                         id={key}
@@ -59,11 +71,6 @@ export default function ProfileForm({
                         type={type}
                         required={required}
                         value={profile[key] || ""}
-                        max={
-                          type === "date"
-                            ? new Date().toISOString().slice(0, 10)
-                            : undefined
-                        }
                         pattern={
                           key === "phone"
                             ? "0[0-9]{9}"
@@ -79,7 +86,7 @@ export default function ProfileForm({
                   </div>
                 ))}
                 <div className="col-md-6">
-                  <label htmlFor="gender" className="form-label fw-semibold">
+                  <label htmlFor="gender" className="form-label">
                     Giới tính
                   </label>
                   {readOnly ? (
@@ -107,8 +114,8 @@ export default function ProfileForm({
                 </div>
               </div>
               {create && (
-                <p className="text-muted mt-4">
-                  Mật khẩu ban đầu là số điện thoại của{" "}
+                <p className="adm-sub text-danger mt-4">
+                  (*) Mật khẩu ban đầu là số điện thoại của{" "}
                   {role === "staff" ? "nhân viên" : "khách hàng"}.
                 </p>
               )}
@@ -126,19 +133,15 @@ export default function ProfileForm({
               ) : (
                 <div className="edit-img-placeholder mb-3">
                   <i className="bi bi-person fs-1" aria-hidden="true" />
-                  <span>Chưa có ảnh đại diện</span>
+                  <span>Chưa có ảnh</span>
                 </div>
               )}
               {!readOnly && (
                 <>
-                  <label htmlFor="avatar" className="form-label">
-                    Ảnh đại diện (tối đa 5 MB)
-                  </label>
-                  <input
+                  <AdminImageUpload
                     id="avatar"
-                    type="file"
+                    hasImage={Boolean(avatar || avatarUrl)}
                     accept="image/jpeg,image/png,image/webp"
-                    className="form-control"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (
@@ -154,6 +157,9 @@ export default function ProfileForm({
                       } else setAvatar(file);
                     }}
                   />
+                  <div className="adm-sub mt-3">
+                    Tối đa 5 MB. Tải lên ảnh mới để thay thế ảnh hiện tại.
+                  </div>
                 </>
               )}
             </section>

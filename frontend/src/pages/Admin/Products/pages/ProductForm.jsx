@@ -341,7 +341,7 @@ export default function ProductForm({ mode = "edit" }) {
         <i className="bi bi-arrow-left me-1" /> Quay lại
       </button>
       <AdminSaveButton onClick={handleSubmit} disabled={submitting || readingImages} saving={submitting}>
-        {isCreate ? "Thêm sản phẩm" : "Lưu thay đổi"}
+        {isCreate ? "Thêm mới" : "Lưu thay đổi"}
       </AdminSaveButton>
     </div>
   );
@@ -357,7 +357,7 @@ export default function ProductForm({ mode = "edit" }) {
 
       <div className="ep-page">
         {/* ─── PAGE HEADER ─── */}
-        <div className="adm-page-head flex-wrap gap-3">
+        <div className="adm-form-head adm-page-head flex-wrap gap-3">
           <div>
             <h1 className="adm-page-title mb-1">{pageTitle}</h1>
             <span className="adm-sub">{isCreate ? "Nhập thông tin sản phẩm mới" : `Mã sản phẩm: ${productId}`}</span>
@@ -592,14 +592,7 @@ export default function ProductForm({ mode = "edit" }) {
                       </span>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "#9ca0ac",
-                      marginTop: 5,
-                      fontWeight: 600,
-                    }}
-                  >
+                  <div className="adm-sub" style={{ marginTop: 5 }}>
                     Tự tổng hợp từ các biến thể
                   </div>
                 </div>
@@ -671,7 +664,7 @@ export default function ProductForm({ mode = "edit" }) {
                   onClick={() => mainImgRef.current.click()}
                   disabled={submitting || readingImages}
                 >
-                  <i className="bi bi-upload" />
+                  <i className="bi bi-upload me-2" />
                   {mainImg ? "Thay ảnh chính" : "Tải ảnh lên"}
                 </button>
                 {mainImg && (
@@ -681,7 +674,7 @@ export default function ProductForm({ mode = "edit" }) {
                     onClick={removeMainImg}
                     disabled={submitting || readingImages}
                   >
-                    <i className="bi bi-trash3" /> Xoá
+                    <i className="bi bi-trash3 me-2" /> Xoá
                   </button>
                 )}
               </div>
@@ -731,16 +724,9 @@ export default function ProductForm({ mode = "edit" }) {
                   }
                   style={{ marginTop: 0 }}
                 >
-                  <i className="bi bi-plus-lg" /> Thêm ảnh phụ
+                  <i className="bi bi-plus-lg me-2" /> Thêm ảnh phụ
                 </button>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#9ca0ac",
-                    fontWeight: 600,
-                    marginTop: 8,
-                  }}
-                >
+                <div className="adm-sub" style={{ marginTop: 8 }}>
                   {readingImages
                     ? "Đang đọc ảnh..."
                     : `${thumbs.length + (mainImg ? 1 : 0)}/10 ảnh · Mỗi ảnh tối đa 5 MB`}

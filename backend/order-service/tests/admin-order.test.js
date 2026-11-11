@@ -93,6 +93,28 @@ test("bank and sepay orders start unpaid", async (t) => {
       "unpaid",
     );
 });
+test("create rejects mismatched, inactive and non-customer accounts before reserving stock", async (t) => {
+  const { input } = setup(t);
+  for (const customer of [
+    { account_id: "other", role_name: "customer", status: "active" },
+    { account_id: "a", role_name: "customer", status: "inactive" },
+    { account_id: "a", role_name: "staff", status: "active" },
+  ]) {
+    globalThis.fetch.mock.mockImplementation(async () => ({
+      ok: true, json: async () => ({ data: customer }),
+    }));
+    await assert.rejects(createOrderForAdmin(input), /khách hàng đang hoạt động/);
+  }
+  assert.equal(stockCalls.length, 0);
+  assert.equal(OrderModel.createOrder.mock.callCount(), 0);
+});
+
+test("failed stock reservation never writes an order", async (t) => {
+  const { input } = setup(t);
+  failReserve = true;
+  await assert.rejects(createOrderForAdmin(input), /stock failed/);
+  assert.equal(OrderModel.createOrder.mock.callCount(), 0);
+});
 test("create rejects invalid phone, duplicate items, insufficient stock and excessive discount", async (t) => {
   const { input } = setup(t);
   for (const change of [

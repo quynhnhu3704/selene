@@ -135,7 +135,7 @@ export default function ProfilePage({
       <Helmet>
         <title>{title} | Selene</title>
       </Helmet>
-      <div className="adm-page-head">
+      <div className="adm-form-head adm-page-head">
         <div className="adm-page-title">{title}</div>
         <div className="d-flex flex-wrap gap-2">
           <Link className="form-btn btn btn-outline-dark" to={back}>
@@ -144,7 +144,7 @@ export default function ProfilePage({
           </Link>
           {!readOnly && (
             <AdminSaveButton type="submit" form="admin-profile-form" saving={saving}>
-              {create ? `Thêm ${role === "staff" ? "nhân viên" : "khách hàng"}` : "Lưu thay đổi"}
+              {create ? "Thêm mới" : "Lưu thay đổi"}
             </AdminSaveButton>
           )}
         </div>

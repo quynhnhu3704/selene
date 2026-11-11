@@ -1,3 +1,4 @@
+import { DateInput } from "../../../../components/common/DatePicker";
 import AdminSaveButton from "../../components/AdminSaveButton";
 // frontend/src/pages/Admin/Promotions/components/VoucherPage.jsx
 import { useEffect, useState, useMemo } from "react";
@@ -406,28 +407,9 @@ export default function VoucherPage({ create = false }) {
         <title>{title} | Selene</title>
       </Helmet>
 
-      <style>{`
-        .vp-label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 5px;
-          white-space: nowrap;
-          display: block;
-        }
-        .vp-input {
-          font-size: 13.5px;
-          height: 38px;
-        }
-        .vp-card-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #1f2937;
-        }
-      `}</style>
 
       {/* ── PAGE HEADER (ĐÃ XÓA TIÊU ĐỀ PHỤ) ── */}
-      <div className="adm-page-head">
+      <div className="adm-form-head adm-page-head">
         <div className="adm-page-title">{title}</div>
         <div className="d-flex gap-2">
           <Link to={back} className="form-btn btn btn-outline-dark fw-semibold px-3">
@@ -704,8 +686,7 @@ export default function VoucherPage({ create = false }) {
                     <label className="vp-label">
                       Ngày bắt đầu <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="date"
+                    <DateInput
                       className="form-control vp-input"
                       value={form.start_date}
                       onChange={(e) => handleChange("start_date", e.target.value)}
@@ -718,8 +699,7 @@ export default function VoucherPage({ create = false }) {
                     <label className="vp-label">
                       Ngày kết thúc <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="date"
+                    <DateInput
                       className="form-control vp-input"
                       value={form.end_date}
                       onChange={(e) => handleChange("end_date", e.target.value)}

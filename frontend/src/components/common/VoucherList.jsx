@@ -11,6 +11,7 @@ export default function VoucherList({
   selectedCode,
   onSelect,
   disabled = false,
+  buttonClassName = "btn btn-sm btn-outline-dark rounded-pill px-3 flex-shrink-0 fw-semibold",
 }) {
   return (
     <div className="d-flex flex-column gap-3">
@@ -52,7 +53,7 @@ export default function VoucherList({
               </span>
               <button
                 type="button"
-                className="btn btn-sm btn-outline-dark rounded-pill px-3 flex-shrink-0 fw-semibold"
+                className={buttonClassName}
                 disabled={disabled || selectedCode === voucher.code}
                 onClick={() => onSelect(voucher)}
               >

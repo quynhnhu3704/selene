@@ -207,11 +207,11 @@ export default function OrderDetail({ readOnly = false }) {
             </h2>
             <div className="row g-4">
               <div className="col-md-6">
-                <div className="form-label fw-semibold">Mã đơn</div>
+                <div className="form-label">Mã đơn</div>
                 <div>{order.order_code}</div>
               </div>
               <div className="col-md-6">
-                <div className="form-label fw-semibold">Ngày đặt</div>
+                <div className="form-label">Ngày đặt</div>
                 <div>{formatDate(order.created_at)}</div>
               </div>
               {fields.map(([key, label, type]) => (
@@ -221,9 +221,9 @@ export default function OrderDetail({ readOnly = false }) {
                   }
                   key={key}
                 >
-                  <label htmlFor={key} className="form-label fw-semibold">
+                  <label htmlFor={key} className="form-label">
                     {label}
-                    {editInformation ? " *" : ""}
+                    {editInformation && <span className="text-danger"> *</span>}
                   </label>
                   {editInformation ? (
                     <input
@@ -243,7 +243,7 @@ export default function OrderDetail({ readOnly = false }) {
                 </div>
               ))}
               <div className="col-md-6">
-                <label htmlFor="status" className="form-label fw-semibold">
+                <label htmlFor="status" className="form-label">
                   Trạng thái đơn hàng
                 </label>
                 {readOnly ? (
@@ -281,7 +281,7 @@ export default function OrderDetail({ readOnly = false }) {
                 ["payment_status", "Trạng thái thanh toán", PAYMENT_STATUSES],
               ].map(([key, label, options]) => (
                 <div className="col-md-6" key={key}>
-                  <label htmlFor={key} className="form-label fw-semibold">
+                  <label htmlFor={key} className="form-label">
                     {label}
                   </label>
                   {editInformation ? (
@@ -416,7 +416,7 @@ export default function OrderDetail({ readOnly = false }) {
             </h2>
             <div className="row g-4">
               <div className="col-md-4">
-                <div className="form-label fw-semibold">Tiền hàng</div>
+                <div className="form-label">Tiền hàng</div>
                 <div>{fmtVND(subtotal)}</div>
               </div>
               {[
@@ -424,7 +424,7 @@ export default function OrderDetail({ readOnly = false }) {
                 ["shipping_fee", "Phí giao hàng"],
               ].map(([key, label]) => (
                 <div className="col-md-4" key={key}>
-                  <label htmlFor={key} className="form-label fw-semibold">
+                  <label htmlFor={key} className="form-label">
                     {label}
                   </label>
                   {editInformation ? (

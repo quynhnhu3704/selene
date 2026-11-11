@@ -11,6 +11,21 @@ const service = await import("../src/services/user.service.js");
 const { errorHandler } = await import("../src/middlewares/error.middleware.js");
 const valid = { full_name: "Khách thử", email: "test@example.com", phone: "0912345678", identity_card: "012345678901", gender: "Nữ", dob: "2000-01-02", address: "Hà Nội" };
 const avatar = { originalname: "avatar.png", mimetype: "image/png", buffer: Buffer.from("mock image") };
+test("order customer lookup searches name, email and phone without calling order counts", async t => {
+  t.mock.method(model, "getAdminProfiles", async () => [
+    { profile_id: "p", account_id: "a", full_name: "Nguyễn Minh Tâm", phone_number: "0901234567", accounts: { account_id: "a", role_id: 3, email: "tam@example.com", status: "active" } },
+    { profile_id: "p2", account_id: "b", full_name: "Khách khóa", accounts: { account_id: "b", role_id: 3, status: "inactive" } },
+  ]);
+  const fetchMock = t.mock.method(globalThis, "fetch", async () => { throw new Error("Order service unavailable"); });
+  for (const q of ["nguyen minh tam", "tam@example.com", "090123", ""]) {
+    const result = await service.getAdminUsers({ role: "customer", status: "active", q, include_order_counts: "false" });
+    assert.equal(result.users.length, 1);
+    assert.equal(result.users[0].profile_id, "p");
+  }
+  const result = await service.getAdminUsers({ role: "customer", status: "active", q: "khong ton tai", include_order_counts: false });
+  assert.equal(result.users.length, 0);
+  assert.equal(fetchMock.mock.callCount(), 0);
+});
 function setup(t) {
   for (const method of ["checkEmailExists", "checkPhoneExists"]) t.mock.method(model, method, async () => []);
   t.mock.method(model, "checkDuplicate", async () => null);

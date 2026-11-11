@@ -77,14 +77,6 @@ export default function OrdersPanel() {
 
   return (
     <>
-      <style>{`
-        .my-orders-card { border: 1px solid #f0f0f0; border-radius: 12px; overflow: hidden; background: #fff; }
-        .my-orders-card th { font-size: 11px; text-transform: uppercase; letter-spacing: .55px; color: #868e96; border-bottom-color: #f0f0f0; white-space: nowrap; }
-        .my-orders-card td { font-size: 14px; border-bottom-color: #f5f5f5; vertical-align: middle; }
-        .my-orders-card tbody tr:last-child td { border-bottom: 0; }
-        .my-order-code { font-weight: 800; color: #212529; font-size: 13px; }
-        .my-order-subtext { color: #868e96; font-size: 12px; margin-top: 3px; }
-      `}</style>
 
       <h5 className="page-panel-title">ĐƠN HÀNG CỦA BẠN</h5>
 
