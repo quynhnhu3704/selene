@@ -4279,23 +4279,6 @@ body p.empty-state-text {
 /* ==========================================================================
    Nguồn: frontend/src/pages/Admin/Promotions/components/PromotionPage.jsx
    ========================================================================== */
-.vp-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  display: block;
-}
-.vp-input {
-  font-size: 13.5px;
-  height: 38px;
-}
-.vp-card-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1f2937;
-}
 .promo-prod-search-dropdown {
   position: absolute;
   top: 100%;
@@ -4311,27 +4294,6 @@ body p.empty-state-text {
 }
 .promo-prod-item:hover {
   background-color: #f9fafb;
-}
-
-/* ==========================================================================
-   Nguồn: frontend/src/pages/Admin/Promotions/components/VoucherPage.jsx
-   ========================================================================== */
-.vp-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  display: block;
-}
-.vp-input {
-  font-size: 13.5px;
-  height: 38px;
-}
-.vp-card-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1f2937;
 }
 
 /* ==========================================================================
@@ -4445,7 +4407,8 @@ body p.empty-state-text {
           transition: color 0.15s, background-color 0.15s, box-shadow 0.15s; white-space: nowrap; position: relative;
         }
         .adm-nav-item i:not(.adm-nav-chevron) { font-size: 16px; flex-shrink: 0; width: 16px; text-align: center; }
-        .adm-nav-item:hover:not(.disabled) { color: #17151F; background: rgba(0,0,0,0.03); }
+        .adm-nav-item:hover:not(.disabled),
+        .adm-nav-item:focus-visible:not(.disabled) { color: #17151F; background: rgba(0,0,0,0.03); }
         .adm-nav-item.active {
           color: #17151F; background: #fff;
           font-weight: 800;
@@ -4483,16 +4446,16 @@ body p.empty-state-text {
           text-align: left;
         }
         .adm-nav-parent-btn.active-parent {
-          color: #0d6efd;
+          color: #17151F;
           font-weight: 700;
         }
         .adm-nav-parent-btn.active-parent i:first-child {
-          color: #0d6efd;
+          color: inherit;
         }
         .adm-nav-submenu {
           display: flex;
           flex-direction: column;
-          gap: 3px;
+          gap: 8px;
           margin-left: 14px;
           padding-left: 12px;
           border-left: 2px solid #dfdedb;
@@ -4518,7 +4481,8 @@ body p.empty-state-text {
           text-align: center;
           flex-shrink: 0;
         }
-        .adm-nav-subitem:hover {
+        .adm-nav-subitem:hover,
+        .adm-nav-subitem:focus-visible {
           color: #17151F;
           background: rgba(0,0,0,0.03);
         }
@@ -5459,3 +5423,19 @@ body p.empty-state-text {
   --bs-btn-focus-shadow-rgb: 0, 0, 0;
 }
 @media (max-width: 1520px) { .promotions-page { padding: 28px 24px 56px; } }
+
+/* Shared admin variants for longer statuses and promotion previews. */
+.adm-status-wide { width: auto; }
+.adm-promotion-preview {
+  padding: 16px;
+  border: 1px dashed #dfc5c5;
+  border-radius: 12px;
+  background: #fffafa;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 1200px) {
+  .adm-preview-column { position: sticky; top: 20px; }
+}
+
+.adm-promotion-preview-value { color: #871b1b; font-size: 16px; }
+.adm-product-selection-table { min-width: 640px; }

@@ -127,6 +127,14 @@ for (const stage of ["createProduct", "createVariants"]) {
 
 test("HTTP multipart route enforces permissions, saves data, and returns validation errors", async (t) => {
   const { input, writes } = setup(t);
+  const realFetch = globalThis.fetch;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (String(url).endsWith("/session/access")) {
+      const claims = jwt.verify(options.headers.Authorization.slice(7), process.env.JWT_ACCESS_SECRET);
+      return Response.json({ data: { accountId: "test-admin", role_id: 1, role: "admin", permissions: claims.permissions } });
+    }
+    return realFetch(url, options);
+  });
   const app = express(); app.use(routes); app.use(errorHandler);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));

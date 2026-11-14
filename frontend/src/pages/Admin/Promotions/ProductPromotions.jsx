@@ -46,10 +46,7 @@ const getAppliedProductCount = (item) => {
 };
 
 export default function ProductPromotions() {
-  const [promotions, setPromotions] = useState(() => {
-    const saved = localStorage.getItem("selene_mock_product_promotions");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [promotions, setPromotions] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -120,35 +117,10 @@ export default function ProductPromotions() {
         });
       }
 
-      try {
-        localStorage.setItem(
-          "selene_mock_product_promotions",
-          JSON.stringify(list),
-        );
-      } catch {
-        /* ignore */
-      }
     } catch (err) {
-      console.warn("Không thể tải danh sách khuyến mãi từ server:", err.message);
-      // Fallback to local storage if API call fails
-      const saved = localStorage.getItem("selene_mock_product_promotions");
-      if (saved) {
-        try {
-          const fallbackList = JSON.parse(saved);
-          setPromotions(fallbackList);
-          setPagination({
-            currentPage: 1,
-            limit: ITEMS_PER_PAGE,
-            totalItems: fallbackList.length,
-            totalPages: Math.max(
-              1,
-              Math.ceil(fallbackList.length / ITEMS_PER_PAGE),
-            ),
-          });
-        } catch {
-          /* ignore */
-        }
-      }
+      setPromotions([]);
+      setPagination({ currentPage: page, limit: ITEMS_PER_PAGE, totalItems: 0, totalPages: 0 });
+      toast.error(err.response?.data?.message || "Không thể tải danh sách khuyến mãi.");
     } finally {
       setLoading(false);
     }
@@ -312,11 +284,9 @@ export default function ProductPromotions() {
         <table className="table adm-table mb-0" style={{ minWidth: 1100 }}>
           <thead>
             <tr>
-              <th className="text-center" style={{ width: "4%" }}>
-                #
-              </th>
+              <th className="text-center" style={{ width: "4%" }} />
               <th style={{ width: "22%" }}>Mã khuyến mãi</th>
-              <th style={{ width: "25%", paddingLeft: "30px" }}>
+              <th style={{ width: "25%" }}>
                 Chương trình khuyến mãi
               </th>
               <th className="text-center" style={{ width: "9%" }}>
@@ -331,9 +301,7 @@ export default function ProductPromotions() {
               <th className="text-center" style={{ width: "10%" }}>
                 Thời gian
               </th>
-              <th className="text-center" style={{ width: "8%" }}>
-                Thao tác
-              </th>
+              <th className="text-center" style={{ width: "8%" }} />
             </tr>
           </thead>
           <tbody>
@@ -374,23 +342,17 @@ export default function ProductPromotions() {
                     <td>
                       <Link
                         to={editUrl}
-                        className="font-monospace fw-semibold text-nowrap text-decoration-none"
-                        style={{
-                          color: "#17151F",
-                          fontSize: 13.5,
-                          letterSpacing: "0.2px",
-                        }}
+                        className="adm-link adm-name text-break"
                         onClick={saveScrollPosition}
                         title="Bấm để chỉnh sửa"
                       >
                         {promoCode}
                       </Link>
                     </td>
-                    <td style={{ paddingLeft: "30px" }}>
+                    <td>
                       <Link
                         to={editUrl}
-                        className="fw-bold text-dark text-break text-decoration-none"
-                        style={{ fontSize: 13.5 }}
+                        className="adm-link adm-name text-break"
                         onClick={saveScrollPosition}
                         title="Bấm để chỉnh sửa"
                       >
@@ -398,8 +360,7 @@ export default function ProductPromotions() {
                       </Link>
                       {(item.description || item.scope) && (
                         <div
-                          className="text-muted text-break mt-1"
-                          style={{ fontSize: 12.5, lineHeight: 1.4 }}
+                          className="adm-sub text-break mt-1"
                         >
                           {item.description || item.scope}
                         </div>
@@ -422,8 +383,7 @@ export default function ProductPromotions() {
                       <span className="text-muted">/ {totalQty}</span>
                       {Number(item.quantity_limit) === 0 && (
                         <div
-                          className="text-muted small"
-                          style={{ fontSize: 11 }}
+                          className="adm-sub"
                         >
                           Không giới hạn
                         </div>
@@ -431,24 +391,18 @@ export default function ProductPromotions() {
                     </td>
                     <td className="text-center text-nowrap">
                       <span
-                        className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
-                        style={{
-                          minWidth: "9.2rem",
-                          display: "inline-block",
-                          padding: "3px 8px",
-                        }}
+                        className={`adm-status adm-status-wide rounded-pill text-${state.color} bg-${state.color}-subtle`}
                       >
                         {state.label}
                       </span>
                     </td>
                     <td
                       className="text-center text-nowrap"
-                      style={{ fontSize: 13 }}
                     >
                       <div className="fw-medium">
                         {formatDate(item.start_date)}
                       </div>
-                      <div className="text-muted" style={{ fontSize: 11.5 }}>
+                      <div className="text-muted">
                         đến {formatDate(item.end_date)}
                       </div>
                     </td>

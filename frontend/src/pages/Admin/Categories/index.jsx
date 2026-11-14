@@ -472,7 +472,11 @@ export default function AdminCategories() {
                     </td>
 
                     <td>
-                      <div className="adm-cell">
+                      <Link
+                        to={`/admin/danh-muc/${p.category_id}?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                        onClick={saveScrollPosition}
+                        className="adm-cell adm-link align-items-center"
+                      >
                         <img
                           src={p.image_url || defaultImage}
                           alt=""
@@ -483,7 +487,7 @@ export default function AdminCategories() {
                           }}
                         />
                         <div className="adm-name">{p.name}</div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="text-center">{p.product_count || 0}</td>
 

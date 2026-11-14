@@ -1,3 +1,6 @@
+import MoneyInput from "../../components/MoneyInput";
+import AdminSaveButton from "../../components/AdminSaveButton";
+import Address from "../../../../components/common/Address";
 // frontend/src/pages/Admin/Orders/pages/Detail.jsx
 import { useEffect, useState } from "react";
 import AdminSelect from "../../components/AdminSelect";
@@ -15,7 +18,9 @@ import {
   updateAdminOrder,
 } from "../../../../services/order.service";
 import { getUser } from "../../../../utils/auth";
+import { formatPhone } from "../../../../utils/formatPhone";
 import defaultImage from "../../../../assets/images/default-product.png";
+import "../create-order.css";
 import {
   ORDER_STATUSES,
   PAYMENT_METHODS,
@@ -170,7 +175,7 @@ export default function OrderDetail({ readOnly = false }) {
       <Helmet>
         <title>{title} | Selene</title>
       </Helmet>
-      <div className="adm-page-head">
+      <div className="adm-form-head adm-page-head">
         <div className="adm-page-title">{title}</div>
         <div className="d-flex flex-wrap gap-2">
           <Link className="form-btn btn btn-outline-dark" to={back}>
@@ -178,14 +183,13 @@ export default function OrderDetail({ readOnly = false }) {
             Quay lại
           </Link>
           {!readOnly ? (
-            <button
-              className="form-btn btn btn-dark"
+            <AdminSaveButton
               type="submit"
               form="edit-order-form"
-              disabled={saving}
+              saving={saving}
             >
-              {saving ? "Đang lưu..." : "Lưu thay đổi"}
-            </button>
+              Lưu thay đổi
+            </AdminSaveButton>
           ) : (
             canEdit && (
               <Link
@@ -205,7 +209,7 @@ export default function OrderDetail({ readOnly = false }) {
               <i className="bi bi-person" />
               Thông tin đơn hàng
             </h2>
-            <div className="row g-4">
+            <div className="row g-3">
               <div className="col-md-6">
                 <div className="form-label">Mã đơn</div>
                 <div>{order.order_code}</div>
@@ -226,6 +230,13 @@ export default function OrderDetail({ readOnly = false }) {
                     {editInformation && <span className="text-danger"> *</span>}
                   </label>
                   {editInformation ? (
+                    key === "recipient_address" ? (
+                    <Address
+                      required
+                      initialAddress={order.recipient_address || ""}
+                      onChange={(address) => changeField("recipient_address", address)}
+                    />
+                  ) : (
                     <input
                       id={key}
                       className="form-control"
@@ -237,8 +248,13 @@ export default function OrderDetail({ readOnly = false }) {
                       }
                       onChange={(e) => changeField(key, e.target.value)}
                     />
+                  )
                   ) : (
-                    <div>{order[key] || "—"}</div>
+                    <div>
+                      {key === "recipient_phone"
+                        ? formatPhone(order[key])
+                        : order[key] || "—"}
+                    </div>
                   )}
                 </div>
               ))}
@@ -249,7 +265,8 @@ export default function OrderDetail({ readOnly = false }) {
                 {readOnly ? (
                   <div>
                     <span
-                      className={`adm-status rounded-pill w-auto text-${state.color} bg-${state.color}-subtle`}
+                      className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
+                      style={{ width: "8rem" }}
                     >
                       {state.label}
                     </span>
@@ -313,10 +330,10 @@ export default function OrderDetail({ readOnly = false }) {
               <i className="bi bi-bag" />
               Sản phẩm trong đơn
             </h2>
-            <div className="row g-4">
+            <div className="row g-3">
               <div className="col-12">
                 <div className="adm-table-wrap table-responsive">
-                  <table className="table adm-table mb-0">
+                  <table className="table adm-table adm-edit-order-table mb-0">
                     <thead>
                       <tr>
                         <th>Sản phẩm</th>
@@ -354,7 +371,8 @@ export default function OrderDetail({ readOnly = false }) {
                           <td className="text-center">
                             {editInformation ? (
                               <input
-                                className="form-control text-center"
+                                className="form-control text-center mx-auto adm-order-quantity"
+                                style={{ width: 100 }}
                                 aria-label={`Số lượng ${item.product_name}`}
                                 type="number"
                                 min="1"
@@ -376,12 +394,10 @@ export default function OrderDetail({ readOnly = false }) {
                           </td>
                           <td className="text-end">
                             {editInformation ? (
-                              <input
-                                className="form-control text-end"
+                              <MoneyInput
+                                className="form-control text-end ms-auto adm-order-unit-price"
                                 aria-label={`Đơn giá ${item.product_name}`}
-                                type="number"
                                 min="0"
-                                step="1"
                                 required
                                 value={item.unit_price}
                                 onChange={(e) =>
@@ -396,7 +412,7 @@ export default function OrderDetail({ readOnly = false }) {
                               fmtVND(item.unit_price)
                             )}
                           </td>
-                          <td className="text-end fw-semibold">
+                          <td className="text-end text-nowrap adm-price">
                             {fmtVND(
                               Number(item.quantity) * Number(item.unit_price),
                             )}
@@ -414,7 +430,7 @@ export default function OrderDetail({ readOnly = false }) {
               <i className="bi bi-credit-card" />
               Tổng thanh toán
             </h2>
-            <div className="row g-4">
+            <div className="row g-3">
               <div className="col-md-4">
                 <div className="form-label">Tiền hàng</div>
                 <div>{fmtVND(subtotal)}</div>
@@ -428,12 +444,10 @@ export default function OrderDetail({ readOnly = false }) {
                     {label}
                   </label>
                   {editInformation ? (
-                    <input
+                    <MoneyInput
                       id={key}
                       className="form-control"
-                      type="number"
                       min="0"
-                      step="1"
                       max={
                         key === "total_discount_price" ? subtotal : undefined
                       }

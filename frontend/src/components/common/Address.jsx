@@ -1,15 +1,20 @@
 // frontend\src\components\common\Address.jsx
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 
 const API = "https://provinces.open-api.vn/api/v2";
 
 export default function Address({
   onChange,
   optional = false,
+  required = false,
   initialAddress = "",
   inputClassName = "form-control",
   invalid = false,
 }) {
+  const id = useId();
+  const detailRef = useRef(null);
+  const originalAddress = useRef(initialAddress);
+  const [areaChanged, setAreaChanged] = useState(false);
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
   const [province, setProvince] = useState("");
@@ -28,6 +33,7 @@ export default function Address({
   };
 
   const handleProvinceSelect = (value) => {
+    setAreaChanged(true);
     setError("");
     setProvince(value);
     setWard("");
@@ -43,6 +49,7 @@ export default function Address({
   };
 
   const handleWardSelect = (value) => {
+    setAreaChanged(true);
     setWard(value);
     const selectedWard = wards.find((item) => String(item.code) === value);
     const selectedProvince = provinces.find(
@@ -124,17 +131,25 @@ export default function Address({
     return () => controller.abort();
   }, [province, retry]);
 
+  useEffect(() => {
+    detailRef.current?.setCustomValidity(
+      required && (areaChanged || !originalAddress.current) && (!province || !ward)
+        ? "Vui lòng chọn tỉnh/thành phố và phường/xã."
+        : "",
+    );
+  }, [required, areaChanged, province, ward]);
+
   return (
     <>
       <div className="row g-3 mb-3 mx-0" ref={addressRef}>
         <div className="info-field col-md-6">
-          <label htmlFor="shipping-province" className="info-field-label">
+          <label htmlFor={`${id}-province`} className="info-field-label">
             Tỉnh/Thành phố
             {!optional && <span className="text-danger ms-1">*</span>}
           </label>
           <div className="dropdown w-100">
             <button
-              id="shipping-province"
+              id={`${id}-province`}
               type="button"
               className="form-control text-start d-flex justify-content-between align-items-center"
               disabled={initializing}
@@ -183,13 +198,13 @@ export default function Address({
           </div>
         </div>
         <div className="info-field col-md-6">
-          <label htmlFor="shipping-ward" className="info-field-label">
+          <label htmlFor={`${id}-ward`} className="info-field-label">
             Phường/Xã
             {!optional && <span className="text-danger ms-1">*</span>}
           </label>
           <div className="dropdown w-100">
             <button
-              id="shipping-ward"
+              id={`${id}-ward`}
               type="button"
               className="form-control text-start d-flex justify-content-between align-items-center"
               disabled={!province || wards.length === 0 || initializing}
@@ -251,12 +266,14 @@ export default function Address({
           </div>
         )}
       </div>
-      <label htmlFor="shipping-address-detail" className="info-field-label">
+      <label htmlFor={`${id}-address-detail`} className="info-field-label">
         Địa chỉ chi tiết
         {!optional && <span className="text-danger ms-1">*</span>}
       </label>
       <input
-        id="shipping-address-detail"
+        id={`${id}-address-detail`}
+        ref={detailRef}
+        required={required}
         type="text"
         name="address"
         className={inputClassName}

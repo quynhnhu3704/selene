@@ -40,6 +40,7 @@ import AdminUsers from "../../pages/Admin/Users";
 import AdminCategories from "../../pages/Admin/Categories";
 import AdminPermissions from "../../pages/Admin/Permissions";
 import CreateCategory from "../../pages/Admin/Categories/pages/Create";
+import CategoryPage from "../../pages/Admin/Categories/components/CategoryPage";
 import EditCategory from "../../pages/Admin/Categories/pages/Edit";
 import ProductPromotions from "../../pages/Admin/Promotions/ProductPromotions";
 import OrderDiscounts from "../../pages/Admin/Promotions/OrderDiscounts";
@@ -124,6 +125,7 @@ export default function AppRouter() {
         <Route path="danh-muc" element={<AdminCategories />} />
         <Route path="phan-quyen" element={<AdminPermissions />} />
         <Route path="danh-muc/them-moi" element={<CreateCategory />} />
+        <Route path="danh-muc/:categoryId" element={<CategoryPage readOnly />} />
         <Route path="danh-muc/:categoryId/sua" element={<EditCategory />} />
 
         {/* ===== KHUYẾN MÃI & ƯU ĐÃI ===== */}

@@ -44,9 +44,9 @@
 .adm-permissions .form-check-input:disabled {
   cursor: not-allowed;
 }
-.adm-permissions .form-check-input:indeterminate {
-  background-color: #17151f;
-  border-color: #17151f;
+.adm-permissions .form-check-input[type="checkbox"]:indeterminate {
+  background-color: #871b1b;
+  border-color: #871b1b;
 }
 
 @media (max-width: 768px) {

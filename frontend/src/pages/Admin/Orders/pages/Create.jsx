@@ -1,3 +1,5 @@
+import MoneyInput from "../../components/MoneyInput";
+import Address from "../../../../components/common/Address";
 import AdminSaveButton from "../../components/AdminSaveButton";
 import AdminSelect from "../../components/AdminSelect";
 import { useEffect, useRef, useState } from "react";
@@ -266,7 +268,14 @@ export default function CreateOrder() {
                   <label htmlFor={key} className="form-label">
                     {label} <span className="text-danger">*</span>
                   </label>
-                  <input
+                  {key === "recipient_address" ? (
+                    <Address
+                      required
+                      initialAddress={form.recipient_address || ""}
+                      onChange={(address) => change("recipient_address", address)}
+                    />
+                  ) : (
+                    <input
                     id={key}
                     className="form-control"
                     required
@@ -275,6 +284,7 @@ export default function CreateOrder() {
                     value={form[key]}
                     onChange={(e) => change(key, e.target.value)}
                   />
+                  )}
                 </div>
               ))}
             </div>
@@ -479,14 +489,12 @@ export default function CreateOrder() {
                   <label className="form-label" htmlFor={key}>
                     {label}
                   </label>
-                  <input
+                  <MoneyInput
                     id={key}
                     className="form-control"
                     required
-                    type="number"
                     min="0"
                     max={key === "total_discount_price" ? subtotal : undefined}
-                    step="1"
                     value={form[key]}
                     onChange={(e) => change(key, e.target.value)}
                   />

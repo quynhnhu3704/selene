@@ -37,6 +37,16 @@ const extractFirstImageUrl = (raw) => {
 };
 
 export const PromotionModel = {
+  getAllActiveProductIds: async () => {
+    const ids = [];
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await supabase.from("products").select("product_id")
+        .eq("status", "active").order("product_id").range(from, from + 499);
+      if (error) throw error;
+      ids.push(...(data || []).map((item) => item.product_id));
+      if (!data || data.length < 500) return ids;
+    }
+  },
   // Kiểm tra tên chương trình khuyến mãi đã tồn tại chưa
   checkNameExists: async (name) => {
     const { data, error } = await supabase

@@ -4,6 +4,7 @@
   "description": "Microservices Demo",
   "main": "index.js",
   "scripts": {
+    "test:admin": "node --experimental-test-module-mocks --test backend/auth-service/tests/*.test.js backend/product-service/tests/*.test.js backend/order-service/tests/*.test.js",
     "install:all": "npm install --prefix frontend && npm install --prefix backend/api-gateway && npm install --prefix backend/auth-service && npm install --prefix backend/order-service && npm install --prefix backend/product-service && npm install --prefix backend/notify-service && npm install --prefix backend/chat-service",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:gateway": "npm run dev --prefix backend/api-gateway",

@@ -156,11 +156,11 @@ export default function AdminLayout() {
             }`}
             onClick={() => handleParentToggle(item)}
             data-tip={item.label}
-            aria-expanded={isOpen}
+            aria-expanded={!collapsed && isOpen}
+            aria-controls={`adm-submenu-${item.key}`}
           >
             <i
               className={`bi ${item.icon}`}
-              style={{ color: isChildActive ? "#0d6efd" : undefined }}
             />
             <span className="adm-nav-label-txt">{item.label}</span>
             <i
@@ -171,7 +171,7 @@ export default function AdminLayout() {
           </button>
 
           {!collapsed && isOpen && (
-            <div className="adm-nav-submenu">
+            <div id={`adm-submenu-${item.key}`} className="adm-nav-submenu">
               {item.children.map((sub) => {
                 const activeSub = isActive(sub.path);
                 return (
@@ -179,6 +179,7 @@ export default function AdminLayout() {
                     key={sub.key}
                     to={sub.path}
                     className={`adm-nav-subitem${activeSub ? " active" : ""}`}
+                    aria-current={activeSub ? "page" : undefined}
                     data-tip={sub.label}
                   >
                     <i className={`bi ${sub.icon}`} />

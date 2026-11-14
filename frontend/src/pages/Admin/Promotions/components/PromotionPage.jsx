@@ -1,3 +1,5 @@
+import EmptyState from "../../../../components/common/EmptyState";
+import AdminSelect from "../../components/AdminSelect";
 import { DateInput } from "../../../../components/common/DatePicker";
 import AdminSaveButton from "../../components/AdminSaveButton";
 // frontend/src/pages/Admin/Promotions/components/PromotionPage.jsx
@@ -11,11 +13,9 @@ import {
   getAdminPromotionDetail,
   createAdminPromotion,
   updateAdminPromotion,
-  addProductsToPromotion,
 } from "../../../../services/promotion.service";
 import { getProducts } from "../../../../services/product.service";
 import {
-  INITIAL_PRODUCT_PROMOTIONS,
   PRODUCT_PROMOTION_STATUSES,
   fmtVND,
   formatDate,
@@ -149,31 +149,9 @@ export default function PromotionPage({ create = false }) {
         }
       } catch (apiErr) {
         console.warn(
-          "Không thể tải thông tin khuyến mãi từ API, thử tìm từ bộ nhớ cục bộ:",
+          "Không thể tải thông tin khuyến mãi từ API:",
           apiErr.message,
         );
-      }
-
-      // 2. If not found from API, fallback to localStorage or INITIAL_PRODUCT_PROMOTIONS
-      if (!promoData) {
-        try {
-          const saved = localStorage.getItem("selene_mock_product_promotions");
-          const list = saved ? JSON.parse(saved) : INITIAL_PRODUCT_PROMOTIONS;
-          const found = list.find(
-            (item) =>
-              (item.promotion_id &&
-                String(item.promotion_id) === String(promotionId)) ||
-              (item.id && String(item.id) === String(promotionId)) ||
-              (item.code &&
-                String(item.code).toLowerCase() ===
-                  String(promotionId).toLowerCase()),
-          );
-          if (found) {
-            promoData = found;
-          }
-        } catch {
-          /* ignore */
-        }
       }
 
       if (!isCurrentRequest) return;
@@ -411,6 +389,7 @@ export default function PromotionPage({ create = false }) {
       start_date: new Date(`${form.start_date}T00:00:00Z`).toISOString(),
       end_date: new Date(`${form.end_date}T23:59:59Z`).toISOString(),
       status: form.status,
+      scope_type: form.scope_type,
       product_ids:
         form.scope_type === "specific"
           ? selectedProducts.map((p) => p.product_id)
@@ -420,133 +399,11 @@ export default function PromotionPage({ create = false }) {
     try {
       setSaving(true);
 
-      if (create) {
-        let createdPromotion = null;
-        try {
-          // Gửi POST request tới API: http://localhost:8000/api/products/manage/promotion/add
-          const res = await createAdminPromotion({
-            ...payload,
-            used_quantity: 0,
-          });
-          createdPromotion = res?.data;
-        } catch (apiErr) {
-          const errMsg =
-            apiErr.response?.data?.message ||
-            apiErr.message ||
-            "Không thể tạo chương trình khuyến mãi trên server.";
-          if (apiErr.response) {
-            throw new Error(errMsg);
-          }
-          console.warn("API create promotion failed, saving locally:", errMsg);
-        }
-
-        // Cập nhật bộ nhớ cục bộ
-        const saved = localStorage.getItem("selene_mock_product_promotions");
-        const list = saved ? JSON.parse(saved) : INITIAL_PRODUCT_PROMOTIONS;
-        const newItem = createdPromotion || {
-          promotion_id: `promo-${Date.now()}`,
-          id: `KM${Date.now().toString().slice(-4)}`,
-          ...payload,
-          min_order: payload.min_order_value,
-          max_usage: payload.total_quantity,
-          used_quantity: 0,
-          used_count: 0,
-          applied_products_count:
-            form.scope_type === "specific" ? selectedProducts.length : "Tất cả",
-          created_at: new Date().toISOString(),
-        };
-
-        try {
-          localStorage.setItem(
-            "selene_mock_product_promotions",
-            JSON.stringify([newItem, ...list]),
-          );
-        } catch {
-          /* ignore */
-        }
-
-        toast.success("Thêm khuyến mãi mới thành công!");
-        navigate(back);
-      } else {
-        const idToUpdate = actualPromoId || promotionId;
-        const selectedProductIds =
-          form.scope_type === "specific"
-            ? selectedProducts.map((p) => p.product_id).filter(Boolean)
-            : [];
-
-        let res = null;
-        try {
-          // Thực hiện đồng thời (Promise.all):
-          // 1. Cập nhật thông tin khuyến mãi: PUT http://localhost:8000/api/products/manage/promotion/update/:promotionId
-          // 2. Thêm sản phẩm vào khuyến mãi: POST http://localhost:8000/api/products/manage/promotion/add-items/:promotionId
-          const tasks = [
-            updateAdminPromotion(idToUpdate, payload),
-          ];
-
-          if (selectedProductIds.length > 0) {
-            tasks.push(
-              addProductsToPromotion(idToUpdate, selectedProductIds).catch((addErr) => {
-                const addMsg = addErr.response?.data?.message || addErr.message || "";
-                // Nếu sản phẩm đã tồn tại trong khuyến mãi, bỏ qua lỗi trùng lặp
-                if (addMsg.includes("đã tồn tại") || addMsg.includes("đã có")) {
-                  return { status: 200, message: "Sản phẩm đã tồn tại trong khuyến mãi." };
-                }
-                throw addErr;
-              }),
-            );
-          }
-
-          const results = await Promise.all(tasks);
-          res = results[0];
-        } catch (apiErr) {
-          const errMsg =
-            apiErr.response?.data?.message ||
-            apiErr.message ||
-            "Không thể cập nhật chương trình khuyến mãi trên server.";
-          // Nếu backend trả về phản hồi lỗi (400, 401, 403, 404, 409, 500...), hiển thị lỗi từ server
-          if (apiErr.response) {
-            throw new Error(errMsg);
-          }
-          console.warn("API không phản hồi, lưu tạm cục bộ:", errMsg);
-        }
-
-        // Cập nhật bộ nhớ cục bộ
-        const saved = localStorage.getItem("selene_mock_product_promotions");
-        const list = saved ? JSON.parse(saved) : INITIAL_PRODUCT_PROMOTIONS;
-        const updated = list.map((item) =>
-          (item.promotion_id &&
-            String(item.promotion_id) === String(idToUpdate)) ||
-          (item.id && String(item.id) === String(idToUpdate)) ||
-          (item.code &&
-            String(item.code).toLowerCase() === String(idToUpdate).toLowerCase())
-            ? {
-                ...item,
-                ...payload,
-                ...(res?.data || {}),
-                min_order: payload.min_order_value,
-                max_usage: payload.total_quantity,
-                applied_products_count:
-                  form.scope_type === "specific"
-                    ? selectedProducts.length
-                    : "Tất cả",
-              }
-            : item,
-        );
-
-        try {
-          localStorage.setItem(
-            "selene_mock_product_promotions",
-            JSON.stringify(updated),
-          );
-        } catch {
-          /* ignore */
-        }
-
-        toast.success(
-          res?.message || "Cập nhật chương trình khuyến mãi thành công!",
-        );
-        navigate(back);
-      }
+      const res = create
+        ? await createAdminPromotion(payload)
+        : await updateAdminPromotion(actualPromoId || promotionId, payload);
+      toast.success(res?.message || "Lưu khuyến mãi thành công!");
+      navigate(back);
     } catch (err) {
       toast.error(
         err.response?.data?.message ||
@@ -670,20 +527,20 @@ export default function PromotionPage({ create = false }) {
             {/* ══════ CỘT TRÁI: FORM THÔNG TIN ══════ */}
             <div className="col-12 col-xl-8">
               {/* KHỐI 1: THÔNG TIN CƠ BẢN */}
-              <div className="bg-white rounded-3 p-4 border mb-4 shadow-sm">
-                <div className="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-                  <i className="bi bi-ticket-perforated-fill text-danger fs-5" />
-                  <span className="vp-card-title">Thông tin cơ bản</span>
+              <div className="edit-section">
+                <div className="edit-section-title">
+                  <i className="bi bi-ticket-perforated-fill" />
+                  <span>Thông tin cơ bản</span>
                 </div>
 
                 <div className="row g-3">
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
+                    <label className="form-label">
                       Mã khuyến mãi <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
-                      className="form-control vp-input text-uppercase font-monospace fw-bold"
+                      className="form-control text-uppercase"
                       placeholder="VD: KM50K"
                       value={form.code}
                       onChange={(e) =>
@@ -694,14 +551,13 @@ export default function PromotionPage({ create = false }) {
                       }
                       required
                       disabled={saving}
-                      style={{ letterSpacing: "1px" }}
                     />
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">Trạng thái hoạt động</label>
-                    <select
-                      className="form-select vp-input"
+                    <label className="form-label">Trạng thái hoạt động</label>
+                    <AdminSelect
+                      aria-label="Trạng thái hoạt động"
                       value={form.status}
                       onChange={(e) => handleChange("status", e.target.value)}
                       disabled={saving}
@@ -710,12 +566,12 @@ export default function PromotionPage({ create = false }) {
                       <option value="inactive">Dừng hoạt động</option>
                       <option value="out_of_stock">Đã sử dụng hết suất</option>
                       <option value="expired">Đã hết thời gian</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div className="col-12">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <label className="vp-label mb-0">
+                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <label className="form-label mb-0">
                         Tên chương trình khuyến mãi{" "}
                         <span className="text-danger">*</span>
                       </label>
@@ -723,11 +579,10 @@ export default function PromotionPage({ create = false }) {
                         form.name !== conditionDescription && (
                           <button
                             type="button"
-                            className="btn btn-link btn-sm p-0 text-decoration-none text-primary"
+                            className="form-link-sm border-0 bg-transparent p-0"
                             onClick={() =>
                               handleChange("name", conditionDescription)
                             }
-                            style={{ fontSize: 12.5 }}
                             title="Điền tự động từ mô tả điều kiện"
                           >
                             <i className="bi bi-magic me-1" /> Dùng mô tả điều
@@ -737,7 +592,7 @@ export default function PromotionPage({ create = false }) {
                     </div>
                     <input
                       type="text"
-                      className="form-control vp-input mt-1"
+                      className="form-control mt-1"
                       placeholder="VD: Giảm 50.000đ cho đơn hàng từ 200.000đ"
                       value={form.name}
                       onChange={(e) => handleChange("name", e.target.value)}
@@ -749,19 +604,19 @@ export default function PromotionPage({ create = false }) {
               </div>
 
               {/* KHỐI 2: CHIẾT KHẤU & ĐIỀU KIỆN */}
-              <div className="bg-white rounded-3 p-4 border mb-4 shadow-sm">
-                <div className="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-                  <i className="bi bi-cash-coin text-warning fs-5" />
-                  <span className="vp-card-title">
+              <div className="edit-section">
+                <div className="edit-section-title">
+                  <i className="bi bi-cash-coin" />
+                  <span>
                     Mức giảm & Điều kiện áp dụng
                   </span>
                 </div>
 
                 <div className="row g-3">
                   <div className="col-12 col-md-4">
-                    <label className="vp-label">Loại giảm giá</label>
-                    <select
-                      className="form-select vp-input"
+                    <label className="form-label">Loại giảm giá</label>
+                    <AdminSelect
+                      aria-label="Loại giảm giá"
                       value={form.discount_type}
                       onChange={(e) =>
                         handleChange("discount_type", e.target.value)
@@ -770,11 +625,11 @@ export default function PromotionPage({ create = false }) {
                     >
                       <option value="percentage">Phần trăm (%)</option>
                       <option value="fixed_amount">Số tiền cố định (VNĐ)</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div className="col-12 col-md-4">
-                    <label className="vp-label">
+                    <label className="form-label">
                       {form.discount_type === "percentage"
                         ? "Mức giảm (%)"
                         : "Mức giảm (VNĐ)"}{" "}
@@ -784,7 +639,7 @@ export default function PromotionPage({ create = false }) {
                       {form.discount_type === "percentage" ? (
                         <input
                           type="number"
-                          className="form-control vp-input"
+                          className="form-control"
                           min="1"
                           max="100"
                           placeholder="VD: 20"
@@ -798,7 +653,7 @@ export default function PromotionPage({ create = false }) {
                       ) : (
                         <input
                           type="text"
-                          className="form-control vp-input"
+                          className="form-control"
                           placeholder="VD: 50.000"
                           value={
                             form.discount_value === ""
@@ -813,8 +668,7 @@ export default function PromotionPage({ create = false }) {
                         />
                       )}
                       <span
-                        className="input-group-text bg-light text-muted"
-                        style={{ fontSize: 13 }}
+                        className="input-group-text text-muted"
                       >
                         {form.discount_type === "percentage" ? "%" : "đ"}
                       </span>
@@ -822,11 +676,11 @@ export default function PromotionPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-4">
-                    <label className="vp-label">Giảm tối đa (VNĐ)</label>
+                    <label className="form-label">Giảm tối đa (VNĐ)</label>
                     <div className="input-group">
                       <input
                         type="text"
-                        className="form-control vp-input"
+                        className="form-control"
                         placeholder={
                           form.discount_type === "percentage"
                             ? "VD: 200.000"
@@ -848,8 +702,7 @@ export default function PromotionPage({ create = false }) {
                         }
                       />
                       <span
-                        className="input-group-text bg-light text-muted"
-                        style={{ fontSize: 13 }}
+                        className="input-group-text text-muted"
                       >
                         đ
                       </span>
@@ -857,13 +710,13 @@ export default function PromotionPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
+                    <label className="form-label">
                       Đơn hàng tối thiểu (VNĐ) <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
                       <input
                         type="text"
-                        className="form-control vp-input"
+                        className="form-control"
                         placeholder="VD: 200.000"
                         value={
                           form.min_order_value === ""
@@ -877,8 +730,7 @@ export default function PromotionPage({ create = false }) {
                         disabled={saving}
                       />
                       <span
-                        className="input-group-text bg-light text-muted"
-                        style={{ fontSize: 13 }}
+                        className="input-group-text text-muted"
                       >
                         đ
                       </span>
@@ -886,17 +738,16 @@ export default function PromotionPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label className="vp-label mb-0">Mô tả điều kiện</label>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <label className="form-label mb-0">Mô tả điều kiện</label>
                       {isCustomDesc && conditionDescription && (
                         <button
                           type="button"
-                          className="btn btn-link btn-sm p-0 text-decoration-none text-muted"
+                          className="form-link-sm border-0 bg-transparent p-0"
                           onClick={() => {
                             setIsCustomDesc(false);
                             handleChange("description", conditionDescription);
                           }}
-                          style={{ fontSize: 11.5 }}
                           title="Đặt lại theo câu điều kiện tự động tạo"
                         >
                           <i className="bi bi-arrow-counterclockwise me-1" /> Tự
@@ -907,7 +758,7 @@ export default function PromotionPage({ create = false }) {
                     <div className="input-group">
                       <input
                         type="text"
-                        className="form-control vp-input"
+                        className="form-control"
                         placeholder={
                           conditionDescription ||
                           "VD: Giảm 20% tối đa 150k cho đơn từ 700k"
@@ -922,7 +773,7 @@ export default function PromotionPage({ create = false }) {
                       {(form.description || conditionDescription) && (
                         <button
                           type="button"
-                          className="btn btn-outline-secondary btn-sm px-2"
+                          className="btn btn-outline-dark px-3"
                           onClick={() => {
                             navigator.clipboard.writeText(
                               form.description || conditionDescription,
@@ -940,21 +791,21 @@ export default function PromotionPage({ create = false }) {
               </div>
 
               {/* KHỐI 3: THỜI GIAN & LƯỢT DÙNG */}
-              <div className="bg-white rounded-3 p-4 border mb-4 shadow-sm">
-                <div className="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-                  <i className="bi bi-calendar-event text-primary fs-5" />
-                  <span className="vp-card-title">
+              <div className="edit-section">
+                <div className="edit-section-title">
+                  <i className="bi bi-calendar-event" />
+                  <span>
                     Thời gian hiệu lực & Lượt phát hành
                   </span>
                 </div>
 
                 <div className="row g-3">
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
+                    <label className="form-label">
                       Ngày bắt đầu <span className="text-danger">*</span>
                     </label>
                     <DateInput
-                      className="form-control vp-input"
+                      className="form-control"
                       value={form.start_date}
                       onChange={(e) => handleChange("start_date", e.target.value)}
                       required
@@ -963,11 +814,11 @@ export default function PromotionPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
+                    <label className="form-label">
                       Ngày kết thúc <span className="text-danger">*</span>
                     </label>
                     <DateInput
-                      className="form-control vp-input"
+                      className="form-control"
                       value={form.end_date}
                       onChange={(e) => handleChange("end_date", e.target.value)}
                       required
@@ -976,12 +827,12 @@ export default function PromotionPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
+                    <label className="form-label">
                       Tổng số lượng phát hành <span className="text-danger">*</span>
                     </label>
                     <input
                       type="number"
-                      className="form-control vp-input"
+                      className="form-control"
                       min="1"
                       placeholder="VD: 100"
                       value={form.total_quantity}
@@ -994,13 +845,13 @@ export default function PromotionPage({ create = false }) {
                   </div>
 
                   <div className="col-12 col-md-6">
-                    <label className="vp-label">
+                    <label className="form-label">
                       Giới hạn / Mỗi khách hàng{" "}
                       <span className="text-danger">*</span>
                     </label>
                     <input
                       type="number"
-                      className="form-control vp-input"
+                      className="form-control"
                       min="1"
                       placeholder="VD: 1"
                       value={form.per_user_limit}
@@ -1015,14 +866,14 @@ export default function PromotionPage({ create = false }) {
               </div>
 
               {/* KHỐI 4: SẢN PHẨM ÁP DỤNG */}
-              <div className="bg-white rounded-3 p-4 border mb-4 shadow-sm">
-                <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div className="edit-section">
+                <div className="edit-section-title justify-content-between flex-wrap">
                   <div className="d-flex align-items-center gap-2">
-                    <i className="bi bi-box-seam text-success fs-5" />
-                    <span className="vp-card-title">Sản phẩm áp dụng</span>
+                    <i className="bi bi-box-seam" />
+                    <span>Sản phẩm áp dụng</span>
                   </div>
                   {form.scope_type === "specific" && selectedProducts.length > 0 && (
-                    <span className="badge bg-primary-subtle text-primary fw-semibold">
+                    <span className="adm-status adm-status-wide rounded-pill bg-secondary-subtle text-secondary">
                       Đã chọn {selectedProducts.length} sản phẩm
                     </span>
                   )}
@@ -1043,7 +894,6 @@ export default function PromotionPage({ create = false }) {
                     <label
                       className="form-check-label fw-semibold"
                       htmlFor="scope_all"
-                      style={{ fontSize: 13.5 }}
                     >
                       Tất cả sản phẩm
                     </label>
@@ -1061,7 +911,6 @@ export default function PromotionPage({ create = false }) {
                     <label
                       className="form-check-label fw-semibold"
                       htmlFor="scope_specific"
-                      style={{ fontSize: 13.5 }}
                     >
                       Chỉ định sản phẩm cụ thể
                     </label>
@@ -1071,7 +920,7 @@ export default function PromotionPage({ create = false }) {
                 {form.scope_type === "all" ? (
                   <div className="alert alert-light border d-flex align-items-center gap-3 py-3 px-3 mb-0">
                     <i className="bi bi-check-circle-fill text-success fs-4" />
-                    <div style={{ fontSize: 13.5 }}>
+                    <div>
                       Chương trình khuyến mãi này sẽ áp dụng giảm giá cho{" "}
                       <strong>toàn bộ danh mục sản phẩm</strong> đang bán tại hệ thống.
                     </div>
@@ -1086,14 +935,14 @@ export default function PromotionPage({ create = false }) {
                         </span>
                         <input
                           type="text"
-                          className="form-control border-start-0 vp-input"
+                          className="form-control border-start-0"
                           placeholder="Tìm sản phẩm theo tên hoặc mã để thêm vào..."
                           value={productSearchQuery}
                           onChange={(e) => setProductSearchQuery(e.target.value)}
                         />
                         {isSearching && (
                           <span className="input-group-text bg-white">
-                            <span className="spinner-border spinner-border-sm text-primary" />
+                            <span className="spinner-border spinner-border-sm text-dark" />
                           </span>
                         )}
                       </div>
@@ -1105,7 +954,7 @@ export default function PromotionPage({ create = false }) {
                             <span>Kết quả tìm kiếm ({searchResults.length})</span>
                             <button
                               type="button"
-                              className="btn btn-sm btn-link p-0 text-decoration-none text-muted"
+                              className="form-link-sm border-0 bg-transparent p-0"
                               onClick={() => setSearchResults([])}
                             >
                               Đóng
@@ -1126,24 +975,16 @@ export default function PromotionPage({ create = false }) {
                                   <ProductImage
                                     src={imgUrl}
                                     alt=""
-                                    style={{
-                                      width: 40,
-                                      height: 40,
-                                      objectFit: "cover",
-                                      borderRadius: 6,
-                                      flexShrink: 0,
-                                    }}
+                                    className="adm-thumb"
                                   />
                                   <div className="text-truncate">
                                     <div
                                       className="fw-semibold text-dark text-truncate"
-                                      style={{ fontSize: 13 }}
                                     >
                                       {prod.product_name}
                                     </div>
                                     <div
                                       className="text-muted small"
-                                      style={{ fontSize: 11.5 }}
                                     >
                                       {fmtVND(prod.price || prod.original_price)}
                                     </div>
@@ -1151,12 +992,11 @@ export default function PromotionPage({ create = false }) {
                                 </div>
                                 <button
                                   type="button"
-                                  className={`btn btn-sm ${
+                                  className={`form-btn btn ${
                                     isAdded
                                       ? "btn-secondary disabled"
                                       : "btn-outline-dark"
-                                  } px-3 py-1 flex-shrink-0`}
-                                  style={{ fontSize: 12 }}
+                                  } mb-0 flex-shrink-0`}
                                   disabled={isAdded}
                                   onClick={() => handleAddProduct(prod)}
                                 >
@@ -1171,11 +1011,8 @@ export default function PromotionPage({ create = false }) {
 
                     {/* Danh sách sản phẩm đã chọn */}
                     {selectedProducts.length === 0 ? (
-                      <div className="border border-dashed rounded-3 text-center py-4 text-muted">
-                        <i className="bi bi-box-seam fs-3 d-block mb-1 opacity-50" />
-                        <span style={{ fontSize: 13 }}>
-                          Chưa có sản phẩm nào được chọn. Hãy tìm kiếm ở trên để thêm sản phẩm.
-                        </span>
+                      <div className="page-empty py-4">
+                        <EmptyState text="Chưa có sản phẩm nào được chọn. Hãy tìm kiếm ở trên để thêm sản phẩm." />
                       </div>
                     ) : (
                       <div>
@@ -1185,8 +1022,7 @@ export default function PromotionPage({ create = false }) {
                           </span>
                           <button
                             type="button"
-                            className="btn btn-link btn-sm text-danger text-decoration-none p-0"
-                            style={{ fontSize: 12.5 }}
+                            className="form-btn btn btn-outline-danger mb-0"
                             onClick={handleClearAllProducts}
                           >
                             <i className="bi bi-trash me-1" /> Xóa tất cả
@@ -1194,12 +1030,12 @@ export default function PromotionPage({ create = false }) {
                         </div>
 
                         <div
-                          className="table-responsive border rounded-3"
+                          className="adm-table-wrap table-responsive"
                           style={{ maxHeight: 320, overflowY: "auto" }}
                         >
-                          <table className="table table-sm align-middle mb-0">
-                            <thead className="table-light">
-                              <tr style={{ fontSize: 12.5 }}>
+                          <table className="table adm-table adm-product-selection-table mb-0">
+                            <thead>
+                              <tr>
                                 <th style={{ width: "6%" }} className="text-center">#</th>
                                 <th style={{ width: "44%" }}>Sản phẩm</th>
                                 <th style={{ width: "22%" }} className="text-end">Giá gốc</th>
@@ -1212,20 +1048,14 @@ export default function PromotionPage({ create = false }) {
                                 const origPrice = p.price || p.original_price || 0;
                                 const discounted = calculateDiscountedPrice(origPrice);
                                 return (
-                                  <tr key={p.product_id || idx} style={{ fontSize: 13 }}>
+                                  <tr key={p.product_id || idx}>
                                     <td className="text-center text-muted">{idx + 1}</td>
                                     <td>
                                       <div className="d-flex align-items-center gap-2">
                                         <ProductImage
                                           src={p.image_url}
                                           alt=""
-                                          style={{
-                                            width: 34,
-                                            height: 34,
-                                            objectFit: "cover",
-                                            borderRadius: 4,
-                                            flexShrink: 0,
-                                          }}
+                                          className="adm-thumb"
                                         />
                                         <div className="text-truncate fw-semibold text-dark">
                                           {p.product_name}
@@ -1245,7 +1075,7 @@ export default function PromotionPage({ create = false }) {
                                     <td className="text-center">
                                       <button
                                         type="button"
-                                        className="btn btn-outline-danger btn-sm p-1 px-2 border-0"
+                                        className="adm-action-btn lock"
                                         title="Xóa khỏi chương trình"
                                         onClick={() => handleRemoveProduct(p.product_id)}
                                       >
@@ -1267,15 +1097,14 @@ export default function PromotionPage({ create = false }) {
 
             {/* ══════ CỘT PHẢI: XEM TRƯỚC KHUYẾN MÃI (STICKY) ══════ */}
             <div
-              className="col-12 col-xl-4"
-              style={{ position: "sticky", top: "20px" }}
+              className="col-12 col-xl-4 adm-preview-column"
             >
               {/* PREVIEW CARD */}
-              <div className="bg-white rounded-3 p-4 border shadow-sm">
-                <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div className="edit-section">
+                <div className="edit-section-title justify-content-between flex-wrap">
                   <div className="d-flex align-items-center gap-2">
-                    <i className="bi bi-eye text-info fs-5" />
-                    <span className="vp-card-title">Xem trước khuyến mãi</span>
+                    <i className="bi bi-eye" />
+                    <span>Xem trước khuyến mãi</span>
                   </div>
                   <span className="badge bg-secondary-subtle text-secondary small">
                     Hiển thị khách
@@ -1284,12 +1113,7 @@ export default function PromotionPage({ create = false }) {
 
                 {/* VOUCHER CARD SIMULATION */}
                 <div
-                  className="rounded-3 p-3 position-relative overflow-hidden"
-                  style={{
-                    backgroundColor: "#fffdf9",
-                    border: "1.5px dashed #e2a03f",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  }}
+                  className="adm-promotion-preview"
                 >
                   <div className="d-flex justify-content-between align-items-start gap-2">
                     <div style={{ minWidth: 0 }}>
@@ -1300,22 +1124,20 @@ export default function PromotionPage({ create = false }) {
                         {form.name || "Tên chương trình khuyến mãi..."}
                       </div>
                       <div
-                        className="fw-bold my-1"
-                        style={{ color: "#c2410c", fontSize: 16 }}
+                        className="adm-promotion-preview-value fw-bold my-1"
                       >
                         {previewBadge}
                       </div>
                     </div>
-                    <i className="bi bi-ticket-perforated fs-2 text-warning opacity-75 flex-shrink-0" />
+                    <i className="bi bi-ticket-perforated fs-2 text-secondary opacity-75 flex-shrink-0" />
                   </div>
 
                   <div
                     className="small text-muted mt-2"
-                    style={{ fontSize: 12.5 }}
                   >
                     {form.description || conditionDescription ? (
                       <div className="fw-semibold text-dark mb-1">
-                        <i className="bi bi-info-circle text-primary me-1" />
+                        <i className="bi bi-info-circle text-secondary me-1" />
                         {form.description || conditionDescription}
                       </div>
                     ) : (
@@ -1328,7 +1150,7 @@ export default function PromotionPage({ create = false }) {
                       </div>
                     )}
                     <div className="mt-1">
-                      <i className="bi bi-box-seam me-1 text-primary" />
+                      <i className="bi bi-box-seam me-1 text-secondary" />
                       Phạm vi:{" "}
                       <span className="fw-semibold text-dark">
                         {form.scope_type === "all"
@@ -1350,7 +1172,6 @@ export default function PromotionPage({ create = false }) {
                     {Number(form.total_quantity) > 0 && (
                       <div
                         className="text-muted mt-1"
-                        style={{ fontSize: 11.5 }}
                       >
                         Tổng phát hành: {form.total_quantity} mã
                       </div>
@@ -1359,13 +1180,12 @@ export default function PromotionPage({ create = false }) {
 
                   <div className="d-flex justify-content-between align-items-center gap-2 mt-3 pt-2 border-top">
                     <span
-                      className="fw-bold font-monospace text-uppercase px-2 py-1 bg-white border rounded text-dark"
-                      style={{ fontSize: 13, letterSpacing: "1px" }}
+                      className="adm-name text-uppercase px-2 py-1 bg-white border rounded"
                     >
                       {form.code || "PROMOTIONCODE"}
                     </span>
                     <span
-                      className={`badge rounded-pill text-${
+                      className={`adm-status adm-status-wide rounded-pill text-${
                         PRODUCT_PROMOTION_STATUSES.find(
                           (s) => s.key === form.status,
                         )?.color || "secondary"

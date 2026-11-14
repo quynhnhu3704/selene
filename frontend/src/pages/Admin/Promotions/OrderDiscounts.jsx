@@ -8,7 +8,6 @@ import Pagination from "../../../components/common/Pagination";
 import EmptyState from "../../../components/common/EmptyState";
 import Loading from "../../../components/common/Loading";
 import {
-  INITIAL_ORDER_DISCOUNTS,
   ORDER_DISCOUNT_STATUSES,
   ORDER_SORT_OPTIONS,
   getOrderDiscountStatus,
@@ -17,7 +16,6 @@ import {
 } from "./mockData";
 import {
   getAdminVouchers,
-  updateAdminVoucher,
   updateAdminVoucherStatus,
 } from "../../../services/voucher.service";
 
@@ -64,10 +62,7 @@ const getVoucherDescription = (item) => {
 };
 
 export default function OrderDiscounts() {
-  const [discounts, setDiscounts] = useState(() => {
-    const saved = localStorage.getItem("selene_mock_order_discounts");
-    return saved ? JSON.parse(saved) : INITIAL_ORDER_DISCOUNTS;
-  });
+  const [discounts, setDiscounts] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -94,21 +89,19 @@ export default function OrderDiscounts() {
   const fetchVouchers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getAdminVouchers({ page: 1, limit: 100 });
-      const apiVouchers = res?.data || [];
-      if (Array.isArray(apiVouchers) && apiVouchers.length > 0) {
-        setDiscounts(apiVouchers);
-        try {
-          localStorage.setItem(
-            "selene_mock_order_discounts",
-            JSON.stringify(apiVouchers),
-          );
-        } catch {
-          /* ignore */
-        }
+      const vouchers = [];
+      let nextPage = 1;
+      while (true) {
+        const res = await getAdminVouchers({ page: nextPage, limit: 100 });
+        const batch = Array.isArray(res?.data) ? res.data : [];
+        vouchers.push(...batch);
+        if (!batch.length || vouchers.length >= (res?.pagination?.totalItems ?? vouchers.length)) break;
+        nextPage += 1;
       }
+      setDiscounts(vouchers);
     } catch (err) {
-      console.warn("Không thể tải danh sách voucher từ server, sử dụng dữ liệu cục bộ:", err.message);
+      setDiscounts([]);
+      toast.error(err.response?.data?.message || "Không thể tải danh sách voucher.");
     } finally {
       setLoading(false);
     }
@@ -117,15 +110,6 @@ export default function OrderDiscounts() {
   useEffect(() => {
     fetchVouchers();
   }, [fetchVouchers]);
-
-  const saveToStorage = (updated) => {
-    setDiscounts(updated);
-    try {
-      localStorage.setItem("selene_mock_order_discounts", JSON.stringify(updated));
-    } catch {
-      /* ignore */
-    }
-  };
 
   // Filter & Sort
   const filteredDiscounts = useMemo(() => {
@@ -190,13 +174,14 @@ export default function OrderDiscounts() {
     try {
       await updateAdminVoucherStatus(voucherId, nextStatus);
     } catch (err) {
-      console.warn("API update status failed, saving locally:", err.message);
+      toast.error(err.response?.data?.message || "Không thể đổi trạng thái voucher.");
+      return;
     }
 
     const updated = discounts.map((p) =>
       (p.voucher_id || p.id) === voucherId ? { ...p, status: nextStatus } : p,
     );
-    saveToStorage(updated);
+    setDiscounts(updated);
     toast.info(
       nextStatus === "inactive"
         ? `Đã dừng hoạt động mã "${item.code}"`
@@ -293,27 +278,28 @@ export default function OrderDiscounts() {
       </div>
 
       {/* ── TABLE ── */}
-      {loading ? (
-        <div className="text-center py-5">
-          <Loading text="Đang tải danh sách mã giảm giá..." />
-        </div>
-      ) : (
         <div className="adm-table-wrap table-responsive overflow-x-auto">
           <table className="table adm-table mb-0" style={{ minWidth: 1050 }}>
             <thead>
               <tr>
-                <th className="text-center" style={{ width: "4%" }}>#</th>
+                <th className="text-center" style={{ width: "4%" }} />
                 <th style={{ width: "12%" }}>Mã giảm giá</th>
                 <th style={{ width: "18%" }}>Tên mã</th>
                 <th style={{ width: "27%" }}>Áp dụng</th>
                 <th className="text-center" style={{ width: "12%" }}>Lượt dùng</th>
                 <th className="text-center" style={{ width: "12%" }}>Trạng thái</th>
                 <th className="text-center" style={{ width: "15%" }}>Thời hạn</th>
-                <th className="text-center" style={{ width: "6%" }}></th>
+                <th className="text-center" style={{ width: "8%" }} />
               </tr>
             </thead>
             <tbody>
-              {!paginatedDiscounts.length ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-5">
+                    <Loading text="Đang tải danh sách mã giảm giá..." />
+                  </td>
+                </tr>
+              ) : !paginatedDiscounts.length ? (
                 <tr>
                   <td colSpan={8} className="page-empty py-5">
                     <EmptyState text="Không có mã giảm giá nào để hiển thị" />
@@ -339,14 +325,12 @@ export default function OrderDiscounts() {
                       <td>
                         <Link
                           to={editUrl}
-                          className="adm-name text-break fw-bold text-decoration-none"
-                          style={{ color: "#17151F" }}
+                          className="adm-link adm-name text-break"
                           title="Bấm để chỉnh sửa"
                           onClick={saveScrollPosition}
                         >
                           <span
-                            className="font-monospace text-dark fw-bold"
-                            style={{ fontSize: 15, letterSpacing: "0.5px" }}
+                            className="adm-name"
                           >
                             {item.code}
                           </span>
@@ -355,7 +339,7 @@ export default function OrderDiscounts() {
                       <td>
                         <Link
                           to={editUrl}
-                          className="adm-name text-break text-decoration-none text-dark fw-semibold"
+                          className="adm-link adm-name text-break"
                           title="Bấm để chỉnh sửa"
                           onClick={saveScrollPosition}
                         >
@@ -372,22 +356,21 @@ export default function OrderDiscounts() {
                           {usedQty} / {totalQty}
                         </span>
                         {item.per_user_limit ? (
-                          <div className="text-muted small" style={{ fontSize: 11.5 }}>
+                          <div className="adm-sub">
                             Tối đa {item.per_user_limit} lần/khách
                           </div>
                         ) : null}
                       </td>
                       <td className="text-center">
                         <span
-                          className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
-                          style={{ minWidth: "7.5rem", display: "inline-block" }}
+                          className={`adm-status adm-status-wide rounded-pill text-${state.color} bg-${state.color}-subtle`}
                         >
                           {state.label}
                         </span>
                       </td>
-                      <td className="text-center text-nowrap" style={{ fontSize: 13 }}>
+                      <td className="text-center text-nowrap">
                         <div>{formatDate(item.start_date)}</div>
-                        <div className="text-muted" style={{ fontSize: 11.5 }}>
+                        <div className="text-muted">
                           đến {formatDate(item.end_date)}
                         </div>
                       </td>
@@ -429,10 +412,9 @@ export default function OrderDiscounts() {
             </tbody>
           </table>
         </div>
-      )}
 
       {/* ── PAGINATION ── */}
-      {totalItems > 0 && (
+      {!loading && totalItems > 0 && (
         <Pagination
           page={page}
           totalPages={totalPages}

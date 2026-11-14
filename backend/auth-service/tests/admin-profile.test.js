@@ -39,20 +39,23 @@ function setup(t) {
   writes.accountUpdate = t.mock.method(AccountModel, "updateAccountById", async () => {});
   return writes;
 }
-test("create customer persists every field, avatar, role and hashed initial password", async t => {
+for (const [role, create, roleId] of [["customer", service.createCustomer, 3], ["staff", service.createStaff, 2]]) {
+test(`create ${role} persists phone only in profile, avatar, role and hashed initial password`, async t => {
   const writes = setup(t);
-  const result = await service.createCustomer(valid, avatar);
+  const result = await create(valid, avatar);
   const account = writes.insertAccount.mock.calls[0].arguments[0];
   const profile = writes.insertProfile.mock.calls[0].arguments[0];
-  assert.equal(account.role_id, 3);
+  assert.equal(account.role_id, roleId);
   assert.equal(account.email, valid.email);
-  assert.equal(account.phone, valid.phone);
+  assert.equal(Object.hasOwn(account, "phone"), false);
+  assert.equal(Object.hasOwn(account, "phone_number"), false);
   assert.ok(await bcrypt.compare(valid.phone, account.password));
   assert.equal(profile.account_id, result.accountId);
   for (const key of ["full_name", "identity_card", "gender", "dob", "address"]) assert.equal(profile[key], valid[key]);
   assert.equal(profile.phone_number, valid.phone);
   assert.equal(profile.avatar_url, "https://example.com/avatar.png");
 });
+}
 test("update synchronizes account and profile and clears optional fields", async t => {
   const writes = setup(t);
   await service.updateProfileAll("a", valid, avatar, "admin");
@@ -60,10 +63,17 @@ test("update synchronizes account and profile and clears optional fields", async
   assert.equal(profile.phone_number, valid.phone);
   for (const key of ["full_name", "identity_card", "gender", "dob", "address"]) assert.equal(profile[key], valid[key]);
   assert.equal(profile.avatar_url, "https://example.com/avatar.png");
-  assert.deepEqual(writes.accountUpdate.mock.calls[0].arguments, ["a", {email: valid.email, phone: valid.phone}]);
+  assert.deepEqual(writes.accountUpdate.mock.calls[0].arguments, ["a", {email: valid.email}]);
   const result = await service.updateProfileAll("a", {...valid, dob:"", gender:"", address:"", identity_card:""}, null, "admin");
   for (const key of ["dob", "gender", "address", "identity_card"]) assert.equal(result.profile[key], null);
   assert.equal(result.profile.avatar_url, "old.png");
+});
+test("staff phone-only update writes to profile without updating accounts", async t => {
+  const writes = setup(t);
+  const result = await service.updateStaffProfile("a", { phone_number: valid.phone });
+  assert.equal(writes.updateProfileByAccountId.mock.calls[0].arguments[1].phone_number, valid.phone);
+  assert.equal(result.profile.phone_number, valid.phone);
+  assert.equal(writes.accountUpdate.mock.callCount(), 0);
 });
 test("create and update reject invalid fields before writing", async t => {
   const writes = setup(t);

@@ -1,0 +1,16 @@
+.support-waiting-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: 8px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: #fce4e6;
+  color: #b42332;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+  white-space: nowrap;
+}

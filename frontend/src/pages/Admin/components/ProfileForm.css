@@ -1,0 +1,13 @@
+#admin-profile-form .info-field {
+  padding-inline: 0;
+}
+
+@media (min-width: 768px) {
+  #admin-profile-form .info-field:nth-child(odd) {
+    padding-right: 0.75rem;
+  }
+
+  #admin-profile-form .info-field:nth-child(even) {
+    padding-left: 0.75rem;
+  }
+}

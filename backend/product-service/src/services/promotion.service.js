@@ -120,7 +120,9 @@ export const createPromotion = async (promotionInput) => {
     }
 
     // 3. Xử lý danh sách sản phẩm áp dụng (product_ids)
-    const rawProductIds = product_ids || productIds || [];
+    const rawProductIds = promotionInput.scope_type === "all"
+      ? await PromotionModel.getAllActiveProductIds()
+      : product_ids || productIds || [];
     const targetProductIds = Array.isArray(rawProductIds)
       ? [
           ...new Set(
@@ -155,6 +157,9 @@ export const createPromotion = async (promotionInput) => {
         : 0;
 
     const initialStatus = status || "active";
+    if (!["active", "inactive", "out_of_stock", "expired"].includes(initialStatus)) {
+      throw new Error("Trạng thái khuyến mãi không hợp lệ!");
+    }
 
     // Kiểm tra xung đột sản phẩm nếu khuyến mãi ở trạng thái active
     if (initialStatus === "active" && targetProductIds.length > 0) {
@@ -186,7 +191,7 @@ export const createPromotion = async (promotionInput) => {
         product_id: pid,
         created_at: currentTime,
         updated_at: currentTime,
-        status: initialStatus || "active",
+        status: "active",
       }));
 
       createdItems = await PromotionModel.createPromotionItems(itemsToInsert);
@@ -323,20 +328,6 @@ export const updatePromotionStatus = async (promotion_id, statusInput) => {
       updated_at,
     );
 
-    // Nếu cập nhật promotion thành inactive, out_of_stock hoặc expired -> Cập nhật tất cả promotion_items thành inactive
-    // Nếu thành active -> status của promotion_items giữ nguyên không thay đổi
-    if (
-      targetStatus === "inactive" ||
-      targetStatus === "out_of_stock" ||
-      targetStatus === "expired"
-    ) {
-      await PromotionModel.updatePromotionItemsStatus(
-        promotion_id,
-        "inactive",
-        updated_at,
-      );
-    }
-
     // Tự động tính toán lại discount_price trong bảng products cho các sản phẩm liên quan
     const affectedProductIds = (existingPromo?.promotion_items || []).map(
       (item) => item.product_id,
@@ -468,7 +459,9 @@ export const updatePromotion = async (promotion_id, updateInput) => {
     // Kiểm tra xung đột khi khuyến mãi ở (hoặc được cập nhật thành) trạng thái active
     const targetStatus =
       status !== undefined ? status : existingPromotion.status;
-    const rawProductIds = product_ids || productIds;
+    const rawProductIds = updateInput.scope_type === "all"
+      ? await PromotionModel.getAllActiveProductIds()
+      : product_ids || productIds;
     let targetProductIds = [];
 
     if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
@@ -487,17 +480,7 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       await verifyNoActivePromotionConflicts(targetProductIds, promotion_id);
     }
 
-    const currentTime = new Date().toISOString();
-    updateData.updated_at = currentTime;
-
-    // Cập nhật thông tin chính trong bảng promotions
-    if (Object.keys(updateData).length > 1) {
-      await PromotionModel.update(promotion_id, updateData);
-    }
-
-    // 7. Cập nhật danh sách sản phẩm áp dụng (promotion_items)
-    if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
-      if (targetProductIds.length > 0) {
+    if (rawProductIds !== undefined && Array.isArray(rawProductIds) && targetProductIds.length > 0) {
         const existingProducts =
           await PromotionModel.checkProductsExist(targetProductIds);
         const foundIds = existingProducts.map((p) => p.product_id);
@@ -511,6 +494,19 @@ export const updatePromotion = async (promotion_id, updateInput) => {
           );
         }
 
+    }
+
+    const currentTime = new Date().toISOString();
+    updateData.updated_at = currentTime;
+
+    // Cập nhật thông tin chính trong bảng promotions
+    if (Object.keys(updateData).length > 1) {
+      await PromotionModel.update(promotion_id, updateData);
+    }
+
+    // 7. Cập nhật danh sách sản phẩm áp dụng (promotion_items)
+    if (rawProductIds !== undefined && Array.isArray(rawProductIds)) {
+      if (targetProductIds.length > 0) {
         // Xóa sản phẩm cũ và thêm lại danh sách mới
         await PromotionModel.deletePromotionItems(promotion_id);
 
@@ -520,23 +516,13 @@ export const updatePromotion = async (promotion_id, updateInput) => {
           product_id: pid,
           created_at: currentTime,
           updated_at: currentTime,
-          status: status || existingPromotion.status || "active",
+          status: "active",
         }));
 
         await PromotionModel.createPromotionItems(itemsToInsert);
       } else {
         await PromotionModel.deletePromotionItems(promotion_id);
       }
-    } else if (
-      status === "inactive" ||
-      status === "out_of_stock" ||
-      status === "expired"
-    ) {
-      await PromotionModel.updatePromotionItemsStatus(
-        promotion_id,
-        "inactive",
-        currentTime,
-      );
     }
 
     // Trả về đối tượng khuyến mãi sau khi đã cập nhật hoàn chỉnh
@@ -544,9 +530,10 @@ export const updatePromotion = async (promotion_id, updateInput) => {
       await PromotionModel.getPromotionById(promotion_id);
 
     // Tự động tính toán lại discount_price trong bảng products cho tất cả sản phẩm thuộc khuyến mãi này
-    const affectedProductIds = (updatedPromotion?.promotion_items || []).map(
-      (item) => item.product_id,
-    );
+    const affectedProductIds = [...new Set([
+      ...(existingPromotion.promotion_items || []),
+      ...(updatedPromotion?.promotion_items || []),
+    ].map((item) => item.product_id))];
     if (affectedProductIds.length > 0) {
       await PromotionModel.recalculateProductsDiscountPrice(affectedProductIds);
     }

@@ -123,7 +123,7 @@ app.use(
   createProxyMiddleware({
     target: ORDER_SERVICE_URL,
     changeOrigin: true,
-    proxyTimeout: 30000,
+    proxyTimeout: 65000,
     on: {
       error: (err, req, res) => {
         console.error("Proxy Error (Order):", err.message);

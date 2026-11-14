@@ -16,7 +16,7 @@ import {
   updateAdminCategory,
 } from "../../../../services/category.service";
 
-export default function CategoryPage({ create = false }) {
+export default function CategoryPage({ create = false, readOnly = false }) {
   const { categoryId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export default function CategoryPage({ create = false }) {
     requestedReturn === base || requestedReturn?.startsWith(base + "?")
       ? requestedReturn
       : base;
-  const title = create ? "Thêm danh mục" : "Chỉnh sửa danh mục";
+  const title = create ? "Thêm danh mục" : readOnly ? "Chi tiết danh mục" : "Chỉnh sửa danh mục";
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -91,7 +91,7 @@ export default function CategoryPage({ create = false }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (saving) return;
+    if (saving || readOnly) return;
     if (!form.name.trim()) {
       toast.error("Vui lòng nhập tên danh mục!");
       return;
@@ -126,9 +126,9 @@ export default function CategoryPage({ create = false }) {
             <i className="bi bi-arrow-left me-2" />
             Quay lại
           </Link>
-          <AdminSaveButton type="submit" form="category-form" disabled={loading || Boolean(error)} saving={saving}>
+          {!readOnly && <AdminSaveButton type="submit" form="category-form" disabled={loading || Boolean(error)} saving={saving}>
             {create ? "Thêm mới" : "Lưu thay đổi"}
-          </AdminSaveButton>
+          </AdminSaveButton>}
         </div>
       </div>
       {loading ? (
@@ -159,6 +159,7 @@ export default function CategoryPage({ create = false }) {
                       <span>Chưa có ảnh</span>
                     </div>
                   )}
+                  {!readOnly && <>
                   <AdminImageUpload
                     id="category-image"
                     hasImage={Boolean(image || form.image_url)}
@@ -168,15 +169,19 @@ export default function CategoryPage({ create = false }) {
                   <div className="adm-sub mt-3">
                     Tối đa 5 MB. Tải lên ảnh mới để thay thế ảnh hiện tại.
                   </div>
+                  </>}
                 </section>
               </div>
               <div className="col-md-8">
                 <section className="edit-section">
                   <h2 className="edit-section-title"><i className="bi bi-info-circle" />Thông tin danh mục</h2>
                   <div className="mb-4">
-                    <label htmlFor="category-name" className="form-label">
-                      Tên danh mục <span className="text-danger">*</span>
+                    <label htmlFor={readOnly ? undefined : "category-name"} className="form-label">
+                      Tên danh mục {!readOnly && <span className="text-danger">*</span>}
                     </label>
+                    {readOnly ? (
+                      <div className="text-break">{form.name || "—"}</div>
+                    ) : (
                     <input
                       id="category-name"
                       className="form-control"
@@ -188,10 +193,14 @@ export default function CategoryPage({ create = false }) {
                         setForm((prev) => ({ ...prev, name: e.target.value }))
                       }
                     />
+                    )}
                   </div>
-                  <label htmlFor="category-description" className="form-label">
+                  <label htmlFor={readOnly ? undefined : "category-description"} className="form-label">
                     Mô tả
                   </label>
+                  {readOnly ? (
+                    <div className="text-break" style={{ whiteSpace: "pre-wrap" }}>{form.description || "—"}</div>
+                  ) : (
                   <textarea
                     id="category-description"
                     className="form-control"
@@ -205,6 +214,7 @@ export default function CategoryPage({ create = false }) {
                       }))
                     }
                   />
+                  )}
                 </section>
               </div>
             </div>

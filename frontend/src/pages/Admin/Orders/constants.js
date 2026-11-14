@@ -43,5 +43,9 @@ export const formatDate = (value) => {
   const date = new Date(value);
   return !value || Number.isNaN(date.getTime())
     ? "—"
-    : date.toLocaleDateString("vi-VN");
+    : date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
 };

@@ -1,4 +1,19 @@
-.adm-create-order-table {
+:is(#create-order-form, #edit-order-form) .info-field {
+  padding-inline: 0;
+}
+
+@media (min-width: 768px) {
+  :is(#create-order-form, #edit-order-form) .info-field:nth-child(odd) {
+    padding-right: calc(var(--bs-gutter-x) / 2);
+  }
+
+  :is(#create-order-form, #edit-order-form) .info-field:nth-child(even) {
+    padding-left: calc(var(--bs-gutter-x) / 2);
+  }
+}
+
+.adm-create-order-table,
+.adm-edit-order-table {
   min-width: 720px;
 }
 
@@ -14,11 +29,21 @@
   width: 60px;
 }
 
-.adm-create-order-table .adm-thumb {
+.adm-create-order-table .adm-thumb,
+.adm-edit-order-table .adm-thumb {
   align-self: center;
 }
 
 .adm-order-quantity {
   font-size: 13.5px;
   color: #212529;
+}
+
+.adm-edit-order-table th:first-child {
+  width: 44%;
+}
+
+.adm-edit-order-table .adm-order-unit-price {
+  width: 160px;
+  font-size: 13.5px;
 }

@@ -1,9 +1,12 @@
+import Address from "../../../components/common/Address";
+import "./ProfileForm.css";
 // frontend/src/pages/Admin/components/ProfileForm.jsx
 import { useEffect, useState } from "react";
 import { DateInput } from "../../../components/common/DatePicker";
 import AdminSelect from "./AdminSelect";
 import AdminImageUpload from "./AdminImageUpload";
 import { toast } from "react-toastify";
+import { formatPhone } from "../../../utils/formatPhone";
 
 export default function ProfileForm({
   profile,
@@ -47,13 +50,24 @@ export default function ProfileForm({
               <h2 className="edit-section-title">Thông tin cá nhân</h2>
               <div className="row g-4">
                 {fields.map(([key, label, type, required]) => (
-                  <div className="col-md-6" key={key}>
+                  <div className={key === "address" ? "col-12" : "col-md-6"} key={key}>
                     <label htmlFor={key} className="form-label">
                       {label}
                       {required && !readOnly && <span className="text-danger"> *</span>}
                     </label>
                     {readOnly ? (
-                      <div>{profile[key] || "—"}</div>
+                      <div>
+                        {type === "date" && profile[key]
+                          ? profile[key].replace(
+                              /^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/,
+                              "$3/$2/$1",
+                            )
+                          : key === "phone"
+                            ? formatPhone(profile[key])
+                            : profile[key] || "—"}
+                      </div>
+                    ) : key === "address" ? (
+                      <Address optional initialAddress={profile.address || ""} onChange={(address) => setProfile((previous) => ({ ...previous, address }))} />
                     ) : type === "date" ? (
                       <DateInput
                         id={key}

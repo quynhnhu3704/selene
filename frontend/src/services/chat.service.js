@@ -79,7 +79,9 @@ export const getConversation = async (id) => ({
  * @param {Object} payload - { staff_name, content }
  */
 export const assignConversation = async (conversationId, payload = {}) => {
-  return await http.put(`/chat/manage/conversations/${conversationId}/assign`, payload);
+  const response = await http.put(`/chat/manage/conversations/${conversationId}/assign`, payload);
+  window.dispatchEvent(new Event("support:conversations-changed"));
+  return response;
 };
 
 /**
@@ -87,7 +89,9 @@ export const assignConversation = async (conversationId, payload = {}) => {
  * @param {string} conversationId
  */
 export const closeConversation = async (conversationId) => {
-  return await http.put(`/chat/manage/conversations/${conversationId}/close`);
+  const response = await http.put(`/chat/manage/conversations/${conversationId}/close`);
+  window.dispatchEvent(new Event("support:conversations-changed"));
+  return response;
 };
 
 

@@ -253,7 +253,6 @@ export const updateStaffProfile = async (
   updateData.updated_at = new Date();
 
   if (isValidValue(email)) accountUpdateData.email = email.trim();
-  if (isValidValue(phone_number)) accountUpdateData.phone = phone_number.trim();
   if (clearOptional) {
     for (const key of ["identity_card", "gender", "dob", "address"]) {
       if (profileData[key] !== undefined && !isValidValue(profileData[key])) {
@@ -376,7 +375,6 @@ const createAdminAccount = async (profileData, avatarFile, roleName) => {
     await UserProfileModel.insertAccount({
       account_id: accountId,
       email: email.trim(),
-      phone: phone.trim(),
       password: hashedPassword,
       role_id: roleData.role_id,
       role_name: roleData.name,

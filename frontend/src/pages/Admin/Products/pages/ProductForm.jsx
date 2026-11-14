@@ -1,3 +1,4 @@
+import MoneyInput from "../../components/MoneyInput";
 import AdminSaveButton from "../../components/AdminSaveButton";
 import { buildProductFormData } from "./productFormData";
 import EmptyState from "../../../../components/common/EmptyState";
@@ -556,19 +557,15 @@ export default function ProductForm({ mode = "edit" }) {
                   <label className="form-label" htmlFor="ep-price">
                     Giá bán <span className="text-danger">*</span>
                   </label>
-                  <div className="edit-price-input-wrap">
-                    <span className="edit-price-unit">₫</span>
-                    <input
-                      type="number"
-                      min="0"
-                      id="ep-price"
-                      className="form-control"
-                      placeholder="Ví dụ: 450000"
-                      value={form.basePrice}
-                      onChange={(e) => set("basePrice", e.target.value)}
-                      disabled={submitting}
-                    />
-                  </div>
+                  <MoneyInput
+                    min="0"
+                    id="ep-price"
+                    className="form-control"
+                    placeholder="VD: 450.000"
+                    value={form.basePrice}
+                    onChange={(e) => set("basePrice", e.target.value)}
+                    disabled={submitting}
+                  />
                 </div>
 
                 {/* Tổng tồn kho */}
@@ -602,37 +599,29 @@ export default function ProductForm({ mode = "edit" }) {
                   <label className="form-label" htmlFor="ep-discount">
                     Giá khuyến mãi
                   </label>
-                  <div className="edit-price-input-wrap">
-                    <span className="edit-price-unit">₫</span>
-                    <input
-                      type="number"
-                      min="0"
-                      id="ep-discount"
-                      className="form-control"
-                      placeholder="Để trống nếu không giảm giá"
-                      value={form.discount}
-                      onChange={(e) => set("discount", e.target.value)}
-                      disabled={submitting}
-                    />
-                  </div>
+                  <MoneyInput
+                    min="0"
+                    id="ep-discount"
+                    className="form-control"
+                    placeholder="Để trống nếu không giảm giá"
+                    value={form.discount}
+                    onChange={(e) => set("discount", e.target.value)}
+                    disabled={submitting}
+                  />
                 </div>
 
                 <div className="col-12 col-md-6">
                   <label className="form-label" htmlFor="ep-original-price">
                     Giá gốc <span className="text-danger">*</span>
                   </label>
-                  <div className="edit-price-input-wrap">
-                    <span className="edit-price-unit">₫</span>
-                    <input
-                      id="ep-original-price"
-                      type="number"
-                      min="0"
-                      className="form-control"
-                      value={form.originalPrice}
-                      onChange={(e) => set("originalPrice", e.target.value)}
-                      disabled={submitting}
-                    />
-                  </div>
+                  <MoneyInput
+                    id="ep-original-price"
+                    min="0"
+                    className="form-control"
+                    value={form.originalPrice}
+                    onChange={(e) => set("originalPrice", e.target.value)}
+                    disabled={submitting}
+                  />
                 </div>
               </div>
             </div>

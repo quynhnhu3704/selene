@@ -6,13 +6,45 @@ const generateId = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 };
 
+const voucherError = (message, status = 400) => Object.assign(new Error(message), { status });
+const normalizeVoucher = (input, existing = {}) => {
+  const merged = { ...existing, ...input };
+  const data = {};
+  for (const field of ["code", "name"]) {
+    if (typeof merged[field] !== "string" || !merged[field].trim()) throw voucherError(`${field} không được để trống!`);
+    data[field] = merged[field].trim();
+  }
+  data.code = data.code.toUpperCase().replace(/\s+/g, "");
+  data.description = merged.description ?? null;
+  if (data.description !== null && typeof data.description !== "string") throw voucherError("Mô tả không hợp lệ!");
+  data.discount_type = merged.discount_type;
+  if (!["percentage", "fixed_amount", "free_shipping"].includes(data.discount_type)) throw voucherError("Loại giảm giá không hợp lệ!");
+  for (const field of ["discount_value", "min_order_value", "max_discount_amount", "total_quantity", "per_user_limit"]) {
+    const raw = merged[field] ?? (field === "per_user_limit" ? 1 : 0);
+    const value = Number(raw);
+    if (!["string", "number"].includes(typeof raw) || raw === "" || !Number.isFinite(value) || value < 0) throw voucherError(`${field} không hợp lệ!`);
+    if (["total_quantity", "per_user_limit"].includes(field) && !Number.isSafeInteger(value)) throw voucherError(`${field} phải là số nguyên!`);
+    data[field] = value;
+  }
+  if (data.discount_type !== "free_shipping" && data.discount_value <= 0) throw voucherError("Giá trị giảm giá phải lớn hơn 0!");
+  if (data.discount_type === "percentage" && data.discount_value > 100) throw voucherError("Giảm giá không được vượt quá 100%!");
+  for (const field of ["start_date", "end_date"]) {
+    if (!merged[field] || !Number.isFinite(new Date(merged[field]).getTime())) throw voucherError("Ngày áp dụng không hợp lệ!");
+    data[field] = new Date(merged[field]).toISOString();
+  }
+  if (data.end_date <= data.start_date) throw voucherError("Ngày kết thúc phải sau ngày bắt đầu!");
+  data.status = merged.status ?? "active";
+  if (!["active", "inactive", "expired", "out_of_stock"].includes(data.status)) throw voucherError("Trạng thái voucher không hợp lệ!");
+  return data;
+};
+
 export const VoucherService = {
   // Xử lý logic tạo mới một voucher (kiểm tra trùng mã code và sinh UUID tự động)
   createVoucher: async (voucherData) => {
-    // Check if code exists
+    voucherData = normalizeVoucher(voucherData);
     const existing = await VoucherModel.findByCode(voucherData.code);
     if (existing) {
-      throw new Error(`Voucher code ${voucherData.code} đã tồn tại`);
+      throw voucherError(`Voucher code ${voucherData.code} đã tồn tại`, 409);
     }
 
     const voucher_id = "voucher-" + generateId();
@@ -20,6 +52,7 @@ export const VoucherService = {
     const dataToCreate = {
       voucher_id: voucher_id,
       ...voucherData,
+      used_quantity: 0,
       created_at: new Date(),
     };
     return await VoucherModel.create(dataToCreate);
@@ -138,22 +171,25 @@ export const VoucherService = {
   // Tìm chi tiết một voucher theo ID, ném lỗi nếu không tìm thấy
   getVoucherById: async (id) => {
     const voucher = await VoucherModel.findById(id);
-    if (!voucher) throw new Error("Không tìm thấy voucher");
+    if (!voucher) throw voucherError("Không tìm thấy voucher", 404);
     return voucher;
   },
 
   // Tìm chi tiết một voucher theo mã code, ném lỗi nếu không tìm thấy
   getVoucherByCode: async (code) => {
     const voucher = await VoucherModel.findByCode(code);
-    if (!voucher) throw new Error("Không tìm thấy voucher");
+    if (!voucher) throw voucherError("Không tìm thấy voucher", 404);
     return voucher;
   },
 
   // Kiểm tra sự tồn tại của voucher trước khi cho phép cập nhật thông tin
   updateVoucher: async (id, updateData) => {
     const voucher = await VoucherModel.findById(id);
-    if (!voucher) throw new Error("Không tìm thấy voucher");
-    return await VoucherModel.update(id, updateData);
+    if (!voucher) throw voucherError("Không tìm thấy voucher", 404);
+    const normalized = normalizeVoucher(updateData, voucher);
+    const duplicate = await VoucherModel.findByCode(normalized.code);
+    if (duplicate && duplicate.voucher_id !== voucher.voucher_id) throw voucherError("Mã voucher đã tồn tại!", 409);
+    return await VoucherModel.update(id, normalized);
   },
 
   // Cập nhật trạng thái voucher (toggle active <-> inactive hoặc nhận status cụ thể)
@@ -197,7 +233,7 @@ export const VoucherService = {
   // Xử lý áp dụng voucher: Kiểm tra hạn dùng, điều kiện giá, số lượng, lưu lịch sử và cập nhật số lượt dùng
   applyVoucher: async (voucherId, accountId, orderId, orderValue) => {
     const voucher = await VoucherModel.findById(voucherId);
-    if (!voucher) throw new Error("Không tìm thấy voucher");
+    if (!voucher) throw voucherError("Không tìm thấy voucher", 404);
     if (voucher.status !== "active")
       throw new Error("Voucher không còn hiệu lực");
 
