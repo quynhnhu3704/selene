@@ -1,0 +1,11 @@
+.promotionCode:hover,
+.promotionCode:focus-visible,
+.promotionCode:active {
+  color: #871b1b;
+}
+
+th.fullColor,
+td.fullColor,
+td.fullColor * {
+  color: #212529;
+}

@@ -1,3 +1,4 @@
+import { requestProductDetails } from "../configs/rabbitmq.js";
 import { DashboardModel } from "../models/dashboard.model.js";
 
 const DAY = 86400000;
@@ -91,10 +92,10 @@ export const buildDashboardStatistics = (orders, range) => {
     orders: 0,
     previousRevenue: 0,
   }));
-  const statuses = {};
-  const payments = {};
-  const products = {};
-  const sizes = {};
+  const statuses = Object.create(null);
+  const payments = Object.create(null);
+  const products = Object.create(null);
+  const sizes = Object.create(null);
   const weekdays = [
     "Chủ nhật",
     "Thứ 2",
@@ -205,5 +206,29 @@ export const getDashboardStatistics = async (query) => {
     new Date(range.previousStart).toISOString(),
     new Date(range.end).toISOString(),
   );
-  return buildDashboardStatistics(orders, range);
+  const statistics = buildDashboardStatistics(orders, range);
+  const recentIds = new Set(statistics.recentOrders.map((order) => order.order_id));
+  const recentOrders = orders.filter((order) => recentIds.has(order.order_id));
+  const customers = new Map();
+  await Promise.all(
+    [...new Set(recentOrders.map((order) => order.account_id).filter(Boolean))]
+      .map(async (accountId) => {
+        const profile = await requestProductDetails(
+          { account_id: accountId },
+          "rpc_customer_profile_queue",
+        );
+        if (profile?.account_id === accountId) {
+          customers.set(accountId, {
+            avatar_url: profile.avatar_url || null,
+            email: profile.email || null,
+          });
+        }
+      }),
+  );
+  const accounts = new Map(recentOrders.map((order) => [order.order_id, order.account_id]));
+  statistics.recentOrders = statistics.recentOrders.map((order) => ({
+    ...order,
+    customer: customers.get(accounts.get(order.order_id)) || null,
+  }));
+  return statistics;
 };

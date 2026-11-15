@@ -21,6 +21,7 @@ import { getUser } from "../../../../utils/auth";
 import { formatPhone } from "../../../../utils/formatPhone";
 import defaultImage from "../../../../assets/images/default-product.png";
 import "../create-order.css";
+import "../../components/DetailInfo.css";
 import {
   ORDER_STATUSES,
   PAYMENT_METHODS,
@@ -202,7 +203,7 @@ export default function OrderDetail({ readOnly = false }) {
           )}
         </div>
       </div>
-      <form onSubmit={handleSubmit} id="edit-order-form">
+      <form onSubmit={handleSubmit} id="edit-order-form" className={readOnly ? "adm-detail-info" : undefined}>
         <fieldset disabled={saving}>
           <section className="edit-section">
             <h2 className="edit-section-title">
@@ -212,11 +213,11 @@ export default function OrderDetail({ readOnly = false }) {
             <div className="row g-3">
               <div className="col-md-6">
                 <div className="form-label">Mã đơn</div>
-                <div>{order.order_code}</div>
+                <div className="adm-order-field-value">{order.order_code}</div>
               </div>
               <div className="col-md-6">
                 <div className="form-label">Ngày đặt</div>
-                <div>{formatDate(order.created_at)}</div>
+                <div className="adm-order-field-value">{formatDate(order.created_at)}</div>
               </div>
               {fields.map(([key, label, type]) => (
                 <div
@@ -336,37 +337,77 @@ export default function OrderDetail({ readOnly = false }) {
                   <table className="table adm-table adm-edit-order-table mb-0">
                     <thead>
                       <tr>
+                        <th className="text-center" aria-label="Số thứ tự" />
                         <th>Sản phẩm</th>
-                        <th className="text-center">Số lượng</th>
                         <th className="text-end">Đơn giá</th>
+                        <th className="text-center">Số lượng</th>
                         <th className="text-end">Thành tiền</th>
+                        <th aria-hidden="true" />
                       </tr>
                     </thead>
                     <tbody>
-                      {(order.order_items || []).map((item) => (
+                      {(order.order_items || []).map((item, index) => (
                         <tr key={item.order_item_id}>
+                          <td className="text-center">
+                            <span className="adm-stt">{index + 1}</span>
+                          </td>
                           <td>
                             <div className="adm-cell">
-                              <img
-                                className="adm-thumb"
-                                src={item.image_url || defaultImage}
-                                alt=""
-                                onError={(e) => {
-                                  e.currentTarget.onerror = null;
-                                  e.currentTarget.src = defaultImage;
-                                }}
-                              />
+                              <Link
+                                to={`/san-pham/${item.product_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="adm-link"
+                                aria-label={item.product_name}
+                              >
+                                <img
+                                  className="adm-thumb"
+                                  src={item.image_url || defaultImage}
+                                  alt=""
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = defaultImage;
+                                  }}
+                                />
+                              </Link>
                               <div>
-                                <div className="adm-name">
-                                  {item.product_name}
-                                </div>
+                                <Link
+                                  to={`/san-pham/${item.product_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="adm-link"
+                                >
+                                  <div className="adm-name">
+                                    {item.product_name}
+                                  </div>
+                                </Link>
                                 <div className="adm-sub">
-                                  {[item.color, item.size]
+                                  {[item.size, item.color]
                                     .filter(Boolean)
                                     .join(" / ") || "—"}
                                 </div>
                               </div>
                             </div>
+                          </td>
+                          <td className="text-end text-nowrap adm-price">
+                            {editInformation ? (
+                              <MoneyInput
+                                className="form-control text-end ms-auto adm-order-unit-price"
+                                aria-label={`Đơn giá ${item.product_name}`}
+                                min="0"
+                                required
+                                value={item.unit_price}
+                                onChange={(e) =>
+                                  changeItem(
+                                    item.order_item_id,
+                                    "unit_price",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            ) : (
+                              fmtVND(item.unit_price)
+                            )}
                           </td>
                           <td className="text-center">
                             {editInformation ? (
@@ -392,31 +433,12 @@ export default function OrderDetail({ readOnly = false }) {
                               item.quantity
                             )}
                           </td>
-                          <td className="text-end">
-                            {editInformation ? (
-                              <MoneyInput
-                                className="form-control text-end ms-auto adm-order-unit-price"
-                                aria-label={`Đơn giá ${item.product_name}`}
-                                min="0"
-                                required
-                                value={item.unit_price}
-                                onChange={(e) =>
-                                  changeItem(
-                                    item.order_item_id,
-                                    "unit_price",
-                                    e.target.value,
-                                  )
-                                }
-                              />
-                            ) : (
-                              fmtVND(item.unit_price)
-                            )}
-                          </td>
                           <td className="text-end text-nowrap adm-price">
                             {fmtVND(
                               Number(item.quantity) * Number(item.unit_price),
                             )}
                           </td>
+                          <td aria-hidden="true" />
                         </tr>
                       ))}
                     </tbody>
@@ -431,9 +453,11 @@ export default function OrderDetail({ readOnly = false }) {
               Tổng thanh toán
             </h2>
             <div className="row g-3">
-              <div className="col-md-4">
+              <div className="col-md-4 d-flex flex-column">
                 <div className="form-label">Tiền hàng</div>
-                <div>{fmtVND(subtotal)}</div>
+                <div className="adm-order-field-value d-flex align-items-center flex-grow-1">
+                  {fmtVND(subtotal)}
+                </div>
               </div>
               {[
                 ["total_discount_price", "Giảm giá"],
@@ -462,7 +486,7 @@ export default function OrderDetail({ readOnly = false }) {
               ))}
               <div className="col-12 text-end fw-bold">
                 Tổng tiền:{" "}
-                {fmtVND(editInformation ? total : order.final_amount)}
+                <span className="adm-detail-total">{fmtVND(editInformation ? total : order.final_amount)}</span>
               </div>
             </div>
           </section>

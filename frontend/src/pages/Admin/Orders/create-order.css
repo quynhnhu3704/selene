@@ -17,15 +17,18 @@
   min-width: 720px;
 }
 
-.adm-create-order-table th:first-child {
+.adm-create-order-table th:first-child,
+.adm-edit-order-table th:first-child {
   width: 5%;
 }
 
-.adm-create-order-table th:nth-child(2) {
+.adm-create-order-table th:nth-child(2),
+.adm-edit-order-table th:nth-child(2) {
   width: 39%;
 }
 
-.adm-create-order-table th:last-child {
+.adm-create-order-table th:last-child,
+.adm-edit-order-table th:last-child {
   width: 60px;
 }
 
@@ -39,8 +42,17 @@
   color: #212529;
 }
 
-.adm-edit-order-table th:first-child {
-  width: 44%;
+#edit-order-form:not(.adm-detail-info) .adm-order-field-value {
+  font-size: 15px;
+}
+
+#edit-order-form .adm-edit-order-table tbody td,
+#edit-order-form .adm-edit-order-table .adm-name {
+  font-size: 13.5px;
+}
+
+#edit-order-form .adm-edit-order-table .adm-sub {
+  font-size: 12px;
 }
 
 .adm-edit-order-table .adm-order-unit-price {

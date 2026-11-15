@@ -1,4 +1,5 @@
 import EmptyState from "../../../components/common/EmptyState";
+import fallbackAvatar from "../../../assets/images/default-avatar.png";
 // frontend/src/pages/Admin/Orders/index.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -21,9 +22,6 @@ import {
 
 const ORDERS_PER_PAGE = 12;
 const TABS = [{ key: "", label: "Tất cả" }, ...ORDER_STATUSES];
-
-const formatPhone = (phone) =>
-  String(phone || "").replace(/^(\d{4})(\d{3})(\d{3})$/, "$1.$2.$3") || "—";
 
 const formatDate = (value) => {
   const date = new Date(value);
@@ -300,15 +298,28 @@ export default function AdminOrders() {
                         className="adm-link"
                         to={`${detail}?returnUrl=${returnUrl}`}
                       >
-                        <div className="adm-name text-break">
+                        <div className="adm-name text-break fw-semibold">
                           {order.order_code}
                         </div>
                       </Link>
                     </td>
                     <td>
-                      <div className="adm-name">{order.recipient_name}</div>
-                      <div className="adm-sub">
-                        {formatPhone(order.recipient_phone)}
+                      <div className="adm-cell">
+                        <img
+                          src={order.customer?.avatar_url || fallbackAvatar}
+                          alt=""
+                          className="adm-thumb"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = fallbackAvatar;
+                          }}
+                        />
+                        <div>
+                          <div className="adm-name">{order.recipient_name}</div>
+                          <div className="adm-sub">
+                            {order.customer?.email || "—"}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="text-end fw-semibold">

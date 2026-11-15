@@ -1,6 +1,7 @@
 // frontend\src\pages\Admin\index.jsx
-import Loading from "../../components/common/Loading";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { getUser, isLoggedIn } from "../../utils/auth";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import defaultAvatar from "../../assets/images/default-avatar.png";
 import { getProfile } from "../../services/user.service";
@@ -90,8 +91,22 @@ export default function AdminLayout() {
   const location = useLocation();
   // const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(() => {
+    const user = isLoggedIn() ? getUser() : null;
+    return user
+      ? { ...user, role_id: { admin: 1, staff: 2, customer: 3 }[user.role] ?? user.role_id }
+      : null;
+  });
+  const canAccessAdmin = [1, 2].includes(Number(profile?.role_id));
+  const ownerOnly = location.pathname === "/admin/phan-quyen" ||
+    location.pathname.startsWith("/admin/phan-quyen/");
+  const accessDenied = !canAccessAdmin || (ownerOnly && Number(profile?.role_id) !== 1);
+
+  useEffect(() => {
+    if (accessDenied) {
+      toast.error("Bạn không có quyền truy cập trang này", { toastId: "admin-access-denied" });
+    }
+  }, [accessDenied, location.pathname]);
   const [openMenus, setOpenMenus] = useState(() => ({
     promotions: location.pathname.startsWith("/admin/khuyen-mai"),
   }));
@@ -123,8 +138,9 @@ export default function AdminLayout() {
         if (isCurrentRequest) setProfile(res.data.profile);
       } catch (error) {
         console.error("Không thể lấy thông tin admin:", error);
-      } finally {
-        if (isCurrentRequest) setLoading(false);
+        if (isCurrentRequest && [401, 403].includes(error.response?.status)) {
+          setProfile(null);
+        }
       }
     };
 
@@ -247,20 +263,9 @@ export default function AdminLayout() {
     }
   };
 
-  if (loading) {
-    return (
-      <div
-        className="d-flex align-items-center justify-content-center"
-        style={{ minHeight: "100vh" }}
-      >
-        <Loading text="Đang kiểm tra quyền truy cập..." />
-      </div>
-    );
-  }
-
   if (!profile) return <Navigate to="/tai-khoan/dang-nhap" replace />;
-  if (![1, 2].includes(Number(profile.role_id)))
-    return <Navigate to="/" replace />;
+  if (accessDenied)
+    return <Navigate to={canAccessAdmin ? "/admin" : "/"} replace />;
 
   return (
     <>

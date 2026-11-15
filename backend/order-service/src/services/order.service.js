@@ -533,10 +533,32 @@ export const getAllOrdersForAdmin = async (query = {}, exportAll = false) => {
       Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
       totalPages || 1,
     );
+    const pageOrders = exportAll
+      ? filtered
+      : filtered.slice((page - 1) * limit, page * limit);
+    const customers = new Map();
+    if (!exportAll) {
+      await Promise.all(
+        [...new Set(pageOrders.map((order) => order.account_id).filter(Boolean))]
+          .map(async (accountId) => {
+            const profile = await requestProductDetails(
+              { account_id: accountId },
+              "rpc_customer_profile_queue",
+            );
+            if (profile?.account_id === accountId) {
+              customers.set(accountId, {
+                avatar_url: profile.avatar_url || null,
+                email: profile.email || null,
+              });
+            }
+          }),
+      );
+    }
     return {
-      orders: exportAll
-        ? filtered
-        : filtered.slice((page - 1) * limit, page * limit),
+      orders: pageOrders.map((order) => ({
+        ...order,
+        customer: customers.get(order.account_id) || null,
+      })),
       pagination: {
         page,
         limit,

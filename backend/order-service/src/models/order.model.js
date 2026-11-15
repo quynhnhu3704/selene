@@ -130,7 +130,7 @@ export const OrderModel = {
       const { data, error, count } = await supabase
         .from("orders")
         .select(
-          "order_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at, updated_at, order_items(quantity)",
+          "order_id, account_id, order_code, recipient_name, recipient_phone, recipient_address, final_amount, payment_method, payment_status, status, created_at, updated_at, order_items(quantity)",
           { count: "exact" },
         )
         .order("created_at", { ascending: false })

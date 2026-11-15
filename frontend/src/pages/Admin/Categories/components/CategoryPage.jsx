@@ -1,4 +1,5 @@
 import AdminSaveButton from "../../components/AdminSaveButton";
+import "../../components/DetailInfo.css";
 import AdminImageUpload from "../../components/AdminImageUpload";
 import { useEffect, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
 import Loading from "../../../../components/common/Loading";
+import ProductImage from "../../../../components/common/ProductImage";
 import {
   createAdminCategory,
   getAdminCategoryDetail,
@@ -141,24 +143,17 @@ export default function CategoryPage({ create = false, readOnly = false }) {
       ) : error ? (
         <div className="alert alert-danger">{error}</div>
       ) : (
-        <form id="category-form" onSubmit={handleSubmit}>
+        <form id="category-form" className={readOnly ? "adm-detail-info" : undefined} onSubmit={handleSubmit}>
           <fieldset disabled={saving}>
             <div className="row g-4">
               <div className="col-md-4">
                 <section className="edit-section">
                   <h2 className="edit-section-title"><i className="bi bi-image" />Ảnh danh mục</h2>
-                  {(preview || form.image_url) ? (
-                    <img
+                    <ProductImage
                       src={preview || form.image_url}
                       alt="Ảnh danh mục"
                       className="edit-main-img mb-3"
                     />
-                  ) : (
-                    <div className="edit-img-placeholder mb-3">
-                      <i className="bi bi-image fs-1" />
-                      <span>Chưa có ảnh</span>
-                    </div>
-                  )}
                   {!readOnly && <>
                   <AdminImageUpload
                     id="category-image"

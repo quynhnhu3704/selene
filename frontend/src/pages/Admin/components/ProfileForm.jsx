@@ -1,5 +1,7 @@
 import Address from "../../../components/common/Address";
+import fallbackAvatar from "../../../assets/images/default-avatar.png";
 import "./ProfileForm.css";
+import "./DetailInfo.css";
 // frontend/src/pages/Admin/components/ProfileForm.jsx
 import { useEffect, useState } from "react";
 import { DateInput } from "../../../components/common/DatePicker";
@@ -42,7 +44,7 @@ export default function ProfileForm({
     ["identity_card", "CCCD", "text"],
   ];
   return (
-    <form id="admin-profile-form" onSubmit={handleSubmit}>
+    <form id="admin-profile-form" className={readOnly ? "adm-detail-info" : undefined} onSubmit={handleSubmit}>
       <fieldset disabled={saving}>
         <div className="row g-4">
           <div className="col-lg-8">
@@ -138,18 +140,16 @@ export default function ProfileForm({
           <div className="col-lg-4">
             <section className="edit-section">
               <h2 className="edit-section-title">Ảnh đại diện</h2>
-              {avatarUrl ? (
                 <img
-                  src={avatarUrl}
+                  src={avatarUrl || fallbackAvatar}
                   alt="Ảnh đại diện"
                   className="edit-main-img mb-3"
+                  onError={(event) => {
+                    if (event.currentTarget.getAttribute("src") !== fallbackAvatar) {
+                      event.currentTarget.src = fallbackAvatar;
+                    }
+                  }}
                 />
-              ) : (
-                <div className="edit-img-placeholder mb-3">
-                  <i className="bi bi-person fs-1" aria-hidden="true" />
-                  <span>Chưa có ảnh</span>
-                </div>
-              )}
               {!readOnly && (
                 <>
                   <AdminImageUpload

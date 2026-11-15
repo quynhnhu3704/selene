@@ -34,8 +34,7 @@ export const COMMITS = [
   { icon: "bi-shield-check", text1: "Cam kết bảo mật", text2: "thông tin khách hàng" },
 ];
 
-export const SIZE_GUIDE_IMAGE =
-  "https://deltasport.vn/wp-content/uploads/2025/07/San-pham-nu-moi.png";
+export { default as SIZE_GUIDE_IMAGE } from "../../assets/images/size.png";
 
 const COLORS = {
   đen: blackColor,

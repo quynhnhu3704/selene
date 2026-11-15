@@ -1,5 +1,5 @@
 // frontend/src/pages/Admin/Promotions/ProductPromotions.jsx
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
@@ -7,11 +7,11 @@ import AdminSelect from "../components/AdminSelect";
 import Pagination from "../../../components/common/Pagination";
 import EmptyState from "../../../components/common/EmptyState";
 import Loading from "../../../components/common/Loading";
+import styles from "./ProductPromotions.module.css";
 import {
   PRODUCT_PROMOTION_FILTER_STATUSES,
   PRODUCT_SORT_OPTIONS,
   getProductPromotionStatus,
-  fmtVND,
   formatDate,
 } from "./mockData";
 import {
@@ -20,6 +20,11 @@ import {
 } from "../../../services/promotion.service";
 
 const ITEMS_PER_PAGE = 8;
+const STATUS_LABELS = {
+  active: "Hoạt động",
+  inactive: "Đã khóa",
+  paused: "Đã khóa",
+};
 
 const getAppliedProductCount = (item) => {
   if (typeof item.applied_products_count === "number") {
@@ -48,12 +53,18 @@ const getAppliedProductCount = (item) => {
 export default function ProductPromotions() {
   const [promotions, setPromotions] = useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [completedRequest, setCompletedRequest] = useState(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("default");
   const [page, setPage] = useState(1);
+  const request = useMemo(
+    () => ({ page, status, q: debouncedQ.trim(), refreshVersion }),
+    [page, status, debouncedQ, refreshVersion],
+  );
+  const loading = completedRequest !== request;
   const [pagination, setPagination] = useState({
     currentPage: 1,
     limit: ITEMS_PER_PAGE,
@@ -86,49 +97,54 @@ export default function ProductPromotions() {
   }, [q]);
 
   // Fetch promotions from API (http://localhost:8000/api/products/manage/promotions)
-  const fetchPromotions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await getAdminPromotions({
-        page,
-        limit: ITEMS_PER_PAGE,
-        status: status || undefined,
-        q: debouncedQ.trim() || undefined,
-      });
-
-      const list = res?.data || [];
-      setPromotions(list);
-
-      if (res?.pagination) {
-        setPagination({
-          currentPage: res.pagination.currentPage ?? page,
-          limit: res.pagination.limit ?? ITEMS_PER_PAGE,
-          totalItems: res.pagination.totalItems ?? list.length,
-          totalPages:
-            res.pagination.totalPages ??
-            Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
-        });
-      } else {
-        setPagination({
-          currentPage: page,
-          limit: ITEMS_PER_PAGE,
-          totalItems: list.length,
-          totalPages: Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
-        });
-      }
-
-    } catch (err) {
-      setPromotions([]);
-      setPagination({ currentPage: page, limit: ITEMS_PER_PAGE, totalItems: 0, totalPages: 0 });
-      toast.error(err.response?.data?.message || "Không thể tải danh sách khuyến mãi.");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, status, debouncedQ]);
-
   useEffect(() => {
+    let ignore = false;
+    const fetchPromotions = async () => {
+      try {
+        const res = await getAdminPromotions({
+          page: request.page,
+          limit: ITEMS_PER_PAGE,
+          status: request.status || undefined,
+          q: request.q || undefined,
+        });
+        if (ignore) return;
+
+        const list = res?.data || [];
+        setPromotions(list);
+
+        if (res?.pagination) {
+          setPagination({
+            currentPage: res.pagination.currentPage ?? request.page,
+            limit: res.pagination.limit ?? ITEMS_PER_PAGE,
+            totalItems: res.pagination.totalItems ?? list.length,
+            totalPages:
+              res.pagination.totalPages ??
+              Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
+          });
+        } else {
+          setPagination({
+            currentPage: request.page,
+            limit: ITEMS_PER_PAGE,
+            totalItems: list.length,
+            totalPages: Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
+          });
+        }
+
+      } catch (err) {
+        if (ignore) return;
+        setPromotions([]);
+        setPagination({ currentPage: request.page, limit: ITEMS_PER_PAGE, totalItems: 0, totalPages: 0 });
+        toast.error(err.response?.data?.message || "Không thể tải danh sách khuyến mãi.");
+      } finally {
+        if (!ignore) setCompletedRequest(request);
+      }
+    };
+
     fetchPromotions();
-  }, [fetchPromotions]);
+    return () => {
+      ignore = true;
+    };
+  }, [request]);
 
   // Client-side sort on current page results
   const sortedPromotions = useMemo(() => {
@@ -183,7 +199,7 @@ export default function ProductPromotions() {
           ? `Đã dừng hoạt động khuyến mãi "${item.name}"`
           : `Đã kích hoạt khuyến mãi "${item.name}"`,
       );
-      fetchPromotions();
+      setRefreshVersion((version) => version + 1);
     } catch (err) {
       console.error(err);
       toast.error(
@@ -250,7 +266,7 @@ export default function ProductPromotions() {
           <option value="">Tất cả trạng thái</option>
           {PRODUCT_PROMOTION_FILTER_STATUSES.map((item) => (
             <option key={item.key} value={item.key}>
-              {item.label}
+              {STATUS_LABELS[item.key] || item.label}
             </option>
           ))}
         </AdminSelect>
@@ -289,16 +305,16 @@ export default function ProductPromotions() {
               <th style={{ width: "25%" }}>
                 Chương trình khuyến mãi
               </th>
-              <th className="text-center" style={{ width: "9%" }}>
+              <th className={`text-center ${styles.fullColor}`} style={{ width: "9%" }}>
                 SP áp dụng
               </th>
-              <th className="text-center" style={{ width: "9%" }}>
+              <th className={`text-center ${styles.fullColor}`} style={{ width: "9%" }}>
                 Lượt dùng
               </th>
               <th className="text-center" style={{ width: "13%" }}>
                 Trạng thái
               </th>
-              <th className="text-center" style={{ width: "10%" }}>
+              <th className={`text-center ${styles.fullColor}`} style={{ width: "10%" }}>
                 Thời gian
               </th>
               <th className="text-center" style={{ width: "8%" }} />
@@ -308,7 +324,7 @@ export default function ProductPromotions() {
             {loading ? (
               <tr>
                 <td colSpan={8} className="text-center py-5">
-                  <Loading text="Đang tải danh sách khuyến mãi..." />
+                  <Loading text="Đang tải khuyến mãi..." />
                 </td>
               </tr>
             ) : !sortedPromotions.length ? (
@@ -342,7 +358,7 @@ export default function ProductPromotions() {
                     <td>
                       <Link
                         to={editUrl}
-                        className="adm-link adm-name text-break"
+                        className={`adm-link adm-name text-break fw-semibold ${styles.promotionCode}`}
                         onClick={saveScrollPosition}
                         title="Bấm để chỉnh sửa"
                       >
@@ -350,14 +366,9 @@ export default function ProductPromotions() {
                       </Link>
                     </td>
                     <td>
-                      <Link
-                        to={editUrl}
-                        className="adm-link adm-name text-break"
-                        onClick={saveScrollPosition}
-                        title="Bấm để chỉnh sửa"
-                      >
+                      <span className="adm-name text-break">
                         {item.name || promoCode}
-                      </Link>
+                      </span>
                       {(item.description || item.scope) && (
                         <div
                           className="adm-sub text-break mt-1"
@@ -366,21 +377,18 @@ export default function ProductPromotions() {
                         </div>
                       )}
                     </td>
-                    <td className="text-center text-nowrap">
+                    <td className={`text-center text-nowrap ${styles.fullColor}`}>
                       {appliedCount === "Tất cả" ? (
-                        <span className="badge bg-secondary-subtle text-secondary fw-semibold">
+                        <span className="badge bg-secondary-subtle fw-semibold">
                           Tất cả SP
                         </span>
                       ) : (
-                        <span className="fw-semibold text-dark">
-                          {appliedCount}{" "}
-                          <span className="text-muted small fw-normal">SP</span>
-                        </span>
+                        <span className="fw-normal">{appliedCount}</span>
                       )}
                     </td>
-                    <td className="text-center text-nowrap">
-                      <span className="fw-semibold text-dark">{usedQty}</span>{" "}
-                      <span className="text-muted">/ {totalQty}</span>
+                    <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                      <span className="fw-semibold">{usedQty}</span>{" "}
+                      <span>/ {totalQty}</span>
                       {Number(item.quantity_limit) === 0 && (
                         <div
                           className="adm-sub"
@@ -391,18 +399,18 @@ export default function ProductPromotions() {
                     </td>
                     <td className="text-center text-nowrap">
                       <span
-                        className={`adm-status adm-status-wide rounded-pill text-${state.color} bg-${state.color}-subtle`}
+                        className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
                       >
-                        {state.label}
+                        {STATUS_LABELS[item.status] || state.label}
                       </span>
                     </td>
                     <td
-                      className="text-center text-nowrap"
+                      className={`text-center text-nowrap ${styles.fullColor}`}
                     >
-                      <div className="fw-medium">
+                      <div className="fw-normal">
                         {formatDate(item.start_date)}
                       </div>
-                      <div className="text-muted">
+                      <div>
                         đến {formatDate(item.end_date)}
                       </div>
                     </td>

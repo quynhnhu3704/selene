@@ -1,0 +1,7 @@
+.adm-detail-info .form-label + div,
+.adm-detail-info .adm-table tbody td,
+.adm-detail-info .adm-table .adm-name,
+.adm-detail-info .adm-table .adm-sub,
+.adm-detail-info .adm-detail-total {
+  font-size: 15px;
+}

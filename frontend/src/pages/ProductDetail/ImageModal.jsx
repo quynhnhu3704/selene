@@ -5,6 +5,7 @@ export default function ImageModal({
   src,
   note,
   fullscreen = false,
+  imageOnly = false,
   onClose,
   onError,
 }) {
@@ -27,8 +28,9 @@ export default function ImageModal({
   return (
     <dialog
       ref={dialogRef}
-      className={`pd-image-modal${fullscreen ? " pd-image-modal-fullscreen" : ""}`}
-      aria-labelledby="pd-modal-title"
+      className={`pd-image-modal${fullscreen ? " pd-image-modal-fullscreen" : ""}${imageOnly ? " pd-image-modal-image-only" : ""}`}
+      aria-label={imageOnly ? title : undefined}
+      aria-labelledby={imageOnly ? undefined : "pd-modal-title"}
       onCancel={onClose}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -36,7 +38,7 @@ export default function ImageModal({
     >
       <div className="pd-modal-content">
         <div className="pd-modal-head">
-          <h2 id="pd-modal-title">{title}</h2>
+          {!imageOnly && <h2 id="pd-modal-title">{title}</h2>}
           <button type="button" onClick={onClose} aria-label="Đóng" autoFocus>
             <i className="bi bi-x-lg" />
           </button>
@@ -46,7 +48,7 @@ export default function ImageModal({
           <img
             key={src}
             src={src}
-            alt=""
+            alt={imageOnly ? title : ""}
             onError={() => {
               setFailedSrc(src);
               onError?.();

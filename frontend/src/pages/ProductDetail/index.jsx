@@ -1,4 +1,5 @@
 import EmptyState from "../../components/common/EmptyState";
+import "./empty-state.css";
 // frontend\src\pages\ProductDetail.jsx
 import ProductDetailSkeleton from "./Skeleton";
 import { useState, useEffect, useLayoutEffect, useContext } from "react";
@@ -84,7 +85,7 @@ function ProductDetailContent({ id }) {
 
   if (!product) {
     return (
-      <div style={{ padding: 40 }}>
+      <div className="pd-empty-page">
         <EmptyState text="Không có sản phẩm nào để hiển thị" />
       </div>
     );
@@ -170,16 +171,12 @@ function ProductDetailContent({ id }) {
         <ImageModal
           title={modal === "size" ? "Hướng dẫn chọn size" : PRODUCT.name}
           fullscreen={modal === "zoom"}
+          imageOnly={modal === "size"}
           src={modal === "size" ? SIZE_GUIDE_IMAGE : PRODUCT.images[activeImg]}
           alt=""
           onError={
             modal === "zoom"
               ? () => hideFailedImage(PRODUCT.images[activeImg])
-              : undefined
-          }
-          note={
-            modal === "size"
-              ? "Bảng size tham khảo. Liên hệ tư vấn để chọn kích thước phù hợp với sản phẩm."
               : undefined
           }
           onClose={() => setModal(null)}

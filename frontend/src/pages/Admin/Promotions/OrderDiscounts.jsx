@@ -296,7 +296,7 @@ export default function OrderDiscounts() {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="text-center py-5">
-                    <Loading text="Đang tải danh sách mã giảm giá..." />
+                    <Loading text="Đang tải mã giảm giá..." />
                   </td>
                 </tr>
               ) : !paginatedDiscounts.length ? (

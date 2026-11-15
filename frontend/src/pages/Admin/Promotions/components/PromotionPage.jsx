@@ -509,7 +509,7 @@ export default function PromotionPage({ create = false }) {
           className="d-flex align-items-center justify-content-center"
           style={{ minHeight: "50vh" }}
         >
-          <Loading text="Đang tải thông tin khuyến mãi..." />
+          <Loading text="Đang tải khuyến mãi..." />
         </div>
       ) : error ? (
         <div className="bg-white rounded-3 p-4 border text-center py-5">

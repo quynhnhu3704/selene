@@ -1,3 +1,4 @@
+import fallbackAvatar from "../../../assets/images/default-avatar.png";
 import { DateInput } from "../../../components/common/DatePicker";
 import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/Dashboard/index.jsx
@@ -58,9 +59,8 @@ const compact = (value) =>
   }).format(value || 0);
 const dateKey = (value) =>
   new Date(new Date(value).getTime() + 7 * 3600000).toISOString().slice(0, 10);
-const shortDate = (value) => `${value.slice(8, 10)}/${value.slice(5, 7)}`;
 const fullDate = (value) =>
-  new Date(value).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  new Date(value).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric" });
 const getPeriod = (days) => ({
   start: dateKey(Date.now() - (days - 1) * DAY),
   end: dateKey(Date.now()),
@@ -272,7 +272,7 @@ function SalesCalendar({ timeline }) {
         <div aria-live="polite">
           {selected ? (
             <>
-              <strong>{shortDate(selected.date)}</strong>
+              <strong>{fullDate(selected.date)}</strong>
               <span>{number(selected.orders)} đơn</span>
               <span>{fmtVND(selected.revenue)}</span>
             </>
@@ -455,14 +455,14 @@ export default function Dashboard() {
         </div>
         <div className="dash-head-actions">
           <button
-            className="btn dash-button"
+            className="form-btn btn btn-export btn-outline-dark fw-semibold px-4 dash-button"
             onClick={() => setRevision((value) => value + 1)}
             disabled={loading}
           >
             <i className="bi bi-arrow-clockwise" /> Làm mới
           </button>
           <button
-            className="btn dash-button primary"
+            className="form-btn btn btn-dark fw-semibold px-4 dash-button"
             onClick={exportReport}
             disabled={!data || loading || !!error}
           >
@@ -508,7 +508,7 @@ export default function Dashboard() {
               setDraft({ ...draft, end: event.target.value })
             }
           />
-          <button className="btn dash-button" type="submit">
+          <button className="form-btn btn btn-export btn-outline-dark fw-semibold px-4 dash-button" type="submit">
             Áp dụng <i className="bi bi-arrow-right-short" />
           </button>
         </form>
@@ -532,7 +532,7 @@ export default function Dashboard() {
           <h2>Chưa thể tải thống kê</h2>
           <p>{error}</p>
           <button
-            className="btn dash-button primary"
+            className="form-btn btn btn-dark fw-semibold px-4 dash-button"
             onClick={() => setRevision((value) => value + 1)}
           >
             Thử lại
@@ -661,7 +661,7 @@ export default function Dashboard() {
                         <XAxis
                           dataKey="date"
                           {...AXIS}
-                          tickFormatter={shortDate}
+                          tickFormatter={fullDate}
                           minTickGap={35}
                         />
                         <YAxis
@@ -725,7 +725,7 @@ export default function Dashboard() {
                             height={22}
                             stroke="#b76e65"
                             fill="#fcf8f6"
-                            tickFormatter={shortDate}
+                            tickFormatter={fullDate}
                             travellerWidth={8}
                           />
                         )}
@@ -773,7 +773,7 @@ export default function Dashboard() {
                                 />
                               ))}
                             </Pie>
-                            <Tooltip content={<ChartTooltip />} />
+                            <Tooltip wrapperStyle={{ zIndex: 2 }} content={<ChartTooltip />} />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className="dash-donut-center">
@@ -865,6 +865,7 @@ export default function Dashboard() {
                   icon="bi-award"
                   action={
                     <AdminSelect
+                      className="dash-product-metric"
                       aria-label="Xếp hạng sản phẩm theo"
                       value={productMetric}
                       onChange={(event) => setProductMetric(event.target.value)}
@@ -1134,61 +1135,75 @@ export default function Dashboard() {
               }
             >
               {data.recentOrders.length ? (
-                <div className="table-responsive dash-orders">
-                  <table className="table adm-table">
+                <div className="adm-table-wrap table-responsive overflow-x-auto">
+                  <table className="table adm-table mb-0" style={{ minWidth: 1000 }}>
                     <thead>
                       <tr>
-                        <th>Mã đơn hàng</th>
-                        <th>Khách hàng</th>
-                        <th>Ngày đặt</th>
-                        <th>Giá trị</th>
-                        <th>Trạng thái</th>
-                        <th>
-                          <span className="visually-hidden">Chi tiết</span>
+                        <th className="text-center" style={{ width: "5%" }}></th>
+                        <th style={{ width: "19%" }}>Đơn hàng</th>
+                        <th style={{ width: "30%" }}>Khách hàng</th>
+                        <th className="text-end" style={{ width: "15%" }}>
+                          Tổng tiền
+                        </th>
+                        <th className="text-center" style={{ width: "17%" }}>
+                          Trạng thái
+                        </th>
+                        <th className="text-center" style={{ width: "14%" }}>
+                          Ngày đặt
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.recentOrders.map((order) => {
-                        const status = getOrderStatus(order.status);
+                      {data.recentOrders.map((order, index) => {
+                        const state = getOrderStatus(order.status);
+                        const detail = `/admin/don-hang/${encodeURIComponent(order.order_id)}`;
                         return (
                           <tr key={order.order_id}>
+                            <td className="text-center">
+                              <span className="adm-stt">{index + 1}</span>
+                            </td>
                             <td>
                               <Link
-                                to={`/admin/don-hang/${encodeURIComponent(order.order_id)}`}
-                                className="dash-order-code"
+                                className="adm-link"
+                                to={detail}
                               >
-                                {order.order_code || order.order_id}
+                                <div className="adm-name text-break fw-semibold">
+                                  {order.order_code}
+                                </div>
                               </Link>
                             </td>
                             <td>
-                              <span className="dash-customer-avatar">
-                                {(order.recipient_name || "K")
-                                  .trim()
-                                  .slice(0, 1)
-                                  .toUpperCase()}
-                              </span>
-                              {order.recipient_name || "Khách hàng"}
+                              <div className="adm-cell">
+                                <img
+                                  src={order.customer?.avatar_url || fallbackAvatar}
+                                  alt=""
+                                  className="adm-thumb"
+                                  onError={(event) => {
+                                    event.currentTarget.onerror = null;
+                                    event.currentTarget.src = fallbackAvatar;
+                                  }}
+                                />
+                                <div>
+                                  <div className="adm-name">{order.recipient_name}</div>
+                                  <div className="adm-sub">
+                                    {order.customer?.email || "—"}
+                                  </div>
+                                </div>
+                              </div>
                             </td>
-                            <td>{fullDate(order.created_at)}</td>
-                            <td className="fw-bold">
+                            <td className="text-end fw-semibold">
                               {fmtVND(order.final_amount)}
                             </td>
-                            <td>
+                            <td className="text-center">
                               <span
-                                className={`badge dash-order-status text-${status.color} bg-${status.color}-subtle`}
+                                className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
+                                style={{ width: "8rem" }}
                               >
-                                {status.label}
+                                {state.label}
                               </span>
                             </td>
-                            <td>
-                              <Link
-                                className="dash-order-arrow"
-                                aria-label={`Xem đơn ${order.order_code || order.order_id}`}
-                                to={`/admin/don-hang/${encodeURIComponent(order.order_id)}`}
-                              >
-                                <i className="bi bi-arrow-up-right" />
-                              </Link>
+                            <td className="text-center text-nowrap">
+                              {fullDate(order.created_at)}
                             </td>
                           </tr>
                         );
@@ -1212,6 +1227,8 @@ export default function Dashboard() {
                 <i className="bi bi-check2-circle" /> Cập nhật{" "}
                 {new Date(data.updatedAt).toLocaleString("vi-VN", {
                   timeZone: "Asia/Ho_Chi_Minh",
+                  day: "2-digit", month: "2-digit", year: "numeric",
+                  hour: "2-digit", minute: "2-digit", second: "2-digit",
                 })}
               </span>
             </footer>

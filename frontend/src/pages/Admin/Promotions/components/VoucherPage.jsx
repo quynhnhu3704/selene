@@ -327,7 +327,7 @@ export default function VoucherPage({ create = false }) {
           className="d-flex align-items-center justify-content-center"
           style={{ minHeight: "50vh" }}
         >
-          <Loading text="Đang tải thông tin mã giảm giá..." />
+          <Loading text="Đang tải mã giảm giá..." />
         </div>
       ) : error ? (
         <div className="bg-white rounded-3 p-4 border text-center py-5">

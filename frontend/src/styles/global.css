@@ -5356,6 +5356,12 @@ body p.empty-state-text {
 .pd-modal-head h2 { font-size: 18px; margin: 0; }
 .pd-modal-head button { border: none; background: #fcf2f2; color: #871B1B; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; }
 .pd-modal-content > img { display: block; width: 100%; height: auto; }
+.pd-image-modal-image-only { width: fit-content; max-width: 94vw; border-radius: 20px; overflow: hidden; }
+.pd-image-modal-image-only .pd-modal-content { position: relative; padding: 0; }
+.pd-image-modal-image-only .pd-modal-head { position: absolute; top: 12px; right: 12px; margin: 0; }
+.pd-image-modal-image-only .pd-modal-head button { background: #fff; box-shadow: 0 2px 12px #0002; cursor: pointer; }
+.pd-image-modal-image-only .pd-modal-head button:hover { background: #fcf2f2; }
+.pd-image-modal-image-only .pd-modal-content > img { width: auto; max-width: min(900px, 94vw); max-height: 80vh; max-height: 80dvh; border-radius: 20px; }
 .pd-image-modal-fullscreen { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; border-radius: 0; overflow: hidden; background: #111; color: #fff; }
 .pd-image-modal-fullscreen .pd-modal-content { display: flex; flex-direction: column; height: 100%; padding: 16px; }
 .pd-image-modal-fullscreen .pd-modal-head { flex-shrink: 0; margin-bottom: 12px; }

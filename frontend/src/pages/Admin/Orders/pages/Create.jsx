@@ -115,7 +115,10 @@ export default function CreateOrder() {
     if (!id) return;
     try {
       const { data } = await getProductById(id);
-      if (request === productRequest.current) setProduct(data);
+      if (request === productRequest.current) {
+        // Keep the ID used to fetch this product with its snapshot.
+        setProduct({ ...data, product_id: id });
+      }
     } catch {
       if (request === productRequest.current) {
         setSelectedProductId("");
@@ -129,6 +132,7 @@ export default function CreateOrder() {
       ...items,
       {
         ...variant,
+        product_id: product.product_id,
         product_name: product.product_name,
         image_url: product.images?.[0] || defaultImage,
         unit_price: Number(
@@ -384,18 +388,33 @@ export default function CreateOrder() {
                         </td>
                         <td>
                           <div className="adm-cell">
-                            <img
-                              className="adm-thumb"
-                              src={item.image_url}
-                              alt=""
-                              onError={(event) => {
-                                if (event.currentTarget.getAttribute("src") !== defaultImage) {
-                                  event.currentTarget.src = defaultImage;
-                                }
-                              }}
-                            />
+                            <Link
+                              to={`/san-pham/${item.product_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="adm-link"
+                              aria-label={item.product_name}
+                            >
+                              <img
+                                className="adm-thumb"
+                                src={item.image_url}
+                                alt=""
+                                onError={(event) => {
+                                  if (event.currentTarget.getAttribute("src") !== defaultImage) {
+                                    event.currentTarget.src = defaultImage;
+                                  }
+                                }}
+                              />
+                            </Link>
                             <div>
-                              <div className="adm-name">{item.product_name}</div>
+                              <Link
+                                to={`/san-pham/${item.product_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="adm-link"
+                              >
+                                <div className="adm-name">{item.product_name}</div>
+                              </Link>
                               <div className="adm-sub">
                                 {[item.size, item.color].filter(Boolean).join(" / ")}
                               </div>
