@@ -1306,6 +1306,7 @@
   margin-bottom: 16px;
 }
 .form-btn[type="reset"]:hover,
+.form-btn.btn-retry:hover,
 .form-btn.btn-export:hover {
   color: #212529;
   border-color: #212529;
@@ -1314,6 +1315,7 @@
 .form-btn[type="reset"],
 .form-btn-google,
 .form-btn.btn-export,
+.form-btn.btn-retry,
 .form-btn-cancel,
 .adm-content:has(.adm-form-head) .btn-outline-dark {
   --bs-btn-hover-color: #212529;

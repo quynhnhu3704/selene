@@ -1,3 +1,5 @@
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 import EmptyState from "../../../components/common/EmptyState";
 import { useEffect, useRef, useState } from "react";
 import AdminSelect from "../components/AdminSelect";
@@ -30,6 +32,7 @@ export default function AdminPermissions() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
   const [revision, setRevision] = useState(0);
   const saveLock = useRef(false);
   const changes = [...new Set([...selected, ...saved])].filter(
@@ -51,10 +54,12 @@ export default function AdminPermissions() {
         setSaved(selection);
         setSelected(new Set(selection));
       } catch (err) {
-        if (current)
+        if (current) {
+          setConnectionError(isConnectionError(err));
           setError(
             err.response?.data?.message || "Không thể tải bảng phân quyền!",
           );
+        }
       } finally {
         if (current) setLoading(false);
       }
@@ -244,6 +249,10 @@ export default function AdminPermissions() {
           style={{ minHeight: "60vh" }}
         >
           <Loading text="Đang tải bảng phân quyền..." />
+        </div>
+      ) : error && connectionError ? (
+        <div className="adm-table-wrap py-5">
+          <ConnectionErrorState message={error} onRetry={() => setRevision((value) => value + 1)} />
         </div>
       ) : error ? (
         <div className="page-empty py-5" role="alert">

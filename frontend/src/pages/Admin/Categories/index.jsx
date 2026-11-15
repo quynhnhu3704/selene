@@ -1,3 +1,5 @@
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 import EmptyState from "../../../components/common/EmptyState";
 // frontend\src\pages\Admin\Categories\index.jsx
 import { useEffect, useRef, useState } from "react";
@@ -57,6 +59,8 @@ export default function AdminCategories() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
+  const [revision, setRevision] = useState(0);
   const [searchValue, setSearchValue] = useState(q);
   const sortRef = useRef(null);
   const isComposing = useRef(false);
@@ -134,6 +138,7 @@ export default function AdminCategories() {
         if (!isCurrentRequest) return;
 
         console.error(err);
+        setConnectionError(isConnectionError(err));
         setError(
           err.response?.data?.message || "Không thể tải danh sách danh mục!",
         );
@@ -147,7 +152,7 @@ export default function AdminCategories() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [q, sort, status, page]);
+  }, [q, sort, status, page, revision]);
 
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("admin-categories-scroll");
@@ -446,7 +451,7 @@ export default function AdminCategories() {
                   className="text-center text-danger fw-semibold py-5"
                   style={{ fontSize: 14 }}
                 >
-                  {error}
+                  {connectionError ? <ConnectionErrorState message={error} onRetry={() => setRevision((value) => value + 1)} /> : error}
                 </td>
               </tr>
             ) : categories.length === 0 ? (

@@ -1,4 +1,6 @@
 import fallbackAvatar from "../../../assets/images/default-avatar.png";
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 import { DateInput } from "../../../components/common/DatePicker";
 import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/Dashboard/index.jsx
@@ -300,6 +302,7 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
   const [dateError, setDateError] = useState("");
   const [revision, setRevision] = useState(0);
   const [trend, setTrend] = useState("revenue");
@@ -319,12 +322,14 @@ export default function Dashboard() {
         if (!res.success) throw new Error(res.message);
         setData(res.data);
       } catch (err) {
-        if (isCurrentRequest)
+        if (isCurrentRequest) {
+          setConnectionError(isConnectionError(err));
           setError(
             err.response?.data?.message ||
               err.message ||
               "Không thể tải thống kê.",
           );
+        }
       } finally {
         if (isCurrentRequest) setLoading(false);
       }
@@ -488,6 +493,7 @@ export default function Dashboard() {
           <i className="bi bi-calendar3" />
           <DateInput
             aria-label="Từ ngày"
+            placeholderText="Chọn ngày bắt đầu"
             required
             max={today}
             onFocus={() => setToday(dateKey(Date.now()))}
@@ -499,6 +505,7 @@ export default function Dashboard() {
           <span>—</span>
           <DateInput
             aria-label="Đến ngày"
+            placeholderText="Chọn ngày kết thúc"
             required
             min={draft.start}
             max={today}
@@ -525,6 +532,13 @@ export default function Dashboard() {
           style={{ minHeight: "60vh" }}
         >
           <Loading text="Đang tổng hợp dữ liệu..." />
+        </div>
+      ) : error && connectionError ? (
+        <div className="adm-table-wrap py-5">
+          <ConnectionErrorState
+            message={<>Chưa thể tải thống kê<br />{error}</>}
+            onRetry={() => setRevision((value) => value + 1)}
+          />
         </div>
       ) : error ? (
         <div className="dash-error" role="alert">

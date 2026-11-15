@@ -1,4 +1,6 @@
 import EmptyState from "../../../components/common/EmptyState";
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 import { useEffect, useState, useCallback, useRef } from "react";
 import ChatPanel from "../../../components/SupportChat/ChatPanel";
 import {
@@ -82,6 +84,7 @@ function SupportInbox() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [assigning, setAssigning] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -148,6 +151,7 @@ function SupportInbox() {
         });
       } catch (err) {
         console.error("Lỗi khi tải danh sách cuộc trò chuyện:", err);
+        setConnectionError(isConnectionError(err));
         setError(
           err?.response?.data?.message ||
           "Không thể kết nối đến máy chủ hoặc chưa có quyền xem hội thoại."
@@ -1168,7 +1172,15 @@ function SupportInbox() {
           {/* Danh sách cuộn */}
           <div className="support-conversation-scroll">
             {/* Lỗi khi tải */}
-            {error && (
+            {error && connectionError && (
+              <div className="py-5">
+                <ConnectionErrorState
+                  message={error}
+                  onRetry={() => fetchList(status, debouncedSearch, false)}
+                />
+              </div>
+            )}
+            {error && !connectionError && (
               <div className="p-3 text-center">
                 <div className="alert alert-danger py-2 px-3 small mb-2">{error}</div>
                 <button

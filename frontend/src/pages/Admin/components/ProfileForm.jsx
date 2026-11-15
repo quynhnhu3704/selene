@@ -73,6 +73,7 @@ export default function ProfileForm({
                     ) : type === "date" ? (
                       <DateInput
                         id={key}
+                        placeholderText="Chọn ngày sinh"
                         value={profile[key] || ""}
                         max={new Date()}
                         disabled={saving}
@@ -85,6 +86,7 @@ export default function ProfileForm({
                         id={key}
                         className="form-control"
                         type={type}
+                        placeholder={key === "identity_card" ? "Nhập số CCCD" : `Nhập ${label.toLowerCase()}`}
                         required={required}
                         value={profile[key] || ""}
                         pattern={

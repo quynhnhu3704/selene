@@ -284,6 +284,7 @@ export default function CreateOrder() {
                     className="form-control"
                     required
                     type={type}
+                    placeholder={key === "recipient_name" ? "Nhập họ và tên người nhận" : "Nhập số điện thoại người nhận"}
                     pattern={type === "tel" ? "0[0-9]{9}" : undefined}
                     value={form[key]}
                     onChange={(e) => change(key, e.target.value)}
@@ -429,6 +430,7 @@ export default function CreateOrder() {
                             aria-label={`Số lượng ${item.product_name} ${item.size} ${item.color}`}
                             required
                             type="number"
+                            placeholder="Số lượng"
                             min="1"
                             max={item.stock_quantity}
                             step="1"

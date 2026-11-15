@@ -200,7 +200,7 @@ export default function CategoryPage({ create = false, readOnly = false }) {
                     id="category-description"
                     className="form-control"
                     rows={5}
-                    placeholder="Nhập mô tả danh mục"
+                    placeholder="Nhập mô tả danh mục..."
                     value={form.description || ""}
                     onChange={(e) =>
                       setForm((prev) => ({

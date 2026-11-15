@@ -1,3 +1,5 @@
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 // frontend/src/pages/Admin/Promotions/ProductPromotions.jsx
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -53,6 +55,7 @@ const getAppliedProductCount = (item) => {
 export default function ProductPromotions() {
   const [promotions, setPromotions] = useState([]);
 
+  const [connectionError, setConnectionError] = useState("");
   const [completedRequest, setCompletedRequest] = useState(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [q, setQ] = useState("");
@@ -111,6 +114,7 @@ export default function ProductPromotions() {
 
         const list = res?.data || [];
         setPromotions(list);
+        setConnectionError("");
 
         if (res?.pagination) {
           setPagination({
@@ -134,7 +138,12 @@ export default function ProductPromotions() {
         if (ignore) return;
         setPromotions([]);
         setPagination({ currentPage: request.page, limit: ITEMS_PER_PAGE, totalItems: 0, totalPages: 0 });
-        toast.error(err.response?.data?.message || "Không thể tải danh sách khuyến mãi.");
+        if (isConnectionError(err)) {
+          setConnectionError(err.response?.data?.message || "Không thể tải danh sách khuyến mãi.");
+        } else {
+          setConnectionError("");
+          toast.error(err.response?.data?.message || "Không thể tải danh sách khuyến mãi.");
+        }
       } finally {
         if (!ignore) setCompletedRequest(request);
       }
@@ -327,7 +336,13 @@ export default function ProductPromotions() {
                   <Loading text="Đang tải khuyến mãi..." />
                 </td>
               </tr>
-            ) : !sortedPromotions.length ? (
+            ) : connectionError ? (
+                <tr>
+                  <td colSpan={8} className="py-5">
+                    <ConnectionErrorState message={connectionError} onRetry={() => setRefreshVersion((value) => value + 1)} />
+                  </td>
+                </tr>
+              ) : !sortedPromotions.length ? (
               <tr>
                 <td colSpan={8} className="page-empty py-5">
                   <EmptyState text="Không có chương trình khuyến mãi nào để hiển thị" />

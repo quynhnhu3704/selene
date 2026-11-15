@@ -1,3 +1,5 @@
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 import EmptyState from "../../../components/common/EmptyState";
 // frontend\src\pages\Admin\Products\index.jsx
 import { useEffect, useRef, useState } from "react";
@@ -62,6 +64,8 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
+  const [revision, setRevision] = useState(0);
   const [searchValue, setSearchValue] = useState(q);
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
@@ -134,6 +138,7 @@ export default function AdminProducts() {
         if (!isCurrentRequest) return;
 
         console.error(err);
+        setConnectionError(isConnectionError(err));
         setError(
           err.response?.data?.message || "Không thể tải danh sách sản phẩm!",
         );
@@ -147,7 +152,7 @@ export default function AdminProducts() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [q, category, sort, status, page]);
+  }, [q, category, sort, status, page, revision]);
 
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("admin-products-scroll");
@@ -520,7 +525,7 @@ export default function AdminProducts() {
                   className="text-center text-danger fw-semibold py-5"
                   style={{ fontSize: 14 }}
                 >
-                  {error}
+                  {connectionError ? <ConnectionErrorState message={error} onRetry={() => setRevision((value) => value + 1)} /> : error}
                 </td>
               </tr>
             ) : products.length === 0 ? (

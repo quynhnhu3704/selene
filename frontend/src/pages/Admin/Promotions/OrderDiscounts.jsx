@@ -1,5 +1,7 @@
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 // frontend/src/pages/Admin/Promotions/OrderDiscounts.jsx
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
@@ -7,6 +9,7 @@ import AdminSelect from "../components/AdminSelect";
 import Pagination from "../../../components/common/Pagination";
 import EmptyState from "../../../components/common/EmptyState";
 import Loading from "../../../components/common/Loading";
+import styles from "./ProductPromotions.module.css";
 import {
   ORDER_DISCOUNT_STATUSES,
   ORDER_SORT_OPTIONS,
@@ -20,6 +23,11 @@ import {
 } from "../../../services/voucher.service";
 
 const ITEMS_PER_PAGE = 8;
+const STATUS_LABELS = {
+  active: "Hoạt động",
+  inactive: "Đã khóa",
+  locked: "Đã khóa",
+};
 
 const formatK = (val) => {
   if (!val || Number(val) === 0) return "0đ";
@@ -39,7 +47,7 @@ const getVoucherDescription = (item) => {
   const minOrder = item.min_order_value ?? item.min_order ?? 0;
   const maxDiscount = item.max_discount_amount ?? 0;
 
-  let text = "";
+  let text;
   if (isPercent) {
     text = `Giảm ${item.discount_value}%`;
     if (Number(maxDiscount) > 0) {
@@ -64,7 +72,10 @@ const getVoucherDescription = (item) => {
 export default function OrderDiscounts() {
   const [discounts, setDiscounts] = useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState("");
+  const [completedRequest, setCompletedRequest] = useState(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const loading = completedRequest !== refreshVersion;
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("default");
@@ -86,30 +97,41 @@ export default function OrderDiscounts() {
   }, [loading]);
 
   // Fetch vouchers from API
-  const fetchVouchers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const vouchers = [];
-      let nextPage = 1;
-      while (true) {
-        const res = await getAdminVouchers({ page: nextPage, limit: 100 });
-        const batch = Array.isArray(res?.data) ? res.data : [];
-        vouchers.push(...batch);
-        if (!batch.length || vouchers.length >= (res?.pagination?.totalItems ?? vouchers.length)) break;
-        nextPage += 1;
-      }
-      setDiscounts(vouchers);
-    } catch (err) {
-      setDiscounts([]);
-      toast.error(err.response?.data?.message || "Không thể tải danh sách voucher.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
+    let ignore = false;
+    const fetchVouchers = async () => {
+      try {
+        const vouchers = [];
+        let nextPage = 1;
+        while (true) {
+          const res = await getAdminVouchers({ page: nextPage, limit: 100 });
+          if (ignore) return;
+          const batch = Array.isArray(res?.data) ? res.data : [];
+          vouchers.push(...batch);
+          if (!batch.length || vouchers.length >= (res?.pagination?.totalItems ?? vouchers.length)) break;
+          nextPage += 1;
+        }
+        setDiscounts(vouchers);
+        setConnectionError("");
+      } catch (err) {
+        if (ignore) return;
+        setDiscounts([]);
+        if (isConnectionError(err)) {
+          setConnectionError(err.response?.data?.message || "Không thể tải danh sách voucher.");
+        } else {
+          setConnectionError("");
+          toast.error(err.response?.data?.message || "Không thể tải danh sách voucher.");
+        }
+      } finally {
+        if (!ignore) setCompletedRequest(refreshVersion);
+      }
+    };
+
     fetchVouchers();
-  }, [fetchVouchers]);
+    return () => {
+      ignore = true;
+    };
+  }, [refreshVersion]);
 
   // Filter & Sort
   const filteredDiscounts = useMemo(() => {
@@ -178,10 +200,7 @@ export default function OrderDiscounts() {
       return;
     }
 
-    const updated = discounts.map((p) =>
-      (p.voucher_id || p.id) === voucherId ? { ...p, status: nextStatus } : p,
-    );
-    setDiscounts(updated);
+    setRefreshVersion((version) => version + 1);
     toast.info(
       nextStatus === "inactive"
         ? `Đã dừng hoạt động mã "${item.code}"`
@@ -247,7 +266,7 @@ export default function OrderDiscounts() {
             (v, i, a) => a.findIndex((t) => t.key === v.key) === i,
           ).map((item) => (
             <option key={item.key} value={item.key}>
-              {item.label}
+              {STATUS_LABELS[item.key] || item.label}
             </option>
           ))}
         </AdminSelect>
@@ -285,10 +304,10 @@ export default function OrderDiscounts() {
                 <th className="text-center" style={{ width: "4%" }} />
                 <th style={{ width: "12%" }}>Mã giảm giá</th>
                 <th style={{ width: "18%" }}>Tên mã</th>
-                <th style={{ width: "27%" }}>Áp dụng</th>
-                <th className="text-center" style={{ width: "12%" }}>Lượt dùng</th>
+                <th className={styles.fullColor} style={{ width: "27%" }}>Áp dụng</th>
+                <th className={`text-center ${styles.fullColor}`} style={{ width: "12%" }}>Lượt dùng</th>
                 <th className="text-center" style={{ width: "12%" }}>Trạng thái</th>
-                <th className="text-center" style={{ width: "15%" }}>Thời hạn</th>
+                <th className={`text-center ${styles.fullColor}`} style={{ width: "15%" }}>Thời gian</th>
                 <th className="text-center" style={{ width: "8%" }} />
               </tr>
             </thead>
@@ -297,6 +316,12 @@ export default function OrderDiscounts() {
                 <tr>
                   <td colSpan={8} className="text-center py-5">
                     <Loading text="Đang tải mã giảm giá..." />
+                  </td>
+                </tr>
+              ) : connectionError ? (
+                <tr>
+                  <td colSpan={8} className="py-5">
+                    <ConnectionErrorState message={connectionError} onRetry={() => setRefreshVersion((value) => value + 1)} />
                   </td>
                 </tr>
               ) : !paginatedDiscounts.length ? (
@@ -325,36 +350,26 @@ export default function OrderDiscounts() {
                       <td>
                         <Link
                           to={editUrl}
-                          className="adm-link adm-name text-break"
+                          className={`adm-link adm-name text-break fw-semibold ${styles.promotionCode}`}
                           title="Bấm để chỉnh sửa"
                           onClick={saveScrollPosition}
                         >
-                          <span
-                            className="adm-name"
-                          >
-                            {item.code}
-                          </span>
+                          {item.code}
                         </Link>
                       </td>
                       <td>
-                        <Link
-                          to={editUrl}
-                          className="adm-link adm-name text-break"
-                          title="Bấm để chỉnh sửa"
-                          onClick={saveScrollPosition}
-                        >
+                        <span className="adm-name text-break">
                           {item.name || item.code}
-                        </Link>
+                        </span>
                       </td>
-                      <td>
-                        <div className="fw-medium text-dark text-break">
+                      <td className={styles.fullColor}>
+                        <div className="fw-normal text-break">
                           {getVoucherDescription(item)}
                         </div>
                       </td>
-                      <td className="text-center">
-                        <span className="fw-semibold text-dark">
-                          {usedQty} / {totalQty}
-                        </span>
+                      <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                        <span className="fw-semibold">{usedQty}</span>{" "}
+                        <span>/ {totalQty}</span>
                         {item.per_user_limit ? (
                           <div className="adm-sub">
                             Tối đa {item.per_user_limit} lần/khách
@@ -363,14 +378,14 @@ export default function OrderDiscounts() {
                       </td>
                       <td className="text-center">
                         <span
-                          className={`adm-status adm-status-wide rounded-pill text-${state.color} bg-${state.color}-subtle`}
+                          className={`adm-status rounded-pill text-${state.color} bg-${state.color}-subtle`}
                         >
-                          {state.label}
+                          {STATUS_LABELS[item.status] || state.label}
                         </span>
                       </td>
-                      <td className="text-center text-nowrap">
-                        <div>{formatDate(item.start_date)}</div>
-                        <div className="text-muted">
+                      <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                        <div className="fw-normal">{formatDate(item.start_date)}</div>
+                        <div>
                           đến {formatDate(item.end_date)}
                         </div>
                       </td>

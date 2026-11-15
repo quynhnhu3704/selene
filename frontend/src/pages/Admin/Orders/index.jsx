@@ -1,3 +1,5 @@
+import ConnectionErrorState from "../components/ConnectionErrorState";
+import { isConnectionError } from "../../../utils/connectionError";
 import EmptyState from "../../../components/common/EmptyState";
 import fallbackAvatar from "../../../assets/images/default-avatar.png";
 // frontend/src/pages/Admin/Orders/index.jsx
@@ -51,6 +53,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [revision, setRevision] = useState(0);
 
@@ -104,10 +107,12 @@ export default function AdminOrders() {
         setOrders(res.data.orders);
         setPagination(res.data.pagination);
       } catch (err) {
-        if (isCurrentRequest)
+        if (isCurrentRequest) {
+          setConnectionError(isConnectionError(err));
           setError(
             err.response?.data?.message || "Không thể tải danh sách đơn hàng!",
           );
+        }
       } finally {
         if (isCurrentRequest) setLoading(false);
       }
@@ -266,6 +271,8 @@ export default function AdminOrders() {
                 <td colSpan={7} className="page-empty py-5">
                   {loading ? (
                     <Loading text="Đang tải đơn hàng..." />
+                  ) : error && connectionError ? (
+                    <ConnectionErrorState message={error} onRetry={() => setRevision((value) => value + 1)} />
                   ) : error ? (
                     <>
                       <p className="text-danger">{error}</p>

@@ -242,6 +242,7 @@ export default function OrderDetail({ readOnly = false }) {
                       id={key}
                       className="form-control"
                       type={type}
+                      placeholder={key === "recipient_name" ? "Nhập họ và tên người nhận" : "Nhập số điện thoại người nhận"}
                       required
                       value={order[key] || ""}
                       pattern={
@@ -416,6 +417,7 @@ export default function OrderDetail({ readOnly = false }) {
                                 style={{ width: 100 }}
                                 aria-label={`Số lượng ${item.product_name}`}
                                 type="number"
+                                placeholder="Số lượng"
                                 min="1"
                                 max="2147483647"
                                 step="1"

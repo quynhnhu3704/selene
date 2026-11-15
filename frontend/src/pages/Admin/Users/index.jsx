@@ -1,3 +1,4 @@
+import { isConnectionError } from "../../../utils/connectionError";
 // frontend/src/pages/Admin/Users/index.jsx
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -45,6 +46,7 @@ export default function AdminUsers() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [updatingId, setUpdatingId] = useState("");
   const [revision, setRevision] = useState(0);
@@ -98,11 +100,13 @@ export default function AdminUsers() {
           setPagination(data.pagination);
         }
       } catch (err) {
-        if (isCurrentRequest)
+        if (isCurrentRequest) {
+          setConnectionError(isConnectionError(err));
           setError(
             err.response?.data?.message ||
               "Không thể tải danh sách người dùng!",
           );
+        }
       } finally {
         if (isCurrentRequest) setLoading(false);
       }
@@ -196,6 +200,8 @@ export default function AdminUsers() {
       status={status}
       loading={loading}
       error={error}
+      connectionError={connectionError}
+      onRetry={() => setRevision((value) => value + 1)}
       exporting={exporting}
       updatingId={updatingId}
       onSearch={handleSearch}

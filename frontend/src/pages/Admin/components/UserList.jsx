@@ -1,3 +1,4 @@
+import ConnectionErrorState from "./ConnectionErrorState";
 import EmptyState from "../../../components/common/EmptyState";
 // frontend/src/pages/Admin/components/UserList.jsx
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +42,8 @@ export default function UserList({
   loading,
   exporting,
   error,
+  connectionError,
+  onRetry,
   updatingId,
 }) {
   const [sortOpen, setSortOpen] = useState(false);
@@ -194,7 +197,7 @@ export default function UserList({
                   {loading ? (
                     <Loading text="Đang tải người dùng..." />
                   ) : (
-                    error || (
+                    (error && connectionError ? <ConnectionErrorState message={error} onRetry={onRetry} /> : error) || (
                       <>
                         <EmptyState text="Không có người dùng nào để hiển thị" />
                       </>

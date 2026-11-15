@@ -24,7 +24,21 @@ export default defineConfig({
     port: 5173,
     host: true,
     proxy: {
-      "/api": { target: "http://127.0.0.1:8000", changeOrigin: true, ws: true },
+      "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        ws: true,
+        configure(proxy) {
+          proxy.on("error", (error, _request, response) => {
+            if (
+              ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"].includes(error.code) &&
+              response?.setHeader && !response.headersSent
+            ) {
+              response.setHeader("X-Selene-Connection-Error", "1");
+            }
+          });
+        },
+      },
     },
   },
 });

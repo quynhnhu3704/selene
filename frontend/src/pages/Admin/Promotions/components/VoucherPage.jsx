@@ -587,6 +587,7 @@ export default function VoucherPage({ create = false }) {
                     <DateInput
                       className="form-control"
                       value={form.start_date}
+                      placeholderText="Chọn ngày bắt đầu"
                       onChange={(e) => handleChange("start_date", e.target.value)}
                       required
                       disabled={saving}
@@ -600,6 +601,7 @@ export default function VoucherPage({ create = false }) {
                     <DateInput
                       className="form-control"
                       value={form.end_date}
+                      placeholderText="Chọn ngày kết thúc"
                       onChange={(e) => handleChange("end_date", e.target.value)}
                       required
                       disabled={saving}
