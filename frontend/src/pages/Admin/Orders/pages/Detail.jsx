@@ -20,8 +20,6 @@ import {
 import { getUser } from "../../../../utils/auth";
 import { formatPhone } from "../../../../utils/formatPhone";
 import defaultImage from "../../../../assets/images/default-product.png";
-import "../create-order.css";
-import "../../components/DetailInfo.css";
 import {
   ORDER_STATUSES,
   PAYMENT_METHODS,

@@ -140,7 +140,7 @@ export const ProductModel = {
       .from("product_variants")
       .select("variant_id, size, color, stock_quantity, status")
       .eq("product_id", productId)
-      .eq("status", "active");
+      .in("status", ["active", "out_of_stock"]);
 
     if (variantError) throw variantError;
     return variants;

@@ -12,6 +12,8 @@ export default function MessageInput({
   const [files, setFiles] = useState([]);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef(null);
   const busyRef = useRef(false);
 
@@ -34,6 +36,7 @@ export default function MessageInput({
         }
       }
       setFiles((prev) => [...prev, ...valid].slice(0, 30));
+      e.target.value = "";
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -221,6 +224,11 @@ export default function MessageInput({
 
       {/* 3. Form nhập liệu tin nhắn */}
       <form className="support-composer" onSubmit={submit}>
+        {!isCustomer && <>
+          <input type="file" ref={imageInputRef} multiple accept="image/*" hidden onChange={handleFileChange} disabled={disabled || sending} />
+          <button type="button" className="form-btn btn btn-retry btn-outline-dark mb-0" title="Đính kèm hình ảnh" aria-label="Đính kèm hình ảnh"
+            disabled={disabled || sending} onClick={() => imageInputRef.current?.click()}><i className="bi bi-image" /></button>
+        </>}
         <input
           type="file"
           ref={fileInputRef}
@@ -240,11 +248,20 @@ export default function MessageInput({
           <i className="bi bi-paperclip" />
         </button>
 
+        {!isCustomer && <div className="support-emoji-control">
+          <button type="button" className="form-btn btn btn-retry btn-outline-dark mb-0" title="Chèn biểu tượng cảm xúc" aria-label="Chèn biểu tượng cảm xúc"
+            aria-expanded={showEmojiPicker} disabled={disabled || sending} onClick={() => setShowEmojiPicker(value => !value)}><i className="bi bi-emoji-smile" /></button>
+          {showEmojiPicker && <div className="support-emoji-picker" role="group" aria-label="Biểu tượng cảm xúc">
+            {['😊', '❤️', '👍', '😍', '🙏', '🎉', '👋', '✨'].map(emoji => <button type="button" key={emoji} aria-label={emoji}
+              onClick={() => { setContent(value => (value + emoji).slice(0, 2000)); setShowEmojiPicker(false); textareaRef.current?.focus(); }}>{emoji}</button>)}
+          </div>}
+        </div>}
+
         <textarea
           ref={textareaRef}
           aria-label="Nội dung tin nhắn"
           placeholder={inputPlaceholder}
-          rows={2}
+          rows={isCustomer ? 2 : 1}
           maxLength={2000}
           value={content}
           disabled={disabled || sending}

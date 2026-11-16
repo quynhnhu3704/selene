@@ -98,6 +98,8 @@ export default function ChatPanel({
           messages={messages}
           accountId={currentAccountId}
           isCustomer={isCustomer}
+          showAvatars={!isCustomer}
+          staffAvatar={user?.avatar_url}
           customerName={customerName}
           hasMore={pagination?.has_more}
           loadingMore={loadingMore}

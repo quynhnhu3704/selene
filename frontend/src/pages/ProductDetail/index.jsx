@@ -1,5 +1,4 @@
 import EmptyState from "../../components/common/EmptyState";
-import "./empty-state.css";
 // frontend\src\pages\ProductDetail.jsx
 import ProductDetailSkeleton from "./Skeleton";
 import { useState, useEffect, useLayoutEffect, useContext } from "react";
@@ -41,7 +40,7 @@ function ProductDetailContent({ id }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [failedImages, setFailedImages] = useState([]);
   const [activeColor, setColor] = useState(0);
-  const [activeSize, setSize] = useState(0);
+  const [pickedSize, setSize] = useState(null);
   const [qty, setQty] = useState(1);
   const [showMore, setShowMore] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
@@ -134,6 +133,15 @@ function ProductDetailContent({ id }) {
     );
   };
   const selectedColor = PRODUCT.colors[activeColor]?.label;
+  const firstAvailableSize = PRODUCT.sizes.findIndex((size) =>
+    (product.variants || []).some(
+      (variant) =>
+        variant.color === selectedColor &&
+        variant.size === size &&
+        Number(variant.stock_quantity || 0) > 0,
+    ),
+  );
+  const activeSize = pickedSize ?? Math.max(0, firstAvailableSize);
   const selectedSize = PRODUCT.sizes[activeSize];
 
   const selectedVariant = (product.variants || []).find(
@@ -371,7 +379,10 @@ function ProductDetailContent({ id }) {
                 <button
                   key={i}
                   className={`pd-color-btn${activeColor === i ? " active" : ""}`}
-                  onClick={() => setColor(i)}
+                  onClick={() => {
+                    setColor(i);
+                    if (i !== activeColor) setSize(null);
+                  }}
                   title={c.label}
                   aria-label={c.label}
                   aria-pressed={activeColor === i}
@@ -417,17 +428,6 @@ function ProductDetailContent({ id }) {
                     aria-pressed={isActive}
                   >
                     <span className="pd-size-text">{sz}</span>
-                    {isOutOfStock && (
-                      <svg
-                        className="pd-size-x-mark"
-                        viewBox="0 0 100 100"
-                        preserveAspectRatio="none"
-                        aria-hidden="true"
-                      >
-                        <line x1="0" y1="0" x2="100" y2="100" />
-                        <line x1="100" y1="0" x2="0" y2="100" />
-                      </svg>
-                    )}
                   </button>
                 );
               })}

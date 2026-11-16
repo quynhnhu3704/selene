@@ -13,7 +13,6 @@ import {
 import { createChatSocket } from "../../socket/chat.socket";
 import { getUser, isLoggedIn } from "../../utils/auth";
 import { toast } from "react-toastify";
-import "../../components/SupportChat/support.css";
 
 function CustomerSupport() {
   const isAuth = isLoggedIn();
@@ -41,14 +40,15 @@ function CustomerSupport() {
 
   // Gửi tin nhắn lên server (hỗ trợ text hoặc tệp đính kèm ảnh/video/file)
   const handleSendMessage = async (data) => {
-    if (!data?.content && !data?.file) return;
+    const files = data?.files?.length ? data.files : data?.file ? [data.file] : [];
+    if (!data?.content && !files.length) return;
 
     try {
       let res;
       if (data?.reply_to_message_id) {
-        if (data.file) {
+        if (files.length) {
           const formData = new FormData();
-          formData.append("file", data.file);
+          files.forEach(file => formData.append("files", file));
           if (data.content) formData.append("content", data.content.trim());
           formData.append("reply_to_message_id", data.reply_to_message_id);
           if (conversation?.conversation_id) {
@@ -61,9 +61,9 @@ function CustomerSupport() {
             conversation_id: conversation?.conversation_id || undefined,
           });
         }
-      } else if (data.file) {
+      } else if (files.length) {
         const formData = new FormData();
-        formData.append("file", data.file);
+        files.forEach(file => formData.append("files", file));
         if (data.content) formData.append("content", data.content.trim());
         if (conversation?.conversation_id) {
           formData.append("conversation_id", conversation.conversation_id);
@@ -312,7 +312,7 @@ function CustomerSupport() {
             );
           });
         }
-        setPagination(data.pagination || null);
+        setPagination(prev => messagesRef.current.length && prev ? prev : data.pagination || null);
       }
     } catch (err) {
       console.error("Lỗi khi tải danh sách tin nhắn khách hàng:", err);

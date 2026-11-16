@@ -15,7 +15,6 @@ import { createAdminOrder } from "../../../../services/order.service";
 import { getUser } from "../../../../utils/auth";
 import { PAYMENT_METHODS, fmtVND } from "../constants";
 import defaultImage from "../../../../assets/images/default-product.png";
-import "../create-order.css";
 
 export default function CreateOrder() {
   const navigate = useNavigate();

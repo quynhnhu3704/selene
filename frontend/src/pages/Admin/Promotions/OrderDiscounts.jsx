@@ -9,7 +9,6 @@ import AdminSelect from "../components/AdminSelect";
 import Pagination from "../../../components/common/Pagination";
 import EmptyState from "../../../components/common/EmptyState";
 import Loading from "../../../components/common/Loading";
-import styles from "./ProductPromotions.module.css";
 import {
   ORDER_DISCOUNT_STATUSES,
   ORDER_SORT_OPTIONS,
@@ -304,10 +303,10 @@ export default function OrderDiscounts() {
                 <th className="text-center" style={{ width: "4%" }} />
                 <th style={{ width: "12%" }}>Mã giảm giá</th>
                 <th style={{ width: "18%" }}>Tên mã</th>
-                <th className={styles.fullColor} style={{ width: "27%" }}>Áp dụng</th>
-                <th className={`text-center ${styles.fullColor}`} style={{ width: "12%" }}>Lượt dùng</th>
+                <th className="adm-promotion-full-color" style={{ width: "27%" }}>Áp dụng</th>
+                <th className="text-center adm-promotion-full-color" style={{ width: "12%" }}>Lượt dùng</th>
                 <th className="text-center" style={{ width: "12%" }}>Trạng thái</th>
-                <th className={`text-center ${styles.fullColor}`} style={{ width: "15%" }}>Thời gian</th>
+                <th className="text-center adm-promotion-full-color" style={{ width: "15%" }}>Thời gian</th>
                 <th className="text-center" style={{ width: "8%" }} />
               </tr>
             </thead>
@@ -350,7 +349,7 @@ export default function OrderDiscounts() {
                       <td>
                         <Link
                           to={editUrl}
-                          className={`adm-link adm-name text-break fw-semibold ${styles.promotionCode}`}
+                          className="adm-link adm-name text-break fw-semibold adm-promotion-code"
                           title="Bấm để chỉnh sửa"
                           onClick={saveScrollPosition}
                         >
@@ -362,12 +361,12 @@ export default function OrderDiscounts() {
                           {item.name || item.code}
                         </span>
                       </td>
-                      <td className={styles.fullColor}>
+                      <td className="adm-promotion-full-color">
                         <div className="fw-normal text-break">
                           {getVoucherDescription(item)}
                         </div>
                       </td>
-                      <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                      <td className="text-center text-nowrap adm-promotion-full-color">
                         <span className="fw-semibold">{usedQty}</span>{" "}
                         <span>/ {totalQty}</span>
                         {item.per_user_limit ? (
@@ -383,7 +382,7 @@ export default function OrderDiscounts() {
                           {STATUS_LABELS[item.status] || state.label}
                         </span>
                       </td>
-                      <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                      <td className="text-center text-nowrap adm-promotion-full-color">
                         <div className="fw-normal">{formatDate(item.start_date)}</div>
                         <div>
                           đến {formatDate(item.end_date)}

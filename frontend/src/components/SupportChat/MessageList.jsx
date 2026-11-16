@@ -7,6 +7,17 @@ import {
   ReactionDetailModal,
 } from "./MessageReaction";
 
+function AttachmentImage({ src, name, className, style }) {
+  const [failedUrl, setFailedUrl] = useState(null);
+  if (!src || failedUrl === src) {
+    return <span className="support-image-unavailable" role="img" aria-label={`Không tải được ảnh ${name || "đính kèm"}`}>
+      <i className="bi bi-image" /><span>Ảnh không khả dụng</span>
+    </span>;
+  }
+  return <img src={src} alt={name || "Hình ảnh đính kèm"} className={className}
+    style={style} loading="lazy" onError={() => setFailedUrl(src)} />;
+}
+
 // Định dạng kích thước tệp tin (KB, MB)
 function formatFileSize(bytes) {
   if (!bytes || isNaN(bytes)) return "";
@@ -112,6 +123,8 @@ export default function MessageList({
   onReply,
   onReact,
   onRemoveReaction,
+  showAvatars = false,
+  staffAvatar,
 }) {
   const [activePickerMessageId, setActivePickerMessageId] = useState(null);
   const [detailModalMessageId, setDetailModalMessageId] = useState(null);
@@ -250,7 +263,7 @@ export default function MessageList({
             {/* Nút thả biểu cảm (Reaction) */}
             <button
               type="button"
-              className={`support-msg-action-btn react-btn${
+              className={`support-msg-action-btn support-react-btn${
                 activePickerMessageId === message.message_id ? " active" : ""
               }`}
               title="Bày tỏ cảm xúc"
@@ -297,13 +310,14 @@ export default function MessageList({
             id={`msg-${message.message_id}`}
             key={message.message_id}
             className={`support-message-row${own ? " own" : ""}${
-              hasReactions ? " has-reactions" : ""
+              hasReactions ? " support-has-reactions" : ""
             }`}
           >
             {/* Nếu là tin nhắn của chính mình: nút hành động xuất hiện bên trái */}
+            {showAvatars && !own && <span className="support-message-avatar" aria-hidden="true"><i className="bi bi-person-fill" /></span>}
             {own && actionButtons}
 
-            <div className={`support-bubble${hasReactions ? " has-reactions" : ""}`}>
+            <div className={`support-bubble${hasReactions ? " support-has-reactions" : ""}`}>
               {/* Thanh chọn biểu cảm nổi bên trên tin nhắn (Capsule pill theo mẫu) */}
               {activePickerMessageId === message.message_id && (
                 <ReactionPicker
@@ -396,9 +410,9 @@ export default function MessageList({
                               minWidth: "95px",
                             }}
                           >
-                            <img
+                            <AttachmentImage
                               src={attUrl}
-                              alt={attName}
+                              name={attName}
                               style={{
                                 width: "100%",
                                 height: "105px",
@@ -486,12 +500,17 @@ export default function MessageList({
                         rel="noopener noreferrer"
                         title="Bấm để xem ảnh kích thước đầy đủ"
                       >
-                        <img
+                        <AttachmentImage
                           src={fileUrl}
-                          alt={fileName || "Hình ảnh đính kèm"}
+                          name={fileName}
                           className="support-img-preview"
                           loading="lazy"
                         />
+                        <span className="support-image-meta">
+                          <strong>{fileName || "Hình ảnh đính kèm"}</strong>
+                          {fileSize && <span>{formatFileSize(fileSize)}</span>}
+                        </span>
+                        <i className="bi bi-box-arrow-up-right support-image-open" aria-hidden="true" />
                       </a>
                       {displayCaption && (
                         <div className="support-media-caption">{displayCaption}</div>
@@ -586,6 +605,9 @@ export default function MessageList({
 
             {/* Nếu là tin nhắn của đối phương: nút hành động xuất hiện bên phải */}
             {!own && actionButtons}
+            {showAvatars && own && <span className="support-message-avatar" aria-hidden="true">
+              {staffAvatar ? <AttachmentImage src={staffAvatar} name="Nhân viên" /> : <i className="bi bi-person-fill" />}
+            </span>}
           </div>
         );
       })}

@@ -1,5 +1,4 @@
 import Breadcrumb from "../../components/layout/Breadcrumb";
-import "./skeleton.css";
 
 export default function ProductDetailSkeleton({ parentBreadcrumb }) {
   return (

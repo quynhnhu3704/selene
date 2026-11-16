@@ -20,7 +20,6 @@ import {
   permissionKey,
   matrixSelection,
 } from "./constants";
-import "./permissions.css";
 
 export default function AdminPermissions() {
   const [permissions, setPermissions] = useState([]);

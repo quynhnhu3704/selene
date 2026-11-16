@@ -1,7 +1,5 @@
 import Address from "../../../components/common/Address";
 import fallbackAvatar from "../../../assets/images/default-avatar.png";
-import "./ProfileForm.css";
-import "./DetailInfo.css";
 // frontend/src/pages/Admin/components/ProfileForm.jsx
 import { useEffect, useState } from "react";
 import { DateInput } from "../../../components/common/DatePicker";

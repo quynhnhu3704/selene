@@ -1,5 +1,4 @@
 import AdminSaveButton from "../../components/AdminSaveButton";
-import "../../components/DetailInfo.css";
 import AdminImageUpload from "../../components/AdminImageUpload";
 import { useEffect, useState } from "react";
 import {

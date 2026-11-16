@@ -20,6 +20,14 @@ export const requirePermission = (user, permission) => {
   }
 };
 
+const messagePageLimit = (limit) => {
+  const value = Number(limit);
+  if (!Number.isInteger(value) || value < 1 || value > 100) {
+    throw { status: 400, message: "Phân trang tin nhắn không hợp lệ!" };
+  }
+  return value;
+};
+
 export const ConversationService = {
   // Lấy danh sách các cuộc trò chuyện
   getConversations: async (user, { status, search, order }) => {
@@ -71,7 +79,7 @@ export const ConversationService = {
     const conversation = await ConversationService.getAccessible(user, id);
 
     const customerId = conversation.customer_id;
-    const fetchLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+    const fetchLimit = messagePageLimit(limit);
 
     // Lấy song song:
     // 1. 10 tin nhắn mới nhất (hoặc theo con trỏ before khi kéo lên)
@@ -87,7 +95,7 @@ export const ConversationService = {
     const formattedMessages = (messagesResult.messages || []).map((msg) => ({
       ...msg,
       sender_role:
-        msg.sender_id === customerId
+        String(msg.sender_id) === String(customerId)
           ? "customer"
           : msg.sender_type === "ai"
             ? "ai"
@@ -131,7 +139,7 @@ export const ConversationService = {
       requirePermission(user, "chat:view");
     }
 
-    const fetchLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+    const fetchLimit = messagePageLimit(limit);
 
     // Tìm cuộc hội thoại hiện tại hoặc tất cả cuộc hội thoại của khách hàng
     const conversation = await ConversationModel.findByCustomerId(customerId);
@@ -159,7 +167,7 @@ export const ConversationService = {
     const formattedMessages = (messagesResult.messages || []).map((msg) => ({
       ...msg,
       sender_role:
-        msg.sender_id === customerId
+        String(msg.sender_id) === String(customerId)
           ? "customer"
           : msg.sender_type === "ai"
             ? "ai"

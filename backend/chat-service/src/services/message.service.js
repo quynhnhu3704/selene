@@ -298,7 +298,7 @@ export const MessageService = {
       reply_to_message_id: createdMessage.reply_to_message_id || null,
       reply_to: replyToData,
       status: createdMessage.status || "sent",
-      is_read: true,
+      is_read: createdMessage.status === "seen",
       created_at: createdMessage.created_at,
       updated_at: createdMessage.updated_at || createdMessage.created_at,
     };
@@ -642,7 +642,7 @@ export const MessageService = {
       reply_to_message_id: createdMessage.reply_to_message_id || null,
       reply_to: replyToData,
       status: createdMessage.status || "sent",
-      is_read: true,
+      is_read: createdMessage.status === "seen",
       created_at: createdMessage.created_at,
       updated_at: createdMessage.updated_at || createdMessage.created_at,
     };
@@ -903,7 +903,7 @@ export const MessageService = {
       reply_to_message_id: parentMessage.message_id,
       reply_to: replyToData,
       status: createdMessage.status || "sent",
-      is_read: true,
+      is_read: createdMessage.status === "seen",
       created_at: createdMessage.created_at,
       updated_at: createdMessage.updated_at || createdMessage.created_at,
     };

@@ -16,7 +16,6 @@ import {
   ReactionBadge,
   ReactionDetailModal,
 } from "../SupportChat/MessageReaction";
-import "../SupportChat/support.css";
 import { toast } from "react-toastify";
 import defaultProduct from "../../assets/images/default-product.png";
 

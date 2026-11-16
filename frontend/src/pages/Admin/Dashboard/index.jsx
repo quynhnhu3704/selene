@@ -29,7 +29,6 @@ import {
 } from "recharts";
 import { getDashboardStatistics } from "../../../services/dashboard.service";
 import { getOrderStatus, fmtVND, PAYMENT_METHODS } from "../Orders/constants";
-import "./dashboard.css";
 
 const COLORS = [
   "#871b1b",
@@ -448,15 +447,8 @@ export default function Dashboard() {
         <title>Tổng quan kinh doanh | SELENE</title>
       </Helmet>
       <div className="adm-page-head dash-page-head">
-        <div>
-          <div className="dash-eyebrow">
-            <span /> SELENE / TỔNG QUAN
-          </div>
-          <h1 className="adm-page-title">
-            Nhìn toàn cảnh.
-            <br />
-            <span>Nắm nhịp kinh doanh.</span>
-          </h1>
+        <div className="adm-page-title">
+          Tổng quan <span style={{ color: "#871b1b" }}>kinh doanh</span>
         </div>
         <div className="dash-head-actions">
           <button

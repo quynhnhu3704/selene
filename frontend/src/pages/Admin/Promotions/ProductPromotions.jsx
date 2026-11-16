@@ -9,7 +9,6 @@ import AdminSelect from "../components/AdminSelect";
 import Pagination from "../../../components/common/Pagination";
 import EmptyState from "../../../components/common/EmptyState";
 import Loading from "../../../components/common/Loading";
-import styles from "./ProductPromotions.module.css";
 import {
   PRODUCT_PROMOTION_FILTER_STATUSES,
   PRODUCT_SORT_OPTIONS,
@@ -314,16 +313,16 @@ export default function ProductPromotions() {
               <th style={{ width: "25%" }}>
                 Chương trình khuyến mãi
               </th>
-              <th className={`text-center ${styles.fullColor}`} style={{ width: "9%" }}>
+              <th className="text-center adm-promotion-full-color" style={{ width: "9%" }}>
                 SP áp dụng
               </th>
-              <th className={`text-center ${styles.fullColor}`} style={{ width: "9%" }}>
+              <th className="text-center adm-promotion-full-color" style={{ width: "9%" }}>
                 Lượt dùng
               </th>
               <th className="text-center" style={{ width: "13%" }}>
                 Trạng thái
               </th>
-              <th className={`text-center ${styles.fullColor}`} style={{ width: "10%" }}>
+              <th className="text-center adm-promotion-full-color" style={{ width: "10%" }}>
                 Thời gian
               </th>
               <th className="text-center" style={{ width: "8%" }} />
@@ -373,7 +372,7 @@ export default function ProductPromotions() {
                     <td>
                       <Link
                         to={editUrl}
-                        className={`adm-link adm-name text-break fw-semibold ${styles.promotionCode}`}
+                        className="adm-link adm-name text-break fw-semibold adm-promotion-code"
                         onClick={saveScrollPosition}
                         title="Bấm để chỉnh sửa"
                       >
@@ -392,7 +391,7 @@ export default function ProductPromotions() {
                         </div>
                       )}
                     </td>
-                    <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                    <td className="text-center text-nowrap adm-promotion-full-color">
                       {appliedCount === "Tất cả" ? (
                         <span className="badge bg-secondary-subtle fw-semibold">
                           Tất cả SP
@@ -401,7 +400,7 @@ export default function ProductPromotions() {
                         <span className="fw-normal">{appliedCount}</span>
                       )}
                     </td>
-                    <td className={`text-center text-nowrap ${styles.fullColor}`}>
+                    <td className="text-center text-nowrap adm-promotion-full-color">
                       <span className="fw-semibold">{usedQty}</span>{" "}
                       <span>/ {totalQty}</span>
                       {Number(item.quantity_limit) === 0 && (
@@ -420,7 +419,7 @@ export default function ProductPromotions() {
                       </span>
                     </td>
                     <td
-                      className={`text-center text-nowrap ${styles.fullColor}`}
+                      className="text-center text-nowrap adm-promotion-full-color"
                     >
                       <div className="fw-normal">
                         {formatDate(item.start_date)}

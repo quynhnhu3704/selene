@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { getConversations } from "../../services/chat.service";
 import { createChatSocket } from "../../socket/chat.socket";
 import { isLoggedIn } from "../../utils/auth";
-import "./unread-badge.css";
 
 export default function UnreadBadge({ admin = false }) {
   const [count, setCount] = useState(0);

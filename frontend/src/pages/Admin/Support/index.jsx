@@ -24,7 +24,6 @@ import { createChatSocket } from "../../../socket/chat.socket";
 import { getUser } from "../../../utils/auth";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import "../../../components/SupportChat/support.css";
 
 // Helper định dạng thời gian thân thiện cho danh sách hội thoại
 function formatConversationTime(dateStr) {
@@ -88,7 +87,9 @@ function SupportInbox() {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [assigning, setAssigning] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const socketRef = useRef(null);
+  const listRequestRef = useRef(0);
 
   // Chi tiết tin nhắn & dữ liệu cuộc hội thoại đang chọn
   const [detailData, setDetailData] = useState(null);
@@ -115,6 +116,7 @@ function SupportInbox() {
   // Hàm tải danh sách cuộc trò chuyện từ API
   const fetchList = useCallback(
     async (statusFilter, searchQuery, isSilent = false) => {
+      const requestId = ++listRequestRef.current;
       if (!isSilent) setLoading(true);
       else setRefreshing(true);
       setError("");
@@ -132,6 +134,8 @@ function SupportInbox() {
         }
 
         const res = await getConversations(params);
+        if (requestId !== listRequestRef.current) return;
+        setConnectionError(false);
         const data = res?.data?.data || [];
         const summaryData = res?.data?.summary || {
           waitingCount: 0,
@@ -150,6 +154,7 @@ function SupportInbox() {
           return null;
         });
       } catch (err) {
+        if (requestId !== listRequestRef.current) return;
         console.error("Lỗi khi tải danh sách cuộc trò chuyện:", err);
         setConnectionError(isConnectionError(err));
         setError(
@@ -157,8 +162,10 @@ function SupportInbox() {
           "Không thể kết nối đến máy chủ hoặc chưa có quyền xem hội thoại."
         );
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (requestId === listRequestRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     []
@@ -187,6 +194,7 @@ function SupportInbox() {
     setDetailError("");
     try {
       const res = await getConversationDetails(conversationId);
+      if (String(selectedIdRef.current) !== String(conversationId)) return;
       const data = res?.data?.data || null;
       if (data) {
         setDetailData((prev) => {
@@ -208,10 +216,12 @@ function SupportInbox() {
           return {
             ...data,
             messages: merged,
+            pagination: prevMsgs.length ? prev.pagination : data.pagination,
           };
         });
       }
     } catch (err) {
+      if (String(selectedIdRef.current) !== String(conversationId)) return;
       console.error("Lỗi khi tải chi tiết tin nhắn:", err);
       if (!isSilent) {
         setDetailError(
@@ -219,7 +229,7 @@ function SupportInbox() {
         );
       }
     } finally {
-      if (!isSilent) setDetailLoading(false);
+      if (!isSilent && String(selectedIdRef.current) === String(conversationId)) setDetailLoading(false);
     }
   }, []);
 
@@ -352,8 +362,10 @@ function SupportInbox() {
 
   // Tham gia phòng Socket khi đổi cuộc hội thoại được chọn
   useEffect(() => {
-    if (socketRef.current && selectedId) {
-      socketRef.current.emit("conversation:join", selectedId);
+    const socket = socketRef.current;
+    if (socket && selectedId) {
+      socket.emit("conversation:join", selectedId);
+      return () => socket.emit("conversation:leave", String(selectedId));
     }
   }, [selectedId]);
 
@@ -362,19 +374,20 @@ function SupportInbox() {
     : null;
 
   const currentUserId = currentUser?.accountId ?? currentUser?.account_id ?? currentUser?.id;
-  const currentStatus = (detailData?.status || selected?.status || "").toLowerCase();
+  const currentDetail = String(detailData?.conversation_id) === String(selectedId) ? detailData : null;
+  const currentStatus = (currentDetail?.status || selected?.status || "").toLowerCase();
   const isPending = currentStatus === "pending" || currentStatus === "waiting";
   const isProcessing =
     currentStatus === "processing" || currentStatus === "active" || currentStatus === "open";
   const isClosed = currentStatus === "closed";
 
-  const assignedStaffId = detailData?.assigned_staff_id ?? selected?.assigned_staff_id;
+  const assignedStaffId = currentDetail?.assigned_staff_id ?? selected?.assigned_staff_id;
   const isAssignedToMe = Boolean(
     (assignedStaffId != null &&
       currentUserId != null &&
       String(assignedStaffId) === String(currentUserId)) ||
-    (detailData?.messages &&
-      detailData.messages.some(
+    (currentDetail?.messages &&
+      currentDetail.messages.some(
         (m) =>
           m.sender_role === "staff" &&
           currentUserId != null &&
@@ -646,7 +659,7 @@ function SupportInbox() {
         is_read: true,
       };
 
-      setDetailData((prev) => ({
+      setDetailData((prev) => !prev || String(prev.conversation_id) !== String(selectedId) ? prev : ({
         ...prev,
         messages: [
           ...(prev?.messages || []).filter((m) => m.message_id !== newMsg.message_id),
@@ -836,6 +849,7 @@ function SupportInbox() {
       const beforeCursor =
         detailData.pagination?.next_cursor || detailData.messages?.[0]?.created_at;
       const res = await getConversationDetails(selectedId, { before: beforeCursor });
+      if (String(selectedIdRef.current) !== String(selectedId)) return;
       const newData = res?.data?.data;
       if (newData?.messages?.length) {
         setDetailData((prev) => {
@@ -1065,25 +1079,27 @@ function SupportInbox() {
   });
 
   return (
-    <>
+    <div className="admin-support">
+      <div className="adm-page-head">
+        <h1 className="adm-page-title mb-0">Hỗ trợ khách hàng</h1>
+      </div>
       {/* Tiêu đề & Thống kê trạng thái */}
-      <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+      <div className="support-toolbar d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
-          <h1 className="support-title">Hỗ trợ khách hàng</h1>
-          <div className="support-summary-chips mt-2">
+          <div className="support-summary-chips">
             <span className="support-chip">
               <i className="bi bi-chat-dots text-muted" />
               Tổng cộng: <strong className="support-chip-count">{totalCount}</strong>
             </span>
-            <span className="support-chip waiting">
+            <span className="support-chip waiting text-warning bg-warning-subtle">
               <i className="bi bi-clock-history text-warning" />
               Chờ hỗ trợ: <strong className="support-chip-count">{summary.waitingCount || 0}</strong>
             </span>
-            <span className="support-chip processing">
+            <span className="support-chip processing text-success bg-success-subtle">
               <i className="bi bi-arrow-repeat text-success" />
               Đang xử lý: <strong className="support-chip-count">{summary.processingCount || 0}</strong>
             </span>
-            <span className="support-chip closed">
+            <span className="support-chip closed text-secondary bg-secondary-subtle">
               <i className="bi bi-check2-circle text-secondary" />
               Đã đóng: <strong className="support-chip-count">{summary.closedCount || 0}</strong>
             </span>
@@ -1094,7 +1110,7 @@ function SupportInbox() {
         <div className="d-flex align-items-center gap-2">
           <button
             type="button"
-            className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+            className="form-btn btn btn-retry btn-outline-dark mb-0 d-flex align-items-center gap-1"
             onClick={() => fetchList(status, debouncedSearch, false)}
             disabled={loading || refreshing}
             title="Tải lại danh sách"
@@ -1130,6 +1146,7 @@ function SupportInbox() {
                 key={tab.key}
                 type="button"
                 className={`support-filter-tab${status === tab.key ? " active" : ""}`}
+                aria-pressed={status === tab.key}
                 onClick={() => setStatus(tab.key)}
               >
                 <i className={`bi ${tab.icon}`} />
@@ -1290,8 +1307,8 @@ function SupportInbox() {
               <div className="support-chat-header">
                 <div>
                   <strong>
-                    {detailData?.customer_name ||
-                      detailData?.customer?.full_name ||
+                    {currentDetail?.customer_name ||
+                      currentDetail?.customer?.full_name ||
                       selected.customer_name ||
                       "Khách hàng"}
                   </strong>
@@ -1306,10 +1323,17 @@ function SupportInbox() {
                 </div>
 
                 <div className="d-flex gap-2">
+                  {canShowCustomerInfo && (
+                    <button type="button" className="form-btn btn btn-retry btn-outline-dark mb-0"
+                      title="Thông tin khách hàng và đơn hàng" aria-label="Thông tin khách hàng và đơn hàng"
+                      aria-expanded={showCustomerInfo} onClick={() => setShowCustomerInfo((value) => !value)}>
+                      <i className="bi bi-info-circle" />
+                    </button>
+                  )}
                   {(isPending || isClosed) && (
                     <button
                       type="button"
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center gap-1"
+                      className="form-btn btn btn-outline-danger mb-0 fw-semibold d-inline-flex align-items-center gap-1"
                       onClick={handleAssign}
                       disabled={assigning || closing}
                     >
@@ -1342,16 +1366,16 @@ function SupportInbox() {
                 key={selected.conversation_id}
                 conversation={selected}
                 customerName={
-                  detailData?.customer_name ||
-                  detailData?.customer?.full_name ||
+                  currentDetail?.customer_name ||
+                  currentDetail?.customer?.full_name ||
                   selected.customer_name ||
                   "Khách hàng"
                 }
                 user={currentUser}
-                messages={detailData?.messages || []}
+                messages={currentDetail?.messages || []}
                 loading={detailLoading}
                 error={detailError}
-                pagination={detailData?.pagination}
+                pagination={currentDetail?.pagination}
                 loadingMore={loadingMore}
                 onLoadMore={handleLoadMore}
                 onJumpToMessage={handleJumpToMessage}
@@ -1380,21 +1404,21 @@ function SupportInbox() {
         </section>
 
         {/* Cột phải: Thông tin khách hàng & đơn hàng */}
-        {selected && canShowCustomerInfo && (
+        {selected && canShowCustomerInfo && showCustomerInfo && (
           <CustomerInfo
             customer={{
-              ...(detailData?.customer || {
+              ...(currentDetail?.customer || {
                 full_name: selected.customer_name,
                 email: selected.customer_email || "Chưa có email",
                 phone_number: selected.customer_phone || "Chưa có số điện thoại",
               }),
-              orders: detailData?.orders || [],
+              orders: currentDetail?.orders || [],
             }}
             canViewOrder={true}
           />
         )}
       </div>
-    </>
+    </div>
   );
 }
 
