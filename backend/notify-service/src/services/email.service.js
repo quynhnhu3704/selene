@@ -64,8 +64,8 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; color: #333; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
         <!-- Header -->
         <div style="text-align: center; padding: 40px 0; border-bottom: 1px solid #eaeaea; background-color: #fafafa;">
-          <h1 style="margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 4px; color: #000;">SELENE</h1>
-          <p style="margin: 10px 0 0; font-size: 12px; letter-spacing: 2px; color: #888; text-transform: uppercase;">Xác nhận đơn hàng</p>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300; color: #000;">SELENE</h1>
+          <p style="margin: 10px 0 0; font-size: 12px; color: #888; text-transform: uppercase;">Xác nhận đơn hàng</p>
         </div>
 
         <!-- Greeting -->
@@ -79,7 +79,7 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
         <!-- Order Info -->
         <div style="padding: 0 30px;">
           <div style="background-color: #fcfcfc; padding: 25px; border-radius: 6px; border: 1px solid #f0f0f0;">
-            <h3 style="margin: 0 0 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #eaeaea; padding-bottom: 10px;">Thông tin giao hàng</h3>
+            <h3 style="margin: 0 0 15px; font-size: 14px; text-transform: uppercase; color: #111; border-bottom: 1px solid #eaeaea; padding-bottom: 10px;">Thông tin giao hàng</h3>
             <table style="width: 100%; font-size: 14px; line-height: 1.6; color: #555; border-collapse: collapse;">
               <tr>
                 <td style="padding: 4px 0; width: 130px; color: #888;">Người nhận:</td>
@@ -103,15 +103,15 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
 
         <!-- Order Items -->
         <div style="padding: 30px;">
-          <h3 style="margin: 0 0 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111;">Chi tiết đơn hàng</h3>
+          <h3 style="margin: 0 0 15px; font-size: 14px; text-transform: uppercase; color: #111;">Chi tiết đơn hàng</h3>
           <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table style="width: 100%; min-width: 450px; border-collapse: collapse; font-size: 14px;">
               <thead>
                 <tr>
-                  <th style="padding: 10px 0; text-align: left; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;">Sản phẩm</th>
-                  <th style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; white-space: nowrap;">SL</th>
-                  <th style="padding: 10px 15px; text-align: right; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; white-space: nowrap;">Đơn giá</th>
-                  <th style="padding: 10px 20px 10px 0; text-align: right; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; white-space: nowrap;">Tổng</th>
+                  <th style="padding: 10px 0; text-align: left; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; ">Sản phẩm</th>
+                  <th style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; white-space: nowrap;">SL</th>
+                  <th style="padding: 10px 15px; text-align: right; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; white-space: nowrap;">Đơn giá</th>
+                  <th style="padding: 10px 20px 10px 0; text-align: right; border-bottom: 2px solid #eaeaea; color: #888; font-weight: 500; text-transform: uppercase; font-size: 11px; white-space: nowrap;">Tổng</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,7 +161,7 @@ export const sendOrderSuccessEmail = async (userEmail, orderData) => {
         <div style="background-color: #fafafa; padding: 30px; text-align: center; border-top: 1px solid #eaeaea;">
           <p style="margin: 0 0 10px; font-size: 14px; color: #555;">Bạn cần hỗ trợ?</p>
           <p style="margin: 0 0 20px; font-size: 13px; color: #888;">Vui lòng phản hồi email này hoặc liên hệ hotline: <strong>1900 xxxx</strong></p>
-          <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #aaa;">© ${new Date().getFullYear()} SELENE SHOP. ALL RIGHTS RESERVED.</p>
+          <p style="margin: 0; font-size: 11px; text-transform: uppercase; color: #aaa;">© ${new Date().getFullYear()} SELENE SHOP. ALL RIGHTS RESERVED.</p>
         </div>
       </div>
     `,

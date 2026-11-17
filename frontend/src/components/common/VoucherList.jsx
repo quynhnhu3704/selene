@@ -47,7 +47,7 @@ export default function VoucherList({
             <div className="d-flex justify-content-between align-items-center gap-2 mt-3 pt-2 border-top">
               <span
                 className="fw-bold font-monospace text-uppercase px-2 py-1 bg-light rounded text-dark"
-                style={{ overflowWrap: "anywhere", fontSize: 13, letterSpacing: "0.5px" }}
+                style={{ overflowWrap: "anywhere", fontSize: 13 }}
               >
                 {voucher.code}
               </span>

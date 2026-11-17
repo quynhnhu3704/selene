@@ -200,7 +200,7 @@ export const forgotPasswordService = async (email) => {
           <p style="font-size: 16px; color: #333;">Xin chào bạn,</p>
           <p style="font-size: 14px; color: #555; line-height: 1.5;">Hệ thống đã xử lý yêu cầu quên mật khẩu của bạn. Mật khẩu cũ của tài khoản này đã bị hủy bỏ và được thay thế bằng một mật khẩu tạm thời do hệ thống tự sinh dưới đây:</p>
           
-          <div style="background-color: #fff2f0; border: 1px dashed #ffccc7; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; color: #ff4d4f; letter-spacing: 3px; margin: 25px 0;">
+          <div style="background-color: #fff2f0; border: 1px dashed #ffccc7; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; color: #ff4d4f; margin: 25px 0;">
             ${newRawPassword}
           </div>
           

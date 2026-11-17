@@ -11,6 +11,7 @@ function fmt(n) {
 
 export default function ProductSection({
   title,
+  titleAccent,
   products = [],
   loading = false,
 }) {
@@ -60,7 +61,10 @@ export default function ProductSection({
     <section className="pl-home-products">
       <div className="pl-home-title-row">
         <div className="pl-home-title">
-          <h2>{title}</h2>
+          <h2>
+            {titleAccent ? title.slice(0, -titleAccent.length) : title}
+            {titleAccent && <span className="home-title-accent">{titleAccent}</span>}
+          </h2>
 
           <div className="rb-divider">
             <div className="gl" />

@@ -111,14 +111,16 @@ export default function Home() {
       <CategorySection categories={categories} loading={categoryLoading} />
 
       <ProductSection
-        title="Sản Phẩm Bán Chạy"
+        title="Sản phẩm bán chạy"
+        titleAccent="bán chạy"
         products={bestSellers}
         type="best"
         loading={loading}
       />
 
       <ProductSection
-        title="Sản Phẩm Mới"
+        title="Sản phẩm mới"
+        titleAccent="mới"
         products={newProducts}
         type="new"
         loading={loading}

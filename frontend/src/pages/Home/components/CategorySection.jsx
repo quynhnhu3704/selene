@@ -52,7 +52,7 @@ export default function CategorySection({ categories = [], loading = false }) {
   return (
     <section className="home-categories">
       <div className="home-category-title">
-        <h2>Danh Mục Sản Phẩm</h2>
+        <h2>Danh mục <span className="home-title-accent">sản phẩm</span></h2>
 
         <div className="rb-divider">
           <div className="gl" />

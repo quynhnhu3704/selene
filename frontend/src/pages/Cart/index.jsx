@@ -9,6 +9,7 @@ import { CartContext } from "../../context/CartContext";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import Swal from "sweetalert2";
+import "./cart.css";
 
 /* ── helpers ── */
 const EMPTY_ITEMS = [];
@@ -44,7 +45,6 @@ export default function Cart() {
 
   const validCartItems = cartItems.filter((i) => i.product);
   const availableCartItems = validCartItems.filter((i) => !isOutOfStock(i));
-  const outOfStockCartItems = validCartItems.filter((i) => isOutOfStock(i));
 
   /* auto-select all available items on first load and synchronize selection when cartItems changes */
   const [previousCartItems, setPreviousCartItems] = useState(null);
@@ -176,10 +176,11 @@ export default function Cart() {
     });
   };
 
-  const handleDeleteSelected = async () => {
-    if (selectedItems.length === 0) return;
+  const handleDeleteAll = async () => {
+    if (cartItems.length === 0) return;
     const res = await Swal.fire({
-      title: `Xoá ${selectedItems.length} sản phẩm?`,
+      title: `Xoá tất cả ${cartItems.length} sản phẩm?`,
+      text: "Toàn bộ sản phẩm sẽ bị xoá khỏi giỏ hàng.",
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Xoá tất cả",
@@ -196,7 +197,7 @@ export default function Cart() {
       },
     });
     if (!res.isConfirmed) return;
-    const idsToDelete = selectedItems.map((item) => item.cart_item_id);
+    const idsToDelete = cartItems.map((item) => item.cart_item_id);
     // Xoá ngay lập tức trên UI (0ms)
     setSelected([]);
     removeMultipleFromCart(idsToDelete).catch((err) => {
@@ -245,22 +246,21 @@ export default function Cart() {
       />
 
       <div className="cart-page">
+        <div className="cart-page-heading">
+          <h1 className="adm-page-title">Giỏ hàng</h1>
+          {!loading && (
+            <span className="cart-sub">({cart.total_quantity} sản phẩm)</span>
+          )}
+        </div>
         <div className="row g-5 align-items-start">
           {/* ══════════════════ CỘT TRÁI: DANH SÁCH ══════════════════ */}
           <div className="col-12 col-lg-8">
-            {/* heading */}
-            <div className="d-flex align-items-baseline gap-3 mb-4">
-              <h1 className="cart-heading">Giỏ hàng</h1>
-              {!loading && (
-                <span className="cart-sub">{cart.total_quantity} sản phẩm</span>
-              )}
-            </div>
-
             {/* toolbar */}
             <div className="cart-toolbar">
               <label className="cart-check-all">
                 <input
                   type="checkbox"
+                  className="form-check-input"
                   checked={allSelected}
                   onChange={toggleAll}
                   disabled={loading || availableCartItems.length === 0}
@@ -268,10 +268,10 @@ export default function Cart() {
                 Chọn tất cả {availableCartItems.length > 0 && `(${availableCartItems.length})`}
               </label>
 
-              {selectedItems.length > 0 && (
-                <button className="cart-del-sel" onClick={handleDeleteSelected}>
-                  <i className="bi bi-trash3 me-1" />
-                  Xoá ({selectedItems.length})
+              {!loading && cartItems.length > 0 && (
+                <button className="cart-del-sel" onClick={handleDeleteAll} title="Xoá toàn bộ giỏ hàng">
+                  <span>Xoá ({cartItems.length})</span>
+                  <i className="bi bi-trash3" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -296,7 +296,7 @@ export default function Cart() {
                         {/* checkbox */}
                         <input
                           type="checkbox"
-                          className="cart-item-check"
+                          className="form-check-input cart-item-check"
                           checked={!itemOutOfStock && selected.includes(item.cart_item_id)}
                           onChange={() => toggleOne(item.cart_item_id)}
                           disabled={itemOutOfStock}
@@ -311,7 +311,7 @@ export default function Cart() {
                           <ProductLink productId={item.product.product_id}>
                             <img
                               src={item.product.image_url || "/placeholder.jpg"}
-                              alt=""
+                              alt={item.product.product_name}
                               className="cart-item-img"
                               onError={(e) => {
                                 e.currentTarget.src = "/placeholder.jpg";
@@ -336,13 +336,13 @@ export default function Cart() {
                           <div>
                             {item.product.color && (
                               <span className="cart-item-meta">
-                                Màu: {item.product.color}
+                                {item.product.color}
                               </span>
                             )}
 
                             {item.product.size && (
-                              <span className="cart-item-meta ms-2">
-                                · Size: {item.product.size}
+                              <span className="cart-item-meta">
+                                {item.product.size}
                               </span>
                             )}
                           </div>
@@ -545,11 +545,11 @@ export default function Cart() {
                       <div
                         key={ic}
                         style={{
-                          border: "1px solid #eee",
+                          border: "1px solid #efefed",
                           borderRadius: 8,
                           padding: "5px 10px",
                           fontSize: 18,
-                          color: "#adb5bd",
+                          color: "#6c757d",
                         }}
                       >
                         <i className={`bi ${ic}`} />
