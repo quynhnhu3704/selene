@@ -1159,10 +1159,6 @@
   margin: 0 auto;
 }
 
-.dash-page,
-.dash-page * {
-}
-
 .dash-page input,
 .dash-page select {
   font: inherit;
