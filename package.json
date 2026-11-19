@@ -4,6 +4,10 @@
   "description": "Microservices Demo",
   "main": "index.js",
   "scripts": {
+    "dev": "concurrently --kill-others \"npm run dev:app\" \"npm run sepay:tunnel\"",
+    "dev:sepay": "npm run dev",
+    "sepay:tunnel": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-sepay-tunnel.ps1",
+    "sepay:check": "node scripts/check-sepay.mjs",
     "test:admin": "node --experimental-test-module-mocks --test backend/auth-service/tests/*.test.js backend/product-service/tests/*.test.js backend/order-service/tests/*.test.js",
     "install:all": "npm install --prefix frontend && npm install --prefix backend/api-gateway && npm install --prefix backend/auth-service && npm install --prefix backend/order-service && npm install --prefix backend/product-service && npm install --prefix backend/notify-service && npm install --prefix backend/chat-service",
     "dev:frontend": "npm run dev --prefix frontend",
@@ -12,7 +16,7 @@
     "dev:order": "npm run dev --prefix backend/order-service",
     "dev:product": "npm run dev --prefix backend/product-service",
     "dev:notify": "npm run dev --prefix backend/notify-service",
-    "dev": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:notify\" \"npm run dev:chat\"",
+    "dev:app": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:notify\" \"npm run dev:chat\"",
     "dev:chat": "npm run dev --prefix backend/chat-service"
   },
   "dependencies": {

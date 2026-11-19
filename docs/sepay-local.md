@@ -1,11 +1,11 @@
 # SePay trên máy local
 
-1. Chạy ứng dụng bằng `npm run dev`.
+1. Chạy ứng dụng và tunnel cùng lúc trong một terminal bằng `npm run dev`. `npm run dev:sepay` là lệnh tương đương, không chạy đồng thời cả hai. Nếu chỉ cần ứng dụng không có tunnel, dùng `npm run dev:app`; khi đó có thể chạy thêm `npm run sepay:tunnel` trong terminal riêng.
 2. Lưu authtoken vào cấu hình cá nhân: `ngrok config add-authtoken <authtoken>`.
-3. Chạy `powershell -ExecutionPolicy Bypass -File scripts/start-sepay-tunnel.ps1` và giữ tiến trình chạy.
+3. Giữ tiến trình ứng dụng và ngrok chạy suốt thời gian nhận thanh toán. Chạy `npm run sepay:check` để kiểm tra webhook cả local và qua Internet; lệnh này không xác nhận thanh toán cho bất kỳ đơn nào.
 4. Trong SePay → Webhooks, tạo/bật webhook sự kiện **Có tiền vào**, chọn đúng tài khoản ngân hàng nhận tiền.
 5. URL: `https://startup-marathon-dense.ngrok-free.dev/api/orders/sepay-webhook`.
-6. Xác thực **API Key**: dùng giá trị `SEPAY_WEBHOOK_API_KEY` trong `backend/order-service/.env`. Đây là khóa webhook, khác authtoken ngrok. Khởi động lại order-service nếu sửa khóa.
+6. Xác thực **API Key**: dùng giá trị `SEPAY_WEBHOOK_API_KEY` trong `backend/order-service/.env`. Đây là khóa webhook, khác authtoken ngrok. Khởi động lại order-service nếu sửa khóa. Chọn định dạng dữ liệu **JSON**. Thiếu khóa khiến server trả 503; khóa không khớp trả 401. Bật gửi lại khi HTTP status ngoài 200–299.
 7. Nếu cấu hình tiền tố mã thanh toán, dùng `HD`. Gửi thử từ SePay và kiểm tra HTTP 200 với `{"success":true}` trong nhật ký webhook. Payload thử không khớp đơn sẽ không cập nhật đơn.
 8. Với giao dịch đã chuyển trước khi bật tunnel: vào nhật ký SePay gửi lại webhook đúng giao dịch đó. Không cần chuyển tiền lần nữa. Trang QR kiểm tra trạng thái mỗi 3 giây và chỉ báo thành công khi `payment_status=paid`.
 
