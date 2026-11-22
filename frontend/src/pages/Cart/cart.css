@@ -166,3 +166,40 @@
 .cart-page .cart-qty.disabled,
 .cart-page .cart-out-tag { border-color: #efefed; }
 .cart-page .cart-summary-divider { border-color: #efefed; opacity: 1; }
+
+/* Match the product detail skeleton's neutral placeholders. */
+.cart-page .cart-placeholder {
+  background: #f2f1f0;
+  border: 0;
+  border-radius: 8px;
+}
+
+.cart-skeleton-check { width: 17px; height: 17px; }
+.cart-skeleton-name { width: 90%; height: 18px; margin-bottom: 8px; }
+.cart-skeleton-detail { width: 60%; height: 14px; }
+.cart-skeleton-option { width: 38px; height: 34px; }
+.cart-skeleton-line { width: 80px; max-width: 100%; height: 18px; }
+.cart-page .cart-skeleton-quantity { width: 100px; height: 36px; }
+.cart-skeleton-label { width: 48%; height: 18px; }
+.cart-skeleton-total { width: 100px; max-width: 40%; height: 30px; }
+.cart-skeleton-action { width: 100%; height: 48px; }
+.cart-skeleton-secure { width: 75%; height: 14px; margin: 12px auto 0; }
+.cart-skeleton-count { width: 100px; height: 18px; }
+.cart-skeleton-toolbar { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 24px; }
+.cart-skeleton-toolbar-label { width: 100px; height: 18px; }
+.cart-skeleton-toolbar-delete { width: 100px; height: 18px; margin-left: auto; }
+.cart-skeleton-back { width: 170px; height: 21px; }
+.cart-skeleton-summary-title { width: 65%; height: 26px; }
+
+.cart-page.cart-page-loading .cart-toolbar,
+.cart-page.cart-page-loading .cart-list,
+.cart-page.cart-page-loading .cart-item,
+.cart-page.cart-page-loading .cart-summary {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cart-page.cart-page-loading .cart-summary-divider {
+  visibility: hidden;
+}
