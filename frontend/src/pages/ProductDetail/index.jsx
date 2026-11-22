@@ -438,7 +438,7 @@ function ProductDetailContent({ id }) {
               {isCurrentOutOfStock ? (
                 <button
                   type="button"
-                  className="pd-btn-cart pd-btn-cart-disabled"
+                  className="pd-btn-cart shop-action-btn pd-btn-cart-disabled"
                   disabled
                   aria-disabled="true"
                 >
@@ -464,7 +464,7 @@ function ProductDetailContent({ id }) {
                   </div>
 
                   <button
-                    className="pd-btn-cart"
+                    className="pd-btn-cart shop-action-btn"
                     onClick={() => {
                       // 1. Kiểm tra biến thể và tồn kho tại chỗ (0ms)
                       if (!selectedVariant) {

@@ -1,4 +1,5 @@
 import ProductLink from "../common/ProductLink";
+import EmptyState from "../common/EmptyState";
 // frontend\src\components\layout\Header.jsx
 import Loading from "../common/Loading";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
@@ -403,7 +404,7 @@ export default function Header() {
             )}
             {keyword ? (
               <>
-                <div className="rb-search-heading px-3 pt-3 pb-2">
+                <div className="rb-search-heading rb-search-suggestions-heading px-3 pt-3 pb-2">
                   Sản phẩm gợi ý
                 </div>
                 <div
@@ -418,13 +419,10 @@ export default function Header() {
                   ) : searchResult.error ? (
                     <div className="rb-search-state">{searchResult.error}</div>
                   ) : searchResult.products.length === 0 ? (
-                    <div className="rb-search-state">
-                      <i className="bi bi-search d-block fs-4 mb-2" />
-                      Chưa tìm thấy sản phẩm phù hợp.
-                      <small className="d-block mt-1">
-                        Thử tên hoặc mã sản phẩm khác nhé.
-                      </small>
-                    </div>
+                    <EmptyState
+                      className="rb-search-state"
+                      text="Không có sản phẩm nào để hiển thị"
+                    />
                   ) : (
                     searchResult.products.map((product) => (
                       <ProductLink
@@ -452,7 +450,7 @@ export default function Header() {
                           <span className="rb-search-product-name">
                             {product.product_name}
                           </span>
-                          <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
+                          <div className="rb-search-prices d-flex align-items-baseline flex-wrap mt-2">
                             <span className="rb-search-price">
                               {fmtPrice(
                                 product.discount_price ??

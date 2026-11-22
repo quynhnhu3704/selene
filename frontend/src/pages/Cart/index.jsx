@@ -9,6 +9,7 @@ import { CartContext } from "../../context/CartContext";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import Swal from "sweetalert2";
+import { getColorImage } from "../ProductDetail/constants";
 import "./cart.css";
 
 /* ── helpers ── */
@@ -270,8 +271,8 @@ export default function Cart() {
 
               {!loading && cartItems.length > 0 && (
                 <button className="cart-del-sel" onClick={handleDeleteAll} title="Xoá toàn bộ giỏ hàng">
-                  <span>Xoá ({cartItems.length})</span>
-                  <i className="bi bi-trash3" aria-hidden="true" />
+                  <span>Xóa tất cả ({cartItems.length})</span>
+                  <i className="bi bi-trash" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -333,16 +334,20 @@ export default function Cart() {
                               <span className="cart-out-tag">Hết hàng</span>
                             )}
                           </div>
-                          <div>
+                          <div className="cart-item-options">
                             {item.product.color && (
-                              <span className="cart-item-meta">
-                                {item.product.color}
+                              <span className="cart-item-option cart-item-color">
+                                <span className="cart-color-swatch" title={item.product.color}>
+                                  <img src={getColorImage(item.product.color)} alt={item.product.color} />
+                                </span>
                               </span>
                             )}
 
                             {item.product.size && (
-                              <span className="cart-item-meta">
-                                {item.product.size}
+                              <span className="cart-item-option cart-item-size">
+                                <span className="cart-size-value">
+                                  {item.product.size}
+                                </span>
                               </span>
                             )}
                           </div>
@@ -434,7 +439,7 @@ export default function Cart() {
                           onClick={() => handleDelete(item.cart_item_id)}
                           title="Xoá sản phẩm"
                         >
-                          <i className="bi bi-trash3" />
+                          <i className="bi bi-trash" />
                         </button>
                       </div>
                     );
@@ -487,7 +492,7 @@ export default function Cart() {
                   </div>
 
                   <button
-                    className="cart-checkout-btn"
+                    className="cart-checkout-btn shop-action-btn"
                     disabled={selectedItems.length === 0}
                     onClick={async () => {
                       const hasOutOfStock = selectedItems.some((i) =>
