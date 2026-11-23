@@ -54,10 +54,6 @@ export default function Contact() {
             <h1 className="adm-page-title" id="ct-contact-title">
               Kết nối với Selene
             </h1>
-            <p className="ct-description">
-              Selene luôn sẵn lòng lắng nghe câu chuyện và những lời nhắn từ
-              bạn.
-            </p>
             <div className="ct-info">
               <div className="ct-info-item">
                 <span className="ct-info-icon">

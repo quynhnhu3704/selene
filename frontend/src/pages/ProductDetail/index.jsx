@@ -349,7 +349,7 @@ function ProductDetailContent({ id }) {
             <div className="d-flex align-items-center gap-3 mb-2">
               <div className="pd-price">{fmt(PRODUCT.price)}</div>
               {PRODUCT.originalPrice > PRODUCT.price && (
-                <del className="text-muted fs-6">
+                <del className="pd-original-price">
                   {fmt(PRODUCT.originalPrice)}
                 </del>
               )}

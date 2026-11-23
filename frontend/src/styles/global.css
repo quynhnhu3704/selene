@@ -4536,10 +4536,13 @@ td.adm-promotion-full-color * {
 
 .adm-original-price {
   font-size: 12px;
+}
+
+.adm-original-price,
+.pl-price-original {
   color: #6c757d;
   text-decoration: line-through;
   text-decoration-color: #6c757d;
-  /* text-decoration-color: #9ca0ac; */
 }
 
 /* ── ACTION BUTTONS ── */
@@ -5250,9 +5253,7 @@ td.adm-promotion-full-color * {
 }
 .pl-price-original {
   font-size: 16px;
-  color: #6c757d;
-  text-decoration: line-through;
-  text-decoration-color: #6c757d;
+  text-decoration-thickness: 1px;
 }
 
 /* ── PAGINATION ── */
@@ -6528,6 +6529,7 @@ body p.empty-state-text {
 
 /* ── THÔNG TIN LIÊN HỆ ── */
 .ct-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+.ct-page #ct-contact-title { margin-bottom: 24px; }
 .ct-description { color: #6c757d; font-size: 14px; line-height: 1.7; margin-bottom: 24px; }
 .ct-info { display: flex; flex-direction: column; gap: 18px; padding-bottom: 26px; margin-bottom: 26px; border-bottom: 1px solid #eee; }
 .ct-info-item { display: flex; align-items: center; gap: 14px; }
@@ -7513,6 +7515,13 @@ body p.empty-state-text {
    RIGHT PANEL
 ════════════════════ */
 .pd-price { font-size: 26px; font-weight: 800; color: #871B1B; margin-bottom: 6px; }
+.pd-original-price {
+  font-size: 18px;
+  color: #6c757d;
+  text-decoration: line-through;
+  text-decoration-color: #6c757d;
+  text-decoration-thickness: 1px;
+}
 .pd-name  { font-size: 17px; font-weight: 700; color: #212529; line-height: 1.45; margin-bottom: 6px; }
 .pd-sku   { font-size: 13px; color: #6c757d; margin-bottom: 18px; display: flex; align-items: center; gap: 6px; }
 .pd-sku-copy {
@@ -7730,16 +7739,47 @@ body p.empty-state-text {
 .promotions-page { padding: 32px 75px 72px; background: #fff; min-height: 70vh; }
 .promotions-title { margin-bottom: 16px; }
 .promotions-note { font-size: 14px; }
-.promotions-page .btn-outline-dark {
-  --bs-btn-hover-color: #212529;
-  --bs-btn-hover-bg: whitesmoke;
-  --bs-btn-hover-border-color: #212529;
-  --bs-btn-active-color: #212529;
-  --bs-btn-active-bg: whitesmoke;
-  --bs-btn-active-border-color: #212529;
-  --bs-btn-focus-shadow-rgb: 0, 0, 0;
+.promotions-page .voucher-list { height: 100%; }
+.promotions-page .voucher-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  --bs-border-color: #efefed;
+  --bs-border-radius-lg: 14px;
+}
+.promotions-page .voucher-actions { margin-top: auto !important; padding-top: 12px !important; }
+.promotions-page .voucher-card > .small { margin-bottom: 16px; }
+.promotions-page .voucher-icon { color: #871b1b !important; }
+.promotions-page .promotion-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7b8591;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.promotions-page .promotion-copy-btn:hover {
+  color: #212529;
+}
+.promotions-page .promotion-copy-btn:focus-visible {
+  color: #212529;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 @media (max-width: 1520px) { .promotions-page { padding: 28px 24px 56px; } }
+@media (max-width: 767px) {
+  .promotions-page { padding: 24px 16px 48px; }
+  .promotions-page .voucher-actions { flex-wrap: wrap; }
+  .promotions-page .promotion-copy-btn { width: 44px; height: 44px; }
+}
 
 /* Shared admin variants for longer statuses and promotion previews. */
 .adm-status-wide { width: auto; }
