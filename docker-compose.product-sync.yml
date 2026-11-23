@@ -1,0 +1,10 @@
+# Start the sync worker independently of the repository's existing compose file:
+# docker compose -f docker-compose.product-sync.yml up -d --build
+services:
+  selene-product-sync-worker:
+    build:
+      context: ./backend/ai-service
+    env_file:
+      - ./backend/ai-service/.env
+    command: ["python", "scripts/product_sync_worker.py", "--interval", "5", "--batch-size", "10"]
+    restart: unless-stopped
