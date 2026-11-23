@@ -2533,10 +2533,13 @@ td.adm-promotion-full-color * {
   z-index: 10;
 }
 .rb-search-heading {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   color: #871b1b;
+}
+.rb-search-suggestions-heading {
+  font-size: 12px;
 }
 .rb-search-history {
   padding: 16px;
@@ -2551,7 +2554,7 @@ td.adm-promotion-full-color * {
 .rb-search-dropdown .rb-search-clear {
   padding: 4px 0 4px 12px;
   color: #666666;
-  font-size: 11px;
+  font-size: 12px;
 }
 .rb-search-history-row {
   border-radius: 6px;
@@ -2571,7 +2574,6 @@ td.adm-promotion-full-color * {
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  border-bottom: 1px solid #eeeeee;
   color: inherit;
   text-decoration: none;
   transition: background 150ms ease;
@@ -2595,7 +2597,7 @@ td.adm-promotion-full-color * {
 }
 .rb-search-category {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: #871b1b;
   margin-bottom: 4px;
 }
@@ -2609,14 +2611,18 @@ td.adm-promotion-full-color * {
   line-height: 1.6;
   font-weight: 600;
 }
+.rb-search-prices {
+  column-gap: 12px;
+  row-gap: 8px;
+}
 .rb-search-price {
   color: #871b1b;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 .rb-search-original {
   color: #767676;
-  font-size: 12px;
+  font-size: 14px;
 }
 .rb-search-product-arrow {
   font-size: 13px;
@@ -4441,14 +4447,16 @@ td.adm-promotion-full-color * {
 }
 
 /* Header */
-.adm-table th {
+.adm-table th,
+.cart-page .cart-toolbar {
   font-size: 13.5px;
   font-weight: 600;
   color: #343a40;
   background: #efefed;
-  padding: 10px 14px;
   white-space: nowrap;
 }
+
+.adm-table th { padding: 10px 14px; }
 
 /* Body */
 .adm-table td {
@@ -7047,8 +7055,10 @@ body p.empty-state-text {
 .cart-summary-total-label { font-size: 15px; font-weight: 800; color: #212529; }
 .cart-summary-total-val   { font-size: 22px; font-weight: 900; color: #212529; }
 
+.shop-action-btn { height: 48px; }
+
 .cart-checkout-btn {
-  width: 100%; height: 50px; background: #212529; border: none;
+  width: 100%; background: #212529; border: none;
   border-radius: 50px; color: #fff;
   font-size: 15px; font-weight: 800; font-family: 'Manrope', sans-serif;
   cursor: pointer;
@@ -7588,7 +7598,7 @@ body p.empty-state-text {
 .pd-qty-btn:hover { color: #871B1B; }
 .pd-qty-val { min-width: 36px; text-align: center; font-size: 16px; font-weight: 700; color: #212529; }
 .pd-btn-cart {
-  flex: 1; height: 48px; background: #871B1B; border: none; border-radius: 50px;
+  flex: 1; background: #871B1B; border: none; border-radius: 50px;
   font-size: 16px; font-weight: 700; font-family: 'Manrope', sans-serif;
   color: #fff; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;

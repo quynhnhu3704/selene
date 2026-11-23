@@ -2,13 +2,14 @@ import EmptyState from "../../components/common/EmptyState";
 import ProductLink from "../../components/common/ProductLink";
 // frontend\src\pages\Cart\index.jsx
 // frontend\src\pages\Cart\index.jsx
-import Loading from "../../components/common/Loading";
+import { CartItemsSkeleton, CartSummarySkeleton } from "./Skeleton";
 import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../../context/CartContext";
 import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import Swal from "sweetalert2";
+import { getColorImage } from "../ProductDetail/constants";
 import "./cart.css";
 
 /* ── helpers ── */
@@ -245,10 +246,12 @@ export default function Cart() {
         items={[{ label: "Trang chủ", path: "/" }, { label: "Giỏ hàng" }]}
       />
 
-      <div className="cart-page">
+      <div className={`cart-page${loading ? " cart-page-loading" : ""}`}>
         <div className="cart-page-heading">
           <h1 className="adm-page-title">Giỏ hàng</h1>
-          {!loading && (
+          {loading ? (
+            <span className="cart-placeholder cart-skeleton-count" aria-hidden="true" />
+          ) : (
             <span className="cart-sub">({cart.total_quantity} sản phẩm)</span>
           )}
         </div>
@@ -257,6 +260,14 @@ export default function Cart() {
           <div className="col-12 col-lg-8">
             {/* toolbar */}
             <div className="cart-toolbar">
+              {loading ? (
+                <div className="cart-skeleton-toolbar" aria-hidden="true">
+                  <div className="cart-placeholder cart-skeleton-check" />
+                  <div className="cart-placeholder cart-skeleton-toolbar-label" />
+                  <div className="cart-placeholder cart-skeleton-toolbar-delete" />
+                </div>
+              ) : (
+                <>
               <label className="cart-check-all">
                 <input
                   type="checkbox"
@@ -270,18 +281,18 @@ export default function Cart() {
 
               {!loading && cartItems.length > 0 && (
                 <button className="cart-del-sel" onClick={handleDeleteAll} title="Xoá toàn bộ giỏ hàng">
-                  <span>Xoá ({cartItems.length})</span>
-                  <i className="bi bi-trash3" aria-hidden="true" />
+                  <span>Xóa tất cả ({cartItems.length})</span>
+                  <i className="bi bi-trash" aria-hidden="true" />
                 </button>
+              )}
+                </>
               )}
             </div>
 
             {/* items */}
             <div className="cart-list">
               {loading ? (
-                <div className="py-5">
-                  <Loading text="Đang tải giỏ hàng..." />
-                </div>
+                <CartItemsSkeleton />
               ) : (
                 cartItems
                   .filter((i) => i.product)
@@ -308,7 +319,7 @@ export default function Cart() {
                           {itemOutOfStock && (
                             <span className="cart-item-badge-out">Hết hàng</span>
                           )}
-                          <ProductLink productId={item.product.product_id}>
+                          <ProductLink productId={item.product.product_id} target="_blank" rel="noopener noreferrer">
                             <img
                               src={item.product.image_url || "/placeholder.jpg"}
                               alt={item.product.product_name}
@@ -325,6 +336,8 @@ export default function Cart() {
                           <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
                             <ProductLink
                               productId={item.product.product_id}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="cart-item-name mb-0"
                             >
                               {item.product.product_name}
@@ -333,16 +346,20 @@ export default function Cart() {
                               <span className="cart-out-tag">Hết hàng</span>
                             )}
                           </div>
-                          <div>
+                          <div className="cart-item-options">
                             {item.product.color && (
-                              <span className="cart-item-meta">
-                                {item.product.color}
+                              <span className="cart-item-option cart-item-color">
+                                <span className="cart-color-swatch" title={item.product.color}>
+                                  <img src={getColorImage(item.product.color)} alt={item.product.color} />
+                                </span>
                               </span>
                             )}
 
                             {item.product.size && (
-                              <span className="cart-item-meta">
-                                {item.product.size}
+                              <span className="cart-item-option cart-item-size">
+                                <span className="cart-size-value">
+                                  {item.product.size}
+                                </span>
                               </span>
                             )}
                           </div>
@@ -434,7 +451,7 @@ export default function Cart() {
                           onClick={() => handleDelete(item.cart_item_id)}
                           title="Xoá sản phẩm"
                         >
-                          <i className="bi bi-trash3" />
+                          <i className="bi bi-trash" />
                         </button>
                       </div>
                     );
@@ -444,6 +461,9 @@ export default function Cart() {
 
             {/* back link */}
             <div className="mt-4">
+              {loading ? (
+                <div className="cart-placeholder cart-skeleton-back" aria-hidden="true" />
+              ) : (
               <Link
                 to="/san-pham"
                 className="d-inline-flex align-items-center gap-2 form-link-sm"
@@ -452,18 +472,21 @@ export default function Cart() {
                 <i className="bi bi-arrow-left" />
                 Tiếp tục mua sắm
               </Link>
+              )}
             </div>
           </div>
 
           {/* ══════════════════ CỘT PHẢI: TỔNG ĐƠN ══════════════════ */}
           <div className="col-12 col-lg-4">
             <div className="cart-summary">
-              <div className="cart-summary-title">Tóm tắt đơn hàng</div>
+              <div className="cart-summary-title">
+                {loading ? (
+                  <div className="cart-placeholder cart-skeleton-summary-title" aria-hidden="true" />
+                ) : "Tóm tắt đơn hàng"}
+              </div>
 
               {loading ? (
-                <div className="py-5">
-                  <Loading text="Đang tải tóm tắt đơn hàng..." />
-                </div>
+                <CartSummarySkeleton />
               ) : (
                 <>
                   <div className="cart-summary-row">
@@ -487,7 +510,7 @@ export default function Cart() {
                   </div>
 
                   <button
-                    className="cart-checkout-btn"
+                    className="cart-checkout-btn shop-action-btn"
                     disabled={selectedItems.length === 0}
                     onClick={async () => {
                       const hasOutOfStock = selectedItems.some((i) =>
