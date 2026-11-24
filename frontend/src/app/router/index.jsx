@@ -10,6 +10,8 @@ import ProductList from "../../pages/ProductList";
 import Wishlist from "../../pages/Wishlist";
 import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
+import News from "../../pages/News";
+import NewsDetail from "../../pages/News/Detail";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
 import Profile from "../../pages/Account/Profile";
 import Cart from "../../pages/Cart";
@@ -87,6 +89,8 @@ export default function AppRouter() {
         <Route path="/thanh-toan/qr" element={<Payment />} />
 
         <Route path="/ve-chung-toi" element={<About />} />
+        <Route path="/tin-tuc" element={<News />} />
+        <Route path="/tin-tuc/:slug" element={<NewsDetail />} />
         <Route path="/khuyen-mai" element={<Promotions />} />
         <Route path="/ho-tro" element={<Support />} />
       </Route>

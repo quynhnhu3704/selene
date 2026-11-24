@@ -1,0 +1,81 @@
+export const categories = [
+  { name: "Tất cả", icon: "grid" },
+  { name: "Xu hướng", icon: "bag" },
+  { name: "Bí quyết phối đồ", icon: "book" },
+  { name: "Mẹo thời trang", icon: "gem" },
+  { name: "Chất liệu & bảo quản", icon: "leaf" },
+  { name: "Câu chuyện Selene", icon: "star" },
+];
+
+export const articles = [
+  {
+    slug: "xu-huong-thoi-trang-xuan-he-2026", category: "Xu hướng", image: 0,
+    author: "Nguyễn Thị Quỳnh Như",
+    title: "Xu hướng thời trang Xuân Hè 2026: Thanh lịch, nhẹ nhàng và đầy cảm hứng",
+    date: "2026-03-12", description: "Khám phá những thiết kế và gam màu dẫn đầu xu hướng mùa mới, giúp bạn làm mới phong cách một cách tinh tế.",
+    views: 1248,
+    relatedSlugs: ["5-gam-mau-xu-huong-2026", "bao-quan-trang-phuc", "cac-loai-vai-thoi-trang-nu"],
+    introduction: "Xuân Hè 2026 đánh dấu sự trở lại của những giá trị thời trang bền vững: tối giản, thanh lịch nhưng vẫn tràn đầy sức sống. Các thiết kế năm nay tập trung vào sự thoải mái, chất liệu thoáng nhẹ và bảng màu mang cảm hứng từ thiên nhiên.",
+    quote: "Xuân Hè 2026 không chỉ là câu chuyện của màu sắc và chất liệu, mà còn là hành trình thể hiện phong cách cá nhân – nhẹ nhàng, tự tin và đầy cảm hứng.",
+    topics: ["Xu hướng thời trang", "Xuân Hè 2026", "Phong cách thanh lịch"],
+    sectionVisuals: ["palette", "fabrics", "outfits"],
+    sections: [
+      ["Gam màu chủ đạo: Tươi sáng và tinh tế", "Bảng màu Xuân Hè 2026 ưu ái những gam màu nhẹ nhàng như trắng ngà, be, xanh pastel và hồng phấn. Những tông màu này không chỉ mang lại cảm giác tươi mới, mà còn dễ dàng phối hợp trong nhiều hoàn cảnh, từ công sở đến dạo phố."],
+      ["Chất liệu được ưa chuộng", "Các chất liệu tự nhiên và thân thiện với làn da như linen, cotton, lụa và voan tiếp tục là lựa chọn hàng đầu. Chúng mang đến sự thoáng mát, nhẹ nhàng, phù hợp với thời tiết nắng ấm của mùa hè."],
+      ["Gợi ý phối đồ theo phong cách thanh lịch", "Bạn có thể kết hợp đầm maxi dáng suông cùng sandal mảnh cho những buổi dạo phố, hoặc chọn set áo blouse và chân váy chữ A để có diện mạo chỉn chu nơi công sở. Điểm nhấn nằm ở những chi tiết tối giản nhưng tinh tế như nơ, xếp ly hay thắt eo nhẹ."],
+    ],
+  },
+  {
+    slug: "5-cach-phoi-do-cong-so", category: "Bí quyết phối đồ", image: 1,
+    author: "Nguyễn Thanh Trúc",
+    title: "5 cách phối đồ công sở vừa thanh lịch vừa hiện đại", date: "2026-03-08",
+    description: "Làm mới tủ đồ đi làm bằng những công thức phối trang phục đơn giản và tinh tế.",
+    sections: [
+      ["Sơ mi và quần suông", "Sơ mi trắng cùng quần suông đen là lựa chọn dễ ứng dụng. Sơ vin gọn gàng và thêm một chiếc thắt lưng mảnh để tạo điểm nhấn ở eo."],
+      ["Blazer và chân váy midi", "Khoác blazer nhẹ bên ngoài áo trơn, kết hợp chân váy midi cho những ngày cần vẻ chỉn chu. Chọn các sắc độ gần nhau để bộ trang phục liền mạch."],
+      ["Ba gợi ý cho những ngày còn lại", "Bạn có thể luân phiên đầm liền thắt eo, áo dệt kim mỏng phối quần ống đứng, hoặc sơ mi pastel cùng chân váy chữ A. Giày bệt mũi nhọn và túi có phom sẽ giúp hoàn thiện cả ba cách phối."],
+    ],
+  },
+  {
+    slug: "hanh-trinh-thiet-ke-selene", category: "Câu chuyện Selene", image: 2,
+    author: "Nguyễn Thanh Trúc",
+    title: "Hành trình tạo nên những thiết kế được yêu thích tại Selene", date: "2026-03-01",
+    description: "Từ bản phác thảo đến từng đường kim, khám phá câu chuyện phía sau một thiết kế thanh lịch.",
+    sections: [["Bắt đầu từ cảm hứng", "Một bảng màu, một nếp vải hay chuyển động thường ngày đều có thể gợi mở ý tưởng cho bộ trang phục. Các bản phác thảo giúp định hình phom dáng và những chi tiết chính."], ["Chăm chút từng đường may", "Chọn chất liệu, dựng mẫu và điều chỉnh độ vừa vặn là những bước tạo nên một thiết kế hoàn chỉnh. Sự tinh tế nằm ở những chi tiết nhỏ: đường viền, nếp gấp và cách trang phục chuyển động cùng người mặc."]],
+  },
+  {
+    slug: "chon-dam-maxi-theo-dang-nguoi", category: "Mẹo thời trang", image: 3,
+    author: "Nguyễn Thị Quỳnh Như",
+    title: "Chọn đầm maxi theo dáng người: Tôn dáng và che khuyết điểm hiệu quả", date: "2026-02-26",
+    description: "Tìm chiếc đầm maxi giúp bạn thoải mái và tự tin với phong cách riêng.",
+    sections: [["Chọn độ dài phù hợp", "Một chiếc maxi vừa chạm mắt cá chân giúp bước đi thuận tiện và để lộ đôi giày thanh mảnh. Bạn có thể thử nhiều độ dài để tìm tỷ lệ cân đối với chiều cao của mình."], ["Điểm nhấn ở vòng eo", "Dáng đầm có eo rõ hoặc thắt lưng mềm giúp tạo tỷ lệ hài hòa. Cổ chữ V, dây vai mảnh hay phần chân váy xòe nhẹ đều là những lựa chọn đáng thử tùy theo sở thích." ]],
+  },
+  {
+    slug: "5-gam-mau-xu-huong-2026", category: "Xu hướng", image: 4,
+    author: "Nguyễn Thanh Trúc",
+    title: "5 gam màu dẫn đầu xu hướng thời trang 2026", date: "2026-03-12",
+    description: "Khám phá 5 gam màu nổi bật của năm 2026, dễ ứng dụng và giúp tôn lên vẻ thanh lịch, hiện đại cho phái đẹp.",
+    sections: [["Lavender và hồng phấn", "Hai sắc màu dịu nhẹ mang lại nét nữ tính cho đầm liền và áo kiểu. Kết hợp với trắng ngà để giữ tổng thể sáng và nhẹ nhàng."], ["Be cát, trắng ngà và xanh sage", "Bộ ba màu tự nhiên dễ phối trong nhiều hoàn cảnh. Thử kết hợp các sắc độ be với nhau, hoặc dùng xanh sage làm điểm nhấn cho trang phục trung tính."]],
+  },
+  {
+    slug: "bao-quan-trang-phuc", category: "Mẹo thời trang", image: 5,
+    author: "Nguyễn Thị Quỳnh Như",
+    title: "Cách bảo quản trang phục để luôn bền đẹp như mới", date: "2026-03-10",
+    description: "Bí quyết giặt, phơi và cất giữ trang phục đúng cách, giúp quần áo luôn giữ form, màu sắc và độ bền theo thời gian.",
+    sections: [["Đọc nhãn trước khi giặt", "Mỗi chất liệu có cách chăm sóc riêng. Hãy kiểm tra hướng dẫn trên nhãn, phân loại màu và dùng túi giặt khi phù hợp để hạn chế ma sát."], ["Cất giữ đúng cách", "Phơi đồ ở nơi thông thoáng theo hướng dẫn của nhà sản xuất. Dùng móc phù hợp cho áo và đầm; gấp gọn đồ dệt kim để tránh kéo giãn vai áo."]],
+  },
+  {
+    slug: "cac-loai-vai-thoi-trang-nu", category: "Chất liệu & bảo quản", image: 6,
+    author: "Nguyễn Thị Quỳnh Như",
+    title: "Các loại vải thường dùng trong thời trang nữ và cách nhận biết", date: "2026-03-06",
+    description: "Tổng hợp những chất liệu vải phổ biến trong thời trang nữ, đặc điểm và mẹo nhận biết nhanh, chính xác.",
+    sections: [["Cotton và linen", "Cotton thường có bề mặt mềm và dễ mặc hằng ngày. Linen nổi bật với kết cấu sợi và những nếp nhăn tự nhiên. Thành phần chính xác cần được kiểm tra trên nhãn sản phẩm."], ["Lụa và bề mặt satin", "Lụa là tên một loại sợi, còn satin chỉ kiểu dệt tạo bề mặt bóng mượt. Khi chọn trang phục, hãy đọc thành phần và hướng dẫn chăm sóc thay vì chỉ dựa vào độ bóng của vải."]],
+  },
+  {
+    slug: "selene-cua-hang-moi", category: "Câu chuyện Selene", image: 7,
+    author: "Nguyễn Thị Quỳnh Như",
+    title: "Selene khai trương cửa hàng mới tại TP. HCM", date: "2026-03-01",
+    description: "Selene chính thức ra mắt cửa hàng mới tại TP. HCM, mang đến không gian mua sắm hiện đại và nhiều ưu đãi hấp dẫn.",
+    sections: [["Không gian dành cho cảm hứng", "Ánh sáng ấm, các gam màu trung tính và những góc trưng bày tinh tế tạo nên không gian để bạn khám phá phong cách của mình. Đây là nội dung minh họa cho giao diện tin tức Selene."], ["Khám phá phong cách riêng", "Từ trang phục công sở đến những chiếc đầm dành cho buổi hẹn, mỗi góc trưng bày gợi mở một cách phối mới. Hãy tham khảo thông tin liên hệ hiện có của Selene khi bạn cần tìm hiểu về cửa hàng."]],
+  },
+];
