@@ -11,6 +11,7 @@ import Wishlist from "../../pages/Wishlist";
 import ProductDetail from "../../pages/ProductDetail";
 import About from "../../pages/About";
 import News from "../../pages/News";
+import Collections from "../../pages/Collections";
 import NewsDetail from "../../pages/News/Detail";
 import GoogleSuccess from "../../pages/Account/GoogleSuccess";
 import Profile from "../../pages/Account/Profile";
@@ -90,6 +91,7 @@ export default function AppRouter() {
 
         <Route path="/ve-chung-toi" element={<About />} />
         <Route path="/tin-tuc" element={<News />} />
+        <Route path="/bo-suu-tap" element={<Collections />} />
         <Route path="/tin-tuc/:slug" element={<NewsDetail />} />
         <Route path="/khuyen-mai" element={<Promotions />} />
         <Route path="/ho-tro" element={<Support />} />

@@ -555,8 +555,7 @@ export default function Header() {
               <i className="bi bi-caret-up ms-2 icon-up"></i>
             </NavLink>
             <NavLink to="/bo-suu-tap" className={navClass}>
-              BỘ SƯU TẬP<i className="bi bi-caret-down ms-2 icon-down"></i>
-              <i className="bi bi-caret-up ms-2 icon-up"></i>
+              BỘ SƯU TẬP
             </NavLink>
             <NavLink to="/tin-tuc" className={navClass}>
               TIN TỨC<i className="bi bi-caret-down ms-2 icon-down"></i>

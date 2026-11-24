@@ -7891,13 +7891,13 @@ body p.empty-state-text {
    ========================================================================== */
 .news-page { --news-wine: #871b1b; --news-ink: #212529; --news-muted: #6c757d; --news-blush: #fcf2f2; width: calc(100% - 150px); margin: 0 auto 80px; color: var(--news-ink); }
 .news-page, .news-page * { letter-spacing: normal; }
-.news-page > .container { width: 100%; max-width: none; margin: 0 !important; font-size: 14px; }
+.news-page > .container, .collections-page > .container { width: 100%; max-width: none; margin: 0 !important; font-size: 14px; }
 .news-page .breadcrumb a { color: var(--news-muted); }
 .news-page .breadcrumb-item.active { color: var(--news-wine); }
 .news-page a { text-decoration: none; }
 .news-page :is(a, button):focus-visible { outline: 2px solid var(--news-wine); outline-offset: 4px; }
-.news-heading { padding-top: 32px; margin: 0 0 25px; }
-.news-heading h1 { font-size: 26px; font-weight: 800; margin: 0 0 8px; line-height: 1.25; }
+.news-heading, .collections-heading { padding-top: 32px; margin: 0 0 25px; }
+.news-heading h1, .collections-heading h1 { font-size: 26px; font-weight: 800; margin: 0 0 8px; line-height: 1.25; }
 .news-spotlight { display: grid; grid-template-columns: minmax(0, 1.82fr) minmax(0, 1fr); gap: 32px; }
 .news-featured { display: grid; grid-template-columns: 54.5% 45.5%; min-height: 350px; border-radius: 16px; background: var(--news-blush); overflow: hidden; color: inherit; }
 .news-image { position: relative; overflow: hidden; background: var(--news-blush); }
@@ -7973,8 +7973,8 @@ body p.empty-state-text {
 }
 @media (max-width: 767px) {
   .news-page { width: calc(100% - 32px); margin-bottom: 56px; }
-  .news-heading { padding-top: 24px; }
-  .news-heading h1 { font-size: 26px; }
+  .news-heading, .collections-heading { padding-top: 24px; }
+  .news-heading h1, .collections-heading h1 { font-size: 26px; }
   .news-featured { grid-template-columns: 1fr; }
   .news-featured > .news-image { min-height: 0; aspect-ratio: 4 / 3; }
   .news-featured-body { padding: 24px; }
@@ -8073,3 +8073,82 @@ body p.empty-state-text {
   .news-detail-related .news-side-card { grid-template-columns: 34% minmax(0, 1fr); }
   .news-detail-sidebar h2 { font-size: 23px; }
 }
+
+/* ==========================================================================
+   pages/Collections — palette Selene, giao diện bộ sưu tập tĩnh
+   ========================================================================== */
+.collections-page { --collections-wine: #871b1b; --collections-ink: #212529; --collections-blush: #fcf2f2; position: relative; isolation: isolate; width: calc(100% - 150px); margin: 0 auto 64px; color: var(--collections-ink); }
+.collections-page, .collections-page * { letter-spacing: normal; }
+.collections-page a { text-decoration: none; }
+.collections-page :is(a, button):focus-visible { outline: 2px solid var(--collections-wine); outline-offset: 5px; }
+.collections-page .breadcrumb a { color: #6c757d; }
+.collections-page .breadcrumb-item.active { color: var(--collections-wine); }
+.collections-wave { position: absolute; z-index: -1; top: 0; right: 0; width: 42%; height: 160px; fill: var(--collections-wine); opacity: .045; pointer-events: none; }
+.collections-hero { position: relative; isolation: isolate; overflow: hidden; height: 324px; margin: 0 0 36px; border-radius: 17px; background: var(--collections-blush); }
+.collections-hero-image { position: absolute; z-index: -2; inset: 0; background: url('/images/news/spring-summer-hero.png') center top / cover no-repeat; }
+.collections-hero::before { content: ''; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, var(--collections-blush) 0%, color-mix(in srgb, var(--collections-blush) 94%, transparent) 27%, transparent 59%); }
+.collections-hero-copy { padding: 42px 0 0 76px; width: 46%; }
+.collections-eyebrow { color: var(--collections-wine); font-size: 15px; font-weight: 700; letter-spacing: 6px !important; margin: 0 0 12px; }
+.collections-hero-copy h2 { color: var(--collections-wine); font-size: 54px; font-weight: 500; line-height: 1.15; margin: 0 0 12px; }
+.collections-hero-description { max-width: 345px; font-size: 18px; line-height: 1.45; margin: 0 0 27px; }
+.collections-cta { display: inline-flex; align-items: center; justify-content: center; gap: 14px; padding: 11px 24px; min-height: 46px; border-radius: 28px; background: var(--collections-wine); color: #fff; font-size: 16px; font-weight: 700; transition: filter .2s; }
+.collections-cta:hover { color: #fff; filter: brightness(1.12); }
+.collections-signature { position: absolute; right: 4%; top: 21%; display: flex; flex-direction: column; color: #fff; font: italic 59px/1.15 'Segoe Script', 'Brush Script MT', cursive; transform: rotate(-12deg); pointer-events: none; }
+.collections-signature span { font-family: inherit; }
+.collections-signature span + span { margin-left: 52px; }
+.collections-dots { position: absolute; left: 76px; bottom: 8px; display: flex; gap: 0; }
+.collections-dots button { display: grid; place-items: center; width: 26px; height: 28px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.collections-dots button::before { content: ''; width: 8px; height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--collections-wine) 25%, var(--collections-blush)); }
+.collections-dots button.is-active::before { width: 16px; height: 6px; background: var(--collections-wine); }
+.collections-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
+.collections-section-heading h2 { margin: 0; font-size: 32px; font-weight: 700; line-height: 1.25; }
+.collections-view-all { display: inline-flex; align-items: center; gap: 14px; padding-top: 12px; color: var(--collections-wine); font-size: 15px; font-weight: 700; white-space: nowrap; }
+.collections-view-all:hover { color: var(--collections-wine); text-decoration: underline; }
+.collections-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; }
+.collections-card { position: relative; isolation: isolate; display: flex; align-items: flex-end; min-width: 0; aspect-ratio: 1.155; overflow: hidden; border-radius: 16px; color: #fff; background: var(--collections-blush); }
+.collections-card-image { position: absolute; z-index: -2; inset: 0; background-image: url('/images/collections/editorial.png'); background-size: 200% 200%; background-repeat: no-repeat; transition: transform .35s; }
+.collections-card-image-party { background-position: 0 0; }
+.collections-card-image-evening { background-position: 100% 0; }
+.collections-card-image-summer { background-position: 0 100%; }
+.collections-card-image-autumn { background-position: 100% 100%; }
+.collections-card::after { content: ''; position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, transparent 42%, color-mix(in srgb, var(--collections-ink) 72%, transparent)); }
+.collections-card:hover { color: #fff; }
+.collections-card:hover .collections-card-image { transform: scale(1.035); }
+.collections-card-copy { padding: 0 60px 17px 24px; }
+.collections-card-copy h3 { font-size: 25px; font-weight: 700; line-height: 1.2; margin: 0 0 6px; }
+.collections-card-copy p { font-size: 14px; line-height: 1.5; margin: 0; }
+.collections-card-arrow { position: absolute; right: 19px; bottom: 20px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--collections-ink); background: #fff; }
+@media (min-width: 1600px) { .collections-page { max-width: 1480px; } }
+@media (max-width: 1199px) {
+  .collections-page { width: calc(100% - 48px); }
+  .collections-hero { margin-left: 0; }
+  .collections-hero-copy { width: 55%; padding-left: 36px; }
+  .collections-hero-copy h2 { font-size: 44px; }
+  .collections-dots { left: 36px; }
+  .collections-signature { font-size: 44px; right: 3%; }
+  .collections-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .collections-page { width: calc(100% - 32px); margin-bottom: 40px; }
+  .collections-wave { width: 70%; }
+  .collections-hero { height: 420px; margin-bottom: 28px; }
+  .collections-hero-image { background-position: 65% top; }
+  .collections-hero::before { background: linear-gradient(0deg, var(--collections-blush) 0%, color-mix(in srgb, var(--collections-blush) 95%, transparent) 35%, transparent 85%); }
+  .collections-hero-copy { position: absolute; bottom: 45px; width: 100%; padding: 0 22px; }
+  .collections-eyebrow { font-size: 12px; letter-spacing: 4px !important; margin-bottom: 8px; }
+  .collections-hero-copy h2 { font-size: 36px; margin-bottom: 8px; }
+  .collections-hero-description { font-size: 16px; margin-bottom: 16px; max-width: 290px; }
+  .collections-signature { display: none; }
+  .collections-dots { left: 20px; bottom: 7px; }
+  .collections-section-heading { gap: 12px; margin-bottom: 22px; align-items: flex-start; }
+  .collections-section-heading h2 { font-size: 25px; }
+  .collections-view-all { font-size: 13px; gap: 7px; padding-top: 7px; }
+  .collections-grid { gap: 12px; }
+  .collections-card { aspect-ratio: .75; }
+  .collections-card-image { background-size: auto 200%; }
+  .collections-card-copy { padding: 0 12px 48px; }
+  .collections-card-copy h3 { font-size: 21px; }
+  .collections-card-copy p { font-size: 13px; }
+  .collections-card-arrow { width: 28px; height: 28px; right: 12px; bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .collections-card-image, .collections-cta { transition: none; } }
