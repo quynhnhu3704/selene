@@ -91,6 +91,17 @@ class ResponseWorker(BaseWorker):
             if ai_reply:
                 context.reply = ai_reply
                 context.source = settings.llm_provider.lower()
+                # Đồng bộ danh sách products trả về với những sản phẩm AI thực sự nhắc tới trong câu trả lời
+                if context.retrieved_items:
+                    reply_lower = ai_reply.casefold()
+                    mentioned = [
+                        item
+                        for item in context.retrieved_items
+                        if (item.product_name and item.product_name.casefold() in reply_lower)
+                        or (item.product_id and item.product_id.casefold() in reply_lower)
+                    ]
+                    if mentioned:
+                        context.retrieved_items = mentioned
                 return context
         except Exception as exc:
             logger.error("ResponseWorker LLM error: %s", exc)

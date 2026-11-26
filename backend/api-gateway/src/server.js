@@ -29,6 +29,7 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL;
 const CHAT_SERVICE_URL = process.env.CHAT_SERVICE_URL || "http://127.0.0.1:8005";
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:8006";
 
 // Giữ nguyên đường dẫn Socket.IO qua Gateway, kể cả WebSocket upgrade đầu tiên.
 const chatSocketProxy = createProxyMiddleware({
@@ -95,14 +96,14 @@ app.use(
   }),
 );
 
-// Chuyển chatbot đến product-service, có thể đổi target sang agent-service sau này.
+// Chuyển chatbot đến ai-service (FastAPI).
 app.use(
   "/api/chatbot",
   createProxyMiddleware({
-    target: PRODUCT_SERVICE_URL,
+    target: AI_SERVICE_URL,
     changeOrigin: true,
-    pathRewrite: (path) => `/chatbot${path === "/" ? "" : path}`,
-    proxyTimeout: 30000,
+    pathRewrite: (path) => `/api/v1/chat${path === "/" ? "" : path}`,
+    proxyTimeout: 45000,
     on: {
       error: (err, req, res) => {
         console.error("Proxy Error (Chatbot):", err.message);

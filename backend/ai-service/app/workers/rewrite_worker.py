@@ -70,7 +70,7 @@ class RewriteWorker(BaseWorker):
 
         query_count = max(1, min(settings.rewrite_query_count, 5))
         history_lines = "\n".join(
-            f"{item['role']}: {item['text']}" for item in context.history[-4:]
+            f"{item['role']}: {item['text'][:180]}" for item in context.history[-4:]
         )
         prompt_parts = []
         if history_lines:

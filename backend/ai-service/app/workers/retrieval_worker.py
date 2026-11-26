@@ -1,11 +1,57 @@
 import asyncio
+import json
+import logging
 from typing import Any
+
+import httpx
+from supabase import Client, create_client
 
 from app.clients.embedding_client import EmbeddingClient
 from app.clients.qdrant_client import QdrantStoreClient
 from app.core.config import settings
 from app.schemas.context import PipelineContext, RetrievedItem
 from app.workers.base import BaseWorker
+
+logger = logging.getLogger(__name__)
+
+
+def _unwrap_first_image(val: Any) -> str | None:
+    """Recursively extract the first valid URL string from list/dict/JSON-string."""
+    if not val:
+        return None
+    if isinstance(val, list):
+        for item in val:
+            found = _unwrap_first_image(item)
+            if found:
+                return found
+        return None
+    if isinstance(val, dict):
+        return _unwrap_first_image(val.get("url") or val.get("image_url") or val.get("src"))
+    if isinstance(val, str):
+        s = val.strip()
+        if not s or s in ("[", "]", "null", "undefined"):
+            return None
+        if s.startswith("[") or s.startswith("{"):
+            try:
+                return _unwrap_first_image(json.loads(s))
+            except json.JSONDecodeError:
+                return None
+        clean = s.strip("\"'").strip()
+        return clean if len(clean) >= 5 else None
+    return None
+
+
+def _extract_first_image_url(payload: dict[str, Any]) -> str | None:
+    """Return the first valid image URL from Qdrant payload variants."""
+    for key in ("image_url", "image_urls", "images"):
+        found = _unwrap_first_image(payload.get(key))
+        if found:
+            return found
+
+    snapshot = payload.get("source_snapshot")
+    if isinstance(snapshot, dict):
+        return _unwrap_first_image(snapshot.get("image_urls"))
+    return None
 
 
 def _rrf_merge(
@@ -59,6 +105,52 @@ class RetrievalWorker(BaseWorker):
     ) -> None:
         self.embedding_client = embedding_client
         self.qdrant_client = qdrant_client
+        prod_url = settings.product_supabase_url.strip()
+        prod_key = settings.product_supabase_key.strip()
+        self._product_supabase: Client | None = (
+            create_client(prod_url, prod_key) if prod_url and prod_key else None
+        )
+
+    def _fetch_product_media_sync(self, product_ids: list[str]) -> dict[str, dict[str, Any]]:
+        if not self._product_supabase or not product_ids:
+            return {}
+        try:
+            resp = (
+                self._product_supabase.table("products")
+                .select("product_id, image_urls, original_price, discount_price")
+                .in_("product_id", product_ids)
+                .execute()
+            )
+            return {
+                str(row["product_id"]): row
+                for row in (resp.data or [])
+                if row.get("product_id") is not None
+            }
+        except Exception as exc:
+            logger.warning("Failed to enrich product images from product Supabase: %s", exc)
+            return {}
+
+    async def _fetch_product_media_via_service(
+        self, product_ids: list[str]
+    ) -> dict[str, dict[str, Any]]:
+        base_url = settings.product_service_url.rstrip("/")
+        if not base_url or not product_ids:
+            return {}
+
+        async def fetch_one(client: httpx.AsyncClient, pid: str) -> tuple[str, dict[str, Any] | None]:
+            try:
+                resp = await client.get(f"{base_url}/product-detail/{pid}")
+                if resp.status_code != 200:
+                    return pid, None
+                data = resp.json().get("data")
+                return pid, data if isinstance(data, dict) else None
+            except Exception as exc:
+                logger.debug("Product service lookup failed for %s: %s", pid, exc)
+                return pid, None
+
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            pairs = await asyncio.gather(*(fetch_one(client, pid) for pid in product_ids))
+        return {pid: data for pid, data in pairs if data}
 
     async def run(self, context: PipelineContext) -> PipelineContext:
         queries = context.rewritten_queries or (
@@ -104,7 +196,7 @@ class RetrievalWorker(BaseWorker):
                     category_name=payload.get("category_name") or payload.get("category"),
                     original_price=payload.get("original_price"),
                     discount_price=payload.get("discount_price") or payload.get("price"),
-                    image_url=payload.get("image_url"),
+                    image_url=_extract_first_image_url(payload),
                     description=payload.get("description"),
                     text=payload.get("text") or payload.get("content"),
                     payload=payload,
@@ -112,5 +204,32 @@ class RetrievalWorker(BaseWorker):
             )
 
         context.retrieved_items = items
+        missing_media_ids = [
+            item.product_id
+            for item in items
+            if item.product_id and not item.image_url
+        ]
+        if missing_media_ids:
+            media_map: dict[str, dict[str, Any]] = {}
+            if self._product_supabase:
+                media_map = await asyncio.to_thread(
+                    self._fetch_product_media_sync, missing_media_ids
+                )
+            else:
+                media_map = await self._fetch_product_media_via_service(missing_media_ids)
+
+            for item in items:
+                row = media_map.get(str(item.product_id))
+                if not row:
+                    continue
+                if not item.image_url:
+                    item.image_url = _unwrap_first_image(
+                        row.get("image_url") or row.get("image_urls") or row.get("images")
+                    )
+                if item.original_price is None and row.get("original_price") is not None:
+                    item.original_price = row.get("original_price")
+                if item.discount_price is None and row.get("discount_price") is not None:
+                    item.discount_price = row.get("discount_price")
+
         context.matched = any(item.score > 0.05 for item in items)
         return context

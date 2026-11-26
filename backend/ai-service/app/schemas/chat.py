@@ -13,7 +13,7 @@ class ChatHistoryItem(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     history: list[ChatHistoryItem] = Field(default_factory=list, max_length=10)
-    top_k: int = Field(default=5, ge=1, le=20)
+    top_k: int = Field(default=3, ge=1, le=20)
     user_id: str | None = Field(default=None, description="account_id của người dùng")
     session_id: str | None = Field(default=None, description="conversation_id của phiên chat")
 

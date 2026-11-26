@@ -26,7 +26,7 @@ class PipelineContext(BaseModel):
     rewritten_query: str = ""
     rewritten_queries: list[str] = Field(default_factory=list)
     history: list[dict[str, str]] = Field(default_factory=list)
-    top_k: int = 5
+    top_k: int = 3
     user_id: str | None = None
     session_id: str | None = None
     user_memory: str = ""

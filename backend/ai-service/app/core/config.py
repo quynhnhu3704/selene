@@ -48,9 +48,12 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     ollama_base_url: str = "http://localhost:11434"
 
-    # Supabase (optional, used by sync_supabase.py)
+    # Supabase (chat/memory) & Product Service enrichment
     supabase_url: str = ""
     supabase_key: str = ""
+    product_service_url: str = "http://127.0.0.1:8002"
+    product_supabase_url: str = ""
+    product_supabase_key: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

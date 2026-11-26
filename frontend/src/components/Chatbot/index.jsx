@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { sendMessageToBot } from "../../services/chatbot.service";
+import {
+  sendMessageToBot,
+  endBotSession,
+  sendBotEndSessionBeacon,
+} from "../../services/chatbot.service";
 import {
   getMyMessages,
   sendTextMessage,
@@ -17,7 +21,7 @@ import {
   ReactionDetailModal,
 } from "../SupportChat/MessageReaction";
 import { toast } from "react-toastify";
-import defaultProduct from "../../assets/images/default-product.png";
+import ProductImage from "../common/ProductImage";
 
 import BOT_AVATAR from "../../assets/images/default-chatbot.png";
 import CHATBOT_ICON from "../../assets/images/chatbot.png";
@@ -112,6 +116,7 @@ function resolveMedia(message) {
 
 // Giữ giao diện chat mẫu, nhận văn bản, tệp tin và sản phẩm riêng từ API của Selene.
 function Chatbot() {
+  const [handedOffToStaff, setHandedOffToStaff] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [open, setOpen] = useState(false);
@@ -145,6 +150,37 @@ function Chatbot() {
   const socketRef = useRef(null);
   const conversationIdRef = useRef(null);
   const openRef = useRef(open);
+  const messagesRef = useRef(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      const currentMsgs = messagesRef.current;
+      const hasAiMsg = currentMsgs.some(
+        (m) => m.sender_role === "ai" || m.sender_type === "ai" || m.role === "bot"
+      );
+      if (!hasAiMsg || !conversationIdRef.current || !currentAccountId) {
+        return;
+      }
+      const formatted = currentMsgs
+        .slice(-10)
+        .map((m) => ({
+          role: m.sender_role === "customer" || m.role === "user" ? "user" : "assistant",
+          text: m.content || m.text || "",
+        }))
+        .filter((m) => m.text);
+      sendBotEndSessionBeacon({
+        session_id: conversationIdRef.current,
+        user_id: currentAccountId,
+        messages: formatted,
+      });
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, [currentAccountId]);
 
   // Tự động focus ô nhập khi người dùng bấm reply
   useEffect(() => {
@@ -729,7 +765,7 @@ function Chatbot() {
     }
   };
 
-  // Gửi tin nhắn loại text hoặc đính kèm nhiều tệp tin (ảnh/video/file) vào CSKH, có hỗ trợ reply
+  // Gửi tin nhắn trong 1 cuộc trò chuyện duy nhất: mặc định AI trả lời, nếu AI lỗi/không xử lý được sẽ chuyển sang nhân viên
   const send = async () => {
     if ((!message.trim() && selectedFiles.length === 0) || sendingRef.current) return;
     const text = message.trim();
@@ -737,19 +773,107 @@ function Chatbot() {
     const previewsToSend = [...filePreviews];
     const replying = replyingTo;
 
+    const isStaffHandling = conversationStatus === "processing" || handedOffToStaff;
+    const shouldUseAi = !isStaffHandling && filesToSend.length === 0 && !replying?.message_id;
+
+    // Khách chưa đăng nhập: vẫn cho chat với AI; nếu cần chuyển nhân viên mới nhắc đăng nhập
     if (!isLoggedIn()) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          message_id: "err-" + Date.now(),
-          role: "bot",
-          sender_role: "ai",
-          content: "Bạn vui lòng đăng nhập để gửi tin nhắn hỗ trợ nhé!",
-          text: "Bạn vui lòng đăng nhập để gửi tin nhắn hỗ trợ nhé!",
-          isError: true,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      if (!shouldUseAi) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            message_id: "err-" + Date.now(),
+            role: "bot",
+            sender_role: "ai",
+            content: "Bạn vui lòng đăng nhập để kết nối với nhân viên hỗ trợ nhé!",
+            text: "Bạn vui lòng đăng nhập để kết nối với nhân viên hỗ trợ nhé!",
+            isError: true,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        return;
+      }
+
+      const guestUserMsg = {
+        message_id: "guest-user-" + Date.now(),
+        role: "user",
+        sender_role: "customer",
+        content: text,
+        text,
+        created_at: new Date().toISOString(),
+      };
+      const historyPayload = messages
+        .slice(-10)
+        .map((m) => ({
+          role: m.sender_role === "customer" || m.role === "user" ? "user" : "assistant",
+          text: m.content || m.text || "",
+        }))
+        .filter((m) => m.text);
+
+      sendingRef.current = true;
+      shouldScrollToBottomRef.current = true;
+      isAtBottomRef.current = true;
+      setShowScrollBottom(false);
+      setMessages((prev) => [...prev, guestUserMsg]);
+      setMessage("");
+      setIsSending(true);
+
+      try {
+        const aiRes = await sendMessageToBot({
+          message: text,
+          history: historyPayload,
+          top_k: 3,
+        });
+        const botData = aiRes?.data || aiRes || {};
+        if (!botData.reply || botData.source === "qdrant-fallback") {
+          setHandedOffToStaff(true);
+          const handoffText =
+            "Mình chưa tìm thấy thông tin phù hợp cho yêu cầu này. Bạn vui lòng đăng nhập để mình chuyển cuộc trò chuyện sang nhân viên hỗ trợ Selene nhé!";
+          setMessages((prev) => [
+            ...prev,
+            {
+              message_id: "ai-handoff-" + Date.now(),
+              role: "bot",
+              sender_role: "ai",
+              content: handoffText,
+              text: handoffText,
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              message_id: "ai-bot-" + Date.now(),
+              role: "bot",
+              sender_role: "ai",
+              content: botData.reply,
+              text: botData.reply,
+              products: Array.isArray(botData.products) ? botData.products : [],
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        }
+      } catch {
+        setHandedOffToStaff(true);
+        const handoffText =
+          "Trợ lý AI đang gặp sự cố kết nối. Bạn vui lòng đăng nhập để mình chuyển tiếp sang nhân viên hỗ trợ nhé!";
+        setMessages((prev) => [
+          ...prev,
+          {
+            message_id: "ai-handoff-err-" + Date.now(),
+            role: "bot",
+            sender_role: "ai",
+            content: handoffText,
+            text: handoffText,
+            isError: true,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      } finally {
+        sendingRef.current = false;
+        setIsSending(false);
+      }
       return;
     }
 
@@ -824,10 +948,18 @@ function Chatbot() {
         }
         res = await sendAttachmentMessage(formData);
       } else {
-        res = await sendTextMessage({
-          content: text,
-          conversation_id: conversationIdRef.current || undefined,
-        });
+        try {
+          res = await sendTextMessage({
+            content: text,
+            conversation_id: conversationIdRef.current || undefined,
+          });
+        } catch (chatErr) {
+          if (!shouldUseAi) {
+            throw chatErr;
+          }
+          console.warn("chat-service unavailable, falling back to direct AI:", chatErr);
+          res = null;
+        }
       }
 
       const resData = res?.data?.data;
@@ -841,6 +973,9 @@ function Chatbot() {
         });
       }
 
+      const activeConvId =
+        resData?.conversation?.conversation_id || conversationIdRef.current;
+
       if (resData?.conversation?.conversation_id) {
         const newConvId = resData.conversation.conversation_id;
         setConversationId(newConvId);
@@ -852,6 +987,86 @@ function Chatbot() {
 
       if (resData?.conversation?.status) {
         setConversationStatus(resData.conversation.status);
+      }
+
+      // Mặc định AI trả lời trong cùng cuộc trò chuyện; nếu AI lỗi hoặc không xử lý được thì chuyển sang nhân viên
+      if (shouldUseAi) {
+        const historyPayload = messages
+          .slice(-10)
+          .map((m) => ({
+            role: m.sender_role === "customer" || m.role === "user" ? "user" : "assistant",
+            text: m.content || m.text || "",
+          }))
+          .filter((m) => m.text);
+
+        let replyText = "";
+        let replyProducts = [];
+        let shouldHandoff = false;
+
+        try {
+          const aiRes = await sendMessageToBot({
+            message: text,
+            history: historyPayload,
+            top_k: 3,
+            user_id: currentAccountId || undefined,
+            session_id: activeConvId,
+          });
+          const botData = aiRes?.data || aiRes || {};
+          if (!botData.reply || botData.source === "qdrant-fallback") {
+            shouldHandoff = true;
+          } else {
+            replyText = botData.reply;
+            replyProducts = Array.isArray(botData.products) ? botData.products : [];
+          }
+        } catch (aiErr) {
+          console.warn("AI Service error, handing off to staff:", aiErr);
+          shouldHandoff = true;
+        }
+
+        if (shouldHandoff) {
+          setHandedOffToStaff(true);
+          replyText =
+            "Trợ lý AI chưa thể xử lý đầy đủ yêu cầu này. Mình xin phép chuyển cuộc trò chuyện sang cho nhân viên hỗ trợ Selene để tư vấn chi tiết hơn cho bạn nhé!";
+        }
+
+        if (activeConvId) {
+          try {
+            const aiSavedRes = await sendTextMessage({
+              content: replyText,
+              conversation_id: activeConvId,
+              sender_type: "ai",
+            });
+            const savedAiMsg = aiSavedRes?.data?.data?.message;
+            if (savedAiMsg) {
+              const enrichedAiMsg = {
+                ...savedAiMsg,
+                products: replyProducts,
+              };
+              setMessages((prev) => {
+                const filtered = prev.filter(
+                  (m) => String(m.message_id) !== String(savedAiMsg.message_id)
+                );
+                return [...filtered, enrichedAiMsg];
+              });
+              return;
+            }
+          } catch {
+            // Fallback hiển thị local nếu chat-service chưa bật
+          }
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            message_id: "ai-local-" + Date.now(),
+            role: "bot",
+            sender_role: "ai",
+            content: replyText,
+            text: replyText,
+            products: replyProducts,
+            created_at: new Date().toISOString(),
+          },
+        ]);
       }
     } catch (err) {
       console.error("Lỗi khi gửi tin nhắn:", err);
@@ -925,10 +1140,10 @@ function Chatbot() {
                 <h5 className="fw-semibold mb-0">Trợ lý ảo Selene</h5>
                 <span className="status">
                   {conversationStatus === "processing"
-                    ? "Đang hỗ trợ"
-                    : conversationStatus === "waiting"
-                    ? "Chờ hỗ trợ"
-                    : "Online"}
+                    ? "Nhân viên đang hỗ trợ"
+                    : handedOffToStaff || conversationStatus === "waiting"
+                    ? "Đang chờ nhân viên"
+                    : "Trợ lý AI • Online"}
                 </span>
               </div>
             </div>
@@ -984,11 +1199,6 @@ function Chatbot() {
               <div className="welcome-message">
                 <p>Xin chào! 👋</p>
                 <p>Bạn đang tìm trang phục nào ạ? Mình giúp được ngay nè!</p>
-                {!isLoggedIn() && (
-                  <p className="mt-2 text-muted" style={{ fontSize: "12px" }}>
-                    (Vui lòng đăng nhập để xem lịch sử tin nhắn hỗ trợ)
-                  </p>
-                )}
               </div>
             )}
 
@@ -1319,12 +1529,17 @@ function Chatbot() {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <img
-                              src={product.image_url || defaultProduct}
-                              alt=""
+                            <ProductImage
+                              src={
+                                product.image_url ||
+                                product.image_urls ||
+                                product.payload?.image_url ||
+                                product.payload?.image_urls
+                              }
+                              alt={product.product_name || ""}
                             />
                             <div className="chatbot-product-info">
-                              <div className="chatbot-product-name">
+                              <div className="chatbot-product-name" style={{ color: "#1f2937" }}>
                                 {product.product_name}
                               </div>
                               <div className="chatbot-product-price">
