@@ -27,6 +27,10 @@ class PipelineContext(BaseModel):
     rewritten_queries: list[str] = Field(default_factory=list)
     history: list[dict[str, str]] = Field(default_factory=list)
     top_k: int = 5
+    user_id: str | None = None
+    session_id: str | None = None
+    user_memory: str = ""
+    context_injected: bool = False
     retrieved_items: list[RetrievedItem] = Field(default_factory=list)
     matched: bool = False
     reply: str = ""

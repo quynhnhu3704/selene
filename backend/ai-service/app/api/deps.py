@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from app.clients.embedding_client import EmbeddingClient
 from app.clients.llm_client import LLMClient
+from app.clients.memory_client import MemoryClient
 from app.clients.qdrant_client import QdrantStoreClient
 from app.core.config import settings
 from app.services.chat_pipeline import ChatPipeline
@@ -34,11 +35,17 @@ def get_rewrite_llm_client() -> LLMClient:
 
 
 @lru_cache(maxsize=1)
+def get_memory_client() -> MemoryClient:
+    return MemoryClient()
+
+
+@lru_cache(maxsize=1)
 def get_chat_pipeline() -> ChatPipeline:
     qdrant_client = get_qdrant_client()
     embedding_client = get_embedding_client()
     llm_client = get_llm_client()
     rewrite_llm_client = get_rewrite_llm_client()
+    memory_client = get_memory_client()
 
     return ChatPipeline(
         rewrite_worker=RewriteWorker(llm_client=rewrite_llm_client),
@@ -47,4 +54,5 @@ def get_chat_pipeline() -> ChatPipeline:
             qdrant_client=qdrant_client,
         ),
         response_worker=ResponseWorker(llm_client=llm_client),
+        memory_client=memory_client,
     )

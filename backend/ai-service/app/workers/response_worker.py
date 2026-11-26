@@ -74,10 +74,19 @@ class ResponseWorker(BaseWorker):
         ]
         messages.append({"role": "user", "content": user_payload})
 
+        system_prompt = CHAT_SYSTEM_PROMPT
+        if context.user_memory:
+            system_prompt = (
+                f"{CHAT_SYSTEM_PROMPT}\n\n"
+                "Ngữ cảnh khách hàng từ các cuộc trò chuyện trước "
+                "(dùng để cá nhân hóa tư vấn, không tự bịa đặt thêm thông tin ngoài ngữ cảnh):\n"
+                f"{context.user_memory}"
+            )
+
         try:
             ai_reply = await self.llm_client.generate(
                 messages=messages,
-                system_prompt=CHAT_SYSTEM_PROMPT,
+                system_prompt=system_prompt,
             )
             if ai_reply:
                 context.reply = ai_reply
