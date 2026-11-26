@@ -12,9 +12,13 @@ logger = logging.getLogger(__name__)
 class LLMClient:
     """Unified async LLM client supporting Gemini, OpenAI-compatible APIs, and Ollama."""
 
-    def __init__(self) -> None:
-        self.provider = settings.llm_provider.lower()
-        self.model = settings.llm_model
+    def __init__(
+        self,
+        provider: str | None = None,
+        model: str | None = None,
+    ) -> None:
+        self.provider = (provider or settings.llm_provider).lower()
+        self.model = model or settings.llm_model
 
     def is_configured(self) -> bool:
         if self.provider == "gemini":

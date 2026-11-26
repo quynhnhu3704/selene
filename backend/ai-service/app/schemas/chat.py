@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
 class ChatResponseData(BaseModel):
     reply: str
     rewritten_query: str
+    rewritten_queries: list[str] = Field(default_factory=list)
     products: list[RetrievedItem] = Field(default_factory=list)
     source: str
 

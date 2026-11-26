@@ -1,4 +1,6 @@
+import asyncio
 import hashlib
+import logging
 import math
 import re
 import unicodedata
@@ -7,6 +9,8 @@ from typing import Iterable
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_text(text: str) -> str:
@@ -73,9 +77,20 @@ class EmbeddingClient:
     async def embed_batch(
         self, texts: Iterable[str], task: str = "retrieval.passage"
     ) -> list[list[float]]:
-        return [await self.embed_text(text, task=task) for text in texts]
+        text_list = list(texts)
+        if not text_list:
+            return []
+        if self.provider == "jina" and settings.jina_api_key:
+            return await self._embed_jina_batch(text_list, task=task)
+        return await asyncio.gather(*(self.embed_text(text, task=task) for text in text_list))
 
     async def _embed_jina(self, text: str, task: str = "retrieval.query") -> list[float]:
+        vectors = await self._embed_jina_batch([text], task=task)
+        return vectors[0]
+
+    async def _embed_jina_batch(
+        self, texts: list[str], task: str = "retrieval.query"
+    ) -> list[list[float]]:
         url = "https://api.jina.ai/v1/embeddings"
         headers = {
             "Content-Type": "application/json",
@@ -85,13 +100,28 @@ class EmbeddingClient:
             "model": self.model,
             "task": task,
             "dimensions": self.dim,
-            "input": [text],
+            "input": texts,
         }
         async with httpx.AsyncClient(timeout=settings.llm_timeout) as client:
-            resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-        return data["data"][0]["embedding"]
+            for attempt in range(3):
+                resp = await client.post(url, headers=headers, json=payload)
+                if resp.status_code in (429, 503) and attempt < 2:
+                    retry_after = resp.headers.get("Retry-After")
+                    delay = float(retry_after) if retry_after and retry_after.isdigit() else 1.5 * (attempt + 1)
+                    logger.warning(
+                        "Jina API transient %s, retrying in %.1fs (%s/2)...",
+                        resp.status_code,
+                        delay,
+                        attempt + 1,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                break
+
+        items = sorted(data["data"], key=lambda item: item.get("index", 0))
+        return [item["embedding"] for item in items]
 
     async def _embed_gemini(self, text: str) -> list[float]:
         url = (

@@ -24,6 +24,7 @@ class PipelineContext(BaseModel):
 
     original_message: str
     rewritten_query: str = ""
+    rewritten_queries: list[str] = Field(default_factory=list)
     history: list[dict[str, str]] = Field(default_factory=list)
     top_k: int = 5
     retrieved_items: list[RetrievedItem] = Field(default_factory=list)

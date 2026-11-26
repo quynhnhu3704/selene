@@ -61,6 +61,7 @@ class ResponseWorker(BaseWorker):
             {
                 "question": context.original_message,
                 "rewritten_query": context.rewritten_query,
+                "rewritten_queries": context.rewritten_queries,
                 "matched": context.matched,
                 "qdrant_results": retrieved_payload,
             },

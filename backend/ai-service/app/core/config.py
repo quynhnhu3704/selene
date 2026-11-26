@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 1024
     llm_timeout: float = 60.0
 
+    # Query Rewrite LLM & Retrieval
+    rewrite_llm_provider: str = ""  # empty = fallback to llm_provider
+    rewrite_llm_model: str = ""  # empty = fallback to llm_model
+    rewrite_query_count: int = 3  # recommended 3 or 5
+    rrf_k: int = 60
+
     # Provider credentials & endpoints
     jina_api_key: str = ""
     gemini_api_key: str = ""

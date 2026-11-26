@@ -35,6 +35,7 @@ class ChatPipeline:
         return ChatResponseData(
             reply=context.reply,
             rewritten_query=context.rewritten_query,
+            rewritten_queries=context.rewritten_queries,
             products=context.retrieved_items,
             source=context.source,
         )
