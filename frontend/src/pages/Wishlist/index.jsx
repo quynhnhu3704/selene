@@ -1,4 +1,5 @@
 import EmptyState from "../../components/common/EmptyState";
+import Loading from "../../components/common/Loading";
 import ProductCard from "../../components/common/ProductCard";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -6,6 +7,7 @@ import { Helmet } from "react-helmet-async";
 import Breadcrumb from "../../components/layout/Breadcrumb";
 import { useWishlist } from "../../context/WishlistContext";
 import Pagination from "../../components/common/Pagination";
+import styles from "./wishlist.module.css";
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -19,6 +21,7 @@ const SORT_OPTIONS = [
 
 export default function Wishlist() {
   const { wishlist } = useWishlist();
+  const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef(null);
@@ -62,6 +65,12 @@ export default function Wishlist() {
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
+
+  // Match the initial loading transition used by the cart for local data.
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 700);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -159,7 +168,11 @@ export default function Wishlist() {
               )}
             </div>
           </div>
-          {wishlist.length === 0 ? (
+          {loading ? (
+            <div className={styles.loading} aria-busy="true" aria-live="polite">
+              <Loading text="Đang tải sản phẩm..." />
+            </div>
+          ) : wishlist.length === 0 ? (
             <div className="page-empty" role="status">
               <EmptyState text="Không có sản phẩm nào để hiển thị" />
             </div>

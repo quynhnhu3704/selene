@@ -6,7 +6,8 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
 import Breadcrumb from "../../components/layout/Breadcrumb";
-import VoucherList from "../../components/common/VoucherList";
+import PromotionCard from "./PromotionCard";
+import styles from "./promotions.module.css";
 import { getCustomerVouchers } from "../../services/voucher.service";
 import { isLoggedIn } from "../../utils/auth";
 
@@ -62,11 +63,8 @@ export default function Promotions() {
       <Breadcrumb
         items={[{ label: "Trang chủ", path: "/" }, { label: "Khuyến mãi" }]}
       />
-      <div className="promotions-page">
+      <div className={`promotions-page ${styles.page}`}>
         <h1 className="adm-page-title promotions-title">Khuyến mãi</h1>
-        <p className="text-muted promotions-note">
-          Các mã còn lượt sử dụng và phù hợp với giỏ hàng hiện tại của bạn.
-        </p>
         {!loggedIn ? (
           <div className="text-center py-5">
             <p>Đăng nhập để xem các mã khuyến mãi dành cho bạn.</p>
@@ -78,7 +76,7 @@ export default function Promotions() {
             </Link>
           </div>
         ) : loading ? (
-          <div className="text-center py-5" role="status">
+          <div className={styles.loading} role="status" aria-live="polite">
             <Loading text="Đang tải khuyến mãi..." />
           </div>
         ) : error ? (
@@ -101,27 +99,25 @@ export default function Promotions() {
           </div>
         ) : (
           <>
-            <div className="row g-4">
-              {vouchers.map((voucher) => (
+            <div className={styles.grid}>
+              {vouchers.map((voucher, index) => (
                 <div
-                  className="col-12 col-md-6 col-xl-4"
-                  key={voucher.voucher_id}
+                  key={voucher.voucher_id || voucher.id || voucher.code}
                 >
-                  <VoucherList
-                    vouchers={[voucher]}
-                    onSelect={copyVoucher}
-                    buttonClassName="form-btn btn btn-outline-dark px-3 flex-shrink-0 fw-semibold mb-0"
-                  />
+                  <PromotionCard voucher={voucher} variant={index % 3} onCopy={copyVoucher} />
                 </div>
               ))}
             </div>
-            <Link
-              to="/gio-hang"
-              className="form-btn btn btn-dark fw-semibold px-4 mt-4 mb-0"
-            >
-              <i className="bi bi-cart3 me-2" aria-hidden="true" />
-              Đến giỏ hàng
-            </Link>
+            <div className="d-flex justify-content-end mt-4">
+              <Link
+                to="/gio-hang"
+                className="d-inline-flex align-items-center gap-2 form-link-sm"
+                style={{ fontSize: 15 }}
+              >
+                Đến giỏ hàng
+                <i className="bi bi-arrow-right" aria-hidden="true" />
+              </Link>
+            </div>
           </>
         )}
       </div>

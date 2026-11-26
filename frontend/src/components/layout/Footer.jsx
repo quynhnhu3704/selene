@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="rb-footer">
       <div className="row g-4 pb-2 mx-5">
         <div className="col-12 col-lg-4">
-          <h5>SELENE STUDIO</h5>
+          <h5><span style={{ textTransform: "none" }}>Selene</span> STUDIO</h5>
           <address className="mb-1">
             48 Trần Quang Diệu, Phường Nhiêu Lộc, TP. HCM
           </address>
@@ -53,7 +53,7 @@ export default function Footer() {
           <ul>
             <li>
               <Link to="/" className="rb-footer-link">
-                SELENE STUDIO
+                Selene STUDIO
               </Link>
             </li>
             <li>

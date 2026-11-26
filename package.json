@@ -4,7 +4,8 @@
   "description": "Microservices Demo",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently --kill-others \"npm run dev:app\" \"npm run sepay:tunnel\"",
+    "dev": "concurrently --kill-others --names app,tunnel,sync \"npm run dev:app\" \"npm run sepay:tunnel\" \"npm run dev:sync\"",
+    "dev:sync": "cross-env DEBUG=false backend/ai-service/.venv/Scripts/python.exe -u backend/ai-service/scripts/product_sync_worker.py --interval 5 --batch-size 10",
     "dev:sepay": "npm run dev",
     "sepay:tunnel": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-sepay-tunnel.ps1",
     "sepay:check": "node scripts/check-sepay.mjs",

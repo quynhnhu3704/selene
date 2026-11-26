@@ -467,7 +467,7 @@ export default function Cart() {
               <Link
                 to="/san-pham"
                 className="d-inline-flex align-items-center gap-2 form-link-sm"
-                style={{ fontSize: 14 }}
+                style={{ fontSize: 15 }}
               >
                 <i className="bi bi-arrow-left" />
                 Tiếp tục mua sắm

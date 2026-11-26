@@ -11,16 +11,19 @@ export default function VoucherList({
   selectedCode,
   onSelect,
   disabled = false,
+  copyIconOnly = false,
   buttonClassName = "btn btn-sm btn-outline-dark rounded-pill px-3 flex-shrink-0 fw-semibold",
 }) {
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="voucher-list d-flex flex-column gap-3">
       {vouchers.map((voucher) => {
         const vKey = voucher.voucher_id || voucher.id || voucher.code;
         const expiry = formatDate(voucher.end_date);
+        const iconOnly = copyIconOnly && selectedCode === undefined;
+        const copyLabel = `Sao chép mã ${voucher.code}`;
 
         return (
-          <div key={vKey} className="border rounded-3 p-3 bg-white shadow-sm">
+          <div key={vKey} className="voucher-card border rounded-3 p-3 bg-white shadow-sm">
             <div className="d-flex justify-content-between align-items-start gap-3">
               <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
                 <div className="fw-bold mb-1 text-dark">{voucher.name}</div>
@@ -32,7 +35,7 @@ export default function VoucherList({
                       : `Giảm ${fmt(voucher.discount_value)}`}
                 </div>
               </div>
-              <i className="bi bi-ticket-perforated fs-3 text-danger opacity-75" />
+              <i className="voucher-icon bi bi-ticket-perforated fs-3 text-danger opacity-75" aria-hidden="true" />
             </div>
 
             <div className="small text-muted mt-2">
@@ -44,7 +47,7 @@ export default function VoucherList({
               {expiry && <> · HSD: {expiry}</>}
             </div>
 
-            <div className="d-flex justify-content-between align-items-center gap-2 mt-3 pt-2 border-top">
+            <div className="voucher-actions d-flex justify-content-between align-items-center gap-2 mt-3 pt-2 border-top">
               <span
                 className="fw-bold font-monospace text-uppercase px-2 py-1 bg-light rounded text-dark"
                 style={{ overflowWrap: "anywhere", fontSize: 13 }}
@@ -56,12 +59,23 @@ export default function VoucherList({
                 className={buttonClassName}
                 disabled={disabled || selectedCode === voucher.code}
                 onClick={() => onSelect(voucher)}
+                aria-label={iconOnly ? copyLabel : undefined}
+                title={iconOnly ? copyLabel : undefined}
               >
-                {selectedCode === voucher.code
-                  ? "Đã chọn"
-                  : selectedCode === undefined
-                    ? "Sao chép mã"
-                    : "Sử dụng"}
+                {iconOnly ? (
+                  <i className="bi bi-copy" aria-hidden="true" />
+                ) : (
+                  <>
+                    {selectedCode === undefined && (
+                      <i className="bi bi-copy me-2" aria-hidden="true" />
+                    )}
+                    {selectedCode === voucher.code
+                      ? "Đã chọn"
+                      : selectedCode === undefined
+                        ? "Sao chép mã"
+                        : "Sử dụng"}
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -75,6 +75,8 @@
   color: inherit;
 }
 
+.cart-page .cart-del-sel i { color: #871b1b; }
+
 .cart-page .cart-check-all {
   display: grid;
   grid-template-columns: 17px auto;
@@ -123,7 +125,7 @@
 .cart-page .cart-item-subtotal { color: #871b1b; min-width: 0; font-weight: 700; }
 .cart-page .cart-qty { border-color: #efefed; }
 .cart-page .cart-qty-btn { width: 36px; }
-.cart-page .cart-del-btn { color: #b76c6c; }
+.cart-page .cart-del-btn { color: #871b1b; }
 .cart-page .cart-summary { border-color: #efefed; padding: 28px 24px; }
 .cart-page .cart-summary-title { color: #871b1b; font-size: 21px; text-transform: none; }
 .cart-page .cart-summary-total-val { color: #871b1b; font-size: 26px; }
