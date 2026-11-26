@@ -6,9 +6,11 @@ from app.clients.memory_client import MemoryClient
 from app.clients.qdrant_client import QdrantStoreClient
 from app.core.config import settings
 from app.services.chat_pipeline import ChatPipeline
+from app.services.idle_scanner import IdleSessionScanner
 from app.workers.response_worker import ResponseWorker
 from app.workers.retrieval_worker import RetrievalWorker
 from app.workers.rewrite_worker import RewriteWorker
+from app.workers.summary_worker import SummaryWorker
 
 
 @lru_cache(maxsize=1)
@@ -37,6 +39,30 @@ def get_rewrite_llm_client() -> LLMClient:
 @lru_cache(maxsize=1)
 def get_memory_client() -> MemoryClient:
     return MemoryClient()
+
+
+@lru_cache(maxsize=1)
+def get_summary_llm_client() -> LLMClient:
+    return LLMClient(
+        provider=settings.summary_llm_provider or settings.llm_provider,
+        model=settings.summary_llm_model or settings.llm_model,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_summary_worker() -> SummaryWorker:
+    return SummaryWorker(
+        llm_client=get_summary_llm_client(),
+        memory_client=get_memory_client(),
+    )
+
+
+@lru_cache(maxsize=1)
+def get_idle_scanner() -> IdleSessionScanner:
+    return IdleSessionScanner(
+        memory_client=get_memory_client(),
+        summary_worker=get_summary_worker(),
+    )
 
 
 @lru_cache(maxsize=1)

@@ -31,3 +31,17 @@ class ChatResponse(BaseModel):
     status: int = 200
     message: str = "Gửi tin nhắn thành công!"
     data: ChatResponseData
+
+
+class EndSessionRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, description="conversation_id cần kết thúc và tóm tắt")
+    user_id: str | None = Field(default=None, description="account_id của người dùng")
+    messages: list[ChatHistoryItem] | None = Field(
+        default=None,
+        description="Tùy chọn: truyền danh sách tin nhắn nếu chưa đồng bộ qua chat.messages",
+    )
+
+
+class EndSessionResponse(BaseModel):
+    status: int = 200
+    message: str = "Đã đưa phiên chat vào hàng đợi tóm tắt."

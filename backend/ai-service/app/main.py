@@ -1,9 +1,11 @@
+from contextlib import asynccontextmanager
 import logging
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.deps import get_idle_scanner
 from app.api.v1.router import api_router
 from app.core.config import settings
 
@@ -12,9 +14,21 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    scanner = get_idle_scanner()
+    scanner.start()
+    try:
+        yield
+    finally:
+        await scanner.stop()
+
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
+    lifespan=lifespan,
 )
 
 app.add_middleware(

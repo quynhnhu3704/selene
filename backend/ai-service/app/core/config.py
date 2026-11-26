@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     rewrite_query_count: int = 3  # recommended 3 or 5
     rrf_k: int = 60
 
+    # Conversation Summary & Idle Timeout
+    summary_llm_provider: str = ""  # empty = fallback to llm_provider
+    summary_llm_model: str = ""  # empty = fallback to llm_model
+    session_idle_timeout_minutes: int = 15
+    idle_scan_interval_seconds: int = 60
+    idle_scanner_enabled: bool = True
+
     # Provider credentials & endpoints
     jina_api_key: str = ""
     gemini_api_key: str = ""

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from supabase import Client, create_client
@@ -175,3 +175,169 @@ class MemoryClient:
                 conversation_id,
                 exc,
             )
+
+    async def find_idle_conversations(
+        self, idle_minutes: int, limit: int = 20
+    ) -> list[dict[str, Any]]:
+        if not self._client:
+            return []
+        return await asyncio.to_thread(
+            self._find_idle_conversations_sync, idle_minutes, limit
+        )
+
+    def _find_idle_conversations_sync(
+        self, idle_minutes: int, limit: int
+    ) -> list[dict[str, Any]]:
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=idle_minutes)).isoformat()
+        try:
+            resp = (
+                self._client.table("ai_conversation_states")
+                .select("conversation_id, account_id, last_summarized_message_id, last_active_at")
+                .eq("status", "active")
+                .lt("last_active_at", cutoff)
+                .order("last_active_at", desc=False)
+                .limit(limit)
+                .execute()
+            )
+            return resp.data or []
+        except Exception as exc:
+            logger.warning("Failed to scan idle conversations: %s", exc)
+            return []
+
+    async def claim_conversation_for_summary(
+        self, conversation_id: str
+    ) -> dict[str, Any] | None:
+        if not self._client or not conversation_id:
+            return None
+        return await asyncio.to_thread(
+            self._claim_conversation_for_summary_sync, conversation_id
+        )
+
+    def _claim_conversation_for_summary_sync(
+        self, conversation_id: str
+    ) -> dict[str, Any] | None:
+        try:
+            resp = (
+                self._client.table("ai_conversation_states")
+                .update({"status": "summarizing", "updated_at": _utc_now_iso()})
+                .eq("conversation_id", conversation_id)
+                .eq("status", "active")
+                .execute()
+            )
+            rows = resp.data or []
+            return rows[0] if rows else None
+        except Exception as exc:
+            logger.warning(
+                "Failed to claim conversation %s for summary: %s",
+                conversation_id,
+                exc,
+            )
+            return None
+
+    async def mark_conversation_closed(
+        self, conversation_id: str, last_summarized_message_id: str | None = None
+    ) -> None:
+        if not self._client or not conversation_id:
+            return
+        await asyncio.to_thread(
+            self._mark_conversation_closed_sync,
+            conversation_id,
+            last_summarized_message_id,
+        )
+
+    def _mark_conversation_closed_sync(
+        self, conversation_id: str, last_summarized_message_id: str | None
+    ) -> None:
+        payload: dict[str, Any] = {
+            "status": "closed",
+            "updated_at": _utc_now_iso(),
+        }
+        if last_summarized_message_id:
+            payload["last_summarized_message_id"] = last_summarized_message_id
+        try:
+            (
+                self._client.table("ai_conversation_states")
+                .update(payload)
+                .eq("conversation_id", conversation_id)
+                .execute()
+            )
+        except Exception as exc:
+            logger.warning("Failed to mark conversation %s closed: %s", conversation_id, exc)
+
+    async def release_conversation_claim(self, conversation_id: str) -> None:
+        if not self._client or not conversation_id:
+            return
+        await asyncio.to_thread(self._release_conversation_claim_sync, conversation_id)
+
+    def _release_conversation_claim_sync(self, conversation_id: str) -> None:
+        try:
+            (
+                self._client.table("ai_conversation_states")
+                .update({"status": "active", "updated_at": _utc_now_iso()})
+                .eq("conversation_id", conversation_id)
+                .eq("status", "summarizing")
+                .execute()
+            )
+        except Exception as exc:
+            logger.warning("Failed to release claim for %s: %s", conversation_id, exc)
+
+    async def get_conversation_messages(
+        self, conversation_id: str, after_message_id: str | None = None
+    ) -> list[dict[str, str]]:
+        if not self._client or not conversation_id:
+            return []
+        return await asyncio.to_thread(
+            self._get_conversation_messages_sync, conversation_id, after_message_id
+        )
+
+    def _get_conversation_messages_sync(
+        self, conversation_id: str, after_message_id: str | None
+    ) -> list[dict[str, str]]:
+        rows: list[dict[str, Any]] = []
+        try:
+            resp = self._client.rpc(
+                "get_ai_conversation_messages",
+                {"p_conversation_id": conversation_id},
+            ).execute()
+            rows = resp.data or []
+        except Exception as rpc_exc:
+            logger.debug("RPC get_ai_conversation_messages fallback to schema('chat'): %s", rpc_exc)
+            try:
+                resp = (
+                    self._client.schema("chat")
+                    .table("messages")
+                    .select("message_id, sender_type, content, created_at")
+                    .eq("conversation_id", conversation_id)
+                    .in_("sender_type", ["user", "ai"])
+                    .order("created_at", desc=False)
+                    .execute()
+                )
+                rows = resp.data or []
+            except Exception as exc:
+                logger.warning(
+                    "Failed to fetch chat.messages for %s: %s",
+                    conversation_id,
+                    exc,
+                )
+                return []
+
+        if after_message_id:
+            for idx, row in enumerate(rows):
+                if row.get("message_id") == after_message_id:
+                    rows = rows[idx + 1 :]
+                    break
+
+        messages: list[dict[str, str]] = []
+        for row in rows:
+            content = str(row.get("content") or "").strip()
+            if not content:
+                continue
+            role = "user" if row.get("sender_type") == "user" else "assistant"
+            messages.append(
+                {
+                    "message_id": str(row.get("message_id") or ""),
+                    "role": role,
+                    "text": content,
+                }
+            )
+        return messages
