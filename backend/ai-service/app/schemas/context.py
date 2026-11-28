@@ -31,6 +31,9 @@ class PipelineContext(BaseModel):
     session_id: str | None = None
     user_memory: str = ""
     context_injected: bool = False
+    conversation_intent: str = "new_search"
+    active_product_names: list[str] = Field(default_factory=list)
+    active_product_ids: list[str] = Field(default_factory=list)
     retrieved_items: list[RetrievedItem] = Field(default_factory=list)
     matched: bool = False
     reply: str = ""

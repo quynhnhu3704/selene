@@ -54,6 +54,35 @@ def _extract_first_image_url(payload: dict[str, Any]) -> str | None:
     return None
 
 
+def _hit_dedup_key(hit: dict[str, Any]) -> str:
+    payload = hit.get("payload") or {}
+    return str(payload.get("product_id") or payload.get("id") or hit["id"])
+
+
+def _matches_active_name(hit: dict[str, Any], active_names: list[str]) -> bool:
+    if not active_names:
+        return False
+    payload = hit.get("payload") or {}
+    product_name = str(
+        payload.get("product_name") or payload.get("name") or payload.get("title") or ""
+    ).casefold()
+    product_id = str(payload.get("product_id") or payload.get("id") or "").casefold()
+    if not product_name and not product_id:
+        return False
+
+    for target in active_names:
+        needle = " ".join(target.split()).casefold()
+        if not needle:
+            continue
+        if needle in product_name or needle == product_id:
+            return True
+        # Match by SKU/code token (e.g. Z04612) if full name differs slightly
+        tokens = [tok for tok in needle.split() if len(tok) >= 4 and any(c.isdigit() for c in tok)]
+        if any(tok in product_name or tok == product_id for tok in tokens):
+            return True
+    return False
+
+
 def _rrf_merge(
     ranked_lists: list[list[dict[str, Any]]],
     top_k: int,
@@ -162,8 +191,16 @@ class RetrievalWorker(BaseWorker):
             context.matched = False
             return context
 
+        search_queries = list(queries)
+        if context.conversation_intent == "followup" and context.active_product_names:
+            existing_cf = {q.casefold() for q in search_queries}
+            for name in context.active_product_names:
+                if name.strip() and name.casefold() not in existing_cf:
+                    search_queries.append(name.strip())
+                    existing_cf.add(name.casefold())
+
         query_vectors = await self.embedding_client.embed_batch(
-            queries, task="retrieval.query"
+            search_queries, task="retrieval.query"
         )
 
         per_query_limit = max(context.top_k, 5)
@@ -178,11 +215,33 @@ class RetrievalWorker(BaseWorker):
             )
         )
 
-        hits = (
-            _rrf_merge(ranked_lists, top_k=context.top_k, rrf_k=settings.rrf_k)
+        rrf_hits = (
+            _rrf_merge(ranked_lists, top_k=max(context.top_k, 5), rrf_k=settings.rrf_k)
             if len(ranked_lists) > 1
-            else ranked_lists[0][: context.top_k]
+            else ranked_lists[0][: max(context.top_k, 5)]
         )
+
+        pinned_hits: list[dict[str, Any]] = []
+        pinned_keys: set[str] = set()
+        if context.conversation_intent == "followup" and context.active_product_names:
+            for ranked in ranked_lists:
+                for hit in ranked:
+                    key = _hit_dedup_key(hit)
+                    if key not in pinned_keys and _matches_active_name(hit, context.active_product_names):
+                        pinned_keys.add(key)
+                        pinned_hits.append(dict(hit))
+
+        if pinned_hits:
+            context.active_product_ids = [
+                str((h.get("payload") or {}).get("product_id") or (h.get("payload") or {}).get("id") or h["id"])
+                for h in pinned_hits
+            ]
+            remaining_hits = [h for h in rrf_hits if _hit_dedup_key(h) not in pinned_keys]
+            final_limit = max(context.top_k, len(pinned_hits) + 1)
+            hits = (pinned_hits + remaining_hits)[:final_limit]
+        else:
+            context.active_product_ids = []
+            hits = rrf_hits[: context.top_k]
 
         items: list[RetrievedItem] = []
         for hit in hits:

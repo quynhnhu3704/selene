@@ -39,6 +39,17 @@ class ResponseWorker(BaseWorker):
             context.source = "qdrant-fallback"
             return context
 
+        active_names_cf = [name.casefold() for name in context.active_product_names if name]
+        active_ids = set(context.active_product_ids)
+
+        def _is_active_item(item) -> bool:
+            if item.product_id and item.product_id in active_ids:
+                return True
+            if item.product_name:
+                name_cf = item.product_name.casefold()
+                return any(n in name_cf or name_cf in n for n in active_names_cf)
+            return False
+
         retrieved_payload = [
             {
                 "product_id": item.product_id,
@@ -48,6 +59,7 @@ class ResponseWorker(BaseWorker):
                 "sizes": item.payload.get("sizes"),
                 "colors": item.payload.get("colors"),
                 "in_stock": item.payload.get("in_stock"),
+                "is_active_in_conversation": _is_active_item(item),
                 "description": (
                     item.description
                     or item.text
@@ -60,6 +72,8 @@ class ResponseWorker(BaseWorker):
         user_payload = json.dumps(
             {
                 "question": context.original_message,
+                "conversation_intent": context.conversation_intent,
+                "active_products_in_conversation": context.active_product_names,
                 "rewritten_query": context.rewritten_query,
                 "rewritten_queries": context.rewritten_queries,
                 "matched": context.matched,
@@ -69,7 +83,10 @@ class ResponseWorker(BaseWorker):
         )
 
         messages = [
-            {"role": item["role"], "content": item["text"]}
+            {
+                "role": "assistant" if item["role"] in ("assistant", "bot", "model") else "user",
+                "content": item["text"],
+            }
             for item in context.history
         ]
         messages.append({"role": "user", "content": user_payload})
