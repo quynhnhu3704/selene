@@ -16,6 +16,19 @@ import ImageModal from "./ImageModal";
 import { toast } from "react-toastify";
 import { isLoggedIn } from "../../utils/auth";
 
+const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "4XL"];
+
+function compareSizes(a, b) {
+  const normA = String(a || "").trim().toUpperCase();
+  const normB = String(b || "").trim().toUpperCase();
+  const idxA = SIZE_ORDER.indexOf(normA);
+  const idxB = SIZE_ORDER.indexOf(normB);
+  if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+  if (idxA !== -1) return -1;
+  if (idxB !== -1) return 1;
+  return String(a || "").localeCompare(String(b || ""), "vi", { numeric: true });
+}
+
 function fmt(n) {
   return n.toLocaleString("vi-VN") + "đ";
 }
@@ -117,7 +130,7 @@ function ProductDetailContent({ id }) {
       ).values(),
     ],
 
-    sizes: [...new Set((product.variants || []).map((v) => v.size))],
+    sizes: [...new Set((product.variants || []).map((v) => v.size))].sort(compareSizes),
 
     detail: {
       sku: product.product_id,
